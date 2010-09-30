@@ -1,0 +1,7 @@
+C:\Documents and Settings\Administrator\Desktop\RuralCafe - active\RuralCafe\bin\Release\RuralCafe.exe
+C:\Documents and Settings\Administrator\Desktop\RuralCafe - active\RuralCafe\bin\Release\RuralCafe.pdb
+C:\Documents and Settings\Administrator\Desktop\RuralCafe - active\RuralCafe\obj\Release\ResolveAssemblyReference.cache
+C:\Documents and Settings\Administrator\Desktop\RuralCafe - active\RuralCafe\obj\Release\RuralCafe.Properties.Resources.resources
+C:\Documents and Settings\Administrator\Desktop\RuralCafe - active\RuralCafe\obj\Release\RuralCafe.csproj.GenerateResource.Cache
+C:\Documents and Settings\Administrator\Desktop\RuralCafe - active\RuralCafe\obj\Release\RuralCafe.exe
+C:\Documents and Settings\Administrator\Desktop\RuralCafe - active\RuralCafe\obj\Release\RuralCafe.pdb
