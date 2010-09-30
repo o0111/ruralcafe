@@ -1,0 +1,11 @@
+C:\Users\Jay Chen\Desktop\rcafe\bin\ICSharpCode.SharpZipLib.dll
+C:\Users\Jay Chen\Desktop\rcafe\bin\ICSharpCode.SharpZipLib.pdb
+C:\Users\Jay Chen\Desktop\rcafe\SharpZipLib\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\Jay Chen\Desktop\rcafe\SharpZipLib\obj\Debug\ICSharpCode.SharpZipLib.dll
+C:\Users\Jay Chen\Desktop\rcafe\SharpZipLib\obj\Debug\ICSharpCode.SharpZipLib.pdb
+C:\cygwin\home\jchen\ruralcafe\code\bin\ICSharpCode.SharpZipLib.dll
+C:\cygwin\home\jchen\ruralcafe\code\bin\ICSharpCode.SharpZipLib.pdb
+C:\cygwin\home\jchen\ruralcafe\code\SharpZipLib\obj\Debug\ResolveAssemblyReference.cache
+C:\cygwin\home\jchen\ruralcafe\code\SharpZipLib\obj\Debug\ICSharpCode.SharpZipLib.dll
+C:\cygwin\home\jchen\ruralcafe\code\SharpZipLib\obj\Debug\ICSharpCode.SharpZipLib.pdb
+C:\cygwin\home\jchen\ruralcafe\code\bin\ICSharpCode.SharpZipLib.xml

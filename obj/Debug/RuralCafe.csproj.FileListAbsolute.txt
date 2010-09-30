@@ -1,0 +1,57 @@
+C:\Documents and Settings\t-jac\Desktop\Cafe\RuralCafe\RuralCafe\obj\Debug\ResolveAssemblyReference.cache
+C:\Documents and Settings\t-jac\Desktop\Cafe\RuralCafe\RuralCafe\obj\Debug\RuralCafe.Properties.Resources.resources
+C:\Documents and Settings\t-jac\Desktop\Cafe\RuralCafe\RuralCafe\obj\Debug\RuralCafe.csproj.GenerateResource.Cache
+C:\Documents and Settings\t-jac\Desktop\Cafe\RuralCafe\RuralCafe\bin\Debug\RuralCafe.exe
+C:\Documents and Settings\t-jac\Desktop\Cafe\RuralCafe\RuralCafe\bin\Debug\RuralCafe.pdb
+C:\Documents and Settings\t-jac\Desktop\Cafe\RuralCafe\RuralCafe\obj\Debug\RuralCafe.exe
+C:\Documents and Settings\t-jac\Desktop\Cafe\RuralCafe\RuralCafe\obj\Debug\RuralCafe.pdb
+C:\Documents and Settings\t-jac\Desktop\Cafe\RuralCafe - Basic webproxy\RuralCafe\obj\Debug\RuralCafe.exe
+C:\Documents and Settings\t-jac\Desktop\Cafe\RuralCafe - Basic webproxy\RuralCafe\obj\Debug\RuralCafe.pdb
+C:\Documents and Settings\t-jac\Desktop\Cafe\RuralCafe - Basic webproxy\RuralCafe\obj\Debug\ResolveAssemblyReference.cache
+C:\Documents and Settings\t-jac\Desktop\Cafe\RuralCafe - Basic webproxy\RuralCafe\obj\Debug\RuralCafe.Properties.Resources.resources
+C:\Documents and Settings\t-jac\Desktop\Cafe\RuralCafe - Basic webproxy\RuralCafe\obj\Debug\RuralCafe.csproj.GenerateResource.Cache
+C:\Documents and Settings\t-jac\Desktop\Cafe\RuralCafe - Basic webproxy\RuralCafe\bin\Debug\RuralCafe.exe
+C:\Documents and Settings\t-jac\Desktop\Cafe\RuralCafe - Basic webproxy\RuralCafe\bin\Debug\RuralCafe.pdb
+C:\Users\t-jac\Desktop\RuralCafe\RuralCafe - Basic webproxy\RuralCafe\obj\Debug\RuralCafe.exe
+C:\Users\t-jac\Desktop\RuralCafe\RuralCafe - Basic webproxy\RuralCafe\obj\Debug\RuralCafe.pdb
+C:\Users\t-jac\Desktop\RuralCafe\RuralCafe - Basic webproxy\RuralCafe\bin\Debug\RuralCafe.exe
+C:\Users\t-jac\Desktop\RuralCafe\RuralCafe - Basic webproxy\RuralCafe\bin\Debug\RuralCafe.pdb
+C:\Users\t-jac\Desktop\RuralCafe\RuralCafe - Basic webproxy\RuralCafe\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\t-jac\Desktop\RuralCafe\RuralCafe - Basic webproxy\RuralCafe\obj\Debug\RuralCafe.Properties.Resources.resources
+C:\Users\t-jac\Desktop\RuralCafe\RuralCafe - Basic webproxy\RuralCafe\obj\Debug\RuralCafe.csproj.GenerateResource.Cache
+C:\Documents and Settings\t-jac\Desktop\Cafe\RuralCafe - active\RuralCafe\obj\Debug\RuralCafe.exe
+C:\Documents and Settings\t-jac\Desktop\Cafe\RuralCafe - active\RuralCafe\obj\Debug\RuralCafe.pdb
+C:\Documents and Settings\t-jac\Desktop\Cafe\RuralCafe - active\RuralCafe\obj\Debug\ResolveAssemblyReference.cache
+C:\Documents and Settings\t-jac\Desktop\Cafe\RuralCafe - active\RuralCafe\obj\Debug\RuralCafe.Properties.Resources.resources
+C:\Documents and Settings\t-jac\Desktop\Cafe\RuralCafe - active\RuralCafe\obj\Debug\RuralCafe.csproj.GenerateResource.Cache
+C:\Documents and Settings\t-jac\Desktop\Cafe\RuralCafe - active\RuralCafe\bin\Debug\RuralCafe.exe
+C:\Documents and Settings\t-jac\Desktop\Cafe\RuralCafe - active\RuralCafe\bin\Debug\RuralCafe.pdb
+C:\Users\t-jac\Desktop\RuralCafe\RuralCafe - active\RuralCafe\obj\Debug\RuralCafe.exe
+C:\Users\t-jac\Desktop\RuralCafe\RuralCafe - active\RuralCafe\obj\Debug\RuralCafe.pdb
+C:\Users\t-jac\Desktop\RuralCafe\RuralCafe - active\RuralCafe\bin\Debug\RuralCafe.exe
+C:\Users\t-jac\Desktop\RuralCafe\RuralCafe - active\RuralCafe\bin\Debug\RuralCafe.pdb
+C:\Users\t-jac\Desktop\RuralCafe\RuralCafe - active\RuralCafe\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\t-jac\Desktop\RuralCafe\RuralCafe - active\RuralCafe\obj\Debug\RuralCafe.Properties.Resources.resources
+C:\Users\t-jac\Desktop\RuralCafe\RuralCafe - active\RuralCafe\obj\Debug\RuralCafe.csproj.GenerateResource.Cache
+C:\Documents and Settings\Administrator\Desktop\RuralCafe - active\RuralCafe\obj\Debug\RuralCafe.exe
+C:\Documents and Settings\Administrator\Desktop\RuralCafe - active\RuralCafe\obj\Debug\RuralCafe.pdb
+C:\Documents and Settings\Administrator\Desktop\RuralCafe - active\RuralCafe\bin\Debug\RuralCafe.exe
+C:\Documents and Settings\Administrator\Desktop\RuralCafe - active\RuralCafe\bin\Debug\RuralCafe.pdb
+C:\Documents and Settings\Administrator\Desktop\RuralCafe - active\RuralCafe\obj\Debug\ResolveAssemblyReference.cache
+C:\Documents and Settings\Administrator\Desktop\RuralCafe - active\RuralCafe\obj\Debug\RuralCafe.Properties.Resources.resources
+C:\Documents and Settings\Administrator\Desktop\RuralCafe - active\RuralCafe\obj\Debug\RuralCafe.csproj.GenerateResource.Cache
+C:\Documents and Settings\Jay Chen\Desktop\RuralCafe - active\RuralCafe\obj\Debug\RuralCafe.exe
+C:\Documents and Settings\Jay Chen\Desktop\RuralCafe - active\RuralCafe\obj\Debug\RuralCafe.pdb
+C:\Documents and Settings\Jay Chen\Desktop\RuralCafe - active\RuralCafe\obj\Debug\ResolveAssemblyReference.cache
+C:\Documents and Settings\Jay Chen\Desktop\RuralCafe - active\RuralCafe\obj\Debug\RuralCafe.Properties.Resources.resources
+C:\Documents and Settings\Jay Chen\Desktop\RuralCafe - active\RuralCafe\obj\Debug\RuralCafe.csproj.GenerateResource.Cache
+C:\Documents and Settings\Jay Chen\Desktop\RuralCafe - active\RuralCafe\bin\Debug\RuralCafe.exe
+C:\Documents and Settings\Jay Chen\Desktop\RuralCafe - active\RuralCafe\bin\Debug\RuralCafe.pdb
+C:\Documents and Settings\Jay Chen\Desktop\RuralCafe - active\RuralCafe\bin\Debug\Lucene.Net.dll
+C:\Documents and Settings\Administrator\Desktop\RuralCafe - active\RuralCafe\bin\Debug\Lucene.Net.dll
+C:\Documents and Settings\Administrator\Desktop\RuralCafe - active\RuralCafe\bin\Debug\BzReader.dll
+C:\Documents and Settings\Administrator\Desktop\RuralCafe - active\RuralCafe\bin\Debug\Snowball.Net.dll
+C:\Documents and Settings\Administrator\Desktop\RuralCafe - active\RuralCafe\bin\Debug\Snowball.Net.pdb
+C:\Documents and Settings\Administrator\Desktop\RuralCafe - active\RuralCafe\bin\Debug\BzReader.pdb
+C:\Documents and Settings\Administrator\Desktop\RuralCafe - active\RuralCafe\bin\Debug\Lucene.Net.pdb
+C:\Documents and Settings\Administrator\Desktop\RuralCafe - active\RuralCafe\bin\Debug\RuralCafe.exe.config
