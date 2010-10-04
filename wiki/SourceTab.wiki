@@ -16,26 +16,8 @@
 
 = Source Code =
 
+[http://code.google.com/p/ruralcafe/source/checkout/ Checkout]
+
 [http://code.google.com/p/ruralcafe/source/browse/ Browse]
 
 [http://code.google.com/p/ruralcafe/source/list/ List]
-
-== Command Line Access ==
-
-{{{
-# Project members authenticate over HTTPS to allow committing changes.
-svn checkout https://ruralcafe.googlecode.com/svn/trunk/ ruralcafe --username shouldabeenabard
-}}}
-
-When prompted, enter your generated [http://code.google.com/hosting/settings googlecode.com]  password.
-
-Use this command to anonymously check out the latest project source code:
-
-{{{
-# Non-members may check out a read-only working copy anonymously over HTTP.
-svn checkout http://ruralcafe.googlecode.com/svn/trunk/ ruralcafe-read-only
-}}}
-
-== GUI and IDE Access ==
-
-This project's Subversion repository may be accessed using many different [http://subversion.apache.org/packages.html client programs and plug-ins]. See your client's documentation for more information.
