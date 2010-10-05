@@ -5,6 +5,7 @@ using System.Text;
 
 namespace RuralCafe
 {
+    // JJJ: Disabled
     // Class with all the functionality for loading N-Grams from input files,
     // and suggesting N-Grams for given search terms
     class NGrams

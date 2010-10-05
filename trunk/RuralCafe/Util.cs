@@ -1,4 +1,21 @@
-﻿using System;
+﻿/*
+   Copyright 2010 Jay Chen
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+*/
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -33,7 +50,7 @@ namespace RuralCafe
                     }
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 //LogDebug("problem creating directory for file: " + fileName + " " + e.StackTrace + " " + e.Message);
                 return false;
@@ -53,7 +70,7 @@ namespace RuralCafe
                     return true;
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 //LogDebug("problem deleting file: " + fileName + " " + e.StackTrace + " " + e.Message);
                 return false;
@@ -81,7 +98,7 @@ namespace RuralCafe
                     }*/
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 //LogDebug("problem deleting file: " + fileName + " " + e.StackTrace + " " + e.Message);
                 return false;
@@ -100,7 +117,7 @@ namespace RuralCafe
                     fs.Seek(0, SeekOrigin.Begin);
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 //LogDebug("problem creating file: " + fileName + " " + e.StackTrace + " " + e.Message);
                 return null;
@@ -127,7 +144,7 @@ namespace RuralCafe
                     return f.Length;
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 //LogDebug("problem getting file info: " + fileName + " " + e.StackTrace + " " + e.Message);
                 return -1;
@@ -190,23 +207,21 @@ namespace RuralCafe
             {
                 // make sure file exists
                 FileInfo f = new FileInfo(fileName);
-                if (!f.Exists)
+                if (f.Exists)
                 {
-                    return "content/unknown";
-                }
-
-                // read beginning of the file
-                string fileContents = ReadFileAsString(fileName).Trim();
-                if (fileContents != null)
-                {
-                    if (fileContents.StartsWith("<!DOCTYPE html") ||
-                        fileContents.StartsWith("<html>"))
+                    // read beginning of the file
+                    string fileContents = ReadFileAsString(fileName).Trim();
+                    if (fileContents != null)
                     {
-                        return "text/html";
+                        if (fileContents.StartsWith("<!DOCTYPE html") ||
+                            fileContents.StartsWith("<html>"))
+                        {
+                            return "text/html";
+                        }
                     }
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 //LogDebug("problem getting content type of file " + e.StackTrace + " " + e.Message);
             }
@@ -244,22 +259,25 @@ namespace RuralCafe
 
         public static bool IsValidUri(string Uri)
         {
-            try
-            {
-                HttpWebRequest tempRequest = (HttpWebRequest)WebRequest.Create(Uri);
-            }
-            catch (Exception e)
-            {
-                return false;
-            }
             if (Uri.Trim().Length == 0)
             {
                 return false;
             }
+
+            try
+            {
+                HttpWebRequest tempRequest = (HttpWebRequest)WebRequest.Create(Uri);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+
             if (Uri.Equals("http://"))
             {
                 return false;
             }
+
             return true;
         }
 
@@ -294,7 +312,7 @@ namespace RuralCafe
                 r.Close();
                 fs.Close();
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 // do nothing
                 //LogDebug("Could not read file as string " + e.StackTrace + " " + e.Message);
