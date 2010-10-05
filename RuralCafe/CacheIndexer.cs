@@ -1,4 +1,21 @@
-﻿using System;
+﻿/*
+   Copyright 2010 Jay Chen
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+*/
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,7 +27,6 @@ using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Search;
 using Lucene.Net.QueryParsers;
 using System.Net;
-//using BzReader;
 
 namespace RuralCafe
 {
@@ -194,10 +210,10 @@ namespace RuralCafe
                 System.IO.Directory.CreateDirectory(sIndexPath);
             }
 
-            if (!IndexReader.IndexExists(sIndexPath))
+            Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(sIndexPath));
+            if (!IndexReader.IndexExists(directory))
             {
-                IndexWriter writer = new IndexWriter(sIndexPath,
-                    new StandardAnalyzer(), true);
+                IndexWriter writer = new IndexWriter(directory, new StandardAnalyzer(Lucene.Net.Util.Version.LUCENE_CURRENT), true);
                 writer.Close();
             }
             return true;
@@ -228,7 +244,8 @@ namespace RuralCafe
         // also to be used later for cache coherence/maintainence
         public static void DeleteDocument(string indexPath, string Uri)
         {
-            IndexReader indexReader = IndexReader.Open(indexPath);
+            Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(indexPath));
+            IndexReader indexReader = IndexReader.Open(directory, true);
             indexReader.DeleteDocuments(new Term("uri", Uri));
         }
 
@@ -238,16 +255,16 @@ namespace RuralCafe
             // remove the document if it exists in the index to prevent duplicates
             //DeleteDocument(indexPath, Uri);
 
-            IndexWriter writer = new IndexWriter(indexPath, new StandardAnalyzer(), false);
+            IndexWriter writer = new IndexWriter(indexPath, new StandardAnalyzer(Lucene.Net.Util.Version.LUCENE_CURRENT), false);
 
             Document doc = new Document();
             //Title = "try";
             //Content = "pink blue orange";
-            doc.Add(new Field("uri", Uri, Field.Store.YES, Field.Index.UN_TOKENIZED));
-            doc.Add(new Field("headers", headers, Field.Store.YES, Field.Index.UN_TOKENIZED));
-            doc.Add(new Field("title", Title, Field.Store.YES, Field.Index.TOKENIZED));
+            doc.Add(new Field("uri", Uri, Field.Store.YES, Field.Index.NOT_ANALYZED));
+            doc.Add(new Field("headers", headers, Field.Store.YES, Field.Index.NOT_ANALYZED));
+            doc.Add(new Field("title", Title, Field.Store.YES, Field.Index.ANALYZED));
             // XXX: not sure what the difference is
-            doc.Add(new Field("content", Content, Field.Store.NO, Field.Index.TOKENIZED));
+            doc.Add(new Field("content", Content, Field.Store.NO, Field.Index.ANALYZED));
             //doc.Add(new Field("content", Content));
             writer.AddDocument(doc);
 
@@ -260,9 +277,10 @@ namespace RuralCafe
         {
             List<Document> results = new List<Document>();
 
-            IndexSearcher searcher = new IndexSearcher(indexPath);
+            Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(indexPath));
+            IndexSearcher searcher = new IndexSearcher(directory, true);
 
-            QueryParser parser = new QueryParser("content", new StandardAnalyzer());
+            QueryParser parser = new QueryParser(Lucene.Net.Util.Version.LUCENE_CURRENT, "content", new StandardAnalyzer(Lucene.Net.Util.Version.LUCENE_CURRENT));
             
             // search function
             string searchQuery = "(" + queryString + ")";

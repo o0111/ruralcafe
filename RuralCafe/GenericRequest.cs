@@ -1,4 +1,21 @@
-﻿using System;
+﻿/*
+   Copyright 2010 Jay Chen
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+*/
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -471,10 +488,9 @@ namespace RuralCafe
                 socket = new Socket(ip.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 socket.Connect(ip);
             }
-            catch (SocketException ex)
+            catch (SocketException)
             {
-                //Console.WriteLine("Source:" + ex.Source);
-                //Console.WriteLine("Message:" + ex.Message);
+                // do nothing
             }
             // send the request
             socket.Send(byteGetString, byteGetString.Length, 0);
@@ -633,59 +649,6 @@ namespace RuralCafe
             //ms.Read(decompressionBuf, 0, (int)ms.Length);
             //return ms.Length;
             return ms;
-        }
-        
-        /// <summary>
-        /// Decompresses a bz2 file - copy/modified from bzReader.Indexer.cs
-        /// </summary>
-        /// <param name="beginning">The beginning of the block, in bits.</param>
-        /// <param name="end">The end of the block, in bits.</param>
-        /// <param name="buf">The buffer to load into.</param>
-        /// <returns>The length of the loaded data, in bytes</returns>
-        private long BZ2DecompressFile2(string bzipFile, ref byte[] decompressionBuf)
-        {
-            FileStream bzipFileFs = new FileStream(bzipFile, FileMode.Open);
-            byte[] buf = new byte[bzipFileFs.Length];
-            int bufSize = buf.Length;
-
-            decompressionBuf = new byte[bufSize * 2];
-            int decompSize = decompressionBuf.Length;
-
-            // read the file into the buffer first
-
-            // decompress
-            bzip2.StatusCode status = bzip2.BZ2_bzDecompress(buf, bufSize, decompressionBuf, ref decompSize);
-
-            // Limit a single uncompressed block size to 32 Mb
-            while (status == bzip2.StatusCode.BZ_OUTBUFF_FULL &&
-                decompressionBuf.Length < 32000000)
-            {
-                decompressionBuf = new byte[decompressionBuf.Length * 2];
-
-                decompSize = decompressionBuf.Length;
-
-                status = bzip2.BZ2_bzDecompress(buf, bufSize, decompressionBuf, ref decompSize);
-            }
-
-            if (decompressionBuf.Length > 32000000)
-            {
-                LogDebug("File too big: " + bzipFile);
-            }
-
-            if (status != bzip2.StatusCode.BZ_OK)
-            {
-                LogDebug("error decompressing file: " + bzipFile);
-            }
-
-            // Exchange the raw buffer and the uncompressed one
-
-            byte[] exch = buf;
-
-            buf = decompressionBuf;
-
-            decompressionBuf = exch;
-
-            return decompSize;
         }
 
         #region Check Request Methods

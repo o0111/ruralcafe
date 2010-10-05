@@ -9,3 +9,8 @@ C:\cygwin\home\jchen\ruralcafe\code\SharpZipLib\obj\Debug\ResolveAssemblyReferen
 C:\cygwin\home\jchen\ruralcafe\code\SharpZipLib\obj\Debug\ICSharpCode.SharpZipLib.dll
 C:\cygwin\home\jchen\ruralcafe\code\SharpZipLib\obj\Debug\ICSharpCode.SharpZipLib.pdb
 C:\cygwin\home\jchen\ruralcafe\code\bin\ICSharpCode.SharpZipLib.xml
+C:\cygwin\home\jchen\ruralcafe\ruralcafe\bin\ICSharpCode.SharpZipLib.dll
+C:\cygwin\home\jchen\ruralcafe\ruralcafe\bin\ICSharpCode.SharpZipLib.pdb
+C:\cygwin\home\jchen\ruralcafe\ruralcafe\SharpZipLib\obj\Debug\ResolveAssemblyReference.cache
+C:\cygwin\home\jchen\ruralcafe\ruralcafe\SharpZipLib\obj\Debug\ICSharpCode.SharpZipLib.dll
+C:\cygwin\home\jchen\ruralcafe\ruralcafe\SharpZipLib\obj\Debug\ICSharpCode.SharpZipLib.pdb
