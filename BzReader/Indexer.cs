@@ -795,7 +795,7 @@ namespace BzReader
                     int i = 0;
                     
                     while (ixr.searchRunning &&
-                        i < 30)
+                        i < 100)
                     {
                         Thread.Sleep(100);
 

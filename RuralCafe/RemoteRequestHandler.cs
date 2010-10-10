@@ -40,7 +40,7 @@ namespace RuralCafe
         private long _quota;
 
         // override GenericProxy
-        new private RCRemoteProxy _proxy;
+        //new private RCRemoteProxy _proxy;
 
         // ruralcafe specific stuff
         private Package _package;
