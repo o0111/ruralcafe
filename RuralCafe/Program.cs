@@ -25,36 +25,67 @@ using System.Net.Sockets;
 using System.Text;
 using System.IO;
 using System.Threading;
-//using BzReader;
 
 namespace RuralCafe
 {
     static class Program
     {
+        // Local Proxy Settings
+        private static IPAddress LOCAL_PROXY_IP_ADDRESS;
+        private static int LOCAL_PROXY_LISTEN_PORT;
+        private static string DEFAULT_SEARCH_PAGE;
+
+        // Remote Proxy Settings
+        private static IPAddress REMOTE_PROXY_IP_ADDRESS;
+        private static int REMOTE_PROXY_LISTEN_PORT;
+
+        // Remote Remote Proxy Settings (behind Amrita firewall)
+        private static IPAddress GATEWAY_PROXY_IP_ADDRESS;
+        private static int GATEWAY_PROXY_LISTEN_PORT;
+        private static string GATEWAY_PROXY_LOGIN;
+        private static string GATEWAY_PROXY_PASS;
+
+        private static int DEFAULT_QUOTA;
+        private static int DEFAULT_DEPTH;
+        private static int DEFAULT_LOW_WATERMARK;
+        private static int MAXIMUM_DOWNLINK_SPEED;
+
+        // Path Settings
+        private static string LOCAL_PROXY_PATH = Directory.GetCurrentDirectory() + @"\LocalProxy\";
+        private static string REMOTE_PROXY_PATH = Directory.GetCurrentDirectory() + @"\RemoteProxy\";
+        private static string PACKAGE_PATH = @"Packages\";
+        private static string LOGS_PATH = @"Logs\";
+        private static string INDEX_PATH;
+        private static string LOCAL_CACHE_PATH;
+        private static string REMOTE_CACHE_PATH;
+        private static string WIKI_DUMP_FILE;
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        static void Main()
+        private static void Main()
         {
-            //string test = RequestObject.hashedFileName("www.msnbc.com");
             StartRuralCafe();
+
+            // for adding a list of URLs to the index
             //CacheIndexer.IndexSquidLog("urls.txt");
-            //StartBenchmarking();
+
+            // for analyzing search result pages
+            //AnalysisTools.CountEmbeddedObjects();
         }
 
+        /// <summary>
+        /// Starts RuralCafe
+        /// </summary>
         private static void StartRuralCafe()
         {
-            //Application.EnableVisualStyles();
-            //Application.SetCompatibleTextRenderingDefault(false);
-            //Application.Run(new Form1());
             Console.WindowWidth = Console.LargestWindowWidth;
             Console.WindowHeight = Console.LargestWindowHeight;
             Console.SetWindowPosition(0, 0);
+
             // fill extension map
             Util.FillExtMap();
-            // fill the URL encoding map
-            //GenericRequest.FillURLEncodingMap();
 
             // load Configuration Settings
             LoadConfigFile();
@@ -68,130 +99,106 @@ namespace RuralCafe
             */
 
             // start the local proxy
-            StartLocalProxy();
+            if (LOCAL_PROXY_IP_ADDRESS != null)
+            {
+                StartLocalProxy();
+            }
 
-            // start the remote proxy
-            if (REMOTE_PROXY_IP_ADDRESS != null)
+            // start the remote proxy only if we're not starting the local proxy or both proxies are running on the same box
+            if (REMOTE_PROXY_IP_ADDRESS != null && (LOCAL_PROXY_IP_ADDRESS == null || REMOTE_PROXY_IP_ADDRESS == LOCAL_PROXY_IP_ADDRESS))
             {
                 StartRemoteProxy();
             }
         }
 
-        // Local Proxy Settings
-        public static IPAddress LOCAL_PROXY_IP_ADDRESS;
-        public static int LOCAL_PROXY_LISTEN_PORT;
-        public static string DEFAULT_SEARCH_PAGE;
-
-        // Remote Proxy Settings
-        public static IPAddress REMOTE_PROXY_IP_ADDRESS;
-        public static int REMOTE_PROXY_LISTEN_PORT;
-
-        // Remote Remote Proxy Settings (behind Amrita firewall)
-        public static IPAddress EXTERNAL_PROXY_IP_ADDRESS;
-        public static int EXTERNAL_PROXY_LISTEN_PORT;
-        public static string EXTERNAL_PROXY_LOGIN;
-        public static string EXTERNAL_PROXY_PASS;
-
-        public static int DEFAULT_QUOTA;
-        public static int DEFAULT_DEPTH;
-        public static int DEFAULT_LOW_WATERMARK;
-        public static int DEFAULT_MAX_DOWNLOAD_SPEED;
-
-        // Path Settings
-        public static string LOCAL_PROXY_PATH = Directory.GetCurrentDirectory() + @"\LocalProxy\";
-        public static string REMOTE_PROXY_PATH = Directory.GetCurrentDirectory() + @"\RemoteProxy\";
-        public static string PACKAGE_PATH = @"Packages\";
-        public static string LOGS_PATH = @"Logs\";
-        public static string INDEX_PATH;
-        public static string LOCAL_CACHE_PATH; // = @"c:\cygwin\home\jchen\files-mathematics\"; //LOCAL_PROXY_PATH + @"Cache\"; //"d:\\mathematics-61\\";
-        public static string REMOTE_CACHE_PATH;// = REMOTE_PROXY_PATH + @"Cache\";
-        public static string WIKI_DUMP_FILE;
-
-        // load the configuration file for all the proxies
-        static void LoadConfigFile()
+        /// <summary>
+        /// Loads the configuration file for both proxies. 
+        /// </summary>
+        public static void LoadConfigFile()
         {
-            // create reader & open file
+            // create reader, open config file
             string s = System.IO.File.ReadAllText("config.txt");
 
-            string[] fields = s.Split('\n');
-
-            Dictionary<string, string> configFields = new Dictionary<string, string>();
-            foreach (string entry in fields)
+            // parse config file
+            string[] lines = s.Split('\n');
+            Dictionary<string, string> configSettings = new Dictionary<string, string>();
+            foreach (string line in lines)
             {
                 // ignore whitespace lines
-                if (entry.Trim().Equals(""))
+                if (line.Trim().Equals(""))
                 {
                     continue;
                 }
-                string[] mapEntry = entry.Split('=');
-                configFields.Add(mapEntry[0].Trim(), mapEntry[1].Trim());
+                string[] configSetting = line.Split('=');
+                configSettings.Add(configSetting[0].Trim(), configSetting[1].Trim());
             }
 
             try
             {
                 // Local Proxy Settings
-                LOCAL_PROXY_IP_ADDRESS = IPAddress.Parse(configFields["LOCAL_PROXY_IP_ADDRESS"]);
-                LOCAL_PROXY_LISTEN_PORT = Int32.Parse(configFields["LOCAL_PROXY_LISTEN_PORT"]);
+                LOCAL_PROXY_IP_ADDRESS = IPAddress.Parse(configSettings["LOCAL_PROXY_IP_ADDRESS"]);
+                LOCAL_PROXY_LISTEN_PORT = Int32.Parse(configSettings["LOCAL_PROXY_LISTEN_PORT"]);
 
-                INDEX_PATH = configFields["INDEX_PATH"];
-                LOCAL_CACHE_PATH = configFields["LOCAL_CACHE_PATH"];
+                INDEX_PATH = configSettings["INDEX_PATH"];
+                LOCAL_CACHE_PATH = configSettings["LOCAL_CACHE_PATH"];
                 if (!LOCAL_CACHE_PATH.Contains(":\\"))
                 {
                     LOCAL_CACHE_PATH = LOCAL_PROXY_PATH + LOCAL_CACHE_PATH;
                 }
-                WIKI_DUMP_FILE = configFields["WIKI_DUMP_FILE"]; //d:\wikipedia\enwiki-20090520-pages-articles.xml.bz2
+                WIKI_DUMP_FILE = configSettings["WIKI_DUMP_FILE"];
 
-                // Remote Proxy Settings
-                if (configFields["REMOTE_PROXY_IP_ADDRESS"].Equals(""))
+                // remote proxy settings
+                if (configSettings["REMOTE_PROXY_IP_ADDRESS"].Equals(""))
                 {
                     REMOTE_PROXY_IP_ADDRESS = null;
                 }
                 else
                 {
-                    REMOTE_PROXY_IP_ADDRESS = IPAddress.Parse(configFields["REMOTE_PROXY_IP_ADDRESS"]);
+                    REMOTE_PROXY_IP_ADDRESS = IPAddress.Parse(configSettings["REMOTE_PROXY_IP_ADDRESS"]);
                 }
-                if (configFields["REMOTE_PROXY_LISTEN_PORT"].Equals(""))
+                if (configSettings["REMOTE_PROXY_LISTEN_PORT"].Equals(""))
                 {
                     REMOTE_PROXY_LISTEN_PORT = 0;
                 }
                 else
                 {
-                    REMOTE_PROXY_LISTEN_PORT = Int32.Parse(configFields["REMOTE_PROXY_LISTEN_PORT"]);
+                    REMOTE_PROXY_LISTEN_PORT = Int32.Parse(configSettings["REMOTE_PROXY_LISTEN_PORT"]);
                 }
 
-                REMOTE_CACHE_PATH = configFields["REMOTE_CACHE_PATH"];
+                REMOTE_CACHE_PATH = configSettings["REMOTE_CACHE_PATH"];
                 if (!REMOTE_CACHE_PATH.Contains(":\\")) {
                     REMOTE_CACHE_PATH = REMOTE_PROXY_PATH + REMOTE_CACHE_PATH;
                 }
 
-                // External Proxy Settings (behind Amrita firewall)
-                if (configFields["EXTERNAL_PROXY_IP_ADDRESS"].Equals(""))
+                // external proxy settings (to get through a firewall)
+                if (configSettings["EXTERNAL_PROXY_IP_ADDRESS"].Equals(""))
                 {
-                    EXTERNAL_PROXY_IP_ADDRESS = null;
-                    EXTERNAL_PROXY_LISTEN_PORT = 0;
-                    EXTERNAL_PROXY_LOGIN = "";
-                    EXTERNAL_PROXY_PASS = "";
+                    GATEWAY_PROXY_IP_ADDRESS = null;
+                    GATEWAY_PROXY_LISTEN_PORT = 0;
+                    GATEWAY_PROXY_LOGIN = "";
+                    GATEWAY_PROXY_PASS = "";
                 }
                 else
                 {
-                    EXTERNAL_PROXY_IP_ADDRESS = IPAddress.Parse(configFields["EXTERNAL_PROXY_IP_ADDRESS"]);
-                    EXTERNAL_PROXY_LISTEN_PORT = Int32.Parse(configFields["EXTERNAL_PROXY_LISTEN_PORT"]);
-                    EXTERNAL_PROXY_LOGIN = configFields["EXTERNAL_PROXY_LOGIN"];
-                    EXTERNAL_PROXY_PASS = configFields["EXTERNAL_PROXY_PASS"];
+                    GATEWAY_PROXY_IP_ADDRESS = IPAddress.Parse(configSettings["EXTERNAL_PROXY_IP_ADDRESS"]);
+                    GATEWAY_PROXY_LISTEN_PORT = Int32.Parse(configSettings["EXTERNAL_PROXY_LISTEN_PORT"]);
+                    GATEWAY_PROXY_LOGIN = configSettings["EXTERNAL_PROXY_LOGIN"];
+                    GATEWAY_PROXY_PASS = configSettings["EXTERNAL_PROXY_PASS"];
                 }
-                DEFAULT_SEARCH_PAGE = configFields["DEFAULT_SEARCH_PAGE"];
-                DEFAULT_QUOTA = Int32.Parse(configFields["DEFAULT_QUOTA"]);
-                DEFAULT_DEPTH = Int32.Parse(configFields["DEFAULT_DEPTH"]);
+                DEFAULT_SEARCH_PAGE = configSettings["DEFAULT_SEARCH_PAGE"];
+                DEFAULT_QUOTA = Int32.Parse(configSettings["DEFAULT_QUOTA"]);
+                DEFAULT_DEPTH = Int32.Parse(configSettings["DEFAULT_DEPTH"]);
                 DEFAULT_LOW_WATERMARK = DEFAULT_QUOTA / 20;
-                DEFAULT_MAX_DOWNLOAD_SPEED = Int32.Parse(configFields["MAXIMUM_DOWNLOAD_SPEED"]);
+                MAXIMUM_DOWNLINK_SPEED = Int32.Parse(configSettings["MAXIMUM_DOWNLOAD_SPEED"]);
 
+                // print some console messages
                 Console.WriteLine("LOCAL_PROXY_IP_ADDRESS: " + LOCAL_PROXY_IP_ADDRESS);
                 Console.WriteLine("LOCAL_PROXY_LISTEN_PORT: " + LOCAL_PROXY_LISTEN_PORT);
                 Console.WriteLine("REMOTE_PROXY_IP_ADDRESS: " + REMOTE_PROXY_IP_ADDRESS);
                 Console.WriteLine("REMOTE_PROXY_LISTEN_PORT: " + REMOTE_PROXY_LISTEN_PORT);
-                Console.WriteLine("EXTERNAL_PROXY_IP_ADDRESS: " + EXTERNAL_PROXY_IP_ADDRESS);
-                Console.WriteLine("EXTERNAL_PROXY_LISTEN_PORT: " + EXTERNAL_PROXY_LISTEN_PORT);
-                Console.WriteLine("EXTERNAL_PROXY_LOGIN: " + EXTERNAL_PROXY_LOGIN);
+                Console.WriteLine("EXTERNAL_PROXY_IP_ADDRESS: " + GATEWAY_PROXY_IP_ADDRESS);
+                Console.WriteLine("EXTERNAL_PROXY_LISTEN_PORT: " + GATEWAY_PROXY_LISTEN_PORT);
+                Console.WriteLine("EXTERNAL_PROXY_LOGIN: " + GATEWAY_PROXY_LOGIN);
             }
             catch (Exception)
             {
@@ -200,190 +207,85 @@ namespace RuralCafe
             }
         }
 
-        // start the local proxy
-        public static void StartLocalProxy() {
-            // Create the proxy
-            LocalProxy localProxy = new LocalProxy(LOCAL_PROXY_IP_ADDRESS, LOCAL_PROXY_LISTEN_PORT, 
+        /// <summary>
+        /// Starts the local proxy.
+        /// </summary>
+        public static RCLocalProxy StartLocalProxy() {
+            // create the proxy
+            RCLocalProxy localProxy = new RCLocalProxy(LOCAL_PROXY_IP_ADDRESS, LOCAL_PROXY_LISTEN_PORT, 
                 LOCAL_PROXY_PATH, INDEX_PATH, LOCAL_CACHE_PATH, WIKI_DUMP_FILE, PACKAGE_PATH, LOGS_PATH);
 
             // set the remote proxy
             localProxy.SetRemoteProxy(REMOTE_PROXY_IP_ADDRESS, REMOTE_PROXY_LISTEN_PORT);
-            localProxy.SetRuralCafeSearchPage(DEFAULT_SEARCH_PAGE);
+
+            // XXX: currently this doesn't work if the remote proxy must be reached through a firewall/gateway.
+            // XXX: it would be a chain of 2 proxies anyway and needs tunneling support
+            if (REMOTE_PROXY_IP_ADDRESS != LOCAL_PROXY_IP_ADDRESS)
+            {
+                // set the gateway proxy info and login for the local proxy
+                localProxy.SetGatewayProxy(GATEWAY_PROXY_IP_ADDRESS, GATEWAY_PROXY_LISTEN_PORT,
+                                           GATEWAY_PROXY_LOGIN, GATEWAY_PROXY_PASS);
+            }
+
+            // set the RC search page
+            localProxy.SetRCSearchPage(DEFAULT_SEARCH_PAGE);
             
             // load the blacklisted domains
             localProxy.LoadBlacklist("blacklist.txt");
 
-            LocalRequest.DEFAULT_DEPTH = DEFAULT_DEPTH;
-            // Start remote requester thread
-            Thread localListenerThread = new Thread(new ThreadStart(localProxy.StartLocalListener));
+            // set the default depth for all requests
+            LocalRequestHandler.DEFAULT_QUOTA = DEFAULT_QUOTA;
+            LocalRequestHandler.DEFAULT_DEPTH = DEFAULT_DEPTH;
+
+            // start local listener thread
+            Thread localListenerThread = new Thread(new ThreadStart(localProxy.StartListener));
             localListenerThread.Name = String.Format("localListenerThread");
             localListenerThread.Start();
 
-            Thread requesterThread = new Thread(new ThreadStart(localProxy.StartDispatcher));
-            requesterThread.Name = String.Format("requesterThread");
-            requesterThread.Start();
+            // start remote requester thread
+            Thread localRequesterThread = new Thread(new ThreadStart(localProxy.StartDispatcher));
+            localRequesterThread.Name = String.Format("localRequesterThread");
+            localRequesterThread.Start();
 
             // listen for cc connection
+            return localProxy;
         }
 
-        // start the remote proxy
-        public static RemoteProxy StartRemoteProxy()
+        /// <summary>
+        /// Start the remote proxy.
+        /// </summary>
+        public static RCRemoteProxy StartRemoteProxy()
         {
-            RemoteRequest.DEFAULT_QUOTA = DEFAULT_QUOTA;
-            RemoteRequest.DEFAULT_DEPTH = DEFAULT_DEPTH;
-            RemoteRequest.DEFAULT_LOW_WATERMARK = DEFAULT_LOW_WATERMARK;
-            //RemoteRequest.DEFAULT_MAX_DOWNLOAD_SPEED = DEFAULT_MAX_DOWNLOAD_SPEED;
-
-            // Create the proxy
-            RemoteProxy remoteProxy = new RemoteProxy(REMOTE_PROXY_IP_ADDRESS, REMOTE_PROXY_LISTEN_PORT, 
+            // create the proxy
+            RCRemoteProxy remoteProxy = new RCRemoteProxy(REMOTE_PROXY_IP_ADDRESS, REMOTE_PROXY_LISTEN_PORT, 
                 REMOTE_PROXY_PATH, REMOTE_CACHE_PATH, PACKAGE_PATH, LOGS_PATH);
 
-            // set the gateway proxy info and login for the remote proxy
-            if (EXTERNAL_PROXY_IP_ADDRESS != null)
+            // XXX: currently only used if both proxies are running on the same machine
+            if (REMOTE_PROXY_IP_ADDRESS == LOCAL_PROXY_IP_ADDRESS)
             {
-                remoteProxy.SetRemoteProxy(EXTERNAL_PROXY_IP_ADDRESS, EXTERNAL_PROXY_LISTEN_PORT,
-                    EXTERNAL_PROXY_LOGIN, EXTERNAL_PROXY_PASS);
+                // set the gateway proxy info and login for the remote proxy
+                remoteProxy.SetGatewayProxy(GATEWAY_PROXY_IP_ADDRESS, GATEWAY_PROXY_LISTEN_PORT,
+                                            GATEWAY_PROXY_LOGIN, GATEWAY_PROXY_PASS);
             }
-            // XXX: move this into the constructor or something
-            RemoteProxy.DEFAULT_MAX_DOWNLOAD_SPEED = DEFAULT_MAX_DOWNLOAD_SPEED;
 
-            // load hte blacklisted domains
+            // set the maximum downlink speed to the local proxy
+            remoteProxy.MAXIMUM_DOWNLINK_BANDWIDTH = MAXIMUM_DOWNLINK_SPEED;
+
+            // load the blacklisted domains
             remoteProxy.LoadBlacklist("blacklist.txt");
 
-            // Start remote requester thread
-            Thread remoteListenerThread = new Thread(new ThreadStart(remoteProxy.StartRemoteListener));
+            // set the default quota, depth, watermark for each request
+            RemoteRequestHandler.DEFAULT_QUOTA = DEFAULT_QUOTA;
+            RemoteRequestHandler.DEFAULT_DEPTH = DEFAULT_DEPTH;
+            RemoteRequestHandler.DEFAULT_LOW_WATERMARK = DEFAULT_LOW_WATERMARK;
+
+            // start remote listener thread
+            Thread remoteListenerThread = new Thread(new ThreadStart(remoteProxy.StartListener));
             remoteListenerThread.Name = String.Format("remoteListenerThread");
             remoteListenerThread.Start();
 
             // listen for cc connection
             return remoteProxy;
-        }
-
-        // benchmarking function rather than start RuralCafe
-        // currently only takes in simple log format of "google.txt"
-        static void StartBenchmarking()
-        {
-            //Application.EnableVisualStyles();
-            //Application.SetCompatibleTextRenderingDefault(false);
-            //Application.Run(new Form1());
-            Console.WindowWidth = Console.LargestWindowWidth;
-            Console.WindowHeight = Console.LargestWindowHeight;
-            Console.SetWindowPosition(0, 0);
-            // fill extension map
-            Util.FillExtMap();
-            // fill the URL encoding map
-            //GenericRequest.FillURLEncodingMap();
-
-            // load Configuration Settings
-            LoadConfigFile();
-
-            /* skip this stuff for benchmarking
-            // load LDC data
-            LoadLDCData();
-
-            // start the local proxy
-            StartLocalProxy();
-            */
-
-            // start the remote proxy
-            RemoteProxy remoteProxy = StartRemoteProxy();
-
-            // parse the input file line by line
-            // create reader & open file
-            TextReader tr = new StreamReader("google.txt");
-
-            uint linesParsed = 0;
-            uint requestsMade = 0;
-            // read a line and convert to lowercase
-            string line = tr.ReadLine();
-            string[] lineTokens;
-
-            while (line != null)
-            {
-                linesParsed++;
-                line = line.ToLower();
-
-                lineTokens = line.Split('\t');
-                // maximum array length is set to 100
-                if (lineTokens.Length >= 100 || lineTokens.Length < 19)
-                {
-                    Console.WriteLine("Error, too many tokens to fit in array");
-                    // read the next line
-                    line = tr.ReadLine();
-                    continue;
-                }
-
-                // make sure that its actually a search query
-                string urlRequest = lineTokens[18];
-                if (urlRequest.StartsWith("http://www.google.com/search?"))
-                {
-                    if (urlRequest.Length > 200)
-                    {
-                        // read the next line
-                        line = tr.ReadLine();
-                        continue;
-                    }
-
-                    Console.WriteLine(urlRequest);
-                    // it is, so do stuff
-
-                    /*
-                    // check if the query has already been processed before
-                    if (IsCached(fileName))
-                    {
-                        // skip cached files
-                        continue;
-                    }
-                    */
-
-                    RemoteRequest remoteRequest = new RemoteRequest(remoteProxy, null);
-                    // XXX: check for validity of the urlRequest
-                    remoteRequest._requestObject = new RequestObject(remoteProxy, urlRequest);
-
-                    // process one search query at a time
-                    remoteRequest.BackdoorGo();
-
-                    // pause
-                    Thread.Sleep(1500);
-                }
-                requestsMade++;
-
-                if (requestsMade == 1000)
-                {
-                    SaveBenchmarkValues("linksOnResultsPage.out", RemoteRequest.linksOnResultsPage);
-                    SaveBenchmarkValues("imagesOnResultsPage.out", RemoteRequest.imagesOnResultsPage);
-                    SaveBenchmarkValues("imagesOnTargetPage.out", RemoteRequest.imagesOnTargetPage);
-                }
-
-                /* just to show that we're processing...
-                if (DateTime.Now.Subtract(displayDotTimer).TotalMinutes > 0)
-                {
-                    Console.Write(".");
-                    displayDotTimer = DateTime.Now;
-                }*/
-
-                // read the next line
-                line = tr.ReadLine();
-            }
-
-            // close the stream
-            tr.Close();
-
-            // pause
-            Console.ReadLine();
-        }
-
-        // helper to save benchmark values
-        public static void SaveBenchmarkValues(string fileName, List<int> values)
-        {
-            TextWriter tw = new StreamWriter(fileName, true);
-
-            foreach (int number in values)
-            {
-                tw.Write(number + "\n");
-            }
-
-            tw.Close();
         }
     }
 }

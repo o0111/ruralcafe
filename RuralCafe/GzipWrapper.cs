@@ -26,49 +26,11 @@ namespace RuralCafe
 {
     public class GZipWrapper
     {
-        private const int buffer_size = 100;
-
-        public static int ReadAllBytesFromStream(Stream stream, byte[] buffer)
-        {
-            // Use this method is used to read all bytes from a stream.
-            int offset = 0;
-            int totalCount = 0;
-            while (true)
-            {
-                int bytesRead = stream.Read(buffer, offset, buffer_size);
-                if (bytesRead == 0)
-                {
-                    break;
-                }
-                offset += bytesRead;
-                totalCount += bytesRead;
-            }
-            return totalCount;
-        }
-
-        /*
-        public static bool CompareData(byte[] buf1, int len1, byte[] buf2, int len2)
-        {
-            // Use this method to compare data from two different buffers.
-            if (len1 != len2)
-            {
-                Console.WriteLine("Number of bytes in two buffer are different {0}:{1}", len1, len2);
-                return false;
-            }
-
-            for (int i = 0; i < len1; i++)
-            {
-                if (buf1[i] != buf2[i])
-                {
-                    Console.WriteLine("byte {0} is different {1}|{2}", i, buf1[i], buf2[i]);
-                    return false;
-                }
-            }
-            Console.WriteLine("All bytes compare.");
-            return true;
-        }
-        */
-
+        /// <summary>
+        /// Compresses a set of files into a single memorystream.
+        /// </summary>
+        /// <param name="fileNames"></param>
+        /// <returns></returns>
         public static MemoryStream GZipCompress(LinkedList<string> fileNames)
         {
             MemoryStream ms = new MemoryStream();
@@ -168,6 +130,13 @@ namespace RuralCafe
             return ms;
         }
          */
+        /// <summary>
+        /// Decompresses a file.
+        /// </summary>
+        /// <param name="gzipFile"></param>
+        /// <param name="outputFile"></param>
+        /// <param name="expectedLength"></param>
+        /// <returns></returns>
         public static bool GZipDecompress(string gzipFile, string outputFile, long expectedLength)
         {
             FileStream packageFs = new FileStream(gzipFile, FileMode.Open);
@@ -212,6 +181,10 @@ namespace RuralCafe
             return true;
         }
 
+        /// <summary>
+        /// Decompresses a file into a memorystream.
+        /// Unused.
+        /// </summary>
         public static MemoryStream GZipCompress(string fileName)
         {
             MemoryStream ms = new MemoryStream();
@@ -293,21 +266,26 @@ namespace RuralCafe
             }
             return ms;
         }
-        /*
-        public static void Main(string[] args)
+
+        /// <summary>
+        /// Use this method is used to read all bytes from a stream.
+        /// Unused.
+        /// </summary>
+        public static int ReadAllBytesFromStream(Stream stream, byte[] buffer)
         {
-            string usageText = "Usage: MYGZIP <inputfilename>";
-            //If no file name is specified, write usage text.
-            if (args.Length == 0)
+            int offset = 0;
+            int totalCount = 0;
+            while (true)
             {
-                Console.WriteLine(usageText);
+                int bytesRead = stream.Read(buffer, offset, 100); // magic number 100
+                if (bytesRead == 0)
+                {
+                    break;
+                }
+                offset += bytesRead;
+                totalCount += bytesRead;
             }
-            else
-            {
-                if (File.Exists(args[0]))
-                    GZipCompressDecompress(args[0]);
-            }
+            return totalCount;
         }
-         */
     }
 }

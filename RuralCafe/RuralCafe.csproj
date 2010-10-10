@@ -26,6 +26,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <PlatformTarget>x86</PlatformTarget>
+    <DocumentationFile>documentation.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -35,6 +36,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <PlatformTarget>x86</PlatformTarget>
+    <DocumentationFile>documentation.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -55,12 +57,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="GenericProxy.cs" />
-    <Compile Include="GenericRequest.cs" />
+    <Compile Include="AnalysisTools.cs" />
+    <Compile Include="RCProxy.cs" />
+    <Compile Include="RequestHandler.cs" />
     <Compile Include="GzipWrapper.cs" />
-    <Compile Include="LocalProxy.cs" />
+    <Compile Include="RCLocalProxy.cs" />
     <Compile Include="Logger.cs" />
-    <Compile Include="CacheIndexer.cs" />
+    <Compile Include="IndexWrapper.cs" />
     <Compile Include="Package.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -83,11 +86,10 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <Compile Include="RemoteProxy.cs" />
-    <Compile Include="RemoteRequest.cs" />
-    <Compile Include="LocalRequest.cs" />
-    <Compile Include="RequestObject.cs" />
-    <Compile Include="RequestWrapper.cs" />
+    <Compile Include="RCRemoteProxy.cs" />
+    <Compile Include="RemoteRequestHandler.cs" />
+    <Compile Include="LocalRequestHandler.cs" />
+    <Compile Include="RCRequest.cs" />
     <Compile Include="Util.cs" />
   </ItemGroup>
   <ItemGroup>
