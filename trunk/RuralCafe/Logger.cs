@@ -23,6 +23,10 @@ using System.IO;
 
 namespace RuralCafe
 {
+    /// <summary>
+    /// Logging facility for saving event and debug messages.
+    /// Used in conjunction with a single proxy.
+    /// </summary>
     public class Logger
     {
         string _proxyName;
@@ -30,7 +34,11 @@ namespace RuralCafe
         string _messagesFile;
         string _debugFile;
 
-        // called once by the each proxy to initialize directories for logs
+        /// <summary>
+        /// Constructor called once by the each proxy to initialize directories for logs.
+        /// </summary>
+        /// <param name="proxyName">Name of the calling proxy to log messages for.</param>
+        /// <param name="logPath">Relative or absolute path for the logs.</param>
         public Logger(string proxyName, string logPath)
         {
             _proxyName = proxyName;
@@ -58,13 +66,21 @@ namespace RuralCafe
             }
         }
 
+        /* unused/useless
+        /// <summary>
+        /// The path of the log file.
+        /// </summary>
         public string Path
         {
             set { _logPath = value; }
             get { return _logPath; }
-        }
+        }*/
 
-        // these functions to append the path for logs
+        /// <summary>
+        /// Write an entry to the message and debug logs regarding a request.
+        /// </summary>
+        /// <param name="requestId">Request ID.</param>
+        /// <param name="entry">Log entry.</param>
         public void WriteMessage(int requestId, string entry)
         {
             // timestamp
@@ -75,6 +91,11 @@ namespace RuralCafe
             Console.WriteLine(_proxyName + ": " + entry);
             Write(_logPath + _debugFile, entry);
         }
+        /// <summary>
+        /// Write an entry to the debug log regarding a request.
+        /// </summary>
+        /// <param name="requestId">Request ID.</param>
+        /// <param name="entry">Log entry.</param>
         public void WriteDebug(int requestId, string entry)
         {
             // timestamp
@@ -84,7 +105,11 @@ namespace RuralCafe
             Write(_logPath + _debugFile, entry);
         }
 
-        // private helper function
+        /// <summary>
+        /// Write a message to the log file.
+        /// </summary>
+        /// <param name="filePath">Log file path.</param>
+        /// <param name="entry">Log entry.</param>
         private void Write(string filePath, string entry)
         {
             System.IO.StreamWriter s = null;
@@ -97,6 +122,7 @@ namespace RuralCafe
             }
             catch (Exception)
             {
+                // JJJ: not sure what to do here if the logging can't be done this is rather critical.
                 // XXX: do nothing
             }
             finally

@@ -24,77 +24,126 @@ using System.IO.Compression;
 
 namespace RuralCafe
 {
+    /// <summary>
+    /// Package used to transfer a group of prefetched files from the remote to local proxy
+    /// </summary>
     public class Package
     {
-        private LinkedList<RequestObject> _package;
-        public long _contentSize;
-        public long _indexSize;
-        public long _compressedSize;
+        private LinkedList<RCRequest> _rcRequests;
+        private long _contentSize;
+        private long _indexSize;
 
+        /// <summary>
+        /// Constructor for a RuralCafe package.
+        /// </summary>
         public Package()
         {
-            _package = new LinkedList<RequestObject>();
+            _rcRequests = new LinkedList<RCRequest>();
             _contentSize = 0;
             _indexSize = 0;
-            _compressedSize = 0;
         }
 
-        public LinkedList<RequestObject> GetObjects()
+        /// <summary>Size of the package contents.</summary>
+        public long ContentSize
         {
-            return _package;
+            set { _contentSize = value; }
+            get { return _contentSize; }
+        }
+        /// <summary>Size of the package index.</summary>
+        public long IndexSize
+        {
+            set { _indexSize = value; }
+            get { return _indexSize; }
+        }
+        /// <summary>List of the RCRequests in this package.</summary>
+        public LinkedList<RCRequest> RCRequests
+        {
+            get { return _rcRequests; }
         }
 
-        // XXX: only gets called by the remote proxy
-        // XXX: QUOTA STUFF - currently simple algorithm
-        // XXX: should be changed to check for compressed size rather than actual size
-        public string AddToPackage(RequestObject requestObject, long quota)
+        /// <summary>
+        /// Adds a RCRequest to the package given the quota limitation.
+        /// Only called by the remote proxy.
+        /// XXX: quota is currently simple algorithm.
+        /// XXX: should be changed to check for compressed size rather than actual size.
+        /// </summary>
+        /// <param name="requestHandler">Calling handler for this method.</param>
+        /// <param name="rcRequest">RCRequest to add.</param>
+        /// <param name="quota">Quota limit.</param>
+        /// <returns>Error message.</returns>
+        public bool Pack(RemoteRequestHandler requestHandler, RCRequest rcRequest, ref long quota)
         {
-            if (_package.Contains(requestObject))
+            if (rcRequest.Uri.Contains(' '))
             {
-                //LogDebug("object exists in package: " + requestObject._uri);
-                return "object exists in package: " + requestObject._uri;
+                requestHandler.LogDebug("object contains spaces: " + rcRequest.Uri);
+                return false;
             }
 
-            requestObject._fileSize = Util.GetFileSize(requestObject._cacheFileName);
-            // make sure the object has some content
-            if (requestObject._fileSize <= 0)
+            if (_rcRequests.Contains(rcRequest))
             {
-                //LogDebug("object has no content: " + requestObject._uri);
-                return "object has no content: " + requestObject._uri;
+                requestHandler.LogDebug("object exists in package: " + rcRequest.Uri);
+                return false;
             }
 
-            // make sure the url has no spaces
-            if (requestObject._uri.Contains(' '))
+            rcRequest.FileSize = Util.GetFileSize(rcRequest.CacheFileName);
+            if (rcRequest.FileSize <= 0)
             {
-                //LogDebug("object contains spaces: " + requestObject._uri);
-                return "object contains spaces: " + requestObject._uri;
+                requestHandler.LogDebug("object has no content: " + rcRequest.Uri);
+                return false;
             }
 
-            // see if the thing fits
-            if ((quota - requestObject._fileSize) < 0)
+            // quota check
+            if ((quota - rcRequest.FileSize) < 0)
             {
-                // exceeded quota
-                // don't add this page, or add partial page, and quit
-                //LogDebug("object too large: " + requestObject._uri + " " + requestObject._fileSize + " bytes" +
-                //    " > " + _quota + " bytes");
-                return "object doesn't fit in quota: " + requestObject._uri;
+                requestHandler.LogDebug("object doesn't fit in quota: " + rcRequest.Uri);
+                return false;
             }
 
-            // add this page to the package
-            _package.AddLast(requestObject);
+            _rcRequests.AddLast(rcRequest);
+            quota -= rcRequest.FileSize;
 
-            return "";
+            return true;
+        }
+        
+        /// <summary>
+        /// Adds all the requests to the package.
+        /// </summary>
+        /// <param name="requests"></param>
+        /// <returns></returns>
+        public LinkedList<RCRequest> Pack(RemoteRequestHandler requestHandler, LinkedList<RCRequest> requests, ref long quota)
+        {
+            LinkedList<RCRequest> addedObjects = new LinkedList<RCRequest>();
+            // add files that were completed to the package
+            foreach (RCRequest request in requests)
+            {
+                // check watermark
+                //if (quota > requestHandler.DEFAULT_LOW_WATERMARK)
+                //{
+                // add to the package
+                if (Pack(requestHandler, request, ref quota))
+                {
+                    requestHandler.LogDebug("packed: " + request.Uri + " " + request.FileSize + " bytes, " + quota + " left");
+
+                    addedObjects.AddLast(request);
+                }
+                //}
+            }
+            return addedObjects;
         }
 
-        // unpack the package contents
-        // given the URI's and the sizes
-        public static long UnpackPackage(LocalRequest request)
+        /// <summary>
+        /// Unpacks the package contents and indexes them.
+        /// </summary>
+        /// <param name="indexPath">Path to the index.</param>
+        /// <param name="requestHandler">Calling handler for this method.</param>
+        /// <returns>Total unpacked content size.</returns>
+        public static long Unpack(LocalRequestHandler requestHandler, string indexPath)
         {
-            string packageIndexSizeStr = request._webResponse.GetResponseHeader("Package-IndexSize");
-            string packageContentSizeStr = request._webResponse.GetResponseHeader("Package-ContentSize");
+            string packageIndexSizeStr = requestHandler.RCRequest.GenericWebResponse.GetResponseHeader("Package-IndexSize");
+            string packageContentSizeStr = requestHandler.RCRequest.GenericWebResponse.GetResponseHeader("Package-ContentSize");
             long packageIndexSize = Int64.Parse(packageIndexSizeStr);
             long packageContentSize = Int64.Parse(packageContentSizeStr);
-            string packageFileName = request._requestObject._packageIndexFileName;
+            string packageFileName = requestHandler.PackageFileName;
             string unpackedPackageFileName = packageFileName.Replace(".gzip", "");
 
             GZipWrapper.GZipDecompress(packageFileName, unpackedPackageFileName, packageIndexSize + packageContentSize);
@@ -131,42 +180,42 @@ namespace RuralCafe
                 }
                 catch (Exception e)
                 {
-                    request.LogDebug("problem unpacking: " + entry + " " + e.StackTrace + " " + e.Message);
+                    requestHandler.LogDebug("problem unpacking: " + entry + " " + e.StackTrace + " " + e.Message);
                     return unpackedBytes;
                 }
 
                 if (!Util.IsValidUri(currUri))
                 {
-                    request.LogDebug("problem unpacking: " + currUri);
+                    requestHandler.LogDebug("problem unpacking: " + currUri);
                     return unpackedBytes;
                 }
-                RequestObject requestObject = new RequestObject(request._proxy, currUri);
+                RCRequest rcRequest = new RCRequest(requestHandler, currUri);
 
                 unpackedBytes += currFileSize;
 
-                request.LogDebug("unpacking: " + requestObject._uri + " - " + currFileSize + " bytes");
+                requestHandler.LogDebug("unpacking: " + rcRequest.Uri + " - " + currFileSize + " bytes");
 
                 // make sure the file doesn't already exist
                 bool existed = false;
-                FileInfo ftest = new FileInfo(requestObject._cacheFileName);
+                FileInfo ftest = new FileInfo(rcRequest.CacheFileName);
                 if (ftest.Exists)
                 {
                     existed = true;
                 }
 
-                if (!Util.DeleteFile(requestObject._cacheFileName))
+                if (!Util.DeleteFile(rcRequest.CacheFileName))
                 {
                     return unpackedBytes;
                 }
 
                 // create directory if it doesn't exist
-                if (!Util.CreateDirectoryForFile(requestObject._cacheFileName))
+                if (!Util.CreateDirectoryForFile(rcRequest.CacheFileName))
                 {
                     return unpackedBytes;
                 }
 
                 // create the file if it doesn't exist
-                FileStream currFileFS = Util.CreateFile(requestObject._cacheFileName);
+                FileStream currFileFS = Util.CreateFile(rcRequest.CacheFileName);
                 if (currFileFS == null)
                 {
                     return unpackedBytes;
@@ -213,7 +262,7 @@ namespace RuralCafe
                 if (bytesReadOfCurrFile != currFileSize)
                 {
                     // ran out of bytes for this file
-                    request.LogDebug("error, unexpected package size: " + requestObject._cacheFileName +
+                    requestHandler.LogDebug("error, unexpected package size: " + rcRequest.CacheFileName +
                         "(" + bytesReadOfCurrFile + " / " + currFileSize + ")");
                     return unpackedBytes * -1;
                 }
@@ -221,16 +270,16 @@ namespace RuralCafe
                 currFileFS.Close();
 
                 // add the file to Lucene
-                if (Util.IsParseable(requestObject))
+                if (Util.IsParseable(rcRequest))
                 {
-                    string document = Util.ReadFileAsString(requestObject._cacheFileName);
+                    string document = Util.ReadFileAsString(rcRequest.CacheFileName);
                     string title = Util.GetPageTitle(document);
                     string content = Util.GetPageContent(document);
 
-                    //request.LogDebug("indexing: " + requestObject._uri);
+                    //request.LogDebug("indexing: " + rcRequest._uri);
                     if (!existed)
                     {
-                        CacheIndexer.IndexDocument(((LocalProxy)request._proxy)._indexPath, "Content-Type: text/html", requestObject._uri, title, content);
+                        IndexWrapper.IndexDocument(indexPath, "Content-Type: text/html", rcRequest.Uri, title, content);
                     }
                 }
             }

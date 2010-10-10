@@ -25,15 +25,30 @@ using System.Net;
 
 namespace RuralCafe
 {
+    /// <summary>
+    /// A set of utility functions for manipulating files and directories, 
+    /// getting file extensions and mime types, and page contents.
+    /// </summary>
     class Util
     {
+        // map from file extension to HTTP MIME type
         private static Dictionary<string, string> _extMap = new Dictionary<string, string>();
 
         private static Object filesystemLock = new Object();
 
-        // Creates a directory for a file (locked method)
+        /// <summary>
+        /// Creates a directory for a file (locked method).
+        /// JJJ: this lock is probably poorly implemented.
+        /// </summary>
+        /// <param name="fileName">Name of the file.</param>
+        /// <returns>True or false for success or failure.</returns>
         public static bool CreateDirectoryForFile(string fileName)
         {
+            if (fileName == null || fileName == "")
+            {
+                return false;
+            }
+
             try
             {
                 lock (filesystemLock)
@@ -52,17 +67,21 @@ namespace RuralCafe
             }
             catch (Exception)
             {
-                //LogDebug("problem creating directory for file: " + fileName + " " + e.StackTrace + " " + e.Message);
                 return false;
             }
 
             return true;
         }
+
+        /// <summary>
+        /// Deletes a file.
+        /// </summary>
+        /// <param name="fileName">Name of the file.</param>
+        /// <returns>True or false for success or failure.</returns>
         public static bool DeleteFile(string fileName)
         {
             try
             {
-                // check if it exists
                 FileInfo f = new FileInfo(fileName);
                 if (f.Exists)
                 {
@@ -72,40 +91,17 @@ namespace RuralCafe
             }
             catch (Exception)
             {
-                //LogDebug("problem deleting file: " + fileName + " " + e.StackTrace + " " + e.Message);
                 return false;
             }
 
             return true;
         }
-        public static bool DeleteZeroSizedFile(string fileName)
-        {
-            try
-            {
-                // check if it exists
-                FileInfo f = new FileInfo(fileName);
-                if (f.Exists)
-                {
-                    if (f.Length == 0)
-                    {
-                        f.Delete();
-                    }
-                    /*
-                    else
-                    {
-                        LogDebug("page exists: " + request.RequestUri + " skipping");
-                        return false;
-                    }*/
-                }
-            }
-            catch (Exception)
-            {
-                //LogDebug("problem deleting file: " + fileName + " " + e.StackTrace + " " + e.Message);
-                return false;
-            }
 
-            return true;
-        }
+        /// <summary>
+        /// Creates a file.
+        /// </summary>
+        /// <param name="fileName">The name of the file.</param>
+        /// <returns>Returns the FileStream for the created file.</returns>
         public static FileStream CreateFile(string fileName)
         {
             FileStream fs;
@@ -119,14 +115,17 @@ namespace RuralCafe
             }
             catch (Exception)
             {
-                //LogDebug("problem creating file: " + fileName + " " + e.StackTrace + " " + e.Message);
                 return null;
             }
 
             return fs;
         }        
 
-        // helper function to get the file size on disk of a page, returns -1 for non existent
+        /// <summary>
+        /// Helper function to get the file size on disk of a page.
+        /// </summary>
+        /// <param name="fileName">Name of the file.</param>
+        /// <returns>-1 for non-existent file.</returns>
         public static long GetFileSize(string fileName)
         {
             FileInfo f;
@@ -146,12 +145,17 @@ namespace RuralCafe
             }
             catch (Exception)
             {
-                //LogDebug("problem getting file info: " + fileName + " " + e.StackTrace + " " + e.Message);
                 return -1;
             }
 
             return -1;
         }
+
+        /// <summary>
+        /// Gets the file extension from the file name.
+        /// </summary>
+        /// <param name="fileName">File name to parse.</param>
+        /// <returns>File extension as a string.</returns>
         public static string GetFileExtensionFromFileName(string fileName)
         {
             string fileExtension = "";
@@ -163,6 +167,11 @@ namespace RuralCafe
             }
             return fileExtension;
         }
+        /// <summary>
+        /// Gets the file extension from a URI.
+        /// </summary>
+        /// <param name="stringUri">URI to parse.</param>
+        /// <returns>File extension as a string.</returns>
         public static string GetFileExtension(string stringUri)
         {
             string fileExtension = "";
@@ -172,37 +181,48 @@ namespace RuralCafe
             {
                 fileExtension = stringUri.Substring(offset2);
             }
+            // throw away query terms
             fileExtension = stringUri.Split('?')[0];
             return fileExtension;
         }
-        public static string GetContentType(string k)
+
+        /// <summary>
+        /// Returns the HTTP "Content-Type" of an extension.
+        /// </summary>
+        /// <param name="extension">File extension.</param>
+        /// <returns>Content type of the extension.</returns>
+        public static string GetContentType(string extension)
         {
-            if (_extMap.ContainsKey(k))
+            if (_extMap.ContainsKey(extension))
             {
-                return _extMap[k];
+                return _extMap[extension];
             }
             // JJJ: not sure how squid or whatever does this
             // content/unknown, but the problem is that after caching how do we know the content type without the extension in place
             return "text/html";
         }
 
+        /// <summary>
+        /// Tries to return the content type of a file based on its extension.
+        /// Also tries to peek inside the file for HTML headers.
+        /// </summary>
+        /// <param name="fileName">Name of the file.</param>
+        /// <returns>Content type of the file.</returns>
         public static string GetContentTypeOfFile(string fileName)
         {
-            // only try fo xhtml and html for pages without extensions
             string fileExtension = GetFileExtensionFromFileName(fileName);
-            if (fileExtension.StartsWith(".asp"))
+
+            if (fileExtension.StartsWith(".asp") || fileExtension.StartsWith(".php"))
             {
                 return "text/html";
             }
-            if (fileExtension.StartsWith(".php"))
-            {
-                return "text/html";
-            }
+
             if (!fileExtension.Equals(""))
             {
                 return GetContentType(fileExtension);
             }
 
+            // only try xhtml and html for pages without extensions
             try
             {
                 // make sure file exists
@@ -223,47 +243,43 @@ namespace RuralCafe
             }
             catch (Exception)
             {
-                //LogDebug("problem getting content type of file " + e.StackTrace + " " + e.Message);
+                // do nothing
             }
 
             return "content/unknown";
         }
 
-        // check if the URI is parseable by RuralCafe
-        public static bool IsParseable(RequestObject requestObject)
+        /// <summary>
+        /// Checks if the URI is parseable by RuralCafe.
+        /// </summary>
+        /// <param name="rcRequest">A RCRequest object.</param>
+        /// <returns>True or false for parseable or not.</returns>
+        public static bool IsParseable(RCRequest rcRequest)
         {
-            /*
-            string contentType = requestObject._webRequest.ContentType;
-            if (contentType.Contains("text") || 
-                contentType.Contains("htm"))
-            {
-                return true;
-            }
-            return false;
-             */
-            string contentType = GetContentTypeOfFile(requestObject._cacheFileName);
+            string contentType = GetContentTypeOfFile(rcRequest.CacheFileName);
 
             if (contentType.Contains("htm"))
             {
                 return true;
             }
 
-            string fileExtension = GetFileExtension(requestObject._uri);
-            if (fileExtension.Contains(".asp") ||
-                fileExtension.Contains(".php"))
-            {
-                return true;
-            }
             return false;
         }
-
+        
+        /// <summary>
+        /// Checks if the URI is valid.
+        /// </summary>
+        /// <param name="Uri">URI.</param>
+        /// <returns>True or false for valid or not.</returns>
         public static bool IsValidUri(string Uri)
         {
+            // blank
             if (Uri.Trim().Length == 0)
             {
                 return false;
             }
 
+            // malformed
             try
             {
                 HttpWebRequest tempRequest = (HttpWebRequest)WebRequest.Create(Uri);
@@ -273,6 +289,7 @@ namespace RuralCafe
                 return false;
             }
 
+            // blank
             if (Uri.Equals("http://"))
             {
                 return false;
@@ -281,21 +298,22 @@ namespace RuralCafe
             return true;
         }
 
-        // reads in a file as a string so we can parse it easily
-        public static string ReadFileAsString(string filePath)
+        /// <summary>
+        /// Reads in a file as a string for ease of parsing.
+        /// </summary>
+        /// <param name="fileName">Name of the file.</param>
+        /// <returns>String containing the file's contents. If there is a problem return an empty string.</returns>
+        public static string ReadFileAsString(string fileName)
         {
             string str = "";
 
             try
             {
-                FileInfo f = new FileInfo(filePath);
+                FileInfo f = new FileInfo(fileName);
                 if (!f.Exists)
                 {
                     return str;
                 }
-
-                //int offset = 0;
-                //byte[] buffer = new byte[1024]; // magic number 32
 
                 // open the file stream
                 FileStream fs = f.Open(FileMode.Open, FileAccess.Read);
@@ -315,16 +333,39 @@ namespace RuralCafe
             catch (Exception)
             {
                 // do nothing
-                //LogDebug("Could not read file as string " + e.StackTrace + " " + e.Message);
             }
 
             return str;
         }
 
+        /// <summary>
+        /// Decompress a bz2 file and return the memorystream.
+        /// </summary>
+        /// <param name="fileName">Name of the file to decompress.</param>
+        /// <returns>The file contents in a memorystream.</returns>
+        public static MemoryStream BZ2DecompressFile(string fileName)
+        {
+            MemoryStream ms = new MemoryStream();
+            FileStream bzipFileFs = new FileStream(fileName, FileMode.Open);
+            ICSharpCode.SharpZipLib.BZip2.BZip2.Decompress(bzipFileFs, ms);
+            return ms;
+        }
+
+        /// <summary>
+        /// Gets the contents of the page. (dummy, output = input)
+        /// </summary>
+        /// <param name="pageContent">Page content.</param>
+        /// <returns>String with the page content.</returns>
         public static string GetPageContent(string pageContent)
         {
             return pageContent;
         }
+        
+        /// <summary>
+        /// Gets the title from a page.
+        /// </summary>
+        /// <param name="pageContent">Page content.</param>
+        /// <returns>String containing the page title.</returns>
         public static string GetPageTitle(string pageContent)
         {
             int index1 = pageContent.IndexOf("<title>");
@@ -346,11 +387,19 @@ namespace RuralCafe
             return title;
         }
 
+        /// <summary>
+        /// Adds a key value pair to the extension to content-type map.
+        /// </summary>
+        /// <param name="k">Key.</param>
+        /// <param name="v">Value.</param>
         private static void SetSuffix(string k, string v)
         {
             _extMap.Add(k, v);
         }
 
+        /// <summary>
+        /// Fills in the extension to content-type map with static mappings.
+        /// </summary>
         public static void FillExtMap()
         {
             SetSuffix("", "content/unknown");
