@@ -56,7 +56,7 @@ namespace RuralCafe
         protected int _ID;
 
         // proxy this request belongs to
-        private RCProxy _proxy;
+        protected RCProxy _proxy;
 
         /*
         // type of request
@@ -95,8 +95,6 @@ namespace RuralCafe
             {
                 _clientAddress = ((IPEndPoint)(socket.RemoteEndPoint)).Address;
             }
-
-            _packageFileName = _proxy.PackagesPath + _rcRequest.CacheFileName + ".gzip";
         }
 
         /// <summary>
@@ -238,6 +236,8 @@ namespace RuralCafe
                     _rcRequest.ParseRCSearchFields();
                     _rcRequest.GenericWebRequest.Referer = refererUri;
                     _rcRequest._recvString = clientRequest;
+
+                    _packageFileName = _proxy.PackagesPath + _rcRequest.CacheFileName + ".gzip";
 
                     // XXX: need to avoid duplicate request/response logging when redirecting e.g. after an add
                     // handle the request

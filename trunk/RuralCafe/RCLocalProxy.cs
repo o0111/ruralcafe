@@ -259,19 +259,19 @@ namespace RuralCafe
             while (true)
             {
                 LocalRequestHandler requestHandler = PopGlobalRequest();
-                if (_gatewayProxy != null)
-                {
-                    requestHandler.RCRequest.SetProxy(_gatewayProxy, RequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT);
-                }
-                else
-                {
-                    requestHandler.RCRequest.SetProxy(_remoteProxy, RequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT);
-                }
-                // save the request file as a package
-                requestHandler.RCRequest.CacheFileName = requestHandler.PackageFileName;
-
                 if (requestHandler != null)
                 {
+                    if (_gatewayProxy != null)
+                    {
+                        requestHandler.RCRequest.SetProxy(_gatewayProxy, RequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT);
+                    }
+                    else
+                    {
+                        requestHandler.RCRequest.SetProxy(_remoteProxy, RequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT);
+                    }
+                    // save the request file as a package
+                    requestHandler.RCRequest.CacheFileName = requestHandler.PackageFileName;
+
                     requestHandler.RequestStatus = (int)RequestHandler.Status.Requested;
 
                     WriteDebug("Dispatching to remote proxy: " + requestHandler.RequestUri);

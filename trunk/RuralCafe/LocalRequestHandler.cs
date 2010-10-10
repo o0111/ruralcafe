@@ -38,7 +38,7 @@ namespace RuralCafe
         private static int _nextId = 1;
 
         // localProxy
-        new private RCLocalProxy _proxy;
+        //new private RCLocalProxy _proxy;
 
         public static int DEFAULT_QUOTA;
         public static int DEFAULT_DEPTH; 
@@ -137,7 +137,7 @@ namespace RuralCafe
             }
 
             // set the last requested page for redirects
-            _proxy.SetLastRequest(_clientAddress, this);
+            ((RCLocalProxy)_proxy).SetLastRequest(_clientAddress, this);
 
             if (IsCached(_rcRequest.CacheFileName))
             {
@@ -164,7 +164,7 @@ namespace RuralCafe
             // XXX: response time could be improved here if it downloads and streams to the client at the same time
             // XXX: basically, merge the DownloadtoCache() and StreamfromcachetoClient() methods into a new third method.
             // cacheable but not cached, cache it, then send to client if there is no remote proxy
-            if (_proxy.RemoteProxy == null)
+            if (((RCLocalProxy)_proxy).RemoteProxy == null)
             {
                 LogDebug("streaming: " + _rcRequest.GenericWebRequest.RequestUri + " to cache and client.");
                 _rcRequest.GenericWebRequest.Proxy = null;
@@ -223,7 +223,7 @@ namespace RuralCafe
                 //LogDebug("removing all requests from queues");
                 try
                 {
-                    _proxy.ClearRequestQueues(_clientAddress);
+                    ((RCLocalProxy)_proxy).ClearRequestQueues(_clientAddress);
                     ServeRCRequestsRedirect();
                 }
                 catch (Exception)
@@ -270,9 +270,9 @@ namespace RuralCafe
 
             if (IsRCHomePage())
             {
-                if (_proxy.RCSearchPage.Equals("http://www.ruralcafe.net/cip.html"))
+                if (((RCLocalProxy)_proxy).RCSearchPage.Equals("http://www.ruralcafe.net/cip.html"))
                 {
-                    ServeRCSearchPage(_proxy.RCSearchPage);
+                    ServeRCSearchPage(((RCLocalProxy)_proxy).RCSearchPage);
                 }
                 else
                 {
@@ -307,7 +307,7 @@ namespace RuralCafe
             {
                 LogDebug("serving RuralCafe results page");
 
-                _proxy.SetLastRequest(_clientAddress, this);
+                ((RCLocalProxy)_proxy).SetLastRequest(_clientAddress, this);
 
                 string queryString = _rcRequest.GetRCSearchField("textfield");
                 if (queryString.Trim().Length > 0)
@@ -316,7 +316,7 @@ namespace RuralCafe
                 }
                 else
                 {
-                    ServeRCSearchPage(_proxy.RCSearchPage);
+                    ServeRCSearchPage(((RCLocalProxy)_proxy).RCSearchPage);
                 }
 
                 return (int)Status.Completed;
@@ -332,7 +332,7 @@ namespace RuralCafe
                     QueueRequest();
                 }
 
-                LocalRequestHandler latestRequest = _proxy.GetLatestRequest(_clientAddress);
+                LocalRequestHandler latestRequest = ((RCLocalProxy)_proxy).GetLatestRequest(_clientAddress);
                 if (latestRequest != null)
                 {
                     requestString = latestRequest.SearchTermsOrURI();
@@ -493,7 +493,7 @@ namespace RuralCafe
         /// <summary>Sends the requests page to the client.</summary>
         private void ServeRCRequestsPage()
         {
-            List<LocalRequestHandler> requestHandlers = _proxy.GetRequests(_clientAddress);
+            List<LocalRequestHandler> requestHandlers = ((RCLocalProxy)_proxy).GetRequests(_clientAddress);
 
             string linksPageHeader = "<html><head><meta http-equiv=\"refresh\" content=\"10\"></head>" +
                 "<body><center>" +
@@ -591,7 +591,7 @@ namespace RuralCafe
             else
             {
                 SendOkHeaders("text/html");
-                StreamFromCacheToClient(_proxy.UIPagesPath + fileName, false);
+                StreamFromCacheToClient(((RCLocalProxy)_proxy).UIPagesPath + fileName, false);
             }
         }
         /// <summary>Query Lucene index of local pages and serve the results.</summary>
@@ -613,7 +613,7 @@ namespace RuralCafe
                 wikiResults = Indexer.Search(queryString, RCLocalProxy.WikiIndices.Values, Indexer.MAX_SEARCH_HITS);
 
                 // Query our RuralCafe index
-                List<Lucene.Net.Documents.Document> luceneResults = IndexWrapper.Query(_proxy.IndexPath, queryString);
+                List<Lucene.Net.Documents.Document> luceneResults = IndexWrapper.Query(((RCLocalProxy)_proxy).IndexPath, queryString);
 
                 // remove duplicates
                 foreach (Lucene.Net.Documents.Document document in luceneResults)
@@ -650,7 +650,7 @@ namespace RuralCafe
             SendOkHeaders("text/html");
             SendMessage(pageHeader);
 
-            LocalRequestHandler latestRequestHandler = _proxy.GetLatestRequest(_clientAddress);
+            LocalRequestHandler latestRequestHandler = ((RCLocalProxy)_proxy).GetLatestRequest(_clientAddress);
             // last requested page
             if (latestRequestHandler != null)
             {
@@ -797,7 +797,7 @@ namespace RuralCafe
             }
 
             SendOkHeaders("text/html");
-            StreamFromCacheToClient(_proxy.UIPagesPath + fileName, false);
+            StreamFromCacheToClient(((RCLocalProxy)_proxy).UIPagesPath + fileName, false);
         }
         /// <summary>Sends the redirect page to the client.</summary>
         void ServeRedirectPage()
@@ -830,13 +830,13 @@ namespace RuralCafe
         {
             //int satisfiedRequests = _localProxy.SatisfiedRequests(_clientAddress);
             //int outstandingRequests = _localProxy.OutstandingRequests(_clientAddress);
-            LocalRequestHandler latestRequestHandler = _proxy.GetLatestRequest(_clientAddress);
+            LocalRequestHandler latestRequestHandler = ((RCLocalProxy)_proxy).GetLatestRequest(_clientAddress);
             string latestRequestString;
             //string lastRequestedPageLink;
             if (latestRequestHandler == null ||
-                latestRequestHandler.RequestUri == _proxy.RCSearchPage)
+                latestRequestHandler.RequestUri == ((RCLocalProxy)_proxy).RCSearchPage)
             {
-                latestRequestString = _proxy.RCSearchPage;
+                latestRequestString = ((RCLocalProxy)_proxy).RCSearchPage;
             }
             else if (latestRequestHandler.IsRCLocalSearch())
             {
@@ -868,7 +868,7 @@ namespace RuralCafe
         /// </summary>
         private void QueueRequest()
         {
-            _proxy.QueueRequest(_clientAddress, this);
+            ((RCLocalProxy)_proxy).QueueRequest(_clientAddress, this);
         }
 
         /// <summary>
@@ -879,8 +879,8 @@ namespace RuralCafe
             // clean up the Ruralcafe info, remove it
             int index = RequestUri.IndexOf('=');
             string matchingUri = RequestUri.Substring(index + 1);
-            LocalRequestHandler matchingRequestHandler = new LocalRequestHandler(_proxy, _clientSocket, matchingUri);
-            _proxy.DequeueRequest(_clientAddress, matchingRequestHandler);
+            LocalRequestHandler matchingRequestHandler = new LocalRequestHandler((RCLocalProxy)_proxy, _clientSocket, matchingUri);
+            ((RCLocalProxy)_proxy).DequeueRequest(_clientAddress, matchingRequestHandler);
         }
 
         /// <summary>
@@ -889,7 +889,7 @@ namespace RuralCafe
         /// <returns>ETA as a printable string.</returns>
         private string PrintableETA()
         {
-            int eta = _proxy.ETA(this);
+            int eta = ((RCLocalProxy)_proxy).ETA(this);
             string etaString = "";
             if (eta == 0)
             {
@@ -950,7 +950,7 @@ namespace RuralCafe
                     return false;
                 }
 
-                if (_proxy.WikiDumpPath.Equals(""))
+                if (((RCLocalProxy)_proxy).WikiDumpPath.Equals(""))
                 {
                     return false;
                 }
@@ -1188,7 +1188,7 @@ namespace RuralCafe
                 bytesRead = socket.Receive(receiveByte, receiveByte.Length, 0);
 
                 // check speed limit
-                while (!_proxy.HasDownlinkBandwidth(bytesRead))
+                while (!((RCLocalProxy)_proxy).HasDownlinkBandwidth(bytesRead))
                 {
                     Thread.Sleep(100);
                 }
@@ -1212,7 +1212,7 @@ namespace RuralCafe
             string queryString = uri;
             if (queryString.Trim().Length > 0)
             {
-                List<Lucene.Net.Documents.Document> results = IndexWrapper.Query(_proxy.IndexPath, queryString);
+                List<Lucene.Net.Documents.Document> results = IndexWrapper.Query(((RCLocalProxy)_proxy).IndexPath, queryString);
 
                 string headerToken = "Content-Type:";
                 // remove duplicates
