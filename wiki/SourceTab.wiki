@@ -16,8 +16,4 @@
 
 = Source Code =
 
-[http://code.google.com/p/ruralcafe/source/checkout/ Checkout]
-
-[http://code.google.com/p/ruralcafe/source/browse/ Browse]
-
-[http://code.google.com/p/ruralcafe/source/list/ List]
+[http://code.google.com/p/ruralcafe/source/browse/ Browse/Checkout]
