@@ -1985,7 +1985,13 @@ public class SupportClass
         /// <param name="source">The <see cref="IEnumerable{T}"/>
         /// implementation which will have all the contents hashed.</param>
         /// <returns>The hash code value.</returns>
-        public static int GetHashCode(System.Collections.Generic.IEnumerable<T> source)
+        
+		//Introduce T in method definition to get Mono 2.6.7 to compile
+        #if __MonoCS__
+        public static int GetHashCode<T>(System.Collections.Generic.IEnumerable<T> source)
+		#else
+         public static int GetHashCode(System.Collections.Generic.IEnumerable<T> source)
+		#endif
         {
             // If source is null, then return 0.
             if (source == null) return 0;
