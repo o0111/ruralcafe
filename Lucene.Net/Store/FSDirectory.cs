@@ -564,9 +564,12 @@ namespace Lucene.Net.Store
 				return new SimpleFSDirectory(path, lockFactory);
 			}
 			else
-			{
-				return new NIOFSDirectory(path, lockFactory);
+			{	//LINUX Issue: NIOFSDirectory implementation in lucene.NET is buggy on Mono (Linux)
+				//Workaround: use SimpleFSDirectory instead
+				//return new NIOFSDirectory(path, lockFactory);
+				return new SimpleFSDirectory(path, lockFactory);
 			}
+			
         }
 		
 		/* will move to ctor, when reflection is removed in 3.0 */

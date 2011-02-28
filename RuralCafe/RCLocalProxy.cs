@@ -112,7 +112,7 @@ namespace RuralCafe
             cachePath, packagesPath, logsPath)
         {
             //_activeRequests = 0;
-            _uiPagesPath = proxyPath + @"RuralCafePages\";
+            _uiPagesPath = proxyPath + "RuralCafePages" + Path.DirectorySeparatorChar;
             _indexPath = indexPath;
             _wikiDumpPath = wikiDumpPath;
             _globalRequestQueue = new List<LocalRequestHandler>();
@@ -193,7 +193,7 @@ namespace RuralCafe
 
             // load the index
             _wikiIndices.Add(dumpFile.ToLowerInvariant(), ixr);
-
+			
             return true;
         }
 
