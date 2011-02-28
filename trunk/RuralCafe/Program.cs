@@ -51,10 +51,12 @@ namespace RuralCafe
         private static int MAXIMUM_DOWNLINK_SPEED;
 
         // Path Settings
-        private static string LOCAL_PROXY_PATH = Directory.GetCurrentDirectory() + @"\LocalProxy\";
-        private static string REMOTE_PROXY_PATH = Directory.GetCurrentDirectory() + @"\RemoteProxy\";
-        private static string PACKAGE_PATH = @"Packages\";
-        private static string LOGS_PATH = @"Logs\";
+        private static string LOCAL_PROXY_PATH = Directory.GetCurrentDirectory() 
+			+ Path.DirectorySeparatorChar + "LocalProxy" + Path.DirectorySeparatorChar;
+        private static string REMOTE_PROXY_PATH = Directory.GetCurrentDirectory() 
+			+ Path.DirectorySeparatorChar + "RemoteProxy" + Path.DirectorySeparatorChar;
+        private static string PACKAGE_PATH = Path.DirectorySeparatorChar + "Packages" + Path.DirectorySeparatorChar;
+        private static string LOGS_PATH = Path.DirectorySeparatorChar + "Logs" + Path.DirectorySeparatorChar;
         private static string INDEX_PATH;
         private static string LOCAL_CACHE_PATH;
         private static string REMOTE_CACHE_PATH;
@@ -139,13 +141,15 @@ namespace RuralCafe
                 LOCAL_PROXY_IP_ADDRESS = IPAddress.Parse(configSettings["LOCAL_PROXY_IP_ADDRESS"]);
                 LOCAL_PROXY_LISTEN_PORT = Int32.Parse(configSettings["LOCAL_PROXY_LISTEN_PORT"]);
 
-                INDEX_PATH = configSettings["INDEX_PATH"];
-                LOCAL_CACHE_PATH = configSettings["LOCAL_CACHE_PATH"];
+                INDEX_PATH = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar +  configSettings["INDEX_PATH"] +
+					Path.DirectorySeparatorChar;
+                LOCAL_CACHE_PATH = configSettings["LOCAL_CACHE_PATH"]+ Path.DirectorySeparatorChar;
                 if (!LOCAL_CACHE_PATH.Contains(":\\"))
                 {
                     LOCAL_CACHE_PATH = LOCAL_PROXY_PATH + LOCAL_CACHE_PATH;
                 }
-                WIKI_DUMP_FILE = configSettings["WIKI_DUMP_FILE"];
+                WIKI_DUMP_FILE = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar+configSettings["WIKI_DUMP_DIR"]
+					+ Path.DirectorySeparatorChar + configSettings["WIKI_DUMP_FILE"];
 
                 // remote proxy settings
                 if (configSettings["REMOTE_PROXY_IP_ADDRESS"].Equals(""))
@@ -165,7 +169,8 @@ namespace RuralCafe
                     REMOTE_PROXY_LISTEN_PORT = Int32.Parse(configSettings["REMOTE_PROXY_LISTEN_PORT"]);
                 }
 
-                REMOTE_CACHE_PATH = configSettings["REMOTE_CACHE_PATH"];
+                REMOTE_CACHE_PATH = configSettings["REMOTE_CACHE_PATH"]+ Path.DirectorySeparatorChar;
+				
                 if (!REMOTE_CACHE_PATH.Contains(":\\")) {
                     REMOTE_CACHE_PATH = REMOTE_PROXY_PATH + REMOTE_CACHE_PATH;
                 }
@@ -199,6 +204,12 @@ namespace RuralCafe
                 Console.WriteLine("EXTERNAL_PROXY_IP_ADDRESS: " + GATEWAY_PROXY_IP_ADDRESS);
                 Console.WriteLine("EXTERNAL_PROXY_LISTEN_PORT: " + GATEWAY_PROXY_LISTEN_PORT);
                 Console.WriteLine("EXTERNAL_PROXY_LOGIN: " + GATEWAY_PROXY_LOGIN);
+				Console.WriteLine("INDEX_PATH: " + INDEX_PATH);
+				Console.WriteLine("LOCAL_CACHE_PATH: " + LOCAL_CACHE_PATH);
+				Console.WriteLine("LOCAL_PROXY_PATH: " + LOCAL_PROXY_PATH);
+				Console.WriteLine("REMOTE_CACHE_PATH: " + REMOTE_CACHE_PATH);
+				Console.WriteLine("WIKI_DUMP_FILE: " + WIKI_DUMP_FILE);
+				
             }
             catch (Exception)
             {

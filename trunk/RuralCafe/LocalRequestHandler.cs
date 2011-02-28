@@ -582,7 +582,7 @@ namespace RuralCafe
             if (offset >= 0 && offset < (pageUri.Length - 1))
             {
                 fileName = pageUri.Substring(offset + 1);
-            }
+			}
 
             if (fileName.Equals(""))
             {
@@ -614,8 +614,9 @@ namespace RuralCafe
 
                 // Query our RuralCafe index
                 List<Lucene.Net.Documents.Document> luceneResults = IndexWrapper.Query(((RCLocalProxy)_proxy).IndexPath, queryString);
-
-                // remove duplicates
+				
+  				//List<Lucene.Net.Documents.Document> luceneResults = new List<Lucene.Net.Documents.Document>();             
+				// remove duplicates
                 foreach (Lucene.Net.Documents.Document document in luceneResults)
                 {
                     string documentUri = document.Get("uri");
@@ -793,7 +794,7 @@ namespace RuralCafe
             if (offset >= 0 && offset < (pageUri.Length - 1))
             {
                 fileName = pageUri.Substring(offset + 1);
-                fileName = "images\\" + fileName;
+                fileName = "images"+Path.DirectorySeparatorChar + fileName;
             }
 
             SendOkHeaders("text/html");
