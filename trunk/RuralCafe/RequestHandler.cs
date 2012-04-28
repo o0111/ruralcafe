@@ -226,7 +226,7 @@ namespace RuralCafe
                 requestedUri = clientRequest.Substring(index1 + 1, index2 - index1).Trim();
 
                 // https requests will fail this check
-                if (Util.IsValidUri(requestedUri))
+                if (Util.IsValidUri (requestedUri))
                 {
                     // get the referer URI
                     refererUri = GetHeaderValue(clientRequest, "Referer");

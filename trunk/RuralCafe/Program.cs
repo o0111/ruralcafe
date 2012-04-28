@@ -151,6 +151,14 @@ namespace RuralCafe
                 WIKI_DUMP_FILE = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar+configSettings["WIKI_DUMP_DIR"]
 					+ Path.DirectorySeparatorChar + configSettings["WIKI_DUMP_FILE"];
 
+                /*
+                string a = Directory.GetCurrentDirectory();
+                char b = Path.DirectorySeparatorChar;
+                string c = configSettings["WIKI_DUMP_DIR"];
+                char d = Path.DirectorySeparatorChar;
+                string e = configSettings["WIKI_DUMP_FILE"];
+                */
+
                 // remote proxy settings
                 if (configSettings["REMOTE_PROXY_IP_ADDRESS"].Equals(""))
                 {
