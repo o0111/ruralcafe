@@ -122,7 +122,7 @@ namespace RuralCafe
             }
             catch (Exception)
             {
-                // JJJ: not sure what to do here if the logging can't be done this is rather critical.
+                // JAY: not sure what to do here if the logging can't be done this is rather critical.
                 // XXX: do nothing
             }
             finally

@@ -195,7 +195,7 @@ namespace RuralCafe
 
                 requestHandler.LogDebug("unpacking: " + rcRequest.Uri + " - " + currFileSize + " bytes");
 
-                // make sure the file doesn't already exist
+                // make sure the file doesn't already exist for indexing purposes only
                 bool existed = false;
                 FileInfo ftest = new FileInfo(rcRequest.CacheFileName);
                 if (ftest.Exists)
@@ -203,6 +203,7 @@ namespace RuralCafe
                     existed = true;
                 }
 
+                // try to delete the old version
                 if (!Util.DeleteFile(rcRequest.CacheFileName))
                 {
                     return unpackedBytes;
@@ -220,6 +221,7 @@ namespace RuralCafe
                 {
                     return unpackedBytes;
                 }
+
                 // check for overflow from previous file, and use it up first
                 if (bufferOverflowCount > 0)
                 {

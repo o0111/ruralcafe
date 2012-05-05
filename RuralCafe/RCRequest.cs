@@ -251,7 +251,7 @@ namespace RuralCafe
         /// </summary>
         /// <param name="fileName">File name to hash.</param>
         /// <returns>Hashed file path.</returns>
-        private static string HashedFilePath(string fileName)
+        public static string HashedFilePath(string fileName)
         {
             fileName = fileName.Replace("\\", ""); // for compability with linux filepath delimeter
             int value1 = 0;

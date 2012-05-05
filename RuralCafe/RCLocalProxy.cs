@@ -274,7 +274,7 @@ namespace RuralCafe
 
                     requestHandler.RequestStatus = (int)RequestHandler.Status.Requested;
 
-                    WriteDebug("Dispatching to remote proxy: " + requestHandler.RequestUri);
+                    WriteDebug("dispatching to remote proxy: " + requestHandler.RequestUri);
                     long bytesDownloaded = requestHandler.RCRequest.DownloadToCache();
 
                     if (bytesDownloaded > -1)
@@ -285,6 +285,7 @@ namespace RuralCafe
                         {
                             WriteDebug("unpacked: " + requestHandler.RequestUri);
                             requestHandler.RCRequest.FileSize = unpackedBytes;
+                            requestHandler.RequestStatus = (int)RequestHandler.Status.Completed;
                         }
                         else
                         {

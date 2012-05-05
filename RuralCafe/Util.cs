@@ -38,7 +38,7 @@ namespace RuralCafe
 
         /// <summary>
         /// Creates a directory for a file (locked method).
-        /// JJJ: this lock is probably poorly implemented.
+        /// JAY: this lock is probably poorly implemented.
         /// </summary>
         /// <param name="fileName">Name of the file.</param>
         /// <returns>True or false for success or failure.</returns>
@@ -197,7 +197,7 @@ namespace RuralCafe
             {
                 return _extMap[extension];
             }
-            // JJJ: not sure how squid or whatever does this
+            // JAY: not sure how squid or whatever does this
             // content/unknown, but the problem is that after caching how do we know the content type without the extension in place
             return "text/html";
         }
