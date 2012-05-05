@@ -55,8 +55,8 @@ namespace RuralCafe
 			+ Path.DirectorySeparatorChar + "LocalProxy" + Path.DirectorySeparatorChar;
         private static string REMOTE_PROXY_PATH = Directory.GetCurrentDirectory() 
 			+ Path.DirectorySeparatorChar + "RemoteProxy" + Path.DirectorySeparatorChar;
-        private static string PACKAGE_PATH = Path.DirectorySeparatorChar + "Packages" + Path.DirectorySeparatorChar;
-        private static string LOGS_PATH = Path.DirectorySeparatorChar + "Logs" + Path.DirectorySeparatorChar;
+        private static string PACKAGE_PATH = "Packages" + Path.DirectorySeparatorChar;
+        private static string LOGS_PATH = "Logs" + Path.DirectorySeparatorChar;
         private static string INDEX_PATH;
         private static string LOCAL_CACHE_PATH;
         private static string REMOTE_CACHE_PATH;
@@ -107,7 +107,7 @@ namespace RuralCafe
             }
 
             // start the remote proxy only if we're not starting the local proxy or both proxies are running on the same box
-            if (REMOTE_PROXY_IP_ADDRESS != null && (LOCAL_PROXY_IP_ADDRESS == null || REMOTE_PROXY_IP_ADDRESS == LOCAL_PROXY_IP_ADDRESS))
+            if (REMOTE_PROXY_IP_ADDRESS != null)
             {
                 StartRemoteProxy();
             }

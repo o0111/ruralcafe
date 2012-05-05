@@ -32,6 +32,7 @@ namespace RuralCafe
     {
         private string _uri;
         private string _refererUri;
+        private string _hashedFileName;
         private string _cacheFileName;
 
         private int _status;
@@ -67,6 +68,12 @@ namespace RuralCafe
         {
             set { _refererUri = value; }
             get { return _refererUri; }
+        }
+        /// <summary>The hashed file name of the object.</summary>
+        public string HashedFileName
+        {
+            set { _hashedFileName = value; }
+            get { return _hashedFileName; }
         }
         /// <summary>The file name of the object if it is cached.</summary>
         public string CacheFileName
@@ -150,7 +157,8 @@ namespace RuralCafe
             _refererUri = referrerUri.Trim();
 
             string fileName = UriToFilePath(_uri);
-            _cacheFileName = requestHandler.Proxy.CachePath + HashedFileName(fileName);
+            _hashedFileName = HashedFilePath(fileName) + fileName;
+            _cacheFileName = requestHandler.Proxy.CachePath + _hashedFileName;
             if (IsCompressed())
             {
                 _cacheFileName = _cacheFileName + ".bz2";
@@ -226,6 +234,7 @@ namespace RuralCafe
             return Uri.GetHashCode();
         }
 
+        /*
         /// <summary>
         /// Helper that returns the hashed file path given a file name.
         /// </summary>
@@ -236,6 +245,7 @@ namespace RuralCafe
             string hashedFileName = HashedFilePath(fileName) + fileName;
             return hashedFileName;
         }
+         */
         /// <summary>
         /// Actually hashes the file name to a file path.
         /// </summary>
