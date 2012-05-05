@@ -790,7 +790,9 @@ namespace RuralCafe
         /// <returns>True if yes, false if not.</returns>
         protected bool IsRCURLRequest()
         {
-            if (RequestUri.Contains("Queue+Request"))
+            string request = _rcRequest.GetRCSearchField("textfield");
+            if(request.StartsWith("http://"))
+            //if (RequestUri.Contains("Queue+Request"))
             {
                 return true;
             }
