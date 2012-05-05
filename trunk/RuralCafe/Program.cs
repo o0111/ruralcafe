@@ -141,9 +141,12 @@ namespace RuralCafe
                 LOCAL_PROXY_IP_ADDRESS = IPAddress.Parse(configSettings["LOCAL_PROXY_IP_ADDRESS"]);
                 LOCAL_PROXY_LISTEN_PORT = Int32.Parse(configSettings["LOCAL_PROXY_LISTEN_PORT"]);
 
-                INDEX_PATH = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar +  configSettings["INDEX_PATH"] +
-					Path.DirectorySeparatorChar;
-                LOCAL_CACHE_PATH = configSettings["LOCAL_CACHE_PATH"]+ Path.DirectorySeparatorChar;
+                INDEX_PATH = configSettings["INDEX_PATH"] +	Path.DirectorySeparatorChar;
+                LOCAL_CACHE_PATH = configSettings["LOCAL_CACHE_PATH"] + Path.DirectorySeparatorChar;
+                if (!INDEX_PATH.Contains(":\\"))
+                {
+                    INDEX_PATH = LOCAL_PROXY_PATH + INDEX_PATH;
+                } 
                 if (!LOCAL_CACHE_PATH.Contains(":\\"))
                 {
                     LOCAL_CACHE_PATH = LOCAL_PROXY_PATH + LOCAL_CACHE_PATH;
