@@ -454,14 +454,14 @@ namespace RuralCafe
             long bytesDownloaded = rcRequest.DownloadToCache();
             if (bytesDownloaded < 0 )
             {
-                LogDebug("[depth =" + depth + "] error downloading: " + rcRequest.Uri);
+                LogDebug("[depth = " + depth + "] error downloading: " + rcRequest.Uri);
                 return false;
             }
 
             // add to the package
             if (_package.Pack(this, rcRequest, ref _quota))
             {
-                LogDebug("[depth =" + depth + "] packed: " + rcRequest.Uri + " " + rcRequest.FileSize + " bytes" + _quota + " left");
+                LogDebug("[depth = " + depth + "] packed: " + rcRequest.Uri + " " + rcRequest.FileSize + " bytes" + _quota + " left");
             }
 
             // get the embedded content of the search result page
@@ -790,7 +790,7 @@ namespace RuralCafe
         /// <returns>True if yes, false if not.</returns>
         protected bool IsRCURLRequest()
         {
-            if (RequestUri.Contains("URL+Request"))
+            if (RequestUri.Contains("Queue+Request"))
             {
                 return true;
             }
