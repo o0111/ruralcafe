@@ -343,7 +343,7 @@ namespace RuralCafe
             // add to the package
             if (_package.Pack(this, _rcRequest, ref _quota))
             {
-                LogDebug("packed: " + RequestUri + " " + _rcRequest.FileSize + " bytes" + _quota + " left");
+                LogDebug("packed: " + RequestUri + " " + _rcRequest.FileSize + " bytes => " + _quota + " left");
             }
 
             // check quota
@@ -646,9 +646,7 @@ namespace RuralCafe
                 fileNames.AddLast(rcRequest.CacheFileName);
             }
             MemoryStream ms = GZipWrapper.GZipCompress(fileNames);
-            StreamToClient(ms);
-
-            return ms.Length;
+            return StreamToClient(ms);
         }
 
         /// <summary>

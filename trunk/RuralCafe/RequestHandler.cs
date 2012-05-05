@@ -177,6 +177,11 @@ namespace RuralCafe
             set { _rcRequest.RefererUri = value; }
             get { return _rcRequest.RefererUri; }
         }
+        /// <summary>Hashed base name of the file if the RCRequest is stored in the cache.</summary>
+        public string HashedFileName
+        {
+            get { return _rcRequest.HashedFileName; }
+        }
         /// <summary>Name of the file if the RCRequest is stored in the cache.</summary>
         public string CacheFileName
         {
@@ -237,13 +242,20 @@ namespace RuralCafe
                     _rcRequest.GenericWebRequest.Referer = refererUri;
                     _rcRequest._recvString = clientRequest;
 
-                    _packageFileName = _proxy.PackagesPath + _rcRequest.CacheFileName + ".gzip";
+                    _packageFileName = _proxy.PackagesPath + _rcRequest.HashedFileName + ".gzip";
 
                     // XXX: need to avoid duplicate request/response logging when redirecting e.g. after an add
                     // handle the request
-                    LogRequest();
-                    RequestStatus = HandleRequest();
-                    LogResponse();
+                    if (requestedUri != "http://www.ruralcafe.net/requests.html")
+                    {
+                        LogRequest();
+                        RequestStatus = HandleRequest();
+                        LogResponse();
+                    }
+                    else
+                    {
+                        RequestStatus = HandleRequest();
+                    }
                 }
                 else
                 {
@@ -275,7 +287,7 @@ namespace RuralCafe
                     }
                 }
 
-                _rcRequest.FinishTime = DateTime.Now;
+                // XXX: _rcRequest.FinishTime = DateTime.Now;
             }
             // returning from this method will terminate the thread
         }
