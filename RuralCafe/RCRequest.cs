@@ -253,7 +253,7 @@ namespace RuralCafe
         /// <returns>Hashed file path.</returns>
         public static string HashedFilePath(string fileName)
         {
-            fileName = fileName.Replace("\\", ""); // for compability with linux filepath delimeter
+            fileName = fileName.Replace(Path.DirectorySeparatorChar.ToString(), ""); // for compability with linux filepath delimeter
             int value1 = 0;
             int value2 = 0;
 
@@ -279,7 +279,7 @@ namespace RuralCafe
             value1 = value1 % hashSpace;
             value2 = value2 % hashSpace;
 
-            string hashedPath = value1.ToString() + "\\" + value2.ToString() + "\\"; // +fileName;
+            string hashedPath = value1.ToString() + Path.DirectorySeparatorChar.ToString() + value2.ToString() + Path.DirectorySeparatorChar.ToString(); // +fileName;
             return hashedPath;
         }
         /// <summary>
@@ -346,13 +346,13 @@ namespace RuralCafe
                 uri = uri + "/";
             }
 
-            uri = uri.Replace("/", "\\");
+            uri = uri.Replace("/", Path.DirectorySeparatorChar.ToString());
 
             uri = System.Web.HttpUtility.UrlDecode(uri);
             string fileName = MakeSafeUri(uri);
 
             // fix the filename extension
-            if (fileName.EndsWith("\\"))
+            if (fileName.EndsWith(Path.DirectorySeparatorChar.ToString()))
             {
                 fileName = fileName + "index.html";
             }
@@ -379,14 +379,8 @@ namespace RuralCafe
                     safe = safe.Replace("--", "-");
 
             // trim out illegal characters
-            if (Path.DirectorySeparatorChar.ToString() == "\\")
-            {
-                safe = Regex.Replace(safe, "[^a-z0-9\\\\\\-\\.]", "");
-            }
-            else
-            {
-                safe = Regex.Replace(safe, "[^a-z0-9/\\-\\.]", "");
-            }
+
+            safe = Regex.Replace(safe, "[^a-z0-9/\\-\\.]", "");
 
             // trim the length
             if (safe.Length > 220)

@@ -241,7 +241,7 @@ namespace RuralCafe
 
                 // add the file to Lucene
                 string fileExtension = "";
-                int offset1 = fileName.LastIndexOf("\\");
+                int offset1 = fileName.LastIndexOf(Path.DirectorySeparatorChar.ToString());
                 int offset2 = fileName.LastIndexOf(".");
                 if (offset2 > offset1)
                 {
