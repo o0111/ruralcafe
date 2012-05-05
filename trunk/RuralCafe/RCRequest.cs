@@ -379,7 +379,14 @@ namespace RuralCafe
                     safe = safe.Replace("--", "-");
 
             // trim out illegal characters
-            safe = Regex.Replace(safe, "[^a-z0-9\\\\\\-\\.]", "");
+            if (Path.DirectorySeparatorChar.ToString() == "\\")
+            {
+                safe = Regex.Replace(safe, "[^a-z0-9\\\\\\-\\.]", "");
+            }
+            else
+            {
+                safe = Regex.Replace(safe, "[^a-z0-9/\\-\\.]", "");
+            }
 
             // trim the length
             if (safe.Length > 220)

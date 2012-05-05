@@ -962,7 +962,7 @@ namespace RuralCafe
 
         #endregion
 
-        #region Translation Fun
+        #region Google Translation Fun
 
         private bool IsGoogleResultLink()
         {
