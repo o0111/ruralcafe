@@ -53,7 +53,7 @@ namespace RuralCafe
             {
                 lock (filesystemLock)
                 {
-                    int offset = fileName.LastIndexOf("\\");
+                    int offset = fileName.LastIndexOf(Path.DirectorySeparatorChar.ToString());
                     if (offset > 0)
                     {
                         string currPath = fileName.Substring(0, offset + 1);
@@ -159,7 +159,7 @@ namespace RuralCafe
         public static string GetFileExtensionFromFileName(string fileName)
         {
             string fileExtension = "";
-            int offset1 = fileName.LastIndexOf("\\");
+            int offset1 = fileName.LastIndexOf(Path.DirectorySeparatorChar.ToString());
             int offset2 = fileName.LastIndexOf(".");
             if (offset2 > offset1)
             {
