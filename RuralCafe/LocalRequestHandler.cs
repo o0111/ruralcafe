@@ -540,11 +540,15 @@ namespace RuralCafe
                     }
                     else
                     {*/
-                    linkAnchorText = requestHandler.SearchTermsOrURI();
+                    //linkAnchorText = requestHandler.SearchTermsOrURI();
                     linkTarget = requestHandler.RequestUri;
 
                     // if its a search request, translate to the google version to get the remotely returned google results
-                    if (!linkAnchorText.StartsWith("http://"))
+                    if (linkAnchorText.StartsWith("http://"))
+                    {
+                        linkTarget = linkAnchorText;
+                    }
+                    else
                     {
                         linkTarget = requestHandler.RCRequest.TranslateRCSearchToGoogle();
                     }
@@ -958,7 +962,7 @@ namespace RuralCafe
 
         #endregion
 
-        #region Google Fun
+        #region Translation Fun
 
         private bool IsGoogleResultLink()
         {
