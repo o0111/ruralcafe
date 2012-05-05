@@ -104,16 +104,21 @@ namespace RuralCafe
         /// </summary>
         public override int HandleRequest()
         {
+            if (IsRCRequest())
+            {
+                return ServeRCPage();
+            }
+
+            if (IsGoogleResultLink())
+            {
+                TranslateGoogleResultLink();
+            }
+
             if (IsBlacklisted(RequestUri))
             {
                 LogDebug("ignoring blacklisted: " + RequestUri);
                 SendErrorPage(HTTP_NOT_FOUND, "ignoring blacklisted", RequestUri);
                 return (int)Status.NotFound;
-            }
-
-            if (IsRCRequest())
-            {
-                return ServeRCPage();
             }
 
             // XXX: this function will return true if the domain is wikipedia even if the file isn't in the archive
@@ -142,8 +147,19 @@ namespace RuralCafe
             if (IsCached(_rcRequest.CacheFileName))
             {
                 LogDebug("sending: " + _rcRequest.GenericWebRequest.RequestUri + " from cache.");
-                // Try getting the mime type from the index
-                string contentType = GetMimeType(RequestUri);
+                
+                // get the content type if its a Google proxied search request
+                string contentType = "";
+                if (RequestUri.Contains("http://www.google.com/search?"))
+                {
+                    contentType = "text/html";
+                }
+                else
+                {
+                    // Try getting the mime type from the search index
+                    contentType = GetMimeType(RequestUri);
+                }
+
                 // try getting the content type from the file extension
                 if (contentType.Equals("text/unknown"))
                     contentType = Util.GetContentTypeOfFile(_rcRequest.CacheFileName);
@@ -188,7 +204,7 @@ namespace RuralCafe
                 }
             }
 
-            SendErrorPage(HTTP_NOT_FOUND, "ignoring blacklisted", RequestUri);
+            SendErrorPage(HTTP_NOT_FOUND, "page not found", RequestUri);
 
             return (int)Status.NotFound;
         }
@@ -270,6 +286,8 @@ namespace RuralCafe
 
             if (IsRCHomePage())
             {
+                // JAY: disabling of any queuing for download... this is a bit messy, but the idea is that
+                // JAY: the UI is streamlined for absolutely zero remote updates, will be changed with new UI overhaul.
                 if (((RCLocalProxy)_proxy).RCSearchPage.Equals("http://www.ruralcafe.net/cip.html"))
                 {
                     ServeRCSearchPage(((RCLocalProxy)_proxy).RCSearchPage);
@@ -332,6 +350,7 @@ namespace RuralCafe
                     QueueRequest();
                 }
 
+                /* XXX: not serving random stuff during a queue request
                 LocalRequestHandler latestRequest = ((RCLocalProxy)_proxy).GetLatestRequest(_clientAddress);
                 if (latestRequest != null)
                 {
@@ -345,7 +364,7 @@ namespace RuralCafe
                         StreamFromCacheToClient(latestRequest.CacheFileName, latestRequest.IsCompressed());
                     }
                 }
-
+                */
                 return (int)Status.Completed;
             }
 
@@ -513,20 +532,25 @@ namespace RuralCafe
                 {
                     string linkAnchorText = requestHandler.SearchTermsOrURI();
                     string linkTarget = "";
+                    /* JAY: XXX: Think this code was from a long time ago when we were converting google requests, depricated for now.
                     if (!(requestHandler.RequestUri.Contains("textfield=www.") ||
                         requestHandler.RequestUri.Contains("textfield=http://")))
                     {
                         //linkString = request.RequestUri.Replace("request", "search");
                     }
                     else
+                    {*/
+                    linkAnchorText = requestHandler.SearchTermsOrURI();
+                    linkTarget = requestHandler.RequestUri;
+
+                    // if its a search request, translate to the google version to get the remotely returned google results
+                    if (!linkAnchorText.StartsWith("http://"))
                     {
-                        linkTarget = requestHandler.SearchTermsOrURI();
-                        if (!linkTarget.StartsWith("http://"))
-                        {
-                            linkTarget = "http://" + linkTarget;
-                            linkAnchorText = "http://" + linkAnchorText;
-                        }
+                        linkTarget = requestHandler.RCRequest.TranslateRCSearchToGoogle();
                     }
+                    //    linkAnchorText = "http://" + linkAnchorText;
+                    //}
+                    //}
                     if (requestHandler.RequestStatus == (int)Status.Completed)
                     {
 
@@ -659,7 +683,7 @@ namespace RuralCafe
 
                 //SendMessage();//: \"" + lastRequestedPage.GetSearchTerms() + "\"<br>");
 
-                /* JJJ: disabled queue remote request
+                /* JAY: disabled queue remote request
                 string lastUri = lastRequestedPage.RequestUri.Replace("search", "request");
                 lastUri = lastUri + "&referrer=" + RequestUri;
                 lastUri = lastUri + "&button=Queue+Request&specificity=normal&richness=low&depth=normal";
@@ -670,7 +694,7 @@ namespace RuralCafe
                  */
 
                 /*
-                // JJJ: Disabled query suggestions
+                // JAY: Disabled query suggestions
                 // suggested queries
                 string relatedQueries = GetRelatedQueriesLinks(lastRequestedPage.GetSearchTerms());
                 if (!relatedQueries.Contains("href")) 
@@ -716,7 +740,7 @@ namespace RuralCafe
                             title = "No Title";
                         }
 
-                        // JJJ: find content snippet here
+                        // JAY: find content snippet here
                         //contentSnippet = 
 
                         resultsString = "<tr>" +
@@ -762,7 +786,7 @@ namespace RuralCafe
                         title = "No Title";
                     }
 
-                    // JJJ: find content snippet here
+                    // JAY: find content snippet here
                     //contentSnippet = 
 
                     resultsString = "<tr>" +
@@ -934,6 +958,30 @@ namespace RuralCafe
 
         #endregion
 
+        #region Google Fun
+
+        private bool IsGoogleResultLink()
+        {
+            if (RequestUri.StartsWith("http://www.google.com/url?q="))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        private void TranslateGoogleResultLink()
+        {
+            string newLinkUri = RequestUri.Replace("http://www.google.com/url?q=", "");
+            int stopIndex = newLinkUri.IndexOf("&");
+            newLinkUri = newLinkUri.Substring(0, stopIndex);
+            RequestUri = newLinkUri;
+
+            string fileName = RCRequest.UriToFilePath(RequestUri);
+            HashedFileName = RCRequest.HashedFilePath(fileName) + fileName;
+            CacheFileName = Proxy.CachePath + HashedFileName;
+        }
+
+        #endregion
 
         #region Serve Wikipedia Page Methods
 

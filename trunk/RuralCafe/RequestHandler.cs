@@ -180,11 +180,13 @@ namespace RuralCafe
         /// <summary>Hashed base name of the file if the RCRequest is stored in the cache.</summary>
         public string HashedFileName
         {
+            set { _rcRequest.HashedFileName = value; }
             get { return _rcRequest.HashedFileName; }
         }
         /// <summary>Name of the file if the RCRequest is stored in the cache.</summary>
         public string CacheFileName
         {
+            set { _rcRequest.CacheFileName = value; }
             get { return _rcRequest.CacheFileName; }
         }
         /// <summary>Checks whether the RCRequest is stored in the cache.</summary>
