@@ -556,7 +556,7 @@ namespace RuralCafe
             {
                 foreach (LocalRequestHandler requestHandler in requestHandlers)
                 {
-                    string itemId = new String(requestHandler.ID);
+                    string itemId = "" + requestHandler.ID;
                     string linkAnchorText = requestHandler.SearchTermsOrURI();
                     string linkTarget = requestHandler.RequestUri;
                     string statusString = "";
@@ -642,7 +642,7 @@ namespace RuralCafe
             NameValueCollection qscoll = HttpUtility.ParseQueryString(RequestUri);
             int numItems = Int32.Parse(qscoll.Get("n"));
             int pageNumber = Int32.Parse(qscoll.Get("p"));
-            int searchString = qscoll.Get("s");
+            string queryString = qscoll.Get("s");
 
             SendOkHeaders("text/html");
             string resultsString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
