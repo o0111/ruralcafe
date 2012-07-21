@@ -26,6 +26,7 @@ using System.Threading;
 
 using System.Web;
 using Lucene.Net.Search;
+using System.Collections.Specialized;
 using BzReader;
 
 namespace RuralCafe
@@ -219,6 +220,45 @@ namespace RuralCafe
         /// <returns>Request status.</returns>
         private int ServeRCPage()
         {
+            if (IsIndex())
+            {
+                try
+                {
+                    ServeRCIndexPage();
+                }
+                catch (Exception)
+                {
+                    return (int)Status.Failed;
+                }
+                return (int)Status.Completed;
+            }
+
+            if (IsResult())
+            {
+                try
+                {
+                    ServeRCResultPage();
+                }
+                catch (Exception)
+                {
+                    return (int)Status.Failed;
+                }
+                return (int)Status.Completed;
+            }
+
+            if (IsQueue())
+            {
+                try
+                {
+                    ServeRCQueuePage();
+                }
+                catch (Exception)
+                {
+                    return (int)Status.Failed;
+                }
+                return (int)Status.Completed;
+            }
+
             if (IsRemovePage())
             {
                 try
@@ -371,6 +411,37 @@ namespace RuralCafe
             SendErrorPage(HTTP_NOT_FOUND, "page does not exist", RequestUri);
             return (int)RequestHandler.Status.NotFound;
         }
+
+
+        /// <summary>Checks if the request is for the RuralCafe command to get the index page.</summary>
+        bool IsIndex()
+        {
+            if (RequestUri.StartsWith("http://www.ruralcafe.net/request/index.xml"))
+            {
+                return true;
+            }
+            return false;
+        }
+        /// <summary>Checks if the request is for the RuralCafe command to get the queue.</summary>
+        bool IsQueue()
+        {
+            if (RequestUri.StartsWith("http://www.ruralcafe.net/request/queue.xml"))
+            {
+                return true;
+            }
+            return false;
+        }
+        /// <summary>Checks if the request is for the RuralCafe command to get the search results.</summary>
+        bool IsResult()
+        {
+            if (RequestUri.StartsWith("http://www.ruralcafe.net/request/result.xml"))
+            {
+                return true;
+            }
+            return false;
+        }
+
+
         /// <summary>Checks if the request is for the RuralCafe homepage.</summary>
         private bool IsRCHomePage()
         {
@@ -450,6 +521,216 @@ namespace RuralCafe
                 return true;
             }
             return false;
+        }
+
+        /// <summary>Sends the frame page to the client.</summary>
+        void ServeRCIndexPage()
+        {
+            // Parse parameters
+            NameValueCollection qscoll = HttpUtility.ParseQueryString(RequestUri);
+            int numItems = Int32.Parse(qscoll.Get("n"));
+            int pageNumber = Int32.Parse(qscoll.Get("p"));
+            string searchString = qscoll.Get("s");
+
+            SendOkHeaders("text/html");
+            // not building the xml file yet, just sending the dummy page for now since there's really no top categories query yet
+            // for the cache path
+            StreamFromCacheToClient(((RCLocalProxy)_proxy).UIPagesPath + "index.xml", false);
+        }
+
+        /// <summary>Sends the frame page to the client.</summary>
+        void ServeRCQueuePage()
+        {
+            // Parse parameters
+            NameValueCollection qscoll = HttpUtility.ParseQueryString(RequestUri);
+            int userId = Int32.Parse(qscoll.Get("u"));
+            string date = qscoll.Get("v");
+
+            List<LocalRequestHandler> requestHandlers = ((RCLocalProxy)_proxy).GetRequests(_clientAddress);
+
+            SendOkHeaders("text/html");
+
+            string queuePageString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + "<queue>";
+            int i = 1;
+            if (requestHandlers != null)
+            {
+                foreach (LocalRequestHandler requestHandler in requestHandlers)
+                {
+                    string itemId = new String(requestHandler.ID);
+                    string linkAnchorText = requestHandler.SearchTermsOrURI();
+                    string linkTarget = requestHandler.RequestUri;
+                    string statusString = "";
+
+                    // if its a search request, translate to the google version to get the remotely returned google results
+                    if (linkAnchorText.StartsWith("http://"))
+                    {
+                        linkTarget = linkAnchorText;
+                    }
+                    else
+                    {
+                        linkTarget = requestHandler.RCRequest.TranslateRCSearchToGoogle();
+                    }
+
+                    /*
+                    Failed = -1,
+                    Received = 0,
+                    Requested = 1,
+                    Completed = 2,
+                    Cached = 3,             
+                    NotCacheable = 4,
+                    NotFound = 5,
+                    StreamedTransparently = 6,
+                    Ignored = 7
+                     */
+                    if (requestHandler.RequestStatus == (int)Status.Failed)
+                    {
+                        statusString = "Failed";
+                    }
+                    else if (requestHandler.RequestStatus == (int)Status.Received)
+                    {
+                        statusString = "Received";
+                    }
+                    else if (requestHandler.RequestStatus == (int)Status.Requested)
+                    {
+                        statusString = "Requested";
+                    }
+                    else if (requestHandler.RequestStatus == (int)Status.Completed)
+                    {
+                        statusString = "Completed";
+                    }
+                    else if (requestHandler.RequestStatus == (int)Status.Cached)
+                    {
+                        statusString = "Cached";
+                    }
+                    else if (requestHandler.RequestStatus == (int)Status.NotCacheable)
+                    {
+                        statusString = "NotCacheable";
+                    }
+                    else if (requestHandler.RequestStatus == (int)Status.NotFound)
+                    {
+                        statusString = "NotFound";
+                    }
+                    else if (requestHandler.RequestStatus == (int)Status.StreamedTransparently)
+                    {
+                        statusString = "StreamedTransparently";
+                    }
+                    else if (requestHandler.RequestStatus == (int)Status.Ignored)
+                    {
+                        statusString = "Ignored";
+                    }
+
+                    // build the actual element
+                    queuePageString = queuePageString +
+                                    "<item id=\"" + itemId + "\">" +
+                                        "<title>" + linkAnchorText + "</title>" +
+                                        "<url>" + linkTarget + "</url>" +
+                                        "<status>" + statusString + "</status>" +
+                                        "<size>" + "unknown" + "</size>" +
+                                    "</item>";
+                    i++;
+                }
+            }
+
+            queuePageString = queuePageString + "<queue>";
+            SendMessage(queuePageString);
+        }
+
+        /// <summary>Sends the frame page to the client.</summary>
+        void ServeRCResultPage()
+        {
+            // Parse parameters
+            NameValueCollection qscoll = HttpUtility.ParseQueryString(RequestUri);
+            int numItems = Int32.Parse(qscoll.Get("n"));
+            int pageNumber = Int32.Parse(qscoll.Get("p"));
+            int searchString = qscoll.Get("s");
+
+            SendOkHeaders("text/html");
+            string resultsString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+
+            List<Lucene.Net.Documents.Document> filteredLuceneResults = new List<Lucene.Net.Documents.Document>();
+            HitCollection wikiResults = new HitCollection();
+            if (queryString.Trim().Length > 0)
+            {
+                // Query the Wiki index
+                wikiResults = Indexer.Search(queryString, RCLocalProxy.WikiIndices.Values, Indexer.MAX_SEARCH_HITS);
+
+                // Query our RuralCafe index
+                List<Lucene.Net.Documents.Document> luceneResults = IndexWrapper.Query(((RCLocalProxy)_proxy).IndexPath, queryString);
+
+                //List<Lucene.Net.Documents.Document> luceneResults = new List<Lucene.Net.Documents.Document>();             
+                // remove duplicates
+                foreach (Lucene.Net.Documents.Document document in luceneResults)
+                {
+                    string documentUri = document.Get("uri");
+                    string documentTitle = document.Get("title");
+
+                    // ignore blacklisted domains
+                    if (IsBlacklisted(documentUri))
+                    {
+                        continue;
+                    }
+
+                    bool exists = false;
+                    foreach (Lucene.Net.Documents.Document filteredDocument in filteredLuceneResults)
+                    {
+                        string documentUri2 = filteredDocument.Get("uri");
+                        string documentTitle2 = filteredDocument.Get("title");
+                        if (documentUri.Equals(documentUri2) || documentTitle.Equals(documentTitle2))
+                        {
+                            exists = true;
+                            break;
+                        }
+                    }
+                    if (exists == false)
+                    {
+                        filteredLuceneResults.Add(document);
+                    }
+
+                }
+            }
+
+            LogDebug(filteredLuceneResults.Count + " results");
+
+            resultsString = resultsString + "<search total=\"" + filteredLuceneResults.Count + "\">";
+            // Local Search Results
+            for (int i = 0; i < filteredLuceneResults.Count; i++)
+            {
+                Lucene.Net.Documents.Document result = filteredLuceneResults.ElementAt(i);
+
+                string uri = result.Get("uri");
+                string title = result.Get("title");
+                string displayUri = uri;
+                string contentSnippet = "";
+
+                /*
+                if (uri.Length > maxLength)
+                {
+                    displayUri = uri.Substring(0, maxLength) + "...";
+                }
+                if (title.Length > maxLength)
+                {
+                    title = title.Substring(0, maxLength) + "...";
+                }
+                else if (title.Length == 0)
+                {
+                    title = "No Title";
+                }*/
+
+                // JAY: find content snippet here
+                //contentSnippet = 
+
+                resultsString = resultsString +
+                                "<item>" +
+                                "<title>" + title + "</title>" +
+                                "<url>" + uri + "</url>" +
+                                "<snippet>" + contentSnippet + "</snippet>" +
+                                "</item>";
+            }
+
+            resultsString = resultsString + "</search>";
+
+            SendOkHeaders("text/html");
+            SendMessage(resultsString);
         }
 
         /// <summary>Sends the frame page to the client.</summary>
