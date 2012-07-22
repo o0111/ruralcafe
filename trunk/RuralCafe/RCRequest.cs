@@ -185,6 +185,7 @@ namespace RuralCafe
              GenericWebRequest.Timeout = timeout;
         }
 
+        // XXX: obsolete into settings?
         /// <summary>
         /// Parses the RuralCafe search fields for later use.
         /// </summary>

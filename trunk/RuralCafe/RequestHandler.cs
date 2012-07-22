@@ -108,11 +108,11 @@ namespace RuralCafe
         /// <summary>
         /// Overriding Equals() from base object.
         /// Instead of testing for equality of reference,
-        /// just check if the actual requested pages are equivalent
+        /// just check if the request IDs are equal
         /// </summary>        
         public override bool Equals(object obj)
         {
-            return (RequestUri.Equals(((RequestHandler)obj).RequestUri));
+            return (ID.Equals(((RequestHandler)obj).ID));
         }
         /// <summary>
         /// Overriding GetHashCode() from base object.

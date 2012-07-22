@@ -1,0 +1,271 @@
+*{
+	padding:0;
+	margin:0;
+}
+
+
+body{
+	font-family: Verdana ,Arial, sans-serif;
+	font-size:12px;
+	margin: 0;
+	overflow: hidden;/*Disable scrollbars. Set to "scroll" to enable*/
+	height: 100%;
+	max-height: 100%; 
+	color:#222;
+}
+
+a:link{
+	color:#2bb600;
+}
+a:visited{
+	color:#1e7e00;
+}
+
+#search_div{
+	position: absolute; 
+	top: 0; 
+	left: 0; 
+	width: 100%; 
+	height: 60px; /*Height of top frame div*/
+	background-color: #DCE4E4;
+	border-bottom: solid 1px #C8D5D5;
+}
+
+
+#queue_div{
+	position: absolute; 
+	top: auto;
+	bottom: 0;
+	width: 100%; 
+	height: 225px; /*Height of bottom frame div*/
+	background-color: #DCE4E4;
+	border-top: solid 1px #C8D5D5;
+}
+
+#main_div{
+	z-index:-1;
+	position: fixed; 
+	top: 60px; /*Set top value to HeightOfTopFrameDiv*/
+	left: 0;
+	right: 0;
+	bottom: 220px; /*Set bottom value to HeightOfBottomFrameDiv*/
+	background: #ffffff;
+}
+
+#main_frame{
+	width:100%;
+	height:100%;
+	border:0;
+}
+
+#trotro_icon{
+	height:60px;
+}
+
+a img{
+	border:0;
+}
+
+#logo{
+	float:left;
+}
+
+#search_box{
+	margin-top:5px;
+}
+
+#search_input{
+	height:45px;
+	border:solid 1px #C8D5D5;
+	font-size:24px;
+	width:30%;
+	float:left;
+}
+
+#search_btn{
+	width:45px;
+	height:45px;
+	background-image:url(../img/search_btn.png);
+	border:0;
+}
+	
+	
+#internet_box{
+	margin-top:5px;
+	position:absolute;
+	right:0;
+	top:0;
+	height:55px;
+	width:80px;
+	color:#999;
+}
+
+#internet_status{
+	color:#2bb600;
+	font-weight:bold;
+	line-height:18px;
+	font-size:24px;
+}
+
+#internet_signin{
+	margin-top:5px;
+	color:#333;
+}
+
+#queue_title{
+	width:100%;
+	border-collapse:collapse;
+}
+
+#expand_div{
+	padding:0 5px;
+}
+#queue_box{
+	overflow-y: scroll;
+	overflow-x: hidden;
+	height:140px;
+}
+table#queue_table{
+	width:100%;
+	text-align:center;
+	border:solid 1px #C8D5D5;
+	border-collapse:collapse;
+}
+
+table#queue_title th{
+	color:white;
+	background-color:#5d6262;
+}
+
+table#queue_table td,table#queue_title th{
+	border:0;
+	padding:2px;
+}
+
+table#queue_table .odd_tr{
+	background-color:#c4cccc;
+}
+
+#open_div{
+	height:20px;
+	padding:0 5px;
+	border-bottom: solid 1px #C8D5D5;
+}
+
+#open_img{
+	height:19px;
+	border:0;
+}
+
+#open_a{
+	float:right;
+}
+
+.eta_col{
+	width:10em;
+	font-weight:bold;
+	background-color:#b3daae;
+}
+
+.odd_tr .eta_col{
+	background-color:#a1c89d;
+}
+
+#queue_title .action_col{
+	width:16em;
+}
+.action_col{
+	width:15em;
+}
+
+.size_col{
+	width:7em;
+}
+
+.status_col{
+	width:12em;
+}
+
+#expand_img{
+	height:19px;
+}
+	
+#control_frame{
+	padding:5px;
+	height:20px;
+	overflow:hidden;
+}
+
+#viewtag, #timetag, #downloadtag{
+	display:block;
+	float:left;
+	width:20%;
+}
+
+#timetag{
+	width:59%;
+	font-size:14px;
+	font-weight:bold;
+	text-align:center;
+}
+/* These styles create the dropdown menus. */
+#optionbar li {
+   list-style: none;
+   float: right; }
+   
+#optionbar li a {
+   background-color: #5d6262;
+   color: #fff;
+}
+
+#optionbar li ul {
+   display: none; 
+   width: 18em; /* Width to help Opera out */
+   background-color: #5d6262;}
+   
+#optionbar li:hover ul, #optionbar li.hover ul {
+   display: block;
+   position: absolute;
+   right:5px;
+   margin: 0;
+   padding: 0; }
+   
+#optionbar li:hover li, #optionbar li.hover li {
+   float: none; }
+   
+#optionbar li:hover a, #optionbar li.hover a {
+   background-color: #5d6262;
+   border-bottom: 1px solid #C8D5D5;
+}
+   
+#optionbar li li a:hover {
+   background-color: #4ace21; 
+   color: #000;}
+   
+/* ~~ The navigation list styles (can be removed if you choose to use a premade flyout menu like Spry) ~~ */
+ul.nav {
+	list-style: none;
+	padding:0px;
+}
+
+ul.nav a, ul.nav a:visited { /* grouping these selectors makes sure that your links retain their button look even after being visited */
+   	padding: 4px 12px;
+	display: block; /* this gives the link block properties causing it to fill the whole LI containing it. This causes the entire area to react to a mouse click. */
+	text-decoration: none;
+}
+
+#control_frame #download_all_btn{
+	padding:4px 4em;
+	text-align:center;
+}
+
+#control_frame #download_all_btn:hover{
+
+   background-color: #4ace21; 
+   color: #000
+}
+
+#option_icon{
+	height:22px;
+	border-left:1px solid #C8D5D5;
+}
