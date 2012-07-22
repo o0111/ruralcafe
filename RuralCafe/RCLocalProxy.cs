@@ -46,9 +46,9 @@ namespace RuralCafe
         // big queue for lining up requests to remote proxy
         private List<LocalRequestHandler> _globalRequestQueue;
         // dictionary of linked lists of requests made by each client
-        private Dictionary<IPAddress, List<LocalRequestHandler>> _clientRequestQueueMap;
+        private Dictionary<int, List<LocalRequestHandler>> _clientRequestQueueMap;
         // dictionary of last requested page by each client
-        private Dictionary<IPAddress, LocalRequestHandler> _clientLastRequestMap;
+        private Dictionary<int, LocalRequestHandler> _clientLastRequestMap;
 
         // notifies that a new request has arrived
         private AutoResetEvent _newRequestEvent;
@@ -116,8 +116,8 @@ namespace RuralCafe
             _indexPath = indexPath;
             _wikiDumpPath = wikiDumpPath;
             _globalRequestQueue = new List<LocalRequestHandler>();
-            _clientRequestQueueMap = new Dictionary<IPAddress, List<LocalRequestHandler>>();
-            _clientLastRequestMap = new Dictionary<IPAddress, LocalRequestHandler>();
+            _clientRequestQueueMap = new Dictionary<int, List<LocalRequestHandler>>();
+            _clientLastRequestMap = new Dictionary<int, LocalRequestHandler>();
             _newRequestEvent = new AutoResetEvent(false);
             _averageTimePerRequest = new TimeSpan(0);
 
@@ -322,22 +322,22 @@ namespace RuralCafe
         /// </summary>
         /// <param name="clientAddress">The IP address of the client.</param>
         /// <param name="request">The request to queue.</param>
-        public void QueueRequest(IPAddress clientAddress, LocalRequestHandler requestHandler)
+        public void QueueRequest(int userId, LocalRequestHandler requestHandler)
         {
             List<LocalRequestHandler> requestHandlers = null;
             // add the request to the client's queue
             lock (_clientRequestQueueMap)
             {
-                if (_clientRequestQueueMap.ContainsKey(clientAddress))
+                if (_clientRequestQueueMap.ContainsKey(userId))
                 {
                     // get the queue of client requests
-                    requestHandlers = _clientRequestQueueMap[clientAddress];
+                    requestHandlers = _clientRequestQueueMap[userId];
                 }
                 else
                 {
                     // create the queue of client requests
                     requestHandlers = new List<LocalRequestHandler>();
-                    _clientRequestQueueMap.Add(clientAddress, requestHandlers);
+                    _clientRequestQueueMap.Add(userId, requestHandlers);
                 }
             }
 
@@ -385,14 +385,14 @@ namespace RuralCafe
         /// Removes all requests for a client from the queues.
         /// </summary>
         /// <param name="clientAddress">The IP address of the client.</param>
-        public void ClearRequestQueues(IPAddress clientAddress)
+        public void ClearRequestQueues(int userId)
         {
             // remove from the global queue
             lock (_globalRequestQueue)
             {
-                if (_clientRequestQueueMap.ContainsKey(clientAddress))
+                if (_clientRequestQueueMap.ContainsKey(userId))
                 {
-                    List<LocalRequestHandler> requestHandlers = _clientRequestQueueMap[clientAddress];
+                    List<LocalRequestHandler> requestHandlers = _clientRequestQueueMap[userId];
 
                     foreach (LocalRequestHandler request in requestHandlers)
                     {
@@ -404,13 +404,13 @@ namespace RuralCafe
             // remove the client address' request queue map.
             lock (_clientRequestQueueMap)
             {
-                if (_clientRequestQueueMap.ContainsKey(clientAddress))
+                if (_clientRequestQueueMap.ContainsKey(userId))
                 {
                     // lock to prevent any additions to the clientRequests
-                    List<LocalRequestHandler> requestHandlers = _clientRequestQueueMap[clientAddress];
+                    List<LocalRequestHandler> requestHandlers = _clientRequestQueueMap[userId];
                     lock (requestHandlers)
                     {
-                        _clientRequestQueueMap.Remove(clientAddress);
+                        _clientRequestQueueMap.Remove(userId);
                     }
                 }
             }
@@ -421,7 +421,7 @@ namespace RuralCafe
         /// </summary>
         /// <param name="clientAddress">The IP address of the client.</param>
         /// <param name="request">The request to dequeue.</param>
-        public void DequeueRequest(IPAddress clientAddress, LocalRequestHandler requestHandler)
+        public void DequeueRequest(int userId, LocalRequestHandler requestHandler)
         {
             // remove the request from the global queue
             lock (_globalRequestQueue)
@@ -434,9 +434,9 @@ namespace RuralCafe
 
             // remove the request from the client's queue
             // don't need to lock the _clientRequestQueueMap for reading
-            if (_clientRequestQueueMap.ContainsKey(clientAddress))
+            if (_clientRequestQueueMap.ContainsKey(userId))
             {
-                List<LocalRequestHandler> requestHandlers = _clientRequestQueueMap[clientAddress];
+                List<LocalRequestHandler> requestHandlers = _clientRequestQueueMap[userId];
 
                 lock (requestHandlers)
                 {
@@ -473,14 +473,14 @@ namespace RuralCafe
         /// </summary>
         /// <param name="clientAddress">The IP address of the client.</param>
         /// <returns>The last request of the client or null if it does not exist.</returns>
-        public LocalRequestHandler GetLatestRequest(IPAddress clientAddress)
+        public LocalRequestHandler GetLatestRequest(int userId)
         {
             LocalRequestHandler requestHandler = null;
             lock (_clientLastRequestMap)
             {
-                if (_clientLastRequestMap.ContainsKey(clientAddress))
+                if (_clientLastRequestMap.ContainsKey(userId))
                 {
-                    requestHandler = _clientLastRequestMap[clientAddress];
+                    requestHandler = _clientLastRequestMap[userId];
                 }
             }
             return requestHandler;
@@ -491,17 +491,17 @@ namespace RuralCafe
         /// </summary>
         /// <param name="clientAddress">The IP address of the client.</param>
         /// <param name="request">The request to set as the last request.</param>
-        public void SetLastRequest(IPAddress clientAddress, LocalRequestHandler requestHandler)
+        public void SetLastRequest(int userId, LocalRequestHandler requestHandler)
         {
             lock (_clientLastRequestMap)
             {
-                if (!_clientLastRequestMap.ContainsKey(clientAddress))
+                if (!_clientLastRequestMap.ContainsKey(userId))
                 {
-                    _clientLastRequestMap.Add(clientAddress, requestHandler);
+                    _clientLastRequestMap.Add(userId, requestHandler);
                 }
                 else
                 {
-                    _clientLastRequestMap[clientAddress] = requestHandler;
+                    _clientLastRequestMap[userId] = requestHandler;
                 }
             }
             return;
@@ -512,14 +512,14 @@ namespace RuralCafe
         /// </summary>
         /// <param name="clientAddress">The IP address of the client.</param>
         /// <returns>A list of the requests that belong to a client or null if they does not exist.</returns>
-        public List<LocalRequestHandler> GetRequests(IPAddress clientAddress)
+        public List<LocalRequestHandler> GetRequests(int userId)
         {
             List<LocalRequestHandler> requestHandlers = null;
             lock (_clientLastRequestMap)
             {
-                if (_clientRequestQueueMap.ContainsKey(clientAddress))
+                if (_clientRequestQueueMap.ContainsKey(userId))
                 {
-                    requestHandlers = _clientRequestQueueMap[clientAddress];
+                    requestHandlers = _clientRequestQueueMap[userId];
                 }
             }
             return requestHandlers;
@@ -595,15 +595,15 @@ namespace RuralCafe
         /// </summary>
         /// <param name="clientAddress">The IP address of the client.</param>
         /// <returns>The number of outstanding requests for the client.</returns>
-        public int NumQueuedRequests(IPAddress clientAddress)
+        public int NumQueuedRequests(int userId)
         {
             int count = 0;
             lock (_clientRequestQueueMap)
             {
-                if (_clientRequestQueueMap.ContainsKey(clientAddress))
+                if (_clientRequestQueueMap.ContainsKey(userId))
                 {
                     // don't bother locking client requests since it can't be deleted while holding the previous lock
-                    List<LocalRequestHandler> requestHandlers = _clientRequestQueueMap[clientAddress];
+                    List<LocalRequestHandler> requestHandlers = _clientRequestQueueMap[userId];
                     count = requestHandlers.Count;
                 }
             }
@@ -616,15 +616,15 @@ namespace RuralCafe
         /// </summary>
         /// <param name="clientAddress">The IP address of the client.</param>
         /// <returns>The number of satisfied requests for the client.</returns>
-        public int NumFinishedRequests(IPAddress clientAddress)
+        public int NumFinishedRequests(int userId)
         {
             int count = 0;
             lock (_clientRequestQueueMap)
             {
-                if (_clientRequestQueueMap.ContainsKey(clientAddress))
+                if (_clientRequestQueueMap.ContainsKey(userId))
                 {
                     // don't bother locking client requests since it can't be deleted while holding the previous lock
-                    List<LocalRequestHandler> requestHandlers = _clientRequestQueueMap[clientAddress];
+                    List<LocalRequestHandler> requestHandlers = _clientRequestQueueMap[userId];
                     foreach (LocalRequestHandler requestHandler in requestHandlers)
                     {
                         if (requestHandler.RequestStatus == (int)RequestHandler.Status.Completed ||

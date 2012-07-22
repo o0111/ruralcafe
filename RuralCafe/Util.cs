@@ -22,6 +22,7 @@ using System.Text;
 using System.IO;
 using System.Web;
 using System.Net;
+using System.Collections.Specialized;
 
 namespace RuralCafe
 {
@@ -151,6 +152,18 @@ namespace RuralCafe
             return -1;
         }
 
+        public static NameValueCollection ParseHtmlQuery(string requestUri)
+        {
+            string htmlQuery = "";
+            int offset = requestUri.LastIndexOf("?");
+            if (offset >= 0)
+            {
+                htmlQuery = requestUri.Substring(offset + 1);
+            }
+            return HttpUtility.ParseQueryString(htmlQuery);
+        }
+
+
         /// <summary>
         /// Gets the file extension from the file name.
         /// </summary>
@@ -158,10 +171,17 @@ namespace RuralCafe
         /// <returns>File extension as a string.</returns>
         public static string GetFileExtensionFromFileName(string fileName)
         {
-            string fileExtension = "";
-            int offset1 = fileName.LastIndexOf(Path.DirectorySeparatorChar.ToString());
-            int offset2 = fileName.LastIndexOf(".");
-            if (offset2 > offset1)
+            string fileExtension = fileName;
+            
+            int offset1 = fileExtension.LastIndexOf("?");
+            if (offset1 >= 0)
+            {
+                fileExtension = fileExtension.Substring(0, offset1);
+            }
+
+            //int offset2 = fileName.LastIndexOf(Path.DirectorySeparatorChar.ToString());
+            int offset2 = fileExtension.LastIndexOf(".");
+            if (offset2 > 0)
             {
                 fileExtension = fileName.Substring(offset2);
             }
@@ -212,10 +232,12 @@ namespace RuralCafe
         {
             string fileExtension = GetFileExtensionFromFileName(fileName);
 
+            /*
             if (fileExtension.StartsWith(".asp") || fileExtension.StartsWith(".php"))
             {
                 return "text/html";
             }
+            */
 
             if (!fileExtension.Equals(""))
             {
@@ -426,8 +448,12 @@ namespace RuralCafe
             SetSuffix(".pl", "text/plain");
             SetSuffix(".txt", "text/plain");
             SetSuffix(".java", "text/plain");
-            SetSuffix(".xml", "text/html");
+            SetSuffix(".xml", "text/xml");
+            SetSuffix(".js", "application/javascript");
+            SetSuffix(".css", "text/css");
             SetSuffix(".ico", "image/x-icon");
+            SetSuffix(".asp", "text/html");
+            SetSuffix(".php", "text/html");
         }
     }
 }

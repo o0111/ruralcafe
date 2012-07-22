@@ -1,0 +1,67 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Trotro</title>
+<link href="css/default-login.css" rel="stylesheet" type="text/css" media="all"/>
+<script type="text/javascript" src="js/default.js">
+</script>
+<script type="text/javascript" src="js/ajax.js">
+</script>
+<script type="text/javascript" src="js/offline-request.js">
+</script>
+</head>
+
+<body>
+<div id="search_div">
+	<div id="logo">
+		<a href="index.html" alt="trotro homepage" onclick="return gotoPage(this.href);"><img id="trotro_icon" src="img/icon.png"/></a>
+    </div>
+    <div id="search_box">
+   	<form action="" method="get" onsubmit="return tSearch();">
+    	<input type="text" id="search_input" name="s" value=""/>
+        <input type="submit" id="search_btn" name="search_btn" value=""/>
+    </form>
+    </div>
+    <div id="internet_box">
+    	Internet: <div id="internet_status">Good</div>
+        <div id="internet_signin"><a href="login.html">Sign in</a>
+        </div>
+    </div>
+</div>
+<div id="queue_div">
+<div id="open_div"><img src="img/current_page_icon.png" alt="current page is" /><span id="pagetag">index.html <a class="refreshbtn" href="#">Refresh</a></span><a href="#" onclick="openQueueDiv()" id="open_a"><img src="img/minimize_btn.png" id="expand_img" /></a></div>
+<div id="control_frame">
+<p id="viewtag">View by: dates <a href="#" onclick="return changeView(1);">months</a> <a href="#" onclick="return changeView(2);">all</a></p>
+<h4 id="timetag"><a href="#"><<</a> 2012-07-09 <a href="#">>></a></h4>
+<div id="downloadtag">
+<ul id="optionbar" class="nav">
+<li><img src="img/option_btn.png" id="option_icon" alt="options" />
+<ul>
+<li><a href="#">Download text-only content</a></li>
+<li><a href="#">Download full content</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div id="expand_div">
+<table id="queue_title">
+<tr>
+<th class="request_col">Request</th>
+<th class="status_col">Status</th>
+<th class="size_col">Downloaded </th>
+<th class="action_col">Actions</th>
+</tr>
+</table>
+<div id="queue_box">
+<table id="queue_table">
+</table>
+</div>
+</div>
+</div>
+<div id="main_div">
+	<iframe id="main_frame" src="sample_webpage.html" />
+</div>
+</body>
+</html>

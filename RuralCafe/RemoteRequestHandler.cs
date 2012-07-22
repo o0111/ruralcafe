@@ -801,6 +801,7 @@ namespace RuralCafe
 
         /// <summary>
         /// Guesses if the URI is pointing to a text page.
+        /// Used for downloading embedded objects.
         /// </summary>
         /// <param name="pageUri">URI.</param>
         /// <returns>True or false guess for is or is not.</returns>
@@ -823,6 +824,7 @@ namespace RuralCafe
         }
         /// <summary>
         /// Guesses if the URI is pointing to an image page.
+        /// Used for downloading embedded objects.
         /// </summary>
         /// <param name="pageUri">URI.</param>
         /// <returns>True or false guess for is or is not.</returns>

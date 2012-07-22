@@ -59,14 +59,17 @@ namespace RuralCafe
         /// DUMMY used for request matching.
         /// Not the cleanest implementation need to instantiate a whole object just to match
         /// </summary> 
-        private LocalRequestHandler(RCLocalProxy proxy, Socket socket, string uri)
+        private LocalRequestHandler(RCLocalProxy proxy, Socket socket, string id)
             : this(proxy, socket)
         {
+            /*
             if (!Util.IsValidUri(uri))
             {
                 // XXX: do nothing
             }
-            _rcRequest = new RCRequest(this, uri);
+             */
+            //_rcRequest = new RCRequest(this, uri);
+            _ID = Int32.Parse(id);
 
             /* XXX: don't think the dummy needs this
             // setup the header variables
@@ -142,8 +145,9 @@ namespace RuralCafe
                 return (int)Status.StreamedTransparently;
             }
 
+            // XXX: obsolete
             // set the last requested page for redirects
-            ((RCLocalProxy)_proxy).SetLastRequest(_clientAddress, this);
+            //((RCLocalProxy)_proxy).SetLastRequest(_clientAddress, this);
 
             if (IsCached(_rcRequest.CacheFileName))
             {
@@ -264,8 +268,8 @@ namespace RuralCafe
                 try
                 {
                     //LogDebug("removing request from queues " + RequestUri);
-                    DequeueRequest();
-                    ServeRCRequestsRedirect();
+                    RemoveRequest();
+                    //ServeRCRequestsRedirect();
                 }
                 catch (Exception)
                 {
@@ -274,12 +278,14 @@ namespace RuralCafe
                 return (int)Status.Completed;
             }
 
+            /*
+            // XXX: obsolete
             if (IsRemoveAllPage())
             {
                 //LogDebug("removing all requests from queues");
                 try
                 {
-                    ((RCLocalProxy)_proxy).ClearRequestQueues(_clientAddress);
+                    ((RCLocalProxy)_proxy).ClearRequestQueues(userId);
                     ServeRCRequestsRedirect();
                 }
                 catch (Exception)
@@ -287,11 +293,12 @@ namespace RuralCafe
                     return (int)Status.Failed;
                 }
                 return (int)Status.Completed;
-            }
+            }*/
 
-            // XXX: this code may be obsolete
-            if (IsAddPage() || IsRetryPage())
+            if (IsAddPage() || IsRefreshPage())
             {
+                AddRequest();
+                /*
                 // extract the actual requested URI
                 int offset = RequestUri.IndexOf('=');
                 string requestedUri = RequestUri.Substring(offset + 1);
@@ -305,7 +312,7 @@ namespace RuralCafe
                 string queryString = _rcRequest.GetRCSearchField("textfield");
                 if (queryString.Trim().Length > 0)
                 {
-                    QueueRequest();
+                    AddRequest();
                 }
 
                 // special case where we want to send the user back to the search results page
@@ -319,13 +326,15 @@ namespace RuralCafe
                 else
                 {
                     SendErrorPage(HTTP_NOT_FOUND, "no RefererUri found after adding page", "");
-                }
+                }*/
 
                 return (int)Status.Completed;
             }
 
             if (IsRCHomePage())
             {
+                ServeRCSearchPage(((RCLocalProxy)_proxy).RCSearchPage);
+                /*
                 // JAY: disabling of any queuing for download... this is a bit messy, but the idea is that
                 // JAY: the UI is streamlined for absolutely zero remote updates, will be changed with new UI overhaul.
                 if (((RCLocalProxy)_proxy).RCSearchPage.Equals("http://www.ruralcafe.net/cip.html"))
@@ -334,33 +343,64 @@ namespace RuralCafe
                 }
                 else
                 {
-                    ServeRCFrames();
-                }
+                    ServeRCSearchPage(((RCLocalProxy)_proxy).RCSearchPage);
+                    //ServeRCFrames();
+                }*/
 
                 return (int)Status.Completed;
             }
 
+            /*
+            string fileName = pageUri;
+            int offset = pageUri.LastIndexOf('/');
+            if (offset >= 0 && offset < (pageUri.Length - 1))
+            {
+                fileName = pageUri.Substring(offset + 1);
+                fileName = "images" + Path.DirectorySeparatorChar + fileName;
+            }*/
+
+            string fileName = RequestUri.Replace("http://www.ruralcafe.net/", "");
+            fileName = fileName.Replace('/', Path.DirectorySeparatorChar);
+            fileName = ((RCLocalProxy)_proxy).UIPagesPath + fileName;
+            string contentType = Util.GetContentTypeOfFile(fileName);
+            SendOkHeaders(contentType);
+            LogDebug(contentType);
+            long bytesSent = StreamFromCacheToClient(fileName, false);
+            if (bytesSent > 0)
+            {
+                return (int)Status.Completed;
+            }
+
+            /*
+            // XXX: obsolete
             if (IsRCHeaderPage())
             {
                 ServeRCHeader();
 
                 return (int)Status.Completed;
             }
+            */
 
+            /*
+            // XXX: obsolete
             if (IsRCRequestsPage())
             {
                 ServeRCRequestsPage();
 
                 return (int)Status.Completed;
-            }
+            }*/
 
+            /*
+            // XXX: obsolete
             if (IsRCImagePage())
             {
                 ServeRCImage(RequestUri);
 
                 return (int)Status.Completed;
-            }
+            }*/
 
+            /*
+            // XXX: obsolete
             if (IsRCLocalSearch())
             {
                 LogDebug("serving RuralCafe results page");
@@ -378,8 +418,10 @@ namespace RuralCafe
                 }
 
                 return (int)Status.Completed;
-            }
+            }*/
 
+            /*
+            // XXX: obsolete
             if (IsRCRemoteQuery())
             {
                 LogDebug("queuing RuralCafe remote request");
@@ -387,27 +429,12 @@ namespace RuralCafe
                 string requestString = _rcRequest.GetRCSearchField("textfield");
                 if (requestString.Trim().Length > 0)
                 {
-                    QueueRequest();
+                    AddRequest();
                 }
 
-                /* XXX: not serving random stuff during a queue request
-                LocalRequestHandler latestRequest = ((RCLocalProxy)_proxy).GetLatestRequest(_clientAddress);
-                if (latestRequest != null)
-                {
-                    requestString = latestRequest.SearchTermsOrURI();
-                    if (IsRCLocalSearch() || IsRCRemoteQuery())
-                    {
-                        ServeRCResultsPage(requestString);
-                    }
-                    else
-                    {
-                        StreamFromCacheToClient(latestRequest.CacheFileName, latestRequest.IsCompressed());
-                    }
-                }
-                */
                 return (int)Status.Completed;
             }
-
+            */
             SendErrorPage(HTTP_NOT_FOUND, "page does not exist", RequestUri);
             return (int)RequestHandler.Status.NotFound;
         }
@@ -441,21 +468,23 @@ namespace RuralCafe
             return false;
         }
 
-
         /// <summary>Checks if the request is for the RuralCafe homepage.</summary>
         private bool IsRCHomePage()
         {
             if (RequestUri.Equals("http://www.ruralcafe.net") ||
                 RequestUri.Equals("http://www.ruralcafe.net/") ||
                 RequestUri.Equals("www.ruralcafe.net") ||
-                RequestUri.Equals("www.ruralcafe.net/") ||
-                RequestUri.Equals("http://www.ruralcafe.net/index.html") ||
-                RequestUri.Equals("www.ruralcafe.net/index.html"))
+                RequestUri.Equals("www.ruralcafe.net/"))
+            //    RequestUri.Equals("http://www.ruralcafe.net/index.html") ||
+            //    RequestUri.Equals("www.ruralcafe.net/index.html"))
             {
                 return true;
             }
             return false;
         }
+
+        /*
+        // XXX: obsolete
         /// <summary>Checks if the request is for the RuralCafe header page.</summary>
         private bool IsRCHeaderPage()
         {
@@ -466,6 +495,10 @@ namespace RuralCafe
             }
             return false;
         }
+        */
+
+        /*
+        // XXX: obsolete
         /// <summary>Checks if the request is for the RuralCafe requests page.</summary>
         private bool IsRCRequestsPage()
         {
@@ -475,7 +508,9 @@ namespace RuralCafe
                 return true;
             }
             return false;
-        }
+        }*/
+        /*
+        // XXX: obsolete
         /// <summary>Checks if the request is for the RuralCafe image page.</summary>
         bool IsRCImagePage()
         {
@@ -486,10 +521,13 @@ namespace RuralCafe
             }
             return false;
         }
+        */
+
         /// <summary>Checks if the request is for the RuralCafe command to add a URI.</summary>
         bool IsAddPage()
         {
-            if (RequestUri.StartsWith("http://www.ruralcafe.net/addpage="))
+            if (RequestUri.StartsWith("http://www.ruralcafe.net/request/add?"))
+            // if (RequestUri.StartsWith("http://www.ruralcafe.net/addpage="))
             {
                 return true;
             } 
@@ -498,7 +536,8 @@ namespace RuralCafe
         /// <summary>Checks if the request is for the RuralCafe command to remove a URI.</summary>
         bool IsRemovePage()
         {
-            if (RequestUri.StartsWith("http://www.ruralcafe.net/removepage="))
+            if (RequestUri.StartsWith("http://www.ruralcafe.net/request/remove?"))
+            // if (RequestUri.StartsWith("http://www.ruralcafe.net/removepage="))
             {
                 return true;
             }
@@ -514,9 +553,10 @@ namespace RuralCafe
             return false;
         }
         /// <summary>Checks if the request is for the RuralCafe command to retry a URI.</summary>
-        bool IsRetryPage()
+        bool IsRefreshPage()
         {
-            if (RequestUri.StartsWith("http://www.ruralcafe.net/retrypage="))
+            if (RequestUri.StartsWith("http://www.ruralcafe.net/request/refresh?="))
+            // if (RequestUri.StartsWith("http://www.ruralcafe.net/retrypage="))
             {
                 return true;
             }
@@ -533,9 +573,9 @@ namespace RuralCafe
         void ServeRCIndexPage()
         {
             // Parse parameters
-            NameValueCollection qscoll = HttpUtility.ParseQueryString(RequestUri);
+            NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
             int numItems = Int32.Parse(qscoll.Get("n"));
-            int pageNumber = Int32.Parse(qscoll.Get("p"));
+            int numCategories = Int32.Parse(qscoll.Get("c"));
             string searchString = qscoll.Get("s");
 
             SendOkHeaders("text/xml");
@@ -557,11 +597,11 @@ namespace RuralCafe
         void ServeRCQueuePage()
         {
             // Parse parameters
-            NameValueCollection qscoll = HttpUtility.ParseQueryString(RequestUri);
+            NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
             int userId = Int32.Parse(qscoll.Get("u"));
             string date = qscoll.Get("v");
 
-            List<LocalRequestHandler> requestHandlers = ((RCLocalProxy)_proxy).GetRequests(_clientAddress);
+            List<LocalRequestHandler> requestHandlers = ((RCLocalProxy)_proxy).GetRequests(userId);
 
             string queuePageString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + "<queue>";
             int i = 1;
@@ -659,7 +699,7 @@ namespace RuralCafe
         void ServeRCResultPage()
         {
             // Parse parameters
-            NameValueCollection qscoll = HttpUtility.ParseQueryString(RequestUri);
+            NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
             int numItemsPerPage = Int32.Parse(qscoll.Get("n"));
             int pageNumber = Int32.Parse(qscoll.Get("p"));
             string queryString = qscoll.Get("s");
@@ -758,6 +798,8 @@ namespace RuralCafe
             SendMessage(resultsString);
         }
 
+        /*
+        // XXX: obsolete
         /// <summary>Sends the frame page to the client.</summary>
         void ServeRCFrames()
         {
@@ -773,7 +815,8 @@ namespace RuralCafe
 
             SendOkHeaders("text/html");
             SendMessage(framesPage);
-        }
+        }*/
+
         /// <summary>Sends the header page to the client.</summary>
         void ServeRCHeader()
         {
@@ -815,10 +858,13 @@ namespace RuralCafe
             SendOkHeaders("text/html");
             SendMessage(headerPage);
         }
+
+        /*
+        // XXX: Obsolete
         /// <summary>Sends the requests page to the client.</summary>
         private void ServeRCRequestsPage()
         {
-            List<LocalRequestHandler> requestHandlers = ((RCLocalProxy)_proxy).GetRequests(_clientAddress);
+            //List<LocalRequestHandler> requestHandlers = ((RCLocalProxy)_proxy).GetRequests(_clientAddress);
 
             string linksPageHeader = "<html><head><meta http-equiv=\"refresh\" content=\"10\"></head>" +
                 "<body><center>" +
@@ -838,14 +884,7 @@ namespace RuralCafe
                 {
                     string linkAnchorText = requestHandler.SearchTermsOrURI();
                     string linkTarget = "";
-                    /* JAY: XXX: Think this code was from a long time ago when we were converting google requests, depricated for now.
-                    if (!(requestHandler.RequestUri.Contains("textfield=www.") ||
-                        requestHandler.RequestUri.Contains("textfield=http://")))
-                    {
-                        //linkString = request.RequestUri.Replace("request", "search");
-                    }
-                    else
-                    {*/
+
                     //linkAnchorText = requestHandler.SearchTermsOrURI();
                     linkTarget = requestHandler.RequestUri;
 
@@ -904,10 +943,11 @@ namespace RuralCafe
                 }
             }
 
-            string linksPageFooter = "</table>" +/*<a href=\"http://www.ruralcafe.net/requests.html\">[REFRESH]</a>*/ "</center></body></html>";
+            string linksPageFooter = "</table>" + "</center></body></html>";
             SendMessage(linksPageFooter);
-        }
+        }*/
 
+        // XXX: obsolete
         /// <summary>Serves the RuralCafe search page.</summary>
         private void ServeRCSearchPage(string pageUri)
         {
@@ -928,6 +968,9 @@ namespace RuralCafe
                 StreamFromCacheToClient(((RCLocalProxy)_proxy).UIPagesPath + fileName, false);
             }
         }
+
+        /*
+        // XXX: obsolete
         /// <summary>Query Lucene index of local pages and serve the results.</summary>
         private void ServeRCResultsPage(string queryString)
         {
@@ -993,26 +1036,23 @@ namespace RuralCafe
 
                 //SendMessage();//: \"" + lastRequestedPage.GetSearchTerms() + "\"<br>");
 
-                /* JAY: disabled queue remote request
-                string lastUri = lastRequestedPage.RequestUri.Replace("search", "request");
-                lastUri = lastUri + "&referrer=" + RequestUri;
-                lastUri = lastUri + "&button=Queue+Request&specificity=normal&richness=low&depth=normal";
-                string lastRequestedPageLink = "<a href=\"http://www.ruralcafe.net/addpage=" + 
-                    lastUri + 
-                    "\">[QUEUE REQUEST]</a><br>";
-                SendMessage(_clientSocket, lastRequestedPageLink);
-                 */
+                // JAY: disabled queue remote request
+                //string lastUri = lastRequestedPage.RequestUri.Replace("search", "request");
+                //lastUri = lastUri + "&referrer=" + RequestUri;
+                //lastUri = lastUri + "&button=Queue+Request&specificity=normal&richness=low&depth=normal";
+                //string lastRequestedPageLink = "<a href=\"http://www.ruralcafe.net/addpage=" + 
+                //    lastUri + 
+                //    "\">[QUEUE REQUEST]</a><br>";
+                //SendMessage(_clientSocket, lastRequestedPageLink);
 
-                /*
                 // JAY: Disabled query suggestions
                 // suggested queries
-                string relatedQueries = GetRelatedQueriesLinks(lastRequestedPage.GetSearchTerms());
-                if (!relatedQueries.Contains("href")) 
-                {
-                    relatedQueries = "none";
-                }
-                SendMessage(_clientSocket, "Suggested queries:<br>" + relatedQueries);
-                */
+                //string relatedQueries = GetRelatedQueriesLinks(lastRequestedPage.GetSearchTerms());
+                //if (!relatedQueries.Contains("href")) 
+                //{
+                //    relatedQueries = "none";
+                //}
+                //SendMessage(_clientSocket, "Suggested queries:<br>" + relatedQueries);
 
                 // no local results
                 if (wikiResults.Count == 0 && filteredLuceneResults.Count == 0)
@@ -1113,6 +1153,8 @@ namespace RuralCafe
                 SendMessage(pageFooter);
             }
         }
+         */
+
         /// <summary>Helper to translate RuralCafe to Lucene query format.</summary>
         private string TranslateRuralCafeToLuceneQuery()
         {
@@ -1120,6 +1162,8 @@ namespace RuralCafe
             searchTerms = searchTerms.Replace('+', ' ');
             return searchTerms;
         }
+        /*
+        // XXX: obsolete
         /// <summary>Sends image to the client.</summary>
         private void ServeRCImage(string pageUri)
         {
@@ -1128,12 +1172,16 @@ namespace RuralCafe
             if (offset >= 0 && offset < (pageUri.Length - 1))
             {
                 fileName = pageUri.Substring(offset + 1);
-                fileName = "images"+Path.DirectorySeparatorChar + fileName;
+                fileName = "images" + Path.DirectorySeparatorChar + fileName;
             }
 
             SendOkHeaders("text/html");
             StreamFromCacheToClient(((RCLocalProxy)_proxy).UIPagesPath + fileName, false);
         }
+         */
+
+        /*
+        // XXX: obsolete
         /// <summary>Sends the redirect page to the client.</summary>
         void ServeRedirectPage()
         {
@@ -1159,7 +1207,10 @@ namespace RuralCafe
             "\r\n";
 
             SendMessage(str);
-        }
+        }*/
+
+        /*
+        // XXX: obsolete
         /// <summary>Helper to get the latest request as a string.</summary>
         string GetLatestRequestAsString()
         {
@@ -1182,7 +1233,8 @@ namespace RuralCafe
                 latestRequestString = latestRequestHandler.RequestUri;
             }
             return latestRequestString;
-        }
+        }*/
+
         /// <summary>Gets the search terms from the search URI for display</summary>
         private string SearchTermsOrURI()
         {
@@ -1201,21 +1253,38 @@ namespace RuralCafe
         /// <summary>
         /// Queues this request.
         /// </summary>
-        private void QueueRequest()
+        private void AddRequest()
         {
-            ((RCLocalProxy)_proxy).QueueRequest(_clientAddress, this);
+            // Parse parameters
+            NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
+            int userId = Int32.Parse(qscoll.Get("u"));
+            string targetName = qscoll.Get("t");
+            string targetUri = qscoll.Get("a");
+
+            _rcRequest = new RCRequest(this, targetUri, _rcRequest.RefererUri);
+            //_rcRequest.ParseRCSearchFields();
+
+            ((RCLocalProxy)_proxy).QueueRequest(userId, this);
+            SendOkHeaders("text/html");
+            SendMessage(this.ID.ToString());
         }
 
         /// <summary>
         /// Removes the request from Ruralcafe's queue.
         /// </summary>
-        private void DequeueRequest()
+        private void RemoveRequest()
         {
+            // Parse parameters
+            NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
+            int userId = Int32.Parse(qscoll.Get("u"));
+            string itemId = qscoll.Get("i");
+
             // clean up the Ruralcafe info, remove it
-            int index = RequestUri.IndexOf('=');
-            string matchingUri = RequestUri.Substring(index + 1);
-            LocalRequestHandler matchingRequestHandler = new LocalRequestHandler((RCLocalProxy)_proxy, _clientSocket, matchingUri);
-            ((RCLocalProxy)_proxy).DequeueRequest(_clientAddress, matchingRequestHandler);
+            //int index = RequestUri.IndexOf('=');
+            //string matchingUri = RequestUri.Substring(index + 1);
+            LocalRequestHandler matchingRequestHandler = new LocalRequestHandler((RCLocalProxy)_proxy, _clientSocket, itemId);
+            ((RCLocalProxy)_proxy).DequeueRequest(userId, matchingRequestHandler);
+            SendOkHeaders("text/html");
         }
 
         /// <summary>
