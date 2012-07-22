@@ -523,7 +523,13 @@ namespace RuralCafe
             return false;
         }
 
-        /// <summary>Sends the frame page to the client.</summary>
+        /// <summary>
+        /// Sends the RC Index page to the client.
+        /// GET request will be sent to request/index.xml?c=6&n=4&s=root where
+        /// c is the number of categories, the number of <category> required
+        /// n is the maximum number of items in a category, the number of <item> allowed
+        /// s is the upper level category which the user want to explore (the top level category is defined as 'root')
+        /// </summary>
         void ServeRCIndexPage()
         {
             // Parse parameters
@@ -532,13 +538,22 @@ namespace RuralCafe
             int pageNumber = Int32.Parse(qscoll.Get("p"));
             string searchString = qscoll.Get("s");
 
-            SendOkHeaders("text/html");
+            SendOkHeaders("text/xml");
             // not building the xml file yet, just sending the dummy page for now since there's really no top categories query yet
             // for the cache path
             StreamFromCacheToClient(((RCLocalProxy)_proxy).UIPagesPath + "index.xml", false);
         }
 
-        /// <summary>Sends the frame page to the client.</summary>
+        /// <summary>
+        /// Sends the frame page to the client.
+        /// xml file of reuqests in the queue, content will be displayed in frame-offline-login.html
+        /// Please organize the item in chronological order (older items first)
+        /// GET request will be sent to request/queue.xml?u=a01&v=24-05-2012 where
+        /// u is the user id
+        /// v is used to specify date (in format of dd-mm-yyyy), or month (in format of mm-yyyy), or all (v=0). 
+        /// If t is set to dd-mm-yyyy or mm-yyyy, only the requests submitted during that day/month will be returned. 
+        /// If v is set to 0, all requests submitted by the user should be returned.
+        /// </summary>
         void ServeRCQueuePage()
         {
             // Parse parameters
@@ -547,8 +562,6 @@ namespace RuralCafe
             string date = qscoll.Get("v");
 
             List<LocalRequestHandler> requestHandlers = ((RCLocalProxy)_proxy).GetRequests(_clientAddress);
-
-            SendOkHeaders("text/html");
 
             string queuePageString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + "<queue>";
             int i = 1;
@@ -632,23 +645,30 @@ namespace RuralCafe
             }
 
             queuePageString = queuePageString + "<queue>";
+            SendOkHeaders("text/xml");
             SendMessage(queuePageString);
         }
 
-        /// <summary>Sends the frame page to the client.</summary>
+        /// <summary>
+        /// Sends the frame page to the client.
+        /// GET request will be sent to request/result.xml?n=5&p=1&s=searchstring where
+        /// n is the maximum number of items per page, the number of <item> allowed in this file
+        /// p is the current page number, if there are multipage pages, page number starts from 1, 2, 3...,
+        /// s is the search query string
+        /// </summary>
         void ServeRCResultPage()
         {
             // Parse parameters
             NameValueCollection qscoll = HttpUtility.ParseQueryString(RequestUri);
-            int numItems = Int32.Parse(qscoll.Get("n"));
+            int numItemsPerPage = Int32.Parse(qscoll.Get("n"));
             int pageNumber = Int32.Parse(qscoll.Get("p"));
             string queryString = qscoll.Get("s");
 
-            SendOkHeaders("text/html");
             string resultsString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 
             List<Lucene.Net.Documents.Document> filteredLuceneResults = new List<Lucene.Net.Documents.Document>();
             HitCollection wikiResults = new HitCollection();
+            int currentItemNumber = 1;
             if (queryString.Trim().Length > 0)
             {
                 // Query the Wiki index
@@ -683,7 +703,12 @@ namespace RuralCafe
                     }
                     if (exists == false)
                     {
-                        filteredLuceneResults.Add(document);
+                        if ((currentItemNumber > ((pageNumber - 1) * numItemsPerPage)) &&
+                            currentItemNumber <= (pageNumber * numItemsPerPage))
+                        {
+                            filteredLuceneResults.Add(document);
+                        }
+                        currentItemNumber++;
                     }
 
                 }
@@ -729,7 +754,7 @@ namespace RuralCafe
 
             resultsString = resultsString + "</search>";
 
-            SendOkHeaders("text/html");
+            SendOkHeaders("text/xml");
             SendMessage(resultsString);
         }
 
