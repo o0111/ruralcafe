@@ -31,6 +31,7 @@ namespace RuralCafe
     public class RCRequest
     {
         private string _uri;
+        private string _anchorText;
         private string _refererUri;
         private string _hashedFileName;
         private string _cacheFileName;
@@ -62,6 +63,12 @@ namespace RuralCafe
         {
             set { _uri = value; }
             get { return _uri; }
+        }
+        /// <summary>The anchor Text of the requested Uri.</summary>
+        public string AnchorText
+        {
+            set { _anchorText = value; }
+            get { return _anchorText; }
         }
         /// <summary>The URI of the referer object.</summary>
         public string RefererUri
@@ -140,7 +147,7 @@ namespace RuralCafe
         /// <param name="requestHandler">The handler for the request.</param>
         /// <param name="uri">URI requested.</param>
         public RCRequest(RequestHandler requestHandler, string uri) 
-            : this(requestHandler, uri, "")
+            : this(requestHandler, uri, "", "")
         {
             // do nothing
         }
@@ -151,9 +158,10 @@ namespace RuralCafe
         /// <param name="request">The handler for the request.</param>
         /// <param name="uri">URI requested.</param>
         /// <param name="referrerUri">URI of the referer.</param>
-        public RCRequest(RequestHandler requestHandler, string uri, string referrerUri)
+        public RCRequest(RequestHandler requestHandler, string uri, string anchorText, string referrerUri)
         {
             _uri = uri.Trim();
+            _anchorText = anchorText;
             _refererUri = referrerUri.Trim();
 
             string fileName = UriToFilePath(_uri);

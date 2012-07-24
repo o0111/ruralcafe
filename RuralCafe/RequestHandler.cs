@@ -171,6 +171,12 @@ namespace RuralCafe
             set { _rcRequest.Uri = value; }
             get { return _rcRequest.Uri; }
         }
+        /// <summary>Anchor text of the request.</summary>
+        public string AnchorText
+        {
+            set { _rcRequest.AnchorText = value; }
+            get { return _rcRequest.AnchorText; }
+        }
         /// <summary>URI of the referrer.</summary>
         public string RefererUri
         {
@@ -239,7 +245,7 @@ namespace RuralCafe
                     refererUri = GetHeaderValue(clientRequest, "Referer");
 
                     // create the request object
-                    _rcRequest = new RCRequest(this, requestedUri, refererUri);
+                    _rcRequest = new RCRequest(this, requestedUri, "", refererUri);
                     _rcRequest.ParseRCSearchFields();
                     _rcRequest.GenericWebRequest.Referer = refererUri;
                     _rcRequest._recvString = clientRequest;
