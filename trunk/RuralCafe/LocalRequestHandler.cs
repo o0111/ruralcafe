@@ -23,6 +23,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.IO;
 using System.Threading;
+using System.Security;
 
 using System.Web;
 using Lucene.Net.Search;
@@ -601,6 +602,40 @@ namespace RuralCafe
             int userId = Int32.Parse(qscoll.Get("u"));
             string date = qscoll.Get("v");
 
+            // parse date
+            bool queryOnDate = true;
+            bool queryOnDay = false;
+            int day = 1;
+            int month = 1;
+            int year = 1;
+            DateTime queryDate = new DateTime();
+
+            if (date.Equals("0"))
+            {
+                queryOnDate = false;
+            }
+            else if ((date.Length == 7) || (date.Length == 10))
+            {
+                if (date.Length <= 7)
+                {
+                    month = Int32.Parse(date.Substring(0, 2));
+                    year = Int32.Parse(date.Substring(3, 4));
+                    queryDate = new DateTime(year, month, day);
+                }
+                else
+                {
+                    queryOnDay = true;
+                    day = Int32.Parse(date.Substring(0, 2));
+                    month = Int32.Parse(date.Substring(3, 2));
+                    year = Int32.Parse(date.Substring(6, 4));
+                    queryDate = new DateTime(year, month, day);
+                }
+            }
+            else
+            {
+                // malformed date
+            }
+
             List<LocalRequestHandler> requestHandlers = ((RCLocalProxy)_proxy).GetRequests(userId);
 
             string queuePageString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + "<queue>";
@@ -610,81 +645,89 @@ namespace RuralCafe
                 foreach (LocalRequestHandler requestHandler in requestHandlers)
                 {
                     string itemId = "" + requestHandler.ID;
-                    string linkAnchorText = requestHandler.SearchTermsOrURI();
+                    string linkAnchorText = requestHandler.AnchorText;
                     string linkTarget = requestHandler.RequestUri;
                     string statusString = "";
+                    DateTime requestDate = requestHandler.StartTime;
 
-                    // if its a search request, translate to the google version to get the remotely returned google results
-                    if (linkAnchorText.StartsWith("http://"))
+                    if (!queryOnDate || (
+                        (requestDate.Year == queryDate.Year) &&
+                        (requestDate.Month == queryDate.Month)) &&
+                        ((queryOnDay && (requestDate.Day == queryDate.Day)) || !queryOnDay))
                     {
-                        linkTarget = linkAnchorText;
-                    }
-                    else
-                    {
-                        linkTarget = requestHandler.RCRequest.TranslateRCSearchToGoogle();
-                    }
+                        /*
+                        // if its a search request, translate to the google version to get the remotely returned google results
+                        if (linkAnchorText.StartsWith("http://"))
+                        {
+                            linkTarget = linkAnchorText;
+                        }
+                        else
+                        {
+                            linkTarget = requestHandler.RCRequest.TranslateRCSearchToGoogle();
+                        }*/
 
-                    /*
-                    Failed = -1,
-                    Received = 0,
-                    Requested = 1,
-                    Completed = 2,
-                    Cached = 3,             
-                    NotCacheable = 4,
-                    NotFound = 5,
-                    StreamedTransparently = 6,
-                    Ignored = 7
-                     */
-                    if (requestHandler.RequestStatus == (int)Status.Failed)
-                    {
-                        statusString = "Failed";
-                    }
-                    else if (requestHandler.RequestStatus == (int)Status.Received)
-                    {
-                        statusString = "Received";
-                    }
-                    else if (requestHandler.RequestStatus == (int)Status.Requested)
-                    {
-                        statusString = "Requested";
-                    }
-                    else if (requestHandler.RequestStatus == (int)Status.Completed)
-                    {
-                        statusString = "Completed";
-                    }
-                    else if (requestHandler.RequestStatus == (int)Status.Cached)
-                    {
-                        statusString = "Cached";
-                    }
-                    else if (requestHandler.RequestStatus == (int)Status.NotCacheable)
-                    {
-                        statusString = "NotCacheable";
-                    }
-                    else if (requestHandler.RequestStatus == (int)Status.NotFound)
-                    {
-                        statusString = "NotFound";
-                    }
-                    else if (requestHandler.RequestStatus == (int)Status.StreamedTransparently)
-                    {
-                        statusString = "StreamedTransparently";
-                    }
-                    else if (requestHandler.RequestStatus == (int)Status.Ignored)
-                    {
-                        statusString = "Ignored";
-                    }
+                        /*
+                        Failed = -1,
+                        Received = 0,
+                        Requested = 1,
+                        Completed = 2,
+                        Cached = 3,             
+                        NotCacheable = 4,
+                        NotFound = 5,
+                        StreamedTransparently = 6,
+                        Ignored = 7
+                         */
+                        if (requestHandler.RequestStatus == (int)Status.Failed)
+                        {
+                            statusString = "Failed";
+                        }
+                        else if (requestHandler.RequestStatus == (int)Status.Received)
+                        {
+                            statusString = "Received";
+                        }
+                        else if (requestHandler.RequestStatus == (int)Status.Requested)
+                        {
+                            statusString = "Requested";
+                        }
+                        else if (requestHandler.RequestStatus == (int)Status.Completed)
+                        {
+                            statusString = "Completed";
+                        }
+                        else if (requestHandler.RequestStatus == (int)Status.Cached)
+                        {
+                            statusString = "Cached";
+                        }
+                        else if (requestHandler.RequestStatus == (int)Status.NotCacheable)
+                        {
+                            statusString = "NotCacheable";
+                        }
+                        else if (requestHandler.RequestStatus == (int)Status.NotFound)
+                        {
+                            statusString = "NotFound";
+                        }
+                        else if (requestHandler.RequestStatus == (int)Status.StreamedTransparently)
+                        {
+                            statusString = "StreamedTransparently";
+                        }
+                        else if (requestHandler.RequestStatus == (int)Status.Ignored)
+                        {
+                            statusString = "Ignored";
+                        }
 
-                    // build the actual element
-                    queuePageString = queuePageString +
-                                    "<item id=\"" + itemId + "\">" +
-                                        "<title>" + linkAnchorText + "</title>" +
-                                        "<url>" + linkTarget + "</url>" +
-                                        "<status>" + statusString + "</status>" +
-                                        "<size>" + "unknown" + "</size>" +
-                                    "</item>";
-                    i++;
+                        // build the actual element
+                        queuePageString = queuePageString +
+                                        "<item id=\"" + itemId + "\">" +
+                                            "<title>" + linkAnchorText + "</title>" +
+                                            "<url>" + linkTarget + "</url>" +
+                                            "<status>" + statusString + "</status>" +
+                                            "<size>" + "unknown" + "</size>" +
+                                        "</item>";
+                        i++;
+                    }
                 }
             }
 
-            queuePageString = queuePageString + "<queue>";
+            queuePageString = queuePageString + "</queue>"; //end tag
             SendOkHeaders("text/xml");
             SendMessage(queuePageString);
         }
@@ -706,9 +749,10 @@ namespace RuralCafe
 
             string resultsString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 
+            List<Lucene.Net.Documents.Document> tempLuceneResults = new List<Lucene.Net.Documents.Document>();
             List<Lucene.Net.Documents.Document> filteredLuceneResults = new List<Lucene.Net.Documents.Document>();
             HitCollection wikiResults = new HitCollection();
-            int currentItemNumber = 1;
+            int currentItemNumber = 0;
             if (queryString.Trim().Length > 0)
             {
                 // Query the Wiki index
@@ -719,6 +763,7 @@ namespace RuralCafe
 
                 //List<Lucene.Net.Documents.Document> luceneResults = new List<Lucene.Net.Documents.Document>();             
                 // remove duplicates
+
                 foreach (Lucene.Net.Documents.Document document in luceneResults)
                 {
                     string documentUri = document.Get("uri");
@@ -731,11 +776,11 @@ namespace RuralCafe
                     }
 
                     bool exists = false;
-                    foreach (Lucene.Net.Documents.Document filteredDocument in filteredLuceneResults)
+                    foreach (Lucene.Net.Documents.Document tempDocument in tempLuceneResults)
                     {
-                        string documentUri2 = filteredDocument.Get("uri");
-                        string documentTitle2 = filteredDocument.Get("title");
-                        if (documentUri.Equals(documentUri2) || documentTitle.Equals(documentTitle2))
+                        string documentUri2 = tempDocument.Get("uri");
+                        string documentTitle2 = tempDocument.Get("title");
+                        if (String.Compare (documentUri, documentUri2) == 0 || String.Compare (documentTitle, documentTitle2)==0)
                         {
                             exists = true;
                             break;
@@ -743,12 +788,13 @@ namespace RuralCafe
                     }
                     if (exists == false)
                     {
-                        if ((currentItemNumber > ((pageNumber - 1) * numItemsPerPage)) &&
-                            currentItemNumber <= (pageNumber * numItemsPerPage))
+                        currentItemNumber++;
+                        tempLuceneResults.Add(document);
+                        if ((currentItemNumber  > ((pageNumber - 1) * numItemsPerPage)) &&
+                            (currentItemNumber < (pageNumber * numItemsPerPage) + 1))
                         {
                             filteredLuceneResults.Add(document);
                         }
-                        currentItemNumber++;
                     }
 
                 }
@@ -756,14 +802,14 @@ namespace RuralCafe
 
             LogDebug(filteredLuceneResults.Count + " results");
 
-            resultsString = resultsString + "<search total=\"" + filteredLuceneResults.Count + "\">";
+            resultsString = resultsString + "<search total=\"" + currentItemNumber + "\">"; //laura: total should be the total number of results
             // Local Search Results
             for (int i = 0; i < filteredLuceneResults.Count; i++)
             {
                 Lucene.Net.Documents.Document result = filteredLuceneResults.ElementAt(i);
 
-                string uri = result.Get("uri");
-                string title = result.Get("title");
+                string uri = System.Security.SecurityElement.Escape(result.Get("uri")); // escape xml string
+                string title = System.Security.SecurityElement.Escape(result.Get("title")); //escape xml string
                 string displayUri = uri;
                 string contentSnippet = "";
 
@@ -783,7 +829,8 @@ namespace RuralCafe
 
                 // JAY: find content snippet here
                 //contentSnippet = 
-
+                if (uri.StartsWith("http://")) //laura: obmit http://
+                    uri=uri.Substring(7);
                 resultsString = resultsString +
                                 "<item>" +
                                 "<title>" + title + "</title>" +
@@ -1235,6 +1282,7 @@ namespace RuralCafe
             return latestRequestString;
         }*/
 
+        // XXX: obsolete
         /// <summary>Gets the search terms from the search URI for display</summary>
         private string SearchTermsOrURI()
         {
@@ -1261,7 +1309,7 @@ namespace RuralCafe
             string targetName = qscoll.Get("t");
             string targetUri = qscoll.Get("a");
 
-            _rcRequest = new RCRequest(this, targetUri, _rcRequest.RefererUri);
+            _rcRequest = new RCRequest(this, targetUri, targetName, _rcRequest.RefererUri);
             //_rcRequest.ParseRCSearchFields();
 
             ((RCLocalProxy)_proxy).QueueRequest(userId, this);
@@ -1514,6 +1562,13 @@ namespace RuralCafe
             FileInfo f;
             try
             {
+                int offset = fileName.LastIndexOf("?"); // laura: check get parameters
+                string htmlQuery="";
+                if (offset >= 0)
+                {
+                    htmlQuery = fileName.Substring(offset + 1);
+                    fileName = fileName.Substring(0, offset);
+                }
                 f = new FileInfo(fileName);
                 if (!f.Exists)
                 {
