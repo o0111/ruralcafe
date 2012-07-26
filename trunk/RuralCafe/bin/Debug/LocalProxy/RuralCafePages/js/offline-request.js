@@ -10,16 +10,29 @@ var i=0;
 window.onload=function (){
 	if (window.location.pathname){
 		var path=window.location.href;
-		if (path.search('t=')==-1)//log in from sign in link on top
-			userid=path.slice(path.search('u='));
-		else{ //redirect from an unvisited link
-			userid=path.slice(path.search('u=')+2,path.search('t=')-1);	
-			var requestTitle=path.slice(path.search('t=')+2,path.search('a=')-1);
-			var requestURL=path.slice(path.search('a=')+2);
-			alert(requestTitle);
-			addRequest(requestTitle,requestURL);
+		if (path.search('u=')!=-1)
+			if (path.search('t=')!=-1)
+				userid=path.slice(path.search('u=')+2,path.search('t=')-1);
+			else
+				userid=path.slice(path.search('u=')+2);
+		else
+			userid=get_cookie('uid');
+		if (userid==""){//redirect to the login page
+			var index=path.search("t=");
+					if (index!=-1)
+						document.location="login.html?"+path.slice(index);
+					else
+						document.location="login.html";
 		}
 		changeView(0,0);
+		
+		//checking pending request
+		if (path.search('t=')!=-1 && (path.search('a=')!=-1)){
+			var requestTitle=path.slice(path.search('t=')+2,path.search('a=')-1);
+			var requestURL=path.slice(path.search('a=')+2);
+			addRequest(requestTitle,requestURL);
+		}
+		
 	}
 }
 
@@ -30,7 +43,6 @@ function loadQueue(requestURL){
     xhttp.onreadystatechange = showXML;        
     xhttp.open("GET",requestURL,true);
     xhttp.send(null);
-	alert(requestURL);
 }
 
 function addRequest(itemTitle,itemURL){
@@ -40,8 +52,10 @@ function addRequest(itemTitle,itemURL){
 			if (mygetrequest.status==200 || window.location.href.indexOf("http")==-1){
 				var itemId=mygetrequest.responseText;
 				//item id should be returned if it is successfully created
-				if (itemId && itemId!=''){
+				//check whether item with that id is already added
+				if (itemId && itemId!='' && !document.getElementById(itemId)){
 					var innerHtml=""
+					itemTitle=decodeURIComponent(itemTitle);
 					if (i%2==0)
 						innerHtml+='<tr class="odd_tr" id="'+itemId+'">';
 					else
@@ -56,10 +70,10 @@ function addRequest(itemTitle,itemURL){
 			}
 		}
 	}
-	var tvalue=encodeURIComponent(itemTitle);
-	var avalue=encodeURIComponent(itemURL);
+	//var tvalue=encodeURIComponent(itemTitle);
+	//var avalue=encodeURIComponent(itemURL);
 
-	mygetrequest.open("GET", "request/add?u="+userid+"&t="+tvalue+'&a='+avalue, true);
+	mygetrequest.open("GET", "request/add?u="+userid+"&t="+itemTitle+'&a='+itemURL, true);
 	mygetrequest.send(null);
 	return false;
 }
@@ -152,8 +166,8 @@ function showXML(searchString){
 function changeView(view, offset){
 	var lastday=new Date();
 	if (view==0){
-		today.setDate(today.getDate()+offset);	
-		loadQueue('request/queue.xml?u='+userid+'&v='+today.getDate()+'-'+(today.getMonth()+1)+'-'+today.getFullYear());
+		today.setDate(today.getDate()+offset);
+		loadQueue('request/queue.xml?u='+userid+'&v='+("0" + today.getDate()).slice(-2)+'-'+("0" + (today.getMonth() + 1)).slice(-2)+'-'+today.getFullYear());
 		document.getElementById('viewtag').innerHTML='View by: dates <a href="#" onclick="return changeView(1,0);">months</a> <a href="#" onclick="return changeView(2,0);">all</a>';
 		var html='<a href="#" onclick="return changeView(0,-1);"><<</a> '+today.getDate()+'/'+(today.getMonth()+1)+'/'+today.getFullYear();
 		if (lastday.getDate()==today.getDate())
@@ -164,7 +178,7 @@ function changeView(view, offset){
 	}
 	else if (view==1){
 		today.setMonth(today.getMonth()+offset);
-		loadQueue('request/queue.xml?u='+userid+'&v='+(today.getMonth()+1)+'-'+today.getFullYear());
+		loadQueue('request/queue.xml?u='+userid+'&v='+("0" + (today.getMonth() + 1)).slice(-2)+'-'+today.getFullYear());
 		document.getElementById('viewtag').innerHTML='View by: <a href="#" onclick="return changeView(0,0);">dates</a> months <a href="#" onclick="return changeView(2,0);">all</a>';
 		var months=['Jan','Feb','March','Apirl','May','June','July','Aug','Sep','Oct','Nov','Dec'];
 		var html=months[today.getMonth()]+' '+today.getFullYear();

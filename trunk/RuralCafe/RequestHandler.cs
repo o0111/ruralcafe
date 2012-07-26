@@ -39,7 +39,7 @@ namespace RuralCafe
         {
             Failed = -1,
             Received = 0,
-            Requested = 1,
+            Pending = 1,
             Completed = 2,
             Cached = 3,             
             NotCacheable = 4,
@@ -53,7 +53,7 @@ namespace RuralCafe
         public const int WEB_REQUEST_DEFAULT_TIMEOUT = 30000; // in milliseconds
 
         // ID
-        protected int _ID;
+        protected int _requestId;
 
         // proxy this request belongs to
         protected RCProxy _proxy;
@@ -112,7 +112,7 @@ namespace RuralCafe
         /// </summary>        
         public override bool Equals(object obj)
         {
-            return (ID.Equals(((RequestHandler)obj).ID));
+            return (RequestId.Equals(((RequestHandler)obj).RequestId));
         }
         /// <summary>
         /// Overriding GetHashCode() from base object.
@@ -126,9 +126,9 @@ namespace RuralCafe
         #region Property Accessors
 
         /// <summary>Request ID</summary>
-        public int ID
+        public int RequestId
         {
-            get { return _ID; }
+            get { return _requestId; }
         }
         /// <summary>The proxy that this request belongs to.</summary>
         public RCProxy Proxy
@@ -214,14 +214,14 @@ namespace RuralCafe
         /// </summary>
         public void Go()
         {
-            string clientRequest = "";
+            string recvString = "";
             string requestedUri = "";
             string refererUri = "";
 
             try
             {
                 // Read the incoming text on the socket into recvString
-                int bytes = RecvMessage(_recvBuffer, ref clientRequest);
+                int bytes = RecvMessage(_recvBuffer, ref recvString);
                 if (bytes == 0)
                 {
                     // no bytes, it's an error just return.
@@ -230,39 +230,31 @@ namespace RuralCafe
 
                 // get the requested URI
                 // the client browser sends a GET command followed by a space, then the URL, then and identifer for the HTTP version
-                int index1 = clientRequest.IndexOf(' ');
-                int index2 = clientRequest.IndexOf(' ', index1 + 1);
+                int index1 = recvString.IndexOf(' ');
+                int index2 = recvString.IndexOf(' ', index1 + 1);
                 if ((index1 < 0) || (index2 < 0))
                 {
                     throw (new IOException());
                 }
-                requestedUri = clientRequest.Substring(index1 + 1, index2 - index1).Trim();
+                requestedUri = recvString.Substring(index1 + 1, index2 - index1).Trim();
 
-                // https requests will fail this check
-                if (Util.IsValidUri (requestedUri))
+                // get the referer URI
+                refererUri = GetHeaderValue(recvString, "Referer");
+
+                if (CreateRequest(requestedUri, refererUri, recvString))
                 {
-                    // get the referer URI
-                    refererUri = GetHeaderValue(clientRequest, "Referer");
-
-                    // create the request object
-                    _rcRequest = new RCRequest(this, requestedUri, "", refererUri);
-                    _rcRequest.ParseRCSearchFields();
-                    _rcRequest.GenericWebRequest.Referer = refererUri;
-                    _rcRequest._recvString = clientRequest;
-
                     _packageFileName = _proxy.PackagesPath + _rcRequest.HashedFileName + ".gzip";
 
                     // XXX: need to avoid duplicate request/response logging when redirecting e.g. after an add
                     // handle the request
-                    if (requestedUri != "http://www.ruralcafe.net/requests.html")
+                    if (!requestedUri.StartsWith("http://www.ruralcafe.net/request/queue.xml"))
                     {
                         LogRequest();
-                        RequestStatus = HandleRequest();
-                        LogResponse();
                     }
-                    else
+                    RequestStatus = HandleRequest();
+                    if (!requestedUri.StartsWith("http://www.ruralcafe.net/request/queue.xml"))
                     {
-                        RequestStatus = HandleRequest();
+                        LogResponse();
                     }
                 }
                 else
@@ -278,11 +270,10 @@ namespace RuralCafe
                      */
                     throw (new IOException());
                 }
-
             }
             catch (Exception e)
             {
-                LogDebug("error parsing request: " + requestedUri + " " + e.Message + e.StackTrace);
+                LogDebug("error handling request: " + requestedUri + " " + e.Message + e.StackTrace);
             }
             finally
             {
@@ -300,9 +291,140 @@ namespace RuralCafe
             // returning from this method will terminate the thread
         }
 
+        /// <summary>
+        /// Creates and handles the logged request
+        /// logEntry format: (requestId, startTime, clientAddress, requestedUri, refererUri, [status])
+        /// </summary>
+        public bool HandleLogRequest(List<string> logEntry)
+        {
+            string requestedUri = "";
+
+            if (!(logEntry.Count >= 5))
+            {
+                return false;
+            }
+
+            try
+            {
+                int requestId = Int32.Parse(logEntry[0]);
+                DateTime startTime = DateTime.Parse(logEntry[1]);
+                IPAddress clientAddress = IPAddress.Parse(logEntry[2]);
+                requestedUri = logEntry[3];
+                string refererUri = logEntry[4];
+                int requestStatus = (int)Status.Pending;
+                if (logEntry.Count == 6)
+                {
+                    requestStatus = Int32.Parse(logEntry[5]);
+                }
+
+                if (CreateRequest(requestedUri, refererUri, ""))
+                {
+                    // from log book-keeping
+                    _requestId = requestId;
+                    _rcRequest.StartTime = startTime;
+                    _clientAddress = clientAddress;
+                    _rcRequest.RequestStatus = requestStatus;
+                    
+                    _packageFileName = _proxy.PackagesPath + _rcRequest.HashedFileName + ".gzip";
+
+                    // XXX: need to avoid duplicate request/response logging when redirecting e.g. after an add
+                    // handle the request
+                    if (!requestedUri.StartsWith("http://www.ruralcafe.net/request/queue.xml"))
+                    {
+                        LogRequest();
+                    }
+                    RequestStatus = HandleRequest();
+                    if (!requestedUri.StartsWith("http://www.ruralcafe.net/request/queue.xml"))
+                    {
+                        LogResponse();
+                    }
+                }
+                return true;
+            }
+            catch (Exception e)
+            {
+                // do nothing
+                LogDebug("error handling request: " + requestedUri + " " + e.Message + e.StackTrace);
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Creates RCRequest object for the request.
+        /// </summary>
+        protected bool CreateRequest(string requestedUri, string refererUri, string recvString)
+        {
+            if (Util.IsValidUri(requestedUri))
+            {
+                // create the request object
+                _rcRequest = new RCRequest(this, requestedUri, "", refererUri);
+                // XXX: obsolete
+                //_rcRequest.ParseRCSearchFields();
+                _rcRequest.GenericWebRequest.Referer = refererUri;
+                _rcRequest._recvString = recvString;
+                return true;
+            }
+            return false;
+        }
+
         /// <summary>Abstract method for proxies to handle requests.</summary>
         public abstract int HandleRequest();
-       
+
+        /// <summary>Converts a RC status code to a string.
+        /// Failed = -1,
+        /// Received = 0,
+        /// Requested = 1,
+        /// Completed = 2,
+        /// Cached = 3,             
+        /// NotCacheable = 4,
+        /// NotFound = 5,
+        /// StreamedTransparently = 6,
+        /// Ignored = 7
+        /// </summary>
+        /// <param name="status">status code</param>
+        /// <returns>status code as a string</returns>
+        protected static string StatusCodeToString(int status) 
+        {
+            string statusString = "";
+            
+            if (status == (int)Status.Failed)
+            {
+                statusString = "Failed";
+            }
+            else if (status == (int)Status.Received)
+            {
+                statusString = "Received";
+            }
+            else if (status == (int)Status.Pending)
+            {
+                statusString = "Pending";
+            }
+            else if (status == (int)Status.Completed)
+            {
+                statusString = "Completed";
+            }
+            else if (status == (int)Status.Cached)
+            {
+                statusString = "Cached";
+            }
+            else if (status == (int)Status.NotCacheable)
+            {
+                statusString = "NotCacheable";
+            }
+            else if (status == (int)Status.NotFound)
+            {
+                statusString = "NotFound";
+            }
+            else if (status == (int)Status.StreamedTransparently)
+            {
+                statusString = "StreamedTransparently";
+            }
+            else if (status == (int)Status.Ignored)
+            {
+                statusString = "Ignored";
+            }
+            return statusString;
+        }
  
         #region Methods for Checking Requests
 
@@ -384,20 +506,8 @@ namespace RuralCafe
             return true;
         }
 
-        /// <summary>
-        /// Checks if the request is a RuralCafe specific request.
-        /// </summary>
-        /// <returns>True if it is, false if not.</returns>
-        protected bool IsRCRequest()
-        {
-            if (RequestUri.StartsWith("www.ruralcafe.net") ||
-                RequestUri.StartsWith("http://www.ruralcafe.net"))
-            {
-                return true;
-            }
-            return false;
-        }
-
+        /*
+        // XXX: obsolete
         /// <summary>
         /// Checks to see if the request is a RuralCafe search.
         /// </summary>
@@ -409,8 +519,10 @@ namespace RuralCafe
                 return true;
             }
             return false;
-        }
+        }*/
 
+        /*
+        // XXX: obsolete
         /// <summary>
         /// Checks if the request is a RuralCafe remote query.
         /// </summary>
@@ -423,6 +535,7 @@ namespace RuralCafe
             }
             return false;
         }
+        */
 
         #endregion
 
@@ -476,6 +589,29 @@ namespace RuralCafe
         }
 
         /// <summary>
+        ///  Write a redirect response to the client.
+        /// </summary>
+        /// <param name="url">Destination url.</param>
+        protected void SendRedirect(string title, string url)
+        {
+            int status = HTTP_OK;
+            string strReason = "";
+            string str = "";
+            title = HttpUtility.UrlEncode(title);
+            url = HttpUtility.UrlEncode(url);
+
+            str = "HTTP/1.1" + " " + status + " " + strReason + "\r\n" +
+            "Content-Type: " + "text/html" + "\r\n" +
+            "Proxy-Connection: close" + "\r\n" +
+            "\r\n";
+
+            string fullUrl = "<meta HTTP-EQUIV=\"REFRESH\" content=\"0; url=http://www.ruralcafe.net/frame-offline-login.html?" + 
+                "t=" + title + "&" + "a=" + url + "\">";
+            str = str + fullUrl;
+            SendMessage(str);
+        }
+
+        /// <summary>
         ///  Write an error response to the client.
         /// </summary>
         /// <param name="status">Error status.</param>
@@ -503,7 +639,7 @@ namespace RuralCafe
             byte[] buffer = Encoding.UTF8.GetBytes(strMessage);
             int len = buffer.Length;
 
-            if (!_clientSocket.Connected)
+            if ((_clientSocket != null) && !_clientSocket.Connected)
             {
                 LogDebug("socket closed for some reason");
                 return -1;
@@ -547,7 +683,7 @@ namespace RuralCafe
                          " GET " + RequestUri +
                          " REFERER " + RefererUri + " " + 
                          RequestStatus + " " + _rcRequest.FileSize;
-            _proxy.WriteMessage(_ID, str);
+            _proxy.WriteMessage(_requestId, str);
         }
 
         /// <summary>
@@ -557,7 +693,7 @@ namespace RuralCafe
         {
             string str = _rcRequest.FinishTime + " RSP " + RequestUri + " " + 
                         RequestStatus + " " + _rcRequest.FileSize;
-            _proxy.WriteMessage(_ID, str);
+            _proxy.WriteMessage(_requestId, str);
         }
 
         /// <summary>
@@ -565,7 +701,7 @@ namespace RuralCafe
         /// </summary>
         public void LogDebug(string str)
         {
-            _proxy.WriteDebug(_ID, str);
+            _proxy.WriteDebug(_requestId, str);
         }
 
         #endregion

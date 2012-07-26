@@ -74,6 +74,11 @@ namespace RuralCafe
             return true;
         }
 
+        public static string ReplaceXML(string somestring)
+        {
+            return somestring;
+        }
+
         /// <summary>
         /// Deletes a file.
         /// </summary>

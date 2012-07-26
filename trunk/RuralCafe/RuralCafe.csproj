@@ -56,11 +56,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AnalysisTools.cs" />
+    <Compile Include="Logger.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="RCProxy.cs" />
     <Compile Include="RequestHandler.cs" />
     <Compile Include="GzipWrapper.cs" />
     <Compile Include="RCLocalProxy.cs" />
-    <Compile Include="Logger.cs" />
     <Compile Include="IndexWrapper.cs" />
     <Compile Include="Package.cs" />
     <Compile Include="Program.cs" />

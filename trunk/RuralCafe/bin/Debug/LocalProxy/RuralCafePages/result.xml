@@ -14,7 +14,7 @@ GET request will be sent to request/result.xml?n=5&p=1&s=searchstring where
     <item>
         <title>Wikipedia, the free encyclopedia</title>
         <url>en.wikipedia.org/wiki/Google</url>
-        <snippet>A free encyclopedia built collaboratively using wiki software. (Creative Commons Attribution-ShareAlike License).</snippet>
+        <snippet>A free encyclopedia built ?q=1234&t=4444collaboratively using wiki software. (Creative Commons Attribution-ShareAlike License).</snippet>
     </item>
     <item>
         <title>CAPTCHA - Wikipedia, the free encyclopedia</title>

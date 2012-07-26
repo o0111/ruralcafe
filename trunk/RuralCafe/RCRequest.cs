@@ -130,6 +130,7 @@ namespace RuralCafe
         /// <summary>The time this request was started.</summary>
         public DateTime StartTime
         {
+            set { _startTime = value; }
             get { return _startTime; }
         }
         /// <summary>The time this request was finished.</summary>
@@ -155,8 +156,9 @@ namespace RuralCafe
         /// <summary>
         /// Constructor for a RuralCafe Request.
         /// </summary>
-        /// <param name="request">The handler for the request.</param>
+        /// <param name="requestHandler">The handler for the request.</param>
         /// <param name="uri">URI requested.</param>
+        /// <param name="anchorText">text of the anchor tag.</param>
         /// <param name="referrerUri">URI of the referer.</param>
         public RCRequest(RequestHandler requestHandler, string uri, string anchorText, string referrerUri)
         {
@@ -193,6 +195,7 @@ namespace RuralCafe
              GenericWebRequest.Timeout = timeout;
         }
 
+        /*
         // XXX: obsolete into settings?
         /// <summary>
         /// Parses the RuralCafe search fields for later use.
@@ -226,7 +229,7 @@ namespace RuralCafe
                     return;
                 }
             }
-        }
+        }*/
 
         /// <summary>Override object equality for request matching.</summary>
         public override bool Equals(object obj)

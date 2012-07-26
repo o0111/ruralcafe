@@ -136,6 +136,13 @@ namespace RuralCafe
             {
                 Console.WriteLine("Error initializing the local proxy wiki index.");
             }
+
+            // load previous state
+            success = ReadLog(proxyPath + logsPath);
+            if (!success)
+            {
+                Console.WriteLine("Error reading log.");
+            }
         }
 
         /// <summary>
@@ -258,53 +265,61 @@ namespace RuralCafe
             // go through the outstanding requests forever
             while (true)
             {
-                LocalRequestHandler requestHandler = PopGlobalRequest();
-                if (requestHandler != null)
+                if (IsOnline)
                 {
-                    if (_gatewayProxy != null)
+                    LocalRequestHandler requestHandler = PopGlobalRequest();
+                    if (requestHandler != null)
                     {
-                        requestHandler.RCRequest.SetProxy(_gatewayProxy, RequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT);
-                    }
-                    else
-                    {
-                        requestHandler.RCRequest.SetProxy(_remoteProxy, RequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT);
-                    }
-                    // save the request file as a package
-                    requestHandler.RCRequest.CacheFileName = requestHandler.PackageFileName;
-
-                    requestHandler.RequestStatus = (int)RequestHandler.Status.Requested;
-
-                    WriteDebug("dispatching to remote proxy: " + requestHandler.RequestUri);
-                    long bytesDownloaded = requestHandler.RCRequest.DownloadToCache();
-
-                    if (bytesDownloaded > -1)
-                    {
-                        WriteDebug("unpacking: " + requestHandler.RequestUri);
-                        long unpackedBytes = Package.Unpack(requestHandler, _indexPath);
-                        if (unpackedBytes > 0)
+                        if (_gatewayProxy != null)
                         {
-                            WriteDebug("unpacked: " + requestHandler.RequestUri);
-                            requestHandler.RCRequest.FileSize = unpackedBytes;
-                            requestHandler.RequestStatus = (int)RequestHandler.Status.Completed;
+                            requestHandler.RCRequest.SetProxy(_gatewayProxy, RequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT);
                         }
                         else
                         {
-                            WriteDebug("failed to unpack: " + requestHandler.RequestUri);
+                            requestHandler.RCRequest.SetProxy(_remoteProxy, RequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT);
+                        }
+                        // save the request file as a package
+                        requestHandler.RCRequest.CacheFileName = requestHandler.PackageFileName;
+
+                        requestHandler.RequestStatus = (int)RequestHandler.Status.Pending;
+
+                        WriteDebug("dispatching to remote proxy: " + requestHandler.RequestUri);
+                        long bytesDownloaded = requestHandler.RCRequest.DownloadToCache();
+
+                        if (bytesDownloaded > -1)
+                        {
+                            WriteDebug("unpacking: " + requestHandler.RequestUri);
+                            long unpackedBytes = Package.Unpack(requestHandler, _indexPath);
+                            if (unpackedBytes > 0)
+                            {
+                                WriteDebug("unpacked: " + requestHandler.RequestUri);
+                                requestHandler.RCRequest.FileSize = unpackedBytes;
+                                requestHandler.RequestStatus = (int)RequestHandler.Status.Completed;
+                            }
+                            else
+                            {
+                                WriteDebug("failed to unpack: " + requestHandler.RequestUri);
+                                requestHandler.RequestStatus = (int)RequestHandler.Status.Failed;
+                            }
+
+                            // XXX: for benchmarking only
+                            //SaveBenchmarkTimes(totalProcessingTime);
+                        }
+                        else
+                        {
                             requestHandler.RequestStatus = (int)RequestHandler.Status.Failed;
                         }
 
-                        // XXX: for benchmarking only
-                        //SaveBenchmarkTimes(totalProcessingTime);
+                        requestHandler.FinishTime = DateTime.Now;
+                        UpdateTimePerRequest(requestHandler.StartTime, requestHandler.FinishTime);
+
+                        requestHandler.LogResponse();
                     }
                     else
                     {
-                        requestHandler.RequestStatus = (int)RequestHandler.Status.Failed;
+                        // wait for an add event
+                        _newRequestEvent.WaitOne();
                     }
-
-                    requestHandler.FinishTime = DateTime.Now;
-                    UpdateTimePerRequest(requestHandler.StartTime, requestHandler.FinishTime);
-
-                    requestHandler.LogResponse();
                 }
                 else
                 {
@@ -314,6 +329,136 @@ namespace RuralCafe
             }
         }
 
+        /// <summary>
+        /// Read log from directory and add to the requests queue, update the itemId.
+        /// Called upon LocalProxy initialization.
+        /// </summary>
+        /// <param name="logPath">Relative or absolute path for the logs.</param>
+        private bool ReadLog(string logPath)
+        {
+            int highestRequestId = 1;
+            Dictionary<string, List<string>> loggedRequestQueueMap = new Dictionary<string, List<string>>();
+
+            string debugFile = DateTime.Now.ToString("s") + "-debug.log";
+            debugFile = debugFile.Replace(':', '.');
+
+            try
+            {
+                if (!Directory.Exists(logPath))
+                {
+                    return false;
+                }
+                foreach (string currentFile in Directory.GetFiles(logPath))
+                {
+                    if (!currentFile.EndsWith("messages.log"))
+                    {
+                        continue;
+                    }
+
+                    //Console.WriteLine("Parsing log: " + currentFile);
+                    TextReader tr = new StreamReader(currentFile);
+
+                    uint linesParsed = 0;
+                    uint requestsMade = 0;
+                    string line = tr.ReadLine();
+                    string[] lineTokens;
+
+                    while (line != null)
+                    {
+                        linesParsed++;
+                        //Console.WriteLine("Parsing line: " + line);
+                        lineTokens = line.Split(' ');
+
+                        string requestId = "";
+                        if (lineTokens.Length > 0)
+                        {
+                            try
+                            {
+                                requestId = lineTokens[0];
+                                int requestId_i = Int32.Parse(requestId);
+                                if (requestId_i > highestRequestId)
+                                {
+                                    highestRequestId = requestId_i;
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                // do nothing
+                            }
+                        }
+                        // maximum number of tokens is 100
+                        if (lineTokens.Length >= 100 || lineTokens.Length <= 5)
+                        {
+                            //Console.WriteLine("Error, tokens do not fit in array, line " + linesParsed);
+                            // read the next line
+                            line = tr.ReadLine();
+                            continue;
+                        }
+
+                        if (lineTokens.Length >= 9)
+                        {
+                            // make sure that its actually a search query
+                            string clientAddress = lineTokens[4];
+                            string httpCommand = lineTokens[5];
+                            string requestedUri = lineTokens[6];
+                            string refererUri = lineTokens[8];
+                            string startTime = lineTokens[1] + " " + lineTokens[2] + " " + lineTokens[3];
+
+                            if ((httpCommand == "GET") && requestedUri.StartsWith("http://www.ruralcafe.net/request/add?"))
+                            {
+                                // parse the request
+                                // add it to the queue
+                                Console.WriteLine("Adding to queue: " + requestedUri);
+                                List<string> logEntry = new List<string>();
+                                logEntry.Add(requestId);
+                                logEntry.Add(startTime);
+                                logEntry.Add(clientAddress);
+                                logEntry.Add(requestedUri);
+                                logEntry.Add(refererUri);
+                                if (!loggedRequestQueueMap.ContainsKey(requestId))
+                                {
+                                    loggedRequestQueueMap.Add(requestId, logEntry);
+                                }
+                            }
+                        }
+                        else if (lineTokens.Length >= 7)
+                        {
+                            requestId = lineTokens[0];
+                            string httpCommand = lineTokens[4];
+                            string status = lineTokens[6];
+                            if ((httpCommand == "RSP") && loggedRequestQueueMap.ContainsKey(requestId))
+                            {
+                                // parse the response
+                                // check if its in the queue, if so, remove it
+                                //Console.WriteLine("Removing from queue: " + requestedURL);
+                                loggedRequestQueueMap[requestId].Add(status);
+                            }
+                        }
+
+                        // read the next line
+                        line = tr.ReadLine();
+                    }
+
+                    tr.Close();
+                }
+
+                // load the queued requests into the request queue
+                foreach (string currentRequestId in loggedRequestQueueMap.Keys)
+                {
+                    LocalRequestHandler requestHandler = new LocalRequestHandler(this, null);
+                    requestHandler.HandleLogRequest(loggedRequestQueueMap[currentRequestId]);
+                }
+
+                // update the nextId
+                NextRequestId = highestRequestId + 1;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Could not read debug logs for saved state.");
+                return false;
+            }
+            return true;
+        }
 
         # region Request Queues Interface
 
