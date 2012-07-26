@@ -30,6 +30,8 @@ namespace RuralCafe
 {
     static class Program
     {
+        private static bool IS_ONLINE;
+
         // Local Proxy Settings
         private static IPAddress LOCAL_PROXY_IP_ADDRESS;
         private static int LOCAL_PROXY_LISTEN_PORT;
@@ -47,6 +49,7 @@ namespace RuralCafe
 
         private static int DEFAULT_QUOTA;
         private static int DEFAULT_DEPTH;
+        private static string DEFAULT_RICHNESS;
         private static int DEFAULT_LOW_WATERMARK;
         private static int MAXIMUM_DOWNLINK_SPEED;
 
@@ -204,8 +207,18 @@ namespace RuralCafe
                 DEFAULT_SEARCH_PAGE = configSettings["DEFAULT_SEARCH_PAGE"];
                 DEFAULT_QUOTA = Int32.Parse(configSettings["DEFAULT_QUOTA"]);
                 DEFAULT_DEPTH = Int32.Parse(configSettings["DEFAULT_DEPTH"]);
+                DEFAULT_RICHNESS = configSettings["DEFAULT_RICHNESS"];
                 DEFAULT_LOW_WATERMARK = DEFAULT_QUOTA / 20;
                 MAXIMUM_DOWNLINK_SPEED = Int32.Parse(configSettings["MAXIMUM_DOWNLOAD_SPEED"]);
+                // XXX: hardcoded for now, stub
+                if (configSettings["IS_ONLINE"] == "false")
+                {
+                    IS_ONLINE = false;
+                }
+                else
+                {
+                    IS_ONLINE = true;
+                }
 
                 // print some console messages
                 Console.WriteLine("LOCAL_PROXY_IP_ADDRESS: " + LOCAL_PROXY_IP_ADDRESS);
@@ -251,6 +264,7 @@ namespace RuralCafe
 
             // set the RC search page
             localProxy.SetRCSearchPage(DEFAULT_SEARCH_PAGE);
+            localProxy.IsOnline = IS_ONLINE;
             
             // load the blacklisted domains
             localProxy.LoadBlacklist("blacklist.txt");
@@ -258,6 +272,7 @@ namespace RuralCafe
             // set the default depth for all requests
             LocalRequestHandler.DEFAULT_QUOTA = DEFAULT_QUOTA;
             LocalRequestHandler.DEFAULT_DEPTH = DEFAULT_DEPTH;
+            LocalRequestHandler.DEFAULT_RICHNESS = DEFAULT_RICHNESS;
 
             // start local listener thread
             Thread localListenerThread = new Thread(new ThreadStart(localProxy.StartListener));
@@ -292,6 +307,7 @@ namespace RuralCafe
 
             // set the maximum downlink speed to the local proxy
             remoteProxy.MAXIMUM_DOWNLINK_BANDWIDTH = MAXIMUM_DOWNLINK_SPEED;
+            remoteProxy.IsOnline = IS_ONLINE;
 
             // load the blacklisted domains
             remoteProxy.LoadBlacklist("blacklist.txt");
@@ -299,6 +315,7 @@ namespace RuralCafe
             // set the default quota, depth, watermark for each request
             RemoteRequestHandler.DEFAULT_QUOTA = DEFAULT_QUOTA;
             RemoteRequestHandler.DEFAULT_DEPTH = DEFAULT_DEPTH;
+            RemoteRequestHandler.DEFAULT_RICHNESS = DEFAULT_RICHNESS;
             RemoteRequestHandler.DEFAULT_LOW_WATERMARK = DEFAULT_LOW_WATERMARK;
 
             // start remote listener thread

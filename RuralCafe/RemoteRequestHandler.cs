@@ -33,10 +33,11 @@ namespace RuralCafe
     public class RemoteRequestHandler : RequestHandler
     {
         public static int DEFAULT_QUOTA;
-        public static int DEFAULT_DEPTH; 
+        public static int DEFAULT_DEPTH;
+        public static string DEFAULT_RICHNESS;
         public static int DEFAULT_LOW_WATERMARK;
 
-        private static int _nextId = 1;
+        //private static int _nextId = 1;
         private long _quota;
 
         // override GenericProxy
@@ -67,7 +68,8 @@ namespace RuralCafe
         public RemoteRequestHandler(RCRemoteProxy proxy, Socket socket) 
             : base(proxy, socket)
         {
-            _ID = _nextId++;
+            _requestId = _proxy.NextRequestId;
+            _proxy.NextRequestId = proxy.NextRequestId + 1;
             _requestTimeout = WEB_REQUEST_DEFAULT_TIMEOUT;
 
             _quota = DEFAULT_QUOTA;
@@ -88,26 +90,32 @@ namespace RuralCafe
             // benchmarking
             //handleRequestStart = DateTime.Now;
 
+            /* 
+            // XXX: obsolete
+            // not checking this anymore, make sure you can establish the connection properly, after that its all good.
             if (!IsRCRemoteQuery())
             {
                 LogDebug("error not RuralCafe URL or search request: " + RequestUri);
                 return (int)Status.Ignored;
-            }
+            }*/
 
-            string richness = _rcRequest.GetRCSearchField("richness");
+            string richness = DEFAULT_RICHNESS;//_rcRequest.GetRCSearchField("richness");
+            /* XXX: obsolete
             if (!richness.Equals("high") &&
                 !richness.Equals("medium") &&
                 !richness.Equals("low"))
             {
                 richness = "normal";
-            }
+            }*/
 
-            string depth_s = _rcRequest.GetRCSearchField("depth");
             int depth = DEFAULT_DEPTH;
-            if (depth_s.Equals("more"))
+            /*
+            // XXX: obsolete
+            string depth_s = _rcRequest.GetRCSearchField("depth");
+            if (depth_s)
             {
-                depth++;
-            }
+                depth = Int32.Parse(_rcRequest.GetRCSearchField("depth"));
+            }*/
 
             // XXX: static quota for now
             /* QUOTA parameterization in the UI
@@ -132,10 +140,14 @@ namespace RuralCafe
                 }                
             }*/
             
+            /*
+            // XXX: obsolete
             if (IsRCURLRequest())
             {
+             */
                 LogDebug("page request, downloading page as package");
-                string requestUri = _rcRequest.GetRCSearchField("textfield");
+                //string requestUri = _rcRequest.GetRCSearchField("textfield");
+                string requestUri = _rcRequest.Uri;
 
                 if (requestUri.Trim().Length > 0)
                 {
@@ -170,6 +182,8 @@ namespace RuralCafe
                         return (int)Status.NotCacheable;
                     }
                 }
+                /*
+                // XXX: obsolete
             }
             else
             {
@@ -183,7 +197,7 @@ namespace RuralCafe
                         return (int)Status.Completed;
                     }
                 }
-            }
+            }*/
 
             // benchmarking
             //handleRequestEnd = DateTime.Now;
@@ -341,10 +355,11 @@ namespace RuralCafe
             }
 
             // add to the package
-            if (_package.Pack(this, _rcRequest, ref _quota))
-            {
-                LogDebug("packed: " + RequestUri + " " + _rcRequest.FileSize + " bytes => " + _quota + " left");
-            }
+            //if (
+            _package.Pack(this, _rcRequest, ref _quota);//)
+            //{
+            //    LogDebug("packed: " + RequestUri + " " + _rcRequest.FileSize + " bytes, " + _quota + " left");
+            //}
 
             // check quota
             if (_quota < DEFAULT_LOW_WATERMARK)
@@ -459,10 +474,11 @@ namespace RuralCafe
             }
 
             // add to the package
-            if (_package.Pack(this, rcRequest, ref _quota))
-            {
-                LogDebug("[depth = " + depth + "] packed: " + rcRequest.Uri + " " + rcRequest.FileSize + " bytes" + _quota + " left");
-            }
+            //if (
+            _package.Pack(this, rcRequest, ref _quota);//)
+            //{
+            //    LogDebug("[depth = " + depth + "] packed: " + rcRequest.Uri + " " + rcRequest.FileSize + " bytes, " + _quota + " left");
+            //}
 
             // get the embedded content of the search result page
             DownloadEmbeddedObjects(rcRequest, richness);
@@ -635,7 +651,7 @@ namespace RuralCafe
                 return -1;
             }
 
-            LogDebug("sending results package: " + (_package.IndexSize + _package.ContentSize) + " at " + _proxy.MAXIMUM_DOWNLINK_BANDWIDTH + " bytes per second." );
+            LogDebug("sending results package: " + (_package.IndexSize + _package.ContentSize) + "bytes at " + _proxy.MAXIMUM_DOWNLINK_BANDWIDTH + " bytes per second." );
             SendPackageHeaders();
 
             // stream out the pages (w/compression)

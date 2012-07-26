@@ -59,13 +59,13 @@ function redirectUser()
 				if (xmlPass == pass){
 					log = 4;
 					var path=window.location.href;
-					alert(path);
+					//alert(path);
 					var index=path.search("t=");
 					if (index!=-1)
 						document.location="frame-offline-login.html?u="+xmlId+'&'+path.slice(index);
 					else
 						document.location="frame-offline-login.html?u="+xmlId;
-					//document.cookie = xmlId;
+					document.cookie = "uid="+xmlId;
 					break;
 				}
             }

@@ -102,6 +102,7 @@ namespace RuralCafe
             _rcRequests.AddLast(rcRequest);
             quota -= rcRequest.FileSize;
 
+            requestHandler.LogDebug("packed: " + requestHandler.RequestUri + " " + rcRequest.FileSize + " bytes - " + quota + " left");
             return true;
         }
         
@@ -122,12 +123,13 @@ namespace RuralCafe
                 // add to the package
                 if (Pack(requestHandler, request, ref quota))
                 {
-                    requestHandler.LogDebug("packed: " + request.Uri + " " + request.FileSize + " bytes, " + quota + " left");
+                    requestHandler.LogDebug("packed: " + request.Uri + " " + request.FileSize + " bytes - " + quota + " left");
 
                     addedObjects.AddLast(request);
                 }
                 //}
             }
+            
             return addedObjects;
         }
 

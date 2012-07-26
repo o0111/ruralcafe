@@ -50,6 +50,9 @@ namespace RuralCafe
         protected string _packagesCachePath;
         protected string _name;
 
+        // online or offline
+        protected bool _isOnline;
+
         // bandwidth measurement
         // lock object
         private static Object _downlinkBWLockObject = new Object();
@@ -59,6 +62,8 @@ namespace RuralCafe
         // blacklist
         protected List<string> _blacklistedDomains = new List<string>();
 
+        // next item Id
+        protected int _nextRequestId = 1;
 
         # region Property Accessors
 
@@ -76,6 +81,18 @@ namespace RuralCafe
         public WebProxy GatewayProxy
         {
             get { return _gatewayProxy; }
+        }
+        /// <summary>Path to the proxy's packages.</summary>
+        public bool IsOnline
+        {
+            get { return _isOnline; }
+            set { _isOnline = value; }
+        }
+        /// <summary>Path to the proxy's packages.</summary>
+        public int NextRequestId
+        {
+            get { return _nextRequestId; }
+            set { _nextRequestId = value; }
         }
 
         # endregion

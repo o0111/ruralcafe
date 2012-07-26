@@ -37,13 +37,12 @@ namespace RuralCafe
     /// </summary>
     public class LocalRequestHandler : RequestHandler
     {
-        private static int _nextId = 1;
-
         // localProxy
         //new private RCLocalProxy _proxy;
 
         public static int DEFAULT_QUOTA;
-        public static int DEFAULT_DEPTH; 
+        public static int DEFAULT_DEPTH;
+        public static string DEFAULT_RICHNESS;
 
         /// <summary>
         /// Constructor for a local proxy's request handler.
@@ -53,7 +52,8 @@ namespace RuralCafe
         public LocalRequestHandler(RCLocalProxy proxy, Socket socket)
             : base(proxy, socket)
         {
-            _ID = _nextId++;
+            _requestId = _proxy.NextRequestId;
+            _proxy.NextRequestId = _proxy.NextRequestId + 1;
             _requestTimeout = REQUEST_PACKAGE_DEFAULT_TIMEOUT;
         }
         /// <summary>
@@ -70,7 +70,7 @@ namespace RuralCafe
             }
              */
             //_rcRequest = new RCRequest(this, uri);
-            _ID = Int32.Parse(id);
+            _requestId = Int32.Parse(id);
 
             /* XXX: don't think the dummy needs this
             // setup the header variables
@@ -101,6 +101,20 @@ namespace RuralCafe
         public override int GetHashCode()
         {
             return base.GetHashCode();
+        }
+
+        /// <summary>
+        /// Checks if the request is a RuralCafe specific request.
+        /// </summary>
+        /// <returns>True if it is, false if not.</returns>
+        private bool IsRCRequest()
+        {
+            if (RequestUri.StartsWith("www.ruralcafe.net") ||
+                RequestUri.StartsWith("http://www.ruralcafe.net"))
+            {
+                return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -181,7 +195,7 @@ namespace RuralCafe
 
             // XXX: not sure if this should even be here, technically for a cacheable file that's not cached, this is
             // XXX: behaving like a synchronous proxy
-            // XXX: this is fine if we're online, fine if we're offlin since it'll fail.. but doesn't degrade gradually
+            // XXX: this is fine if we're online, fine if we're offline since it'll fail.. but doesn't degrade gradually
 
             // XXX: response time could be improved here if it downloads and streams to the client at the same time
             // XXX: basically, merge the DownloadtoCache() and StreamfromcachetoClient() methods into a new third method.
@@ -210,7 +224,7 @@ namespace RuralCafe
                 }
             }
 
-            SendErrorPage(HTTP_NOT_FOUND, "page not found", RequestUri);
+            SendRedirect(RequestUri, RequestUri);
 
             return (int)Status.NotFound;
         }
@@ -329,6 +343,12 @@ namespace RuralCafe
                     SendErrorPage(HTTP_NOT_FOUND, "no RefererUri found after adding page", "");
                 }*/
 
+                return (int)Status.Pending;
+            }
+
+            if (IsNetworkUp())
+            {
+                ServeIsNetworkUp();
                 return (int)Status.Completed;
             }
 
@@ -524,6 +544,15 @@ namespace RuralCafe
         }
         */
 
+        /// <summary>Checks if the request is for the RuralCafe command to check whether the network is up.</summary>
+        bool IsNetworkUp()
+        {
+            if (RequestUri.StartsWith("http://www.ruralcafe.net/data/network"))
+            {
+                return true;
+            }
+            return false;
+        }
         /// <summary>Checks if the request is for the RuralCafe command to add a URI.</summary>
         bool IsAddPage()
         {
@@ -644,9 +673,9 @@ namespace RuralCafe
             {
                 foreach (LocalRequestHandler requestHandler in requestHandlers)
                 {
-                    string itemId = "" + requestHandler.ID;
-                    string linkAnchorText = requestHandler.AnchorText;
-                    string linkTarget = requestHandler.RequestUri;
+                    string itemId = System.Security.SecurityElement.Escape("" + requestHandler.RequestId);
+                    string linkAnchorText = System.Security.SecurityElement.Escape(requestHandler.AnchorText);
+                    string linkTarget = System.Security.SecurityElement.Escape(requestHandler.RequestUri);
                     string statusString = "";
                     DateTime requestDate = requestHandler.StartTime;
 
@@ -666,53 +695,7 @@ namespace RuralCafe
                             linkTarget = requestHandler.RCRequest.TranslateRCSearchToGoogle();
                         }*/
 
-                        /*
-                        Failed = -1,
-                        Received = 0,
-                        Requested = 1,
-                        Completed = 2,
-                        Cached = 3,             
-                        NotCacheable = 4,
-                        NotFound = 5,
-                        StreamedTransparently = 6,
-                        Ignored = 7
-                         */
-                        if (requestHandler.RequestStatus == (int)Status.Failed)
-                        {
-                            statusString = "Failed";
-                        }
-                        else if (requestHandler.RequestStatus == (int)Status.Received)
-                        {
-                            statusString = "Received";
-                        }
-                        else if (requestHandler.RequestStatus == (int)Status.Requested)
-                        {
-                            statusString = "Requested";
-                        }
-                        else if (requestHandler.RequestStatus == (int)Status.Completed)
-                        {
-                            statusString = "Completed";
-                        }
-                        else if (requestHandler.RequestStatus == (int)Status.Cached)
-                        {
-                            statusString = "Cached";
-                        }
-                        else if (requestHandler.RequestStatus == (int)Status.NotCacheable)
-                        {
-                            statusString = "NotCacheable";
-                        }
-                        else if (requestHandler.RequestStatus == (int)Status.NotFound)
-                        {
-                            statusString = "NotFound";
-                        }
-                        else if (requestHandler.RequestStatus == (int)Status.StreamedTransparently)
-                        {
-                            statusString = "StreamedTransparently";
-                        }
-                        else if (requestHandler.RequestStatus == (int)Status.Ignored)
-                        {
-                            statusString = "Ignored";
-                        }
+                        statusString = System.Security.SecurityElement.Escape(StatusCodeToString(requestHandler.RequestStatus));
 
                         // build the actual element
                         queuePageString = queuePageString +
@@ -864,6 +847,8 @@ namespace RuralCafe
             SendMessage(framesPage);
         }*/
 
+        /*
+        // XXX: obsolete
         /// <summary>Sends the header page to the client.</summary>
         void ServeRCHeader()
         {
@@ -888,8 +873,8 @@ namespace RuralCafe
             {
                 headerPage +=
                     "<td><b>Prefetch:</b><br>" +
-                    "<input type=\"radio\" name=\"depth\" value=\"normal\" checked>" + /*DEFAULT_DEPTH + */" less<br>" +
-                    "<input type=\"radio\" name=\"depth\" value=\"more\">" + /*(DEFAULT_DEPTH + 1) + */" more<br></td></tr>";
+                    "<input type=\"radio\" name=\"depth\" value=\"normal\" checked>" + " less<br>" +
+                    "<input type=\"radio\" name=\"depth\" value=\"more\">" + " more<br></td></tr>";
             }
             else
             {
@@ -904,7 +889,7 @@ namespace RuralCafe
 
             SendOkHeaders("text/html");
             SendMessage(headerPage);
-        }
+        }*/
 
         /*
         // XXX: Obsolete
@@ -994,7 +979,6 @@ namespace RuralCafe
             SendMessage(linksPageFooter);
         }*/
 
-        // XXX: obsolete
         /// <summary>Serves the RuralCafe search page.</summary>
         private void ServeRCSearchPage(string pageUri)
         {
@@ -1005,15 +989,16 @@ namespace RuralCafe
                 fileName = pageUri.Substring(offset + 1);
 			}
 
+            /*
             if (fileName.Equals(""))
             {
                 ServeRCHeader();
             }
             else
-            {
+            {*/
                 SendOkHeaders("text/html");
                 StreamFromCacheToClient(((RCLocalProxy)_proxy).UIPagesPath + fileName, false);
-            }
+            //}
         }
 
         /*
@@ -1282,6 +1267,7 @@ namespace RuralCafe
             return latestRequestString;
         }*/
 
+        /*
         // XXX: obsolete
         /// <summary>Gets the search terms from the search URI for display</summary>
         private string SearchTermsOrURI()
@@ -1291,11 +1277,23 @@ namespace RuralCafe
                 return _rcRequest.GetRCSearchField("textfield").Replace('+', ' ');
             }
             return RequestUri;
-        }
+        }*/
 
         #endregion
 
 
+        #region Proxy Control Methods
+
+        /// <summary>
+        /// Client asks proxy whether the network is on.
+        /// </summary>
+        private void ServeIsNetworkUp()
+        {
+            SendOkHeaders("text/html");
+            SendMessage(_proxy.IsOnline.ToString());
+        }
+        
+        #endregion
         #region Queue Management Methods
 
         /// <summary>
@@ -1314,7 +1312,7 @@ namespace RuralCafe
 
             ((RCLocalProxy)_proxy).QueueRequest(userId, this);
             SendOkHeaders("text/html");
-            SendMessage(this.ID.ToString());
+            SendMessage(this.RequestId.ToString());
         }
 
         /// <summary>
