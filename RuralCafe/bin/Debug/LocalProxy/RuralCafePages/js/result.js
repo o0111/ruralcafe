@@ -5,22 +5,20 @@ var pageNum=1; //the initial page number, if there are multiple pages
 var searchString="";
 var nop=10; //maximum number of links to results pages shown on each page
 
-window.onload=function (){
+
+function loadResult(){
 	if (window.location.pathname){
 		var path=window.location.href;
 		searchString=path.slice(path.search('s=')+2);
-		//changfe here now no p is passed			
-		pageNum=parseInt(path.slice(path.search('p=')+2,path.search('s=')-1)) || 1;
-		showResult('request/result.xml?n='+noi+'&p='+pageNum+'&s='+searchString);
+		//changfe here now no p is passed
+		if (searchString!="")
+			showResult('request/result.xml?n='+noi+'&p='+pageNum+'&s='+searchString);
 	}
 	else
 		alert("Your browser does not support javascript");
 }
 
-function redirect(url){
-	showResult(url);
-	return false;
-}
+addLoadEvent(loadResult);
 
 function showResult(requestURL){
     xhttp= new ajaxRequest();
@@ -33,10 +31,12 @@ function showResult(requestURL){
 
 function showXML(){
 	if (xhttp.readyState==4){
-		if (xhttp.status==200 || window.location.href.indexOf("http")==-1){
+		if (xhttp.status==200){
 			var xmldata=xhttp.responseXML; //retrieve result as an XML object
 			var total=xmldata.getElementsByTagName("search").item(0).attributes[0].nodeValue;
-			document.getElementById('count').innerHTML= 'Search returns '+total+' results. Search for <a href="#">"'+searchString+'"</a> later when I am online.';
+			document.getElementById('count').innerHTML= 'Search returns '+total+' <span class="imp">local</span> results.';
+			if (typeof xmlDocl == 'undefined') 
+				document.getElementById('count').innerHTML+='<span id="offline-search">Search for <a href="#">"'+decodeURIComponent(searchString)+'"</a> later when I am online.</span>';
 			var innerHtml="";
 			var results=xmldata.getElementsByTagName("item");
 			for (var i=0;i<results.length;i++){
@@ -66,14 +66,14 @@ function changeNav(total,startpage){
 			startNum=1;
 		for (var i=startNum;i<Math.min(nop+startNum,totalPage+1);i++){
 			if (i!=pageNum)
-				html+=' <a href="result.html?p='+i+'&s='+searchString+'">'+i+'</a> ';
+				html+=' <a href="result-offline.html?p='+i+'&s='+searchString+'">'+i+'</a> ';
 			else
 				html+=' '+i+' ';
 		}
 		if (pageNum!=1)
-			html='<a href="result.html?p='+(pageNum-1)+'&s='+searchString+'">Previous</a> &nbsp; &nbsp; &nbsp; &nbsp; '+html;
+			html='<a href="result-offline.html?p='+(pageNum-1)+'&s='+searchString+'">Previous</a> &nbsp; &nbsp; &nbsp; &nbsp; '+html;
 		if (pageNum!=totalPage)
-			html+='&nbsp; &nbsp; &nbsp; &nbsp;  <a href="result.html?p='+(pageNum+1)+'&s='+searchString+'">Next</a>';
+			html+='&nbsp; &nbsp; &nbsp; &nbsp;  <a href="result-offline.html?p='+(pageNum+1)+'&s='+searchString+'">Next</a>';
 		document.getElementById('nav').innerHTML=html;
 	}
 }

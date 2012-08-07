@@ -121,12 +121,87 @@ function itemHTML(index){
 	var itemTitle=results[index].getElementsByTagName('title')[0].firstChild.nodeValue;
 	var itemURL=results[index].getElementsByTagName('url')[0].firstChild.nodeValue;
 	var itemStatus=results[index].getElementsByTagName('status')[0].firstChild.nodeValue;
-	var itemSize=results[index].getElementsByTagName('size')[0].firstChild.nodeValue;		
-	return '<div id="'+itemId+'" class="queue_item"><span class="cancel_btn" onclick="removeRequest('+itemId+');"></span><span class="item_title">'+itemTitle+'</span><span class="status '+itemStatus+'">'+itemStatus+'</span><div class="queue_detail">'+itemTitle+'<br/><br/>'+itemURL+'</div></div>';
+	var itemSize=results[index].getElementsByTagName('size')[0].firstChild.nodeValue;	
+	var itemhtml="";
+	if (itemStatus=="Completed")
+		itemhtml= '<div id="'+itemId+'" class="queue_item complete_item" onclick="openPage(\''+itemURL+'\');">';
+	else
+		itemhtml= '<div id="'+itemId+'" class="queue_item">';
+	itemhtml+='<span class="cancel_btn" onclick="removeRequest('+itemId+');"></span><span class="item_title">'+itemTitle+'</span><span class="status '+itemStatus+'" id="status_'+itemId+'">'+itemStatus+'</span><div class="queue_detail">'+itemTitle+'<br/><br/><span id="url_'+itemId+'">'+itemURL+'</span>';
+	if (itemStatus!="Pending")
+		itemhtml+='<br/><br/>Size: '+itemSize;
+	itemhtml+='</div></div>';
+	if (itemStatus=="Downloading")
+		startCountDown(itemId);
+	return itemhtml;
 }
 
+function openPage(url){
+	document.getElementById('main_frame').src=url;
+}
+
+var interval=false;
+var itemIds= new Array();
+
+function startCountDown(id){
+	itemIds.push(id);
+	if (!interval) {
+        interval = window.setInterval('getEST()', 1000);
+    }
+}
+
+//not sure whether i can use 1 clock to send 2 reuqeust simutaneosly, wait for testing
+function getEST(){
+	for (var j=0;j<itemIds.length;j++){
+		var mygetrequest=new ajaxRequest();
+		var index=j;
+		mygetrequest.onreadystatechange=function(){
+			if (mygetrequest.readyState==4){
+				if (mygetrequest.status==200){
+					var est=mygetrequest.responseText;
+					if (est && est!=''){
+						alert(index);
+						if (est!=0)
+							document.getElementById('status_'+itemIds[index]).innerHTML=est;
+						else{ //finish downloading
+							stopCountDown(index);
+							loadQueue('request/queue.xml?u='+userid+'&v=0');
+						}
+					}
+				}
+				else {
+					stopCountDown(index);
+				}
+			}
+		}
+		mygetrequest.open("GET", "request/eta?u="+userid+"&i="+itemIds[index]);
+		mygetrequest.send(null);
+	}
+}
+ 
+// button stop
+function stopCountDown(itemIndex) {
+	itemIds.splice(itemIndex);
+	if (itemIds.length==0){
+		//alert('stop clock');
+    	window.clearInterval(interval);
+    	intervalID = false;
+	}
+}
+
+function isCountDown(itemId) {
+	if (document.getElementById('status_'+itemIds[j]).innerHTML=="Downloading"){
+		for (var j=0;j<itemIds.length;j++){
+			if (itemIds[j]==itemId){
+				return j;
+			}
+		}
+	}
+}
+		
 function scrollRight(){
-	var parentNode=document.getElementById('update_area');
+	var parentNode=document.getElementById('update_area');	
+	stopCountDown(isCountDown(parentNode.firstChild.id));
 	parentNode.removeChild(parentNode.firstChild);
 	parentNode.innerHTML+=itemHTML(i);
 	i++;
@@ -141,6 +216,7 @@ function scrollRight(){
 
 function scrollLeft(){
 	var parentNode=document.getElementById('update_area');
+	stopCountDown(isCountDown(parentNode.firstChild.id));
 	parentNode.removeChild(parentNode.lastChild);
 	i--;
 	parentNode.innerHTML=itemHTML(i)+parentNode.innerHTML;

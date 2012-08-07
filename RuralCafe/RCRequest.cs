@@ -174,7 +174,7 @@ namespace RuralCafe
                 _cacheFileName = _cacheFileName + ".bz2";
             }
 
-            _status = (int)RequestHandler.Status.Received;
+            _status = (int)RequestHandler.Status.Pending;
             _webRequest = (HttpWebRequest)WebRequest.Create(_uri);
 
             _fileSize = 0;

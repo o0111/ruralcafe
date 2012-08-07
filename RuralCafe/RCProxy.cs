@@ -31,6 +31,13 @@ namespace RuralCafe
     /// </summary>
     public abstract class RCProxy
     {
+        public enum NetworkStatusCode
+        {
+            Online = 0,
+            Slow = 1,
+            Offline = 2
+        };
+
         // default names for the local and remote proxies
         public const string LOCAL_PROXY_NAME = "Local Proxy";
         public const string REMOTE_PROXY_NAME = "Remote Proxy";
@@ -51,7 +58,7 @@ namespace RuralCafe
         protected string _name;
 
         // online or offline
-        protected bool _isOnline;
+        protected int _networkStatus;
 
         // bandwidth measurement
         // lock object
@@ -83,10 +90,10 @@ namespace RuralCafe
             get { return _gatewayProxy; }
         }
         /// <summary>Path to the proxy's packages.</summary>
-        public bool IsOnline
+        public int NetworkStatus
         {
-            get { return _isOnline; }
-            set { _isOnline = value; }
+            get { return _networkStatus; }
+            set { _networkStatus = value; }
         }
         /// <summary>Path to the proxy's packages.</summary>
         public int NextRequestId

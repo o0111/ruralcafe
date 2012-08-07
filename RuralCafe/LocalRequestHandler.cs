@@ -60,8 +60,7 @@ namespace RuralCafe
         /// DUMMY used for request matching.
         /// Not the cleanest implementation need to instantiate a whole object just to match
         /// </summary> 
-        private LocalRequestHandler(RCLocalProxy proxy, Socket socket, string id)
-            : this(proxy, socket)
+        private LocalRequestHandler(string requestId)
         {
             /*
             if (!Util.IsValidUri(uri))
@@ -70,7 +69,7 @@ namespace RuralCafe
             }
              */
             //_rcRequest = new RCRequest(this, uri);
-            _requestId = Int32.Parse(id);
+            _requestId = Int32.Parse(requestId);
 
             /* XXX: don't think the dummy needs this
             // setup the header variables
@@ -137,7 +136,7 @@ namespace RuralCafe
             {
                 LogDebug("ignoring blacklisted: " + RequestUri);
                 SendErrorPage(HTTP_NOT_FOUND, "ignoring blacklisted", RequestUri);
-                return (int)Status.NotFound;
+                return (int)Status.Failed;
             }
 
             // XXX: this function will return true if the domain is wikipedia even if the file isn't in the archive
@@ -157,7 +156,7 @@ namespace RuralCafe
                 long bytesSent = StreamTransparently();
                 _rcRequest.FileSize = bytesSent;
 
-                return (int)Status.StreamedTransparently;
+                return (int)Status.Completed;
             }
 
             // XXX: obsolete
@@ -190,7 +189,7 @@ namespace RuralCafe
                 {
                     return (int)Status.Failed;
                 }
-                return (int)Status.Cached;
+                return (int)Status.Completed;
             }
 
             // XXX: not sure if this should even be here, technically for a cacheable file that's not cached, this is
@@ -215,7 +214,7 @@ namespace RuralCafe
                         {
                             return (int)Status.Failed;
                         }
-                        return (int)Status.StreamedTransparently;
+                        return (int)Status.Completed;
                     }
                 }
                 catch
@@ -224,9 +223,12 @@ namespace RuralCafe
                 }
             }
 
-            SendRedirect(RequestUri, RequestUri);
+            // Parse parameters
+            //NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
+            //string requestId = qscoll.Get("trotro");
+            //SendRedirect(RequestUri, RequestUri);
 
-            return (int)Status.NotFound;
+            return (int)Status.Failed;
         }
 
 
@@ -244,6 +246,19 @@ namespace RuralCafe
                 try
                 {
                     ServeRCIndexPage();
+                }
+                catch (Exception)
+                {
+                    return (int)Status.Failed;
+                }
+                return (int)Status.Completed;
+            }
+
+            if (IsRemoteResult())
+            {
+                try
+                {
+                    ServeRCRemoteResultPage();
                 }
                 catch (Exception)
                 {
@@ -310,7 +325,7 @@ namespace RuralCafe
                 return (int)Status.Completed;
             }*/
 
-            if (IsAddPage() || IsRefreshPage())
+            if (IsAddPage())
             {
                 AddRequest();
                 /*
@@ -343,12 +358,18 @@ namespace RuralCafe
                     SendErrorPage(HTTP_NOT_FOUND, "no RefererUri found after adding page", "");
                 }*/
 
-                return (int)Status.Pending;
+                return (int)Status.Downloading;
             }
 
-            if (IsNetworkUp())
+            if (IsRequestNetworkStatus())
             {
-                ServeIsNetworkUp();
+                ServeNetworkStatus();
+                return (int)Status.Completed;
+            }
+
+            if (IsEtaRequest())
+            {
+                ServeEtaRequest();
                 return (int)Status.Completed;
             }
 
@@ -457,7 +478,7 @@ namespace RuralCafe
             }
             */
             SendErrorPage(HTTP_NOT_FOUND, "page does not exist", RequestUri);
-            return (int)RequestHandler.Status.NotFound;
+            return (int)RequestHandler.Status.Failed;
         }
 
 
@@ -474,6 +495,14 @@ namespace RuralCafe
         bool IsQueue()
         {
             if (RequestUri.StartsWith("http://www.ruralcafe.net/request/queue.xml"))
+            {
+                return true;
+            }
+            return false;
+        }
+        bool IsRemoteResult()
+        {
+            if (RequestUri.StartsWith("http://www.ruralcafe.net/request/search.xml"))
             {
                 return true;
             }
@@ -545,9 +574,9 @@ namespace RuralCafe
         */
 
         /// <summary>Checks if the request is for the RuralCafe command to check whether the network is up.</summary>
-        bool IsNetworkUp()
+        bool IsRequestNetworkStatus()
         {
-            if (RequestUri.StartsWith("http://www.ruralcafe.net/data/network"))
+            if (RequestUri.StartsWith("http://www.ruralcafe.net/request/status"))
             {
                 return true;
             }
@@ -582,11 +611,23 @@ namespace RuralCafe
             }
             return false;
         }
+        /*
+        // XXX: obsolete
         /// <summary>Checks if the request is for the RuralCafe command to retry a URI.</summary>
         bool IsRefreshPage()
         {
             if (RequestUri.StartsWith("http://www.ruralcafe.net/request/refresh?="))
             // if (RequestUri.StartsWith("http://www.ruralcafe.net/retrypage="))
+            {
+                return true;
+            }
+            return false;
+        }*/
+        /// <summary>Checks if the request is for the RuralCafe command to add a URI.</summary>
+        bool IsEtaRequest()
+        {
+            if (RequestUri.StartsWith("http://www.ruralcafe.net/request/eta"))
+            // if (RequestUri.StartsWith("http://www.ruralcafe.net/addpage="))
             {
                 return true;
             }
@@ -665,7 +706,10 @@ namespace RuralCafe
                 // malformed date
             }
 
+            // get requests for this user
             List<LocalRequestHandler> requestHandlers = ((RCLocalProxy)_proxy).GetRequests(userId);
+            // in reverse chronological order
+            requestHandlers.Reverse();
 
             string queuePageString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + "<queue>";
             int i = 1;
@@ -713,6 +757,10 @@ namespace RuralCafe
             queuePageString = queuePageString + "</queue>"; //end tag
             SendOkHeaders("text/xml");
             SendMessage(queuePageString);
+        }
+
+        void ServeRCRemoteResultPage()
+        {
         }
 
         /// <summary>
@@ -1287,10 +1335,21 @@ namespace RuralCafe
         /// <summary>
         /// Client asks proxy whether the network is on.
         /// </summary>
-        private void ServeIsNetworkUp()
+        private void ServeNetworkStatus()
         {
             SendOkHeaders("text/html");
-            SendMessage(_proxy.IsOnline.ToString());
+            if (_proxy.NetworkStatus == (int)RCProxy.NetworkStatusCode.Offline)
+            {
+                SendMessage("offline");
+            }
+            else if (_proxy.NetworkStatus == (int)RCProxy.NetworkStatusCode.Slow)
+            {
+                SendMessage("cached");
+            }
+            else 
+            {
+                SendMessage("online");
+            }
         }
         
         #endregion
@@ -1312,7 +1371,7 @@ namespace RuralCafe
 
             ((RCLocalProxy)_proxy).QueueRequest(userId, this);
             SendOkHeaders("text/html");
-            SendMessage(this.RequestId.ToString());
+            SendMessage(this.RefererUri);
         }
 
         /// <summary>
@@ -1323,14 +1382,46 @@ namespace RuralCafe
             // Parse parameters
             NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
             int userId = Int32.Parse(qscoll.Get("u"));
-            string itemId = qscoll.Get("i");
+            string requestId = qscoll.Get("i");
 
             // clean up the Ruralcafe info, remove it
             //int index = RequestUri.IndexOf('=');
             //string matchingUri = RequestUri.Substring(index + 1);
-            LocalRequestHandler matchingRequestHandler = new LocalRequestHandler((RCLocalProxy)_proxy, _clientSocket, itemId);
+            LocalRequestHandler matchingRequestHandler = new LocalRequestHandler(requestId);
             ((RCLocalProxy)_proxy).DequeueRequest(userId, matchingRequestHandler);
             SendOkHeaders("text/html");
+        }
+
+        /// <summary>
+        /// Gets the eta for a request in Ruralcafe's queue.
+        /// </summary>
+        private void ServeEtaRequest()
+        {
+            // Parse parameters
+            NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
+            int userId = Int32.Parse(qscoll.Get("u"));
+            string requestId = qscoll.Get("i");
+
+            // find the indexer of the matching request
+            List<LocalRequestHandler> requestHandlers = ((RCLocalProxy)_proxy).GetRequests(userId);
+            if (requestHandlers == null)
+            {
+                SendOkHeaders("text/html");
+                SendMessage("0");
+                return;
+            }
+            LocalRequestHandler matchingRequestHandler = new LocalRequestHandler(requestId);
+            int requestIndex = requestHandlers.IndexOf(matchingRequestHandler);
+            if (requestIndex < 0)
+            {
+                SendOkHeaders("text/html");
+                SendMessage("0");
+                return;
+            }
+            string printableEta = requestHandlers[requestIndex].PrintableETA();
+            
+            SendOkHeaders("text/html");
+            SendMessage(printableEta);
         }
 
         /// <summary>
@@ -1341,13 +1432,13 @@ namespace RuralCafe
         {
             int eta = ((RCLocalProxy)_proxy).ETA(this);
             string etaString = "";
-            if (eta == 0)
+            if (this.RequestStatus == (int)Status.Completed)
             {
-                etaString = "Unknown";
+                etaString = "0";
             }
             else if (eta < 60)
             {
-                etaString = "< 1 minute";
+                etaString = "< 1 min";
             }
             else
             {
@@ -1357,11 +1448,11 @@ namespace RuralCafe
                 {
                     if (eta == 1)
                     {
-                        etaString = "about a minute";// eta.ToString() + " minute";
+                        etaString = "1 min";// eta.ToString() + " minute";
                     }
                     else
                     {
-                        etaString = eta.ToString() + " minutes";
+                        etaString = eta.ToString() + " min";
                     }
                 }
                 else
@@ -1378,6 +1469,7 @@ namespace RuralCafe
                     }
                 }
             }
+            LogDebug("eta sent: " + etaString);
             return etaString;
         }
 

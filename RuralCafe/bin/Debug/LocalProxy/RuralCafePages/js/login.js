@@ -28,6 +28,7 @@ function checkUser()
     xhttp.onreadystatechange = redirectUser;        
     xhttp.open("GET","users.xml",true);
     xhttp.send(null);
+	return false;
 }
 
 function redirectUser()
@@ -62,9 +63,9 @@ function redirectUser()
 					//alert(path);
 					var index=path.search("t=");
 					if (index!=-1)
-						document.location="frame-offline-login.html?u="+xmlId+'&'+path.slice(index);
+						document.location="trotro-user.html?u="+xmlId+'&'+path.slice(index);
 					else
-						document.location="frame-offline-login.html?u="+xmlId;
+						document.location="trotro-user.html?u="+xmlId;
 					document.cookie = "uid="+xmlId;
 					break;
 				}

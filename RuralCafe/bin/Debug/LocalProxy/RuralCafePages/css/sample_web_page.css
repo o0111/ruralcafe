@@ -73,13 +73,6 @@ h1{
 	height:40px;
 }
 
-#menu #home{
-	background:url(homebtn.png) no-repeat;
-}
-#menu #home:hover{
-	background:url(homebtn_hover.png) no-repeat;
-}
-
 #menu a:hover{
 	color:#333333;
 }

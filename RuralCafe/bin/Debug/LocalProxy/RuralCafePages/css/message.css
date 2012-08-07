@@ -1,0 +1,36 @@
+*{
+	padding:0;
+	margin:0;
+}
+
+
+body{
+	font-family: Verdana ,Arial, sans-serif;
+	font-size:12px;
+	margin: 0;
+	height: 100%;
+	max-height: 100%; 
+	color:#222;
+	text-align:center;
+}
+
+
+.message_box{
+	width:30%;
+	margin:10% 30%;	
+	background-color: #DCE4E4;
+	border: solid 1px #C8D5D5;
+	padding: 40px 20px;
+}
+
+p{
+	font-size:14px;
+	padding-top:10px;
+}
+
+a:link{
+	color:#2bb600;
+}
+a:visited{
+	color:#1e7e00;
+}

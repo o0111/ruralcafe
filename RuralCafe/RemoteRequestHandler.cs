@@ -179,7 +179,7 @@ namespace RuralCafe
                         // XXX: not handled at the moment, technically nothing should be "not cacheable" though.
                         LogDebug("not cacheable, failed.");
 
-                        return (int)Status.NotCacheable;
+                        return (int)Status.Failed;
                     }
                 }
                 /*
