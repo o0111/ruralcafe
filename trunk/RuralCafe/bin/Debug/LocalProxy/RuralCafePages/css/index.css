@@ -21,9 +21,10 @@ a:visited{
 }
 
 .index_cat{
-	width:48%;
+	width:20%;
 	float:left;
-	margin:1% 5px;
+	margin-left:5%;
+	margin-top:10px;
 }
 .index_row{
 	clear:both;

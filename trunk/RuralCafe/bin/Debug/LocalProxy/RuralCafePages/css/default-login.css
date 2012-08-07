@@ -9,15 +9,16 @@ body{
 	font-size:12px;
 	margin: 0;
 	overflow: hidden;/*Disable scrollbars. Set to "scroll" to enable*/
+	overflow-x:scroll;
 	height: 100%;
 	max-height: 100%; 
 	color:#222;
 }
 
-a:link{
+.online_status, a:link{
 	color:#2bb600;
 }
-a:visited{
+.cached_status, a:visited{
 	color:#1e7e00;
 }
 
@@ -29,6 +30,7 @@ a:visited{
 	height: 60px; /*Height of top frame div*/
 	background-color: #DCE4E4;
 	border-bottom: solid 1px #C8D5D5;
+	min-width:700px;
 }
 
 
@@ -37,9 +39,10 @@ a:visited{
 	top: auto;
 	bottom: 0;
 	width: 100%; 
-	height: 225px; /*Height of bottom frame div*/
+	height: 65px; /*Height of bottom frame div*/
 	background-color: #DCE4E4;
 	border-top: solid 1px #C8D5D5;
+	min-width:700px;
 }
 
 #main_div{
@@ -48,7 +51,7 @@ a:visited{
 	top: 60px; /*Set top value to HeightOfTopFrameDiv*/
 	left: 0;
 	right: 0;
-	bottom: 220px; /*Set bottom value to HeightOfBottomFrameDiv*/
+	bottom: 65px; /*Set bottom value to HeightOfBottomFrameDiv*/
 	background: #ffffff;
 }
 
@@ -59,7 +62,8 @@ a:visited{
 }
 
 #trotro_icon{
-	height:60px;
+	height:55px;
+	border-right: solid 1px #C8D5D5;
 }
 
 a img{
@@ -72,13 +76,14 @@ a img{
 
 #search_box{
 	margin-top:5px;
+	float:left;
 }
 
 #search_input{
 	height:45px;
 	border:solid 1px #C8D5D5;
 	font-size:24px;
-	width:30%;
+	width:14em;
 	float:left;
 }
 
@@ -89,125 +94,66 @@ a img{
 	border:0;
 }
 	
-	
-#internet_box{
-	margin-top:5px;
+#search_btn:hover{
+	background-image:url(../img/search_btn_hover.png);
+	border:0;
+	cursor:pointer;
+}
+
+#right_box{
 	position:absolute;
 	right:0;
-	top:0;
+	top:5;
 	height:55px;
-	width:80px;
+	width:120px;
 	color:#999;
 }
 
+#internet_box{
+	float:left;
+	padding:15px 10px 10px 10px;
+}
+
 #internet_status{
-	color:#900;
 	font-weight:bold;
 	line-height:18px;
-	font-size:24px;
+	font-size:24px;	
+	text-transform:capitalize;
 }
 
 #internet_signin{
-	margin-top:5px;
+	padding: 20px 10px;
+	border-right:solid 1px #C8D5D5;
 	color:#333;
+	float:left;
 }
 
-#queue_title{
-	width:100%;
-	border-collapse:collapse;
+#close_box{
+	float:left;
+	width:30px;
+	height:30px;
+	margin-left:10px;
+	margin-top:12px;
+	background-image:url(../img/close_btn.png);
+	cursor:pointer;
 }
 
-#expand_div{
-	padding:0 5px;
+#close_box:hover{
+	background-image:url(../img/close_btn_hover.png);
 }
+
 #queue_box{
-	overflow-y: scroll;
-	overflow-x: hidden;
-	height:140px;
-}
-table#queue_table{
-	width:100%;
-	text-align:center;
-	border:solid 1px #C8D5D5;
-	border-collapse:collapse;
+	height:50px;
+	padding:5px;
+	color:#444;
 }
 
-table#queue_title th{
-	color:white;
-	background-color:#5d6262;
-}
-
-table#queue_table td,table#queue_title th{
-	border:0;
-	padding:2px;
-}
-
-table#queue_table .odd_tr{
-	background-color:#c4cccc;
-}
-
-#open_div{
-	height:20px;
-	padding:0 5px;
-	border-bottom: solid 1px #C8D5D5;
-}
-
-#open_img{
-	height:19px;
-	border:0;
-}
-
-#open_a{
-	float:right;
-}
-
-.eta_col{
-	width:10em;
-	font-weight:bold;
-	background-color:#b3daae;
-}
-
-.odd_tr .eta_col{
-	background-color:#a1c89d;
-}
-
-#queue_title .action_col{
-	width:16em;
-}
-.action_col{
-	width:15em;
-}
-
-.size_col{
-	width:7em;
-}
-
-.status_col{
-	width:12em;
-}
-
-#expand_img{
-	height:19px;
-}
 	
 #control_frame{
 	padding:5px;
-	height:20px;
-	overflow:hidden;
+	height:50px;
 }
 
-#viewtag, #timetag, #downloadtag{
-	display:block;
-	float:left;
-	width:20%;
-}
-
-#timetag{
-	width:59%;
-	font-size:14px;
-	font-weight:bold;
-	text-align:center;
-}
 /* These styles create the dropdown menus. */
 #optionbar li {
    list-style: none;
@@ -227,6 +173,7 @@ table#queue_table .odd_tr{
    display: block;
    position: absolute;
    right:5px;
+   bottom:58px;
    margin: 0;
    padding: 0; }
    
@@ -254,18 +201,115 @@ ul.nav a, ul.nav a:visited { /* grouping these selectors makes sure that your li
 	text-decoration: none;
 }
 
-#control_frame #download_all_btn{
-	padding:4px 4em;
-	text-align:center;
-}
-
-#control_frame #download_all_btn:hover{
-
-   background-color: #4ace21; 
-   color: #000
-}
-
 #option_icon{
-	height:22px;
+	height:45px;
 	border-left:1px solid #C8D5D5;
 }
+
+#left_btn, #right_btn{
+	float:left;
+	width:30px;
+	height:50px;
+	background-repeat:no-repeat;
+	text-align:center;
+	padding: 13px 0;
+	text-decoration:none;
+	color:#fff;
+}
+
+
+#left_btn{
+	background-image:url(../img/left_btn.png);
+}
+
+#right_btn{
+	background-image:url(../img/right_btn.png);
+}
+
+#right_btn:hover{
+	background-image:url(../img/right_btn_hover.png);
+}
+
+#left_btn:hover{
+	background-image:url(../img/left_btn_hover.png);
+}
+
+#queue_box .queue_item{
+	overflow:hidden;
+	border: solid 1px #C8D5D5;
+	float:left;
+	height:40px;
+	width: 10%;
+	padding:5px;
+	background-image:url(../img/item-bg.png);
+	background-repeat:repeat-x;
+}
+
+#queue_box .cancel_btn{
+	float:right;
+	display:block;
+	width:15px;
+	height:15px;
+	margin-top:10px;
+	margin-right:5px;
+	background-image:url(../img/cancel_btn.png);
+}
+
+#queue_box .cancel_btn:hover{
+	background-image:url(../img/cancel_btn_hover.png);
+}
+
+#queue_box .item_title{
+	display:block;
+	height:14px;
+	overflow:hidden;
+}
+
+#queue_box .status{
+	display:block;
+	margin-top:10px;
+}
+
+#queue_box .Pending{
+	color:#999;
+}
+
+#queue_box .Failed{
+	color:#630;
+}
+
+#queue_box .Downloading{
+	color:#2bb600;
+}
+
+#queue_box .Completed{
+	color:#1e7e00;
+}
+
+#queue_box .complete_item{
+	background-image:url(../img/item-bg-cmp.png);
+	border-color: #96d38d;
+}
+
+#queue_box .queue_detail{
+	position:absolute;
+	bottom:65px;
+	width:10%;
+	background:white;
+	border: double 4px #C8D5D5;
+	padding:5px;
+	display:none;
+	word-wrap: break-word; 
+	word-break: normal; 
+}
+
+#queue_box .queue_item:hover div.queue_detail{
+	display:block;
+}
+
+#queue_box .queue_item:hover{
+	cursor:pointer;
+	background-color:#cbd2d3;
+	border-color:#a6b3b3;
+}
+

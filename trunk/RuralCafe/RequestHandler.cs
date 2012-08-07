@@ -38,14 +38,9 @@ namespace RuralCafe
         public enum Status
         {
             Failed = -1,
-            Received = 0,
-            Pending = 1,
-            Completed = 2,
-            Cached = 3,             
-            NotCacheable = 4,
-            NotFound = 5,
-            StreamedTransparently = 6,
-            Ignored = 7
+            Pending = 0,
+            Downloading = 1,
+            Completed = 2
         };
 
         // timeouts
@@ -95,6 +90,14 @@ namespace RuralCafe
             {
                 _clientAddress = ((IPEndPoint)(socket.RemoteEndPoint)).Address;
             }
+        }
+        /// <summary>
+        /// DUMMY used for request matching.
+        /// Not the cleanest implementation need to instantiate a whole object just to match
+        /// </summary> 
+        public RequestHandler()
+        {
+            // XXX: do nothing
         }
 
         /// <summary>
@@ -311,7 +314,7 @@ namespace RuralCafe
                 IPAddress clientAddress = IPAddress.Parse(logEntry[2]);
                 requestedUri = logEntry[3];
                 string refererUri = logEntry[4];
-                int requestStatus = (int)Status.Pending;
+                int requestStatus = (int)Status.Downloading;
                 if (logEntry.Count == 6)
                 {
                     requestStatus = Int32.Parse(logEntry[5]);
@@ -383,7 +386,7 @@ namespace RuralCafe
         /// </summary>
         /// <param name="status">status code</param>
         /// <returns>status code as a string</returns>
-        protected static string StatusCodeToString(int status) 
+        protected string StatusCodeToString(int status) 
         {
             string statusString = "";
             
@@ -391,37 +394,25 @@ namespace RuralCafe
             {
                 statusString = "Failed";
             }
-            else if (status == (int)Status.Received)
-            {
-                statusString = "Received";
-            }
             else if (status == (int)Status.Pending)
             {
                 statusString = "Pending";
             }
+            else if (status == (int)Status.Downloading)
+            {
+                if (this._proxy.NetworkStatus == (int)RCProxy.NetworkStatusCode.Offline)
+                {
+                    statusString = "Pending";
+                }
+                else
+                {
+                    statusString = "Downloading";
+                }
+
+            }
             else if (status == (int)Status.Completed)
             {
                 statusString = "Completed";
-            }
-            else if (status == (int)Status.Cached)
-            {
-                statusString = "Cached";
-            }
-            else if (status == (int)Status.NotCacheable)
-            {
-                statusString = "NotCacheable";
-            }
-            else if (status == (int)Status.NotFound)
-            {
-                statusString = "NotFound";
-            }
-            else if (status == (int)Status.StreamedTransparently)
-            {
-                statusString = "StreamedTransparently";
-            }
-            else if (status == (int)Status.Ignored)
-            {
-                statusString = "Ignored";
             }
             return statusString;
         }
@@ -605,7 +596,7 @@ namespace RuralCafe
             "Proxy-Connection: close" + "\r\n" +
             "\r\n";
 
-            string fullUrl = "<meta HTTP-EQUIV=\"REFRESH\" content=\"0; url=http://www.ruralcafe.net/frame-offline-login.html?" + 
+            string fullUrl = "<meta HTTP-EQUIV=\"REFRESH\" content=\"0; url=http://www.ruralcafe.net/trotro-user.html?" + 
                 "t=" + title + "&" + "a=" + url + "\">";
             str = str + fullUrl;
             SendMessage(str);
@@ -639,9 +630,9 @@ namespace RuralCafe
             byte[] buffer = Encoding.UTF8.GetBytes(strMessage);
             int len = buffer.Length;
 
-            if ((_clientSocket != null) && !_clientSocket.Connected)
+            if ((_clientSocket == null) || !_clientSocket.Connected)
             {
-                LogDebug("socket closed for some reason");
+                //LogDebug("socket closed for some reason");
                 return -1;
             }
             try

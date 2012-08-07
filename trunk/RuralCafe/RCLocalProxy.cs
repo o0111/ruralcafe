@@ -265,7 +265,7 @@ namespace RuralCafe
             // go through the outstanding requests forever
             while (true)
             {
-                if (IsOnline)
+                if (NetworkStatus == (int)NetworkStatusCode.Slow)
                 {
                     LocalRequestHandler requestHandler = PopGlobalRequest();
                     if (requestHandler != null)
@@ -281,7 +281,7 @@ namespace RuralCafe
                         // save the request file as a package
                         requestHandler.RCRequest.CacheFileName = requestHandler.PackageFileName;
 
-                        requestHandler.RequestStatus = (int)RequestHandler.Status.Pending;
+                        requestHandler.RequestStatus = (int)RequestHandler.Status.Downloading;
 
                         WriteDebug("dispatching to remote proxy: " + requestHandler.RequestUri);
                         long bytesDownloaded = requestHandler.RCRequest.DownloadToCache();
@@ -613,6 +613,8 @@ namespace RuralCafe
             return requestHandler;
         }
 
+        /*
+        // XXX: obsolete
         /// <summary>
         /// Gets the last request for a client.
         /// </summary>
@@ -629,8 +631,10 @@ namespace RuralCafe
                 }
             }
             return requestHandler;
-        }
+        }*/
 
+        /*
+        // XXX: obsolete
         /// <summary>
         /// Sets the last request for a client.
         /// </summary>
@@ -650,7 +654,7 @@ namespace RuralCafe
                 }
             }
             return;
-        }
+        }*/
 
         /// <summary>
         /// Gets the request queue for a particular client.
@@ -714,7 +718,7 @@ namespace RuralCafe
         /// <summary>
         /// Predicate method for findindex in ETA.
         /// </summary>
-        /// <param name="requestObj">The other request object.</param>
+        /// <param name="requestHandler">The other request object's handler.</param>
         /// <returns>True or false for match or no match.</returns>
         private bool SameRCRequestPredicate(LocalRequestHandler requestHandler)
         {

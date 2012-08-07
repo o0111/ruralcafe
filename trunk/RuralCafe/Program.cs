@@ -30,7 +30,7 @@ namespace RuralCafe
 {
     static class Program
     {
-        private static bool IS_ONLINE;
+        private static int NETWORK_STATUS;
 
         // Local Proxy Settings
         private static IPAddress LOCAL_PROXY_IP_ADDRESS;
@@ -211,13 +211,17 @@ namespace RuralCafe
                 DEFAULT_LOW_WATERMARK = DEFAULT_QUOTA / 20;
                 MAXIMUM_DOWNLINK_SPEED = Int32.Parse(configSettings["MAXIMUM_DOWNLOAD_SPEED"]);
                 // XXX: hardcoded for now, stub
-                if (configSettings["IS_ONLINE"] == "false")
+                if (configSettings["NETWORK_STATUS"] == "offline")
                 {
-                    IS_ONLINE = false;
+                    NETWORK_STATUS = (int)RCProxy.NetworkStatusCode.Offline;
+                }
+                else if (configSettings["NETWORK_STATUS"] == "slow")
+                {
+                    NETWORK_STATUS = (int)RCProxy.NetworkStatusCode.Slow;
                 }
                 else
                 {
-                    IS_ONLINE = true;
+                    NETWORK_STATUS = (int)RCProxy.NetworkStatusCode.Online;
                 }
 
                 // print some console messages
@@ -264,7 +268,7 @@ namespace RuralCafe
 
             // set the RC search page
             localProxy.SetRCSearchPage(DEFAULT_SEARCH_PAGE);
-            localProxy.IsOnline = IS_ONLINE;
+            localProxy.NetworkStatus = NETWORK_STATUS;
             
             // load the blacklisted domains
             localProxy.LoadBlacklist("blacklist.txt");
@@ -307,7 +311,7 @@ namespace RuralCafe
 
             // set the maximum downlink speed to the local proxy
             remoteProxy.MAXIMUM_DOWNLINK_BANDWIDTH = MAXIMUM_DOWNLINK_SPEED;
-            remoteProxy.IsOnline = IS_ONLINE;
+            remoteProxy.NetworkStatus = NETWORK_STATUS;
 
             // load the blacklisted domains
             remoteProxy.LoadBlacklist("blacklist.txt");
