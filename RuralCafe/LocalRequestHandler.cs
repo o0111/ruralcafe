@@ -54,7 +54,7 @@ namespace RuralCafe
         {
             _requestId = _proxy.NextRequestId;
             _proxy.NextRequestId = _proxy.NextRequestId + 1;
-            _requestTimeout = REQUEST_PACKAGE_DEFAULT_TIMEOUT;
+            _requestTimeout = LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT;
         }
         /// <summary>
         /// DUMMY used for request matching.
@@ -157,7 +157,7 @@ namespace RuralCafe
             {
                 LogDebug("streaming: " + RequestUri + " to client.");
 
-                long bytesSent = StreamTransparently();
+                long bytesSent = StreamTransparently("");
                 _rcRequest.FileSize = bytesSent;
 
                 return (int)Status.Completed;
@@ -165,7 +165,7 @@ namespace RuralCafe
 
             if (IsCached(_rcRequest.CacheFileName))
             {
-                LogDebug("sending: " + _rcRequest.GenericWebRequest.RequestUri + " from cache.");
+                //LogDebug("sending: " + _rcRequest.GenericWebRequest.RequestUri + " from cache.");
                 
                 // get the content type if its a Google proxied search request
                 string contentType = "";
@@ -233,6 +233,7 @@ namespace RuralCafe
                 {
                     // do nothing
                 }
+                return (int)Status.Failed;
             }
             
             if (_proxy.NetworkStatus != (int)RCProxy.NetworkStatusCode.Online)
@@ -1423,61 +1424,6 @@ namespace RuralCafe
                 }
 
             }
-            return bytesSent;
-        }
-
-        /// <summary>
-        /// Stream the request to the server and the response back to the client transparently.
-        /// XXX: does not have gateway support or tunnel to remote proxy support
-        /// </summary>
-        /// <returns>The length of the streamed result.</returns>
-        protected long StreamTransparently()
-        {
-            long bytesSent = 0;
-            string clientRequest = _rcRequest._recvString;
-            Encoding ASCII = Encoding.ASCII;
-            Byte[] byteGetString = ASCII.GetBytes(clientRequest);
-            Byte[] receiveByte = new Byte[256];
-            Socket socket = null;
-
-            // establish the connection to the server
-            try
-            {
-                string hostName = GetHeaderValue(clientRequest, "Host");
-                IPHostEntry ipEntry = Dns.GetHostEntry(hostName);
-                IPAddress[] addr = ipEntry.AddressList;
-
-                IPEndPoint ip = new IPEndPoint(addr[0], 80);
-                socket = new Socket(ip.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-                socket.Connect(ip);
-            }
-            catch (SocketException)
-            {
-                // do nothing
-                return -1;
-            }
-
-            // send the request, get the response, and transparently send it to the client
-            socket.Send(byteGetString, byteGetString.Length, 0);
-            Int32 bytesRead = socket.Receive(receiveByte, receiveByte.Length, 0);
-            _clientSocket.Send(receiveByte, bytesRead, 0);
-            bytesSent += bytesRead;
-
-            // continue to stream the data
-            while (bytesRead > 0)
-            {
-                bytesRead = socket.Receive(receiveByte, receiveByte.Length, 0);
-
-                // check speed limit
-                while (!((RCLocalProxy)_proxy).HasDownlinkBandwidth(bytesRead))
-                {
-                    Thread.Sleep(100);
-                }
-                _clientSocket.Send(receiveByte, bytesRead, 0);
-                bytesSent += bytesRead;
-            }
-            socket.Close();
-
             return bytesSent;
         }
 

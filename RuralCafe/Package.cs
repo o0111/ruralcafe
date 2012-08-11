@@ -102,7 +102,7 @@ namespace RuralCafe
             _rcRequests.AddLast(rcRequest);
             quota -= rcRequest.FileSize;
 
-            requestHandler.LogDebug("packed: " + requestHandler.RequestUri + " " + rcRequest.FileSize + " bytes - " + quota + " left");
+            //requestHandler.LogDebug("packed: " + requestHandler.RequestUri + " " + rcRequest.FileSize + " bytes - " + quota + " left");
             return true;
         }
         

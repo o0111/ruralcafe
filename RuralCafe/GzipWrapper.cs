@@ -144,7 +144,7 @@ namespace RuralCafe
             //StreamReader reader = new StreamReader(zipStream, Encoding.Default);
             byte[] decompressedBuffer = new byte[expectedLength];
             // Use the ReadAllBytesFromStream to read the stream.
-            Console.WriteLine("length of packageFs: " + packageFs.Length);
+            //Console.WriteLine("length of packageFs: " + packageFs.Length);
             //Console.WriteLine("length of zipStream: " + zipStream.Length);
 
             int offset = 0;

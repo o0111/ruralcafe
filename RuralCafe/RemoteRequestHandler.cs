@@ -33,7 +33,7 @@ namespace RuralCafe
     public class RemoteRequestHandler : RequestHandler
     {
         public static int DEFAULT_QUOTA;
-        public static int DEFAULT_DEPTH;
+        public static int DEFAULT_MAX_DEPTH;
         public static string DEFAULT_RICHNESS;
         public static int DEFAULT_LOW_WATERMARK;
 
@@ -70,7 +70,7 @@ namespace RuralCafe
         {
             _requestId = _proxy.NextRequestId;
             _proxy.NextRequestId = proxy.NextRequestId + 1;
-            _requestTimeout = WEB_REQUEST_DEFAULT_TIMEOUT;
+            _requestTimeout = REMOTE_REQUEST_PACKAGE_DEFAULT_TIMEOUT;
 
             _quota = DEFAULT_QUOTA;
             _package = new Package();
@@ -100,22 +100,6 @@ namespace RuralCafe
             }*/
 
             string richness = DEFAULT_RICHNESS;//_rcRequest.GetRCSearchField("richness");
-            /* XXX: obsolete
-            if (!richness.Equals("high") &&
-                !richness.Equals("medium") &&
-                !richness.Equals("low"))
-            {
-                richness = "normal";
-            }*/
-
-            int depth = DEFAULT_DEPTH;
-            /*
-            // XXX: obsolete
-            string depth_s = _rcRequest.GetRCSearchField("depth");
-            if (depth_s)
-            {
-                depth = Int32.Parse(_rcRequest.GetRCSearchField("depth"));
-            }*/
 
             // XXX: static quota for now
             /* QUOTA parameterization in the UI
@@ -151,8 +135,6 @@ namespace RuralCafe
 
                 if (requestUri.Trim().Length > 0)
                 {
-                    depth++; // since there's no results page we want an additional level of results
-
                     string fileExtension = Util.GetFileExtension(requestUri);
                     if (!requestUri.StartsWith("http://"))
                     {
@@ -165,7 +147,7 @@ namespace RuralCafe
                         _rcRequest = new RCRequest(this, requestUri);
                         //_rcRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
 
-                        if (RecursivelyDownloadPage(_rcRequest, richness, depth))
+                        if (RecursivelyDownloadPage(_rcRequest, richness, 0))
                         {
                             _rcRequest.FileSize = SendResponsePackage();
                             if (_rcRequest.FileSize > 0)
@@ -174,7 +156,7 @@ namespace RuralCafe
                             }
                         }
                     }
-                    else
+                    else   
                     {
                         // XXX: not handled at the moment, technically nothing should be "not cacheable" though.
                         LogDebug("not cacheable, failed.");
@@ -324,6 +306,8 @@ namespace RuralCafe
             }
         }*/
 
+        /*
+        // XXX: obsolete (currently not in use)
         /// <summary>
         /// Prefetch a search page in breadth first search order.
         /// </summary>
@@ -373,10 +357,9 @@ namespace RuralCafe
             // setup the initial frontier
             LinkedList<RCRequest> currentBFSFrontier = ExtractGoogleResults(_rcRequest);
             LinkedList<RCRequest> nextBFSFrontier = new LinkedList<RCRequest>();
-            int currentDepth = 0;
 
             // run BFS
-            while (currentDepth < depth)
+            while (depth < DEFAULT_MAX_DEPTH)
             {
                 // download objects in parallel
                 currentBFSFrontier = DownloadObjectsInParallel(_rcRequest, currentBFSFrontier);
@@ -397,7 +380,7 @@ namespace RuralCafe
                 // get the next frontier from the current ones
                 nextBFSFrontier = GetNewBFSFrontier(currentBFSFrontier);
                 currentBFSFrontier = nextBFSFrontier;
-                currentDepth++;
+                depth++;
             }
 
             return true;
@@ -438,7 +421,7 @@ namespace RuralCafe
 
             }
             return nextBFSFrontier;
-        }
+        }*/
 
         /// <summary>
         /// Recursively downloads a page and its embedded objects, and its outlinks.
@@ -454,7 +437,7 @@ namespace RuralCafe
                 return false;
             }
 
-            if (depth == 0)
+            if (depth == DEFAULT_MAX_DEPTH)
             {
                 return false;
             }
@@ -465,6 +448,18 @@ namespace RuralCafe
                 return false;
             }
 
+            // reduce the timer
+            DateTime currTime = DateTime.Now;
+            DateTime endTime = StartTime.AddMilliseconds(RequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT);
+            if (endTime.CompareTo(currTime) > 0)
+            {
+                RCRequest.GenericWebRequest.Timeout = (int)(endTime.Subtract(currTime)).TotalMilliseconds;
+            }
+            else
+            {
+                RCRequest.GenericWebRequest.Timeout = 0;
+            }
+                     
             // download the page
             long bytesDownloaded = rcRequest.DownloadToCache();
             if (bytesDownloaded < 0 )
@@ -474,11 +469,10 @@ namespace RuralCafe
             }
 
             // add to the package
-            //if (
-            _package.Pack(this, rcRequest, ref _quota);//)
-            //{
+            if (_package.Pack(this, rcRequest, ref _quota))
+            {
                 LogDebug("[depth = " + depth + "] packed: " + rcRequest.Uri + " " + rcRequest.FileSize + " bytes, " + _quota + " left");
-            //}
+            }
 
             // get the embedded content of the search result page
             DownloadEmbeddedObjects(rcRequest, richness);
@@ -487,7 +481,7 @@ namespace RuralCafe
             LinkedList<RCRequest> resultLinkUris = ExtractLinks(rcRequest);
             foreach (RCRequest currObject in resultLinkUris)
             {
-                RecursivelyDownloadPage(currObject, richness, depth - 1);
+                RecursivelyDownloadPage(currObject, richness, depth + 1);
             }
             return true;
         }
@@ -520,12 +514,9 @@ namespace RuralCafe
                     continue;
                 }
 
-                if (richness.Equals("medium"))
+                if (richness.Equals("normal"))
                 {
-                    if (IsImagePage(embeddedObject.Uri))
-                    {
-                        filteredEmbeddedObjects.AddLast(embeddedObject);
-                    }
+                    filteredEmbeddedObjects.AddLast(embeddedObject);
                 }
                 else if (richness.Equals("low"))
                 {
@@ -542,20 +533,84 @@ namespace RuralCafe
             }
             embeddedObjects = filteredEmbeddedObjects;
 
+            //return DownloadObjects(rcRequest, embeddedObjects);
             return DownloadObjectsInParallel(rcRequest, embeddedObjects);
+        }
+
+        /// <summary>
+        /// Downloads a set of URIs in series.
+        /// </summary>
+        /// <param name="parentRequest">Root request.</param>
+        /// <param name="children">Children requests to be downloaded.</param>
+        /// <returns>List of downloaded requests.</returns>
+        private LinkedList<RCRequest> DownloadObjects(RCRequest parentRequest, LinkedList<RCRequest> children)
+        {
+            LinkedList<RCRequest> addedObjects = new LinkedList<RCRequest>();
+
+            if (children.Count == 0)
+            {
+                return addedObjects;
+            }
+
+            parentRequest.ResetEvents = new ManualResetEvent[children.Count];
+
+            try
+            {
+                // queue up worker threads to download URIs
+                for (int i = 0; i < children.Count; i++)
+                {
+                    RCRequest currChild = children.ElementAt(i);
+                    // make sure we haven't downloaded this before
+                    if (_package.RCRequests.Contains(currChild))
+                    {
+                        // skip it
+                        parentRequest.SetDone();
+                        continue;
+                    }
+
+                    // reduce the timer
+                    DateTime currTime = DateTime.Now;
+                    DateTime endTime = parentRequest.StartTime.AddMilliseconds(RequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT);
+                    if (endTime.CompareTo(currTime) > 0)
+                    {
+                        currChild.GenericWebRequest.Timeout = (int)(endTime.Subtract(currTime)).TotalMilliseconds;
+                    }
+                    else
+                    {
+                        currChild.GenericWebRequest.Timeout = 0;
+                    } 
+                     
+                    // download the page
+                    currChild.DownloadToCache();
+
+                    if (IsTimedOut())
+                    {
+                        break;
+                    }
+                }
+
+                addedObjects = _package.Pack(this, children, ref _quota);
+            }
+            catch (Exception e)
+            {
+                LogDebug("unable to download embeddedObjects: " + e.StackTrace + " " + e.Message);
+            }
+
+            return addedObjects;
         }
 
         /// <summary>
         /// Downloads a set of URIs in parallel using a ThreadPool.
         /// </summary>
-        /// <param name="rcRequest">Root request.</param>
-        /// <param name="childRCRequests">Children requests to be downloaded.</param>
+        /// <param name="parentRequest">Root request.</param>
+        /// <param name="children">Children requests to be downloaded.</param>
         /// <returns>List of downloaded requests.</returns>
         private LinkedList<RCRequest> DownloadObjectsInParallel(RCRequest parentRequest, LinkedList<RCRequest> children)
         {
+            ThreadPool.SetMaxThreads(4, 4);
             LinkedList<RCRequest> addedObjects = new LinkedList<RCRequest>();
 
-            if (children.Count > 0)
+            if (children.Count == 0)
             {
                 return addedObjects;
             }
@@ -567,10 +622,10 @@ namespace RuralCafe
                 // queue up worker threads to download URIs
                 for (int i = 0; i < children.Count; i++)
                 {
-                    // set the resetEvent
-                    parentRequest.ResetEvents[i] = new ManualResetEvent(false);
-
                     RCRequest currChild = children.ElementAt(i);
+                    // set the resetEvent
+                    currChild.ResetEvents = parentRequest.ResetEvents;
+                    parentRequest.ResetEvents[i] = new ManualResetEvent(false);
 
                     // make sure we haven't downloaded this before
                     if (_package.RCRequests.Contains(currChild))
@@ -622,7 +677,19 @@ namespace RuralCafe
 
             // make sure this root request is not timed out
             if (!request.RootRequest.IsTimedOut())
-            {
+            {                
+                // reduce the timer
+                DateTime currTime = DateTime.Now;
+                DateTime endTime = request.RootRequest.StartTime.AddMilliseconds(RequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT);
+                if (endTime.CompareTo(currTime) > 0)
+                {
+                    request.GenericWebRequest.Timeout = (int)(endTime.Subtract(currTime)).TotalMilliseconds;
+                }
+                else
+                {
+                    request.GenericWebRequest.Timeout = 0;
+                }
+                
                 // download the page
                 long bytesDownloaded = request.DownloadToCache();
             }

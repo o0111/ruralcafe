@@ -91,7 +91,7 @@ namespace RuralCafe
                     if (Util.IsValidUri(urlRequest))
                     {
                         requestHandler.RCRequest = new RCRequest(requestHandler, urlRequest);
-                        requestHandler.RCRequest.SetProxy(remoteProxy.GatewayProxy, RemoteRequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT);
+                        requestHandler.RCRequest.SetProxyAndTimeout(remoteProxy.GatewayProxy, RemoteRequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT);
                         //requestHandler.PrefetchAnalysis("high", 1);
 
                         Thread.Sleep(1500);

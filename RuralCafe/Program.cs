@@ -320,7 +320,7 @@ namespace RuralCafe
 
             // set the default quota, depth, watermark for each request
             RemoteRequestHandler.DEFAULT_QUOTA = DEFAULT_QUOTA;
-            RemoteRequestHandler.DEFAULT_DEPTH = DEFAULT_DEPTH;
+            RemoteRequestHandler.DEFAULT_MAX_DEPTH = DEFAULT_DEPTH;
             RemoteRequestHandler.DEFAULT_RICHNESS = DEFAULT_RICHNESS;
             RemoteRequestHandler.DEFAULT_LOW_WATERMARK = DEFAULT_LOW_WATERMARK;
 
