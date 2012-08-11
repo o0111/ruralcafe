@@ -122,7 +122,7 @@ a img{
 }
 
 #internet_signin{
-	padding: 20px 10px;
+	padding: 15px 10px;
 	border-right:solid 1px #C8D5D5;
 	color:#333;
 	float:left;
@@ -245,9 +245,10 @@ ul.nav a, ul.nav a:visited { /* grouping these selectors makes sure that your li
 	background-repeat:repeat-x;
 }
 
+
 #queue_box .cancel_btn{
-	float:right;
 	display:block;
+	float:right;
 	width:15px;
 	height:15px;
 	margin-top:10px;
@@ -313,3 +314,12 @@ ul.nav a, ul.nav a:visited { /* grouping these selectors makes sure that your li
 	border-color:#a6b3b3;
 }
 
+#queue_div #download_animation{
+	position:absolute;
+	display:none;
+	bottom:65px;
+	top:auto;
+	width:80px;
+	height:120px;
+	background-image:url(../img/download_icon.png);
+}

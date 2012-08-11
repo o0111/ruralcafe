@@ -60,16 +60,17 @@ namespace RuralCafe
         /// DUMMY used for request matching.
         /// Not the cleanest implementation need to instantiate a whole object just to match
         /// </summary> 
-        private LocalRequestHandler(string requestId)
+        private LocalRequestHandler(string itemId)
         {
             /*
             if (!Util.IsValidUri(uri))
             {
                 // XXX: do nothing
             }
-             */
-            //_rcRequest = new RCRequest(this, uri);
-            _requestId = Int32.Parse(requestId);
+            else
+            {*/
+            _rcRequest = new RCRequest(itemId);
+            //}
 
             /* XXX: don't think the dummy needs this
             // setup the header variables
@@ -93,6 +94,7 @@ namespace RuralCafe
         {
             return base.Equals(obj);
         }
+
         /// <summary>
         /// Overriding GetHashCode() from base object.
         /// Just use the hash code of the RequestUri.
@@ -127,10 +129,11 @@ namespace RuralCafe
                 return ServeRCPage();
             }
 
+            /*
             if (IsGoogleResultLink())
             {
                 TranslateGoogleResultLink();
-            }
+            }*/
 
             if (IsBlacklisted(RequestUri))
             {
@@ -149,7 +152,8 @@ namespace RuralCafe
 
             // XXX: not cacheable, ignore, and log it instead of streaming for now
             // XXX: we could pass through this stuff directly, but it would require bypassing all blacklist/filtering
-            if (!IsGetOrHeadHeader() || !IsCacheable())
+            if ((!IsGetOrHeadHeader() || !IsCacheable()) && 
+                _proxy.NetworkStatus == (int)RCProxy.NetworkStatusCode.Online)
             {
                 LogDebug("streaming: " + RequestUri + " to client.");
 
@@ -159,25 +163,22 @@ namespace RuralCafe
                 return (int)Status.Completed;
             }
 
-            // XXX: obsolete
-            // set the last requested page for redirects
-            //((RCLocalProxy)_proxy).SetLastRequest(_clientAddress, this);
-
             if (IsCached(_rcRequest.CacheFileName))
             {
                 LogDebug("sending: " + _rcRequest.GenericWebRequest.RequestUri + " from cache.");
                 
                 // get the content type if its a Google proxied search request
                 string contentType = "";
+                /*
                 if (RequestUri.Contains("http://www.google.com/search?"))
                 {
                     contentType = "text/html";
                 }
                 else
-                {
+                {*/
                     // Try getting the mime type from the search index
                     contentType = GetMimeType(RequestUri);
-                }
+                //}
 
                 // try getting the content type from the file extension
                 if (contentType.Equals("text/unknown"))
@@ -222,13 +223,31 @@ namespace RuralCafe
                     // do nothing
                 }
             }
+            
+            if (_proxy.NetworkStatus == (int)RCProxy.NetworkStatusCode.Online)
+            {
+                // online, just stream it
+                LogDebug("streaming: " + RequestUri + " to client.");
 
-            // Parse parameters
-            //NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
-            //string requestId = qscoll.Get("trotro");
-            //SendRedirect(RequestUri, RequestUri);
+                long bytesSent = StreamTransparently();
+                _rcRequest.FileSize = bytesSent;
 
-            return (int)Status.Failed;
+                return (int)Status.Completed;
+            }
+            else
+            {
+                // Uncached links should be redirected to trotro-user.html?t=title&a=url when the system mode is slow or offline
+                // Parse parameters to get title
+                NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
+                string redirectUri = qscoll.Get("trotro");
+                if (redirectUri == null)
+                {
+                    redirectUri = "fake title";
+                }
+                SendRedirect(redirectUri, RequestUri);
+
+                return (int)Status.Completed;
+            }
         }
 
 
@@ -297,9 +316,7 @@ namespace RuralCafe
             {
                 try
                 {
-                    //LogDebug("removing request from queues " + RequestUri);
                     RemoveRequest();
-                    //ServeRCRequestsRedirect();
                 }
                 catch (Exception)
                 {
@@ -308,179 +325,74 @@ namespace RuralCafe
                 return (int)Status.Completed;
             }
 
-            /*
-            // XXX: obsolete
-            if (IsRemoveAllPage())
+            if (IsAddPage())
             {
-                //LogDebug("removing all requests from queues");
                 try
                 {
-                    ((RCLocalProxy)_proxy).ClearRequestQueues(userId);
-                    ServeRCRequestsRedirect();
+                    AddRequest();
                 }
                 catch (Exception)
                 {
                     return (int)Status.Failed;
                 }
-                return (int)Status.Completed;
-            }*/
-
-            if (IsAddPage())
-            {
-                AddRequest();
-                /*
-                // extract the actual requested URI
-                int offset = RequestUri.IndexOf('=');
-                string requestedUri = RequestUri.Substring(offset + 1);
-                RequestUri = requestedUri;
-                // rebuild the RCRequest and parse the parameters
-                // (instead of making a new object)
-                _rcRequest = new RCRequest(this, requestedUri, _rcRequest.RefererUri);
-                _rcRequest.ParseRCSearchFields();
-
-                // queue the request
-                string queryString = _rcRequest.GetRCSearchField("textfield");
-                if (queryString.Trim().Length > 0)
-                {
-                    AddRequest();
-                }
-
-                // special case where we want to send the user back to the search results page
-                RefererUri = _rcRequest.GetRCSearchField("referrer");
-                if (RefererUri != null && !RefererUri.Equals(""))
-                {
-                    // can't serve the lucene results directly, since it wasn't requested it will
-                    // screw up the refererUri we have to redirect back to the page via an intermediate
-                    ServeRedirectPage();
-                }
-                else
-                {
-                    SendErrorPage(HTTP_NOT_FOUND, "no RefererUri found after adding page", "");
-                }*/
-
-                return (int)Status.Downloading;
+                return (int)Status.Pending;
             }
 
             if (IsRequestNetworkStatus())
             {
-                ServeNetworkStatus();
+                try
+                {
+                    ServeNetworkStatus();
+                }
+                catch (Exception)
+                {
+                    return (int)Status.Failed;
+                }
                 return (int)Status.Completed;
             }
 
             if (IsEtaRequest())
             {
-                ServeEtaRequest();
+                try
+                {
+                    ServeEtaRequest();
+                }
+                catch (Exception)
+                {
+                    return (int)Status.Failed;
+                }
                 return (int)Status.Completed;
             }
 
             if (IsRCHomePage())
             {
-                ServeRCSearchPage(((RCLocalProxy)_proxy).RCSearchPage);
-                /*
-                // JAY: disabling of any queuing for download... this is a bit messy, but the idea is that
-                // JAY: the UI is streamlined for absolutely zero remote updates, will be changed with new UI overhaul.
-                if (((RCLocalProxy)_proxy).RCSearchPage.Equals("http://www.ruralcafe.net/cip.html"))
+                try
                 {
                     ServeRCSearchPage(((RCLocalProxy)_proxy).RCSearchPage);
                 }
-                else
+                catch (Exception)
                 {
-                    ServeRCSearchPage(((RCLocalProxy)_proxy).RCSearchPage);
-                    //ServeRCFrames();
-                }*/
-
+                    return (int)Status.Failed;
+                }
                 return (int)Status.Completed;
             }
 
-            /*
-            string fileName = pageUri;
-            int offset = pageUri.LastIndexOf('/');
-            if (offset >= 0 && offset < (pageUri.Length - 1))
-            {
-                fileName = pageUri.Substring(offset + 1);
-                fileName = "images" + Path.DirectorySeparatorChar + fileName;
-            }*/
-
+            // everything else
             string fileName = RequestUri.Replace("http://www.ruralcafe.net/", "");
             fileName = fileName.Replace('/', Path.DirectorySeparatorChar);
             fileName = ((RCLocalProxy)_proxy).UIPagesPath + fileName;
             string contentType = Util.GetContentTypeOfFile(fileName);
             SendOkHeaders(contentType);
-            LogDebug(contentType);
+            //LogDebug(contentType);
             long bytesSent = StreamFromCacheToClient(fileName, false);
             if (bytesSent > 0)
             {
                 return (int)Status.Completed;
             }
 
-            /*
-            // XXX: obsolete
-            if (IsRCHeaderPage())
-            {
-                ServeRCHeader();
-
-                return (int)Status.Completed;
-            }
-            */
-
-            /*
-            // XXX: obsolete
-            if (IsRCRequestsPage())
-            {
-                ServeRCRequestsPage();
-
-                return (int)Status.Completed;
-            }*/
-
-            /*
-            // XXX: obsolete
-            if (IsRCImagePage())
-            {
-                ServeRCImage(RequestUri);
-
-                return (int)Status.Completed;
-            }*/
-
-            /*
-            // XXX: obsolete
-            if (IsRCLocalSearch())
-            {
-                LogDebug("serving RuralCafe results page");
-
-                ((RCLocalProxy)_proxy).SetLastRequest(_clientAddress, this);
-
-                string queryString = _rcRequest.GetRCSearchField("textfield");
-                if (queryString.Trim().Length > 0)
-                {
-                    ServeRCResultsPage(queryString);
-                }
-                else
-                {
-                    ServeRCSearchPage(((RCLocalProxy)_proxy).RCSearchPage);
-                }
-
-                return (int)Status.Completed;
-            }*/
-
-            /*
-            // XXX: obsolete
-            if (IsRCRemoteQuery())
-            {
-                LogDebug("queuing RuralCafe remote request");
-
-                string requestString = _rcRequest.GetRCSearchField("textfield");
-                if (requestString.Trim().Length > 0)
-                {
-                    AddRequest();
-                }
-
-                return (int)Status.Completed;
-            }
-            */
             SendErrorPage(HTTP_NOT_FOUND, "page does not exist", RequestUri);
             return (int)RequestHandler.Status.Failed;
         }
-
 
         /// <summary>Checks if the request is for the RuralCafe command to get the index page.</summary>
         bool IsIndex()
@@ -491,6 +403,7 @@ namespace RuralCafe
             }
             return false;
         }
+
         /// <summary>Checks if the request is for the RuralCafe command to get the queue.</summary>
         bool IsQueue()
         {
@@ -533,46 +446,6 @@ namespace RuralCafe
             return false;
         }
 
-        /*
-        // XXX: obsolete
-        /// <summary>Checks if the request is for the RuralCafe header page.</summary>
-        private bool IsRCHeaderPage()
-        {
-            if (RequestUri.Equals("http://www.ruralcafe.net/header.html") ||
-                RequestUri.Equals("www.ruralcafe.net/header.html"))
-            {
-                return true;
-            }
-            return false;
-        }
-        */
-
-        /*
-        // XXX: obsolete
-        /// <summary>Checks if the request is for the RuralCafe requests page.</summary>
-        private bool IsRCRequestsPage()
-        {
-            if (RequestUri.Equals("http://www.ruralcafe.net/requests.html") ||
-                RequestUri.Equals("www.ruralcafe.net/requests.html"))
-            {
-                return true;
-            }
-            return false;
-        }*/
-        /*
-        // XXX: obsolete
-        /// <summary>Checks if the request is for the RuralCafe image page.</summary>
-        bool IsRCImagePage()
-        {
-            if (RequestUri.Contains("www.ruralcafe.net") &&
-                    RequestUri.EndsWith(".gif"))
-            {
-                return true;
-            }
-            return false;
-        }
-        */
-
         /// <summary>Checks if the request is for the RuralCafe command to check whether the network is up.</summary>
         bool IsRequestNetworkStatus()
         {
@@ -611,18 +484,6 @@ namespace RuralCafe
             }
             return false;
         }
-        /*
-        // XXX: obsolete
-        /// <summary>Checks if the request is for the RuralCafe command to retry a URI.</summary>
-        bool IsRefreshPage()
-        {
-            if (RequestUri.StartsWith("http://www.ruralcafe.net/request/refresh?="))
-            // if (RequestUri.StartsWith("http://www.ruralcafe.net/retrypage="))
-            {
-                return true;
-            }
-            return false;
-        }*/
         /// <summary>Checks if the request is for the RuralCafe command to add a URI.</summary>
         bool IsEtaRequest()
         {
@@ -649,7 +510,9 @@ namespace RuralCafe
             int numCategories = Int32.Parse(qscoll.Get("c"));
             string searchString = qscoll.Get("s");
 
-            SendOkHeaders("text/xml");
+            SendOkHeaders("text/xml", "Cache-Control: no-cache" + "\r\n" +
+                                      "Pragma: no-cache" + "\r\n" +
+                                      "Expires: -1" + "\r\n");
             // not building the xml file yet, just sending the dummy page for now since there's really no top categories query yet
             // for the cache path
             StreamFromCacheToClient(((RCLocalProxy)_proxy).UIPagesPath + "index.xml", false);
@@ -709,7 +572,7 @@ namespace RuralCafe
             // get requests for this user
             List<LocalRequestHandler> requestHandlers = ((RCLocalProxy)_proxy).GetRequests(userId);
             // in reverse chronological order
-            requestHandlers.Reverse();
+            // requestHandlers.Reverse();
 
             string queuePageString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + "<queue>";
             int i = 1;
@@ -717,7 +580,7 @@ namespace RuralCafe
             {
                 foreach (LocalRequestHandler requestHandler in requestHandlers)
                 {
-                    string itemId = System.Security.SecurityElement.Escape("" + requestHandler.RequestId);
+                    string itemId = System.Security.SecurityElement.Escape("" + requestHandler.ItemId);
                     string linkAnchorText = System.Security.SecurityElement.Escape(requestHandler.AnchorText);
                     string linkTarget = System.Security.SecurityElement.Escape(requestHandler.RequestUri);
                     string statusString = "";
@@ -755,12 +618,60 @@ namespace RuralCafe
             }
 
             queuePageString = queuePageString + "</queue>"; //end tag
-            SendOkHeaders("text/xml");
+            SendOkHeaders("text/xml", "Cache-Control: no-cache" + "\r\n" +
+                                      "Pragma: no-cache" + "\r\n" +
+                                      "Expires: -1" + "\r\n");
             SendMessage(queuePageString);
         }
 
         void ServeRCRemoteResultPage()
         {
+            // Parse parameters
+            NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
+            int numItemsPerPage = Int32.Parse(qscoll.Get("n"));
+            int pageNumber = Int32.Parse(qscoll.Get("p"));
+            string queryString = qscoll.Get("s");
+
+            string resultsString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+
+            /*
+            LogDebug(filteredLuceneResults.Count + " results");
+
+            // Google search
+
+
+
+            
+            resultsString = resultsString + "<search total=\"" + currentItemNumber + "\">"; //laura: total should be the total number of results
+            // Local Search Results
+            for (int i = 0; i < filteredLuceneResults.Count; i++)
+            {
+                Lucene.Net.Documents.Document result = filteredLuceneResults.ElementAt(i);
+
+                string uri = System.Security.SecurityElement.Escape(result.Get("uri")); // escape xml string
+                string title = System.Security.SecurityElement.Escape(result.Get("title")); //escape xml string
+                string displayUri = uri;
+                string contentSnippet = "";
+
+                // JAY: find content snippet here
+                //contentSnippet = 
+                if (uri.StartsWith("http://")) //laura: obmit http://
+                    uri = uri.Substring(7);
+                resultsString = resultsString +
+                                "<item>" +
+                                "<title>" + title + "</title>" +
+                                "<url>" + uri + "</url>" +
+                                "<snippet>" + contentSnippet + "</snippet>" +
+                                "</item>";
+            }
+
+            resultsString = resultsString + "</search>";
+
+            SendOkHeaders("text/xml", "Cache-Control: no-cache" + "\r\n" +
+                                      "Pragma: no-cache" + "\r\n" +
+                                      "Expires: -1" + "\r\n");
+            SendMessage(resultsString);
+            */
         }
 
         /// <summary>
@@ -792,9 +703,7 @@ namespace RuralCafe
                 // Query our RuralCafe index
                 List<Lucene.Net.Documents.Document> luceneResults = IndexWrapper.Query(((RCLocalProxy)_proxy).IndexPath, queryString);
 
-                //List<Lucene.Net.Documents.Document> luceneResults = new List<Lucene.Net.Documents.Document>();             
                 // remove duplicates
-
                 foreach (Lucene.Net.Documents.Document document in luceneResults)
                 {
                     string documentUri = document.Get("uri");
@@ -844,20 +753,6 @@ namespace RuralCafe
                 string displayUri = uri;
                 string contentSnippet = "";
 
-                /*
-                if (uri.Length > maxLength)
-                {
-                    displayUri = uri.Substring(0, maxLength) + "...";
-                }
-                if (title.Length > maxLength)
-                {
-                    title = title.Substring(0, maxLength) + "...";
-                }
-                else if (title.Length == 0)
-                {
-                    title = "No Title";
-                }*/
-
                 // JAY: find content snippet here
                 //contentSnippet = 
                 if (uri.StartsWith("http://")) //laura: obmit http://
@@ -872,160 +767,11 @@ namespace RuralCafe
 
             resultsString = resultsString + "</search>";
 
-            SendOkHeaders("text/xml");
+            SendOkHeaders("text/xml", "Cache-Control: no-cache" + "\r\n" +
+                                      "Pragma: no-cache" + "\r\n" +
+                                      "Expires: -1" + "\r\n");
             SendMessage(resultsString);
         }
-
-        /*
-        // XXX: obsolete
-        /// <summary>Sends the frame page to the client.</summary>
-        void ServeRCFrames()
-        {
-            string latestRequest = GetLatestRequestAsString();
-
-            string framesPage = "<html><head><title>RuralCafe Homepage</title></head><frameset rows=200,180,*>" +
-                "<frame src=\"http://www.ruralcafe.net/requests.html\" hscrolling=\"no\" vscrolling=\"yes\" border=\"0\" name=\"links_frame\"/>" +
-                "<frame src=\"http://www.ruralcafe.net/header.html\" scrolling=\"no\" border=\"0\" name=\"header_frame\"/>" +
-                "<frame src=\"" + latestRequest + "\" border=\"0\" name=\"content_frame\"/>" +
-                "</frameset><noframes><body><div>" +
-                "Hi, your browser is really old. If you want to view this page, get a newer browser." +
-                "</div></body></noframes></html>";
-
-            SendOkHeaders("text/html");
-            SendMessage(framesPage);
-        }*/
-
-        /*
-        // XXX: obsolete
-        /// <summary>Sends the header page to the client.</summary>
-        void ServeRCHeader()
-        {
-            //request.GetSearchTerms()
-            string headerPage = "<html><head></head>" +
-                    "<body><center><br>" +
-                //"<body><center><a href=\"" + _searchPageFileName + "\" target=\"content_frame\">Ruralcafe Homepage</a>" +
-
-                    "<form action=\"http://www.ruralcafe.net/request\" method=\"GET\" target=\"content_frame\"><table border=0 cellspacing=3 cellpadding=3>" +
-                    "<tr><td colspan=2><center>" +
-                    "<input type=\"text\" maxlength=2048 size=55 name=\"textfield\"><br>" +
-                    "<input type=\"submit\" name=\"button\" value=\"Search\">" +
-                    "<input type=\"submit\" name=\"button\" value=\"Queue Request\">" +
-                    "</center></td></tr>" +
-
-                    "<tr><td><b>Download:</b><br>" +
-                    "<input type=\"radio\" name=\"richness\" value=\"low\" checked>text only<br>" +
-                    "<input type=\"radio\" name=\"richness\" value=\"medium\">everything<br></td>";
-            // XXX: hackery for Amrita so that the prefetch depth option is only available when the 
-            // prefetching is actually available
-            if (DEFAULT_DEPTH > 0)
-            {
-                headerPage +=
-                    "<td><b>Prefetch:</b><br>" +
-                    "<input type=\"radio\" name=\"depth\" value=\"normal\" checked>" + " less<br>" +
-                    "<input type=\"radio\" name=\"depth\" value=\"more\">" + " more<br></td></tr>";
-            }
-            else
-            {
-                headerPage += "</tr>";
-            }
-            // XXX: disabled for study
-            //"<tr><td colspan=2><b>Confidence (search requests only):</b><br>" +
-            //"<input type=\"radio\" name=\"specificity\" value=\"normal\" checked>normal<br>" +
-            //"<input type=\"radio\" name=\"specificity\" value=\"high\" disabled>return a fewer more detailed results<br></td></tr>" +
-
-            headerPage += "</table></form></center></body></html>";
-
-            SendOkHeaders("text/html");
-            SendMessage(headerPage);
-        }*/
-
-        /*
-        // XXX: Obsolete
-        /// <summary>Sends the requests page to the client.</summary>
-        private void ServeRCRequestsPage()
-        {
-            //List<LocalRequestHandler> requestHandlers = ((RCLocalProxy)_proxy).GetRequests(_clientAddress);
-
-            string linksPageHeader = "<html><head><meta http-equiv=\"refresh\" content=\"10\"></head>" +
-                "<body><center>" +
-                //<a href=\"http://www.ruralcafe.net/requests.html\">[REFRESH]</a>
-                "<table width=\"80%\" border=1>" +
-                "<tr><td><b>#</b></td><td><b>Query/Page Request</b></td>" +
-                "<td><b>Status/ETA</b></td><td><b><a href=\"http://www.ruralcafe.net/removeall\">[REMOVE ALL]</a></b></td></tr>";
-
-            SendOkHeaders("text/html");
-            SendMessage(linksPageHeader);
-
-            string requestString = "";
-            int i = 1;
-            if (requestHandlers != null)
-            {
-                foreach (LocalRequestHandler requestHandler in requestHandlers)
-                {
-                    string linkAnchorText = requestHandler.SearchTermsOrURI();
-                    string linkTarget = "";
-
-                    //linkAnchorText = requestHandler.SearchTermsOrURI();
-                    linkTarget = requestHandler.RequestUri;
-
-                    // if its a search request, translate to the google version to get the remotely returned google results
-                    if (linkAnchorText.StartsWith("http://"))
-                    {
-                        linkTarget = linkAnchorText;
-                    }
-                    else
-                    {
-                        linkTarget = requestHandler.RCRequest.TranslateRCSearchToGoogle();
-                    }
-                    //    linkAnchorText = "http://" + linkAnchorText;
-                    //}
-                    //}
-                    if (requestHandler.RequestStatus == (int)Status.Completed)
-                    {
-
-                        // XXX: if its a URL request then just drop all the ruralcafe shims
-                        requestString = "<tr><td>" + i + ".</td><td><a href=\"" +
-                            linkTarget +
-                            "\" target=\"content_frame\">" + linkAnchorText + "</a></td><td>" +
-                            "COMPLETED" +
-                            "<td>" +
-                            //"<a href=\"http://www.ruralcafe.net/expandpage=" + request.WebRequestUri + "\">" +
-                            //"[EXPAND]</a>" +
-                            //"<a href=\"http://www.ruralcafe.net/modifypage=" + request.WebRequestUri + "\">" +
-                            //"[MODIFY]</a>" +
-                            "<a href=\"http://www.ruralcafe.net/removepage=" + requestHandler.RequestUri + "\">" +
-                            "[REMOVE]</a></td></tr>";
-                    }
-                    else if (requestHandler.RequestStatus == (int)Status.Failed)
-                    {
-                        requestString = "<tr><td>" + i + ".</td><td>" + linkAnchorText +
-                            "</td><td>" +
-                            "FAILED" +
-                            "<td>" +
-                            "<a href=\"http://www.ruralcafe.net/retrypage=" + requestHandler.RequestUri + "\">" +
-                            "[RETRY]</a>" +
-                            "<a href=\"http://www.ruralcafe.net/removepage=" + requestHandler.RequestUri + "\">" +
-                            "[REMOVE]</a></td></tr>";
-                    }
-                    else
-                    {
-                        requestString = "<tr><td>" + i + ".</td><td>" + linkAnchorText +
-                            "</td><td>" +
-                            requestHandler.PrintableETA() +
-                            "<td>" +
-                            //"<a href=\"http://www.ruralcafe.net/modifypage=" + request.WebRequestUri + "\">" +
-                            //"[MODIFY]</a>" +
-                            "<a href=\"http://www.ruralcafe.net/removepage=" + requestHandler.RequestUri + "\">" +
-                            "[REMOVE]</a></td></tr>";
-                    }
-                    SendMessage(requestString);
-                    i++;
-                }
-            }
-
-            string linksPageFooter = "</table>" + "</center></body></html>";
-            SendMessage(linksPageFooter);
-        }*/
 
         /// <summary>Serves the RuralCafe search page.</summary>
         private void ServeRCSearchPage(string pageUri)
@@ -1037,16 +783,8 @@ namespace RuralCafe
                 fileName = pageUri.Substring(offset + 1);
 			}
 
-            /*
-            if (fileName.Equals(""))
-            {
-                ServeRCHeader();
-            }
-            else
-            {*/
-                SendOkHeaders("text/html");
-                StreamFromCacheToClient(((RCLocalProxy)_proxy).UIPagesPath + fileName, false);
-            //}
+            SendOkHeaders("text/html");
+            StreamFromCacheToClient(((RCLocalProxy)_proxy).UIPagesPath + fileName, false);
         }
 
         /*
@@ -1235,84 +973,14 @@ namespace RuralCafe
         }
          */
 
+        /*
+        // XXX: obsolete
         /// <summary>Helper to translate RuralCafe to Lucene query format.</summary>
         private string TranslateRuralCafeToLuceneQuery()
         {
             string searchTerms = _rcRequest.GetRCSearchField("textfield");
             searchTerms = searchTerms.Replace('+', ' ');
             return searchTerms;
-        }
-        /*
-        // XXX: obsolete
-        /// <summary>Sends image to the client.</summary>
-        private void ServeRCImage(string pageUri)
-        {
-            string fileName = pageUri;
-            int offset = pageUri.LastIndexOf('/');
-            if (offset >= 0 && offset < (pageUri.Length - 1))
-            {
-                fileName = pageUri.Substring(offset + 1);
-                fileName = "images" + Path.DirectorySeparatorChar + fileName;
-            }
-
-            SendOkHeaders("text/html");
-            StreamFromCacheToClient(((RCLocalProxy)_proxy).UIPagesPath + fileName, false);
-        }
-         */
-
-        /*
-        // XXX: obsolete
-        /// <summary>Sends the redirect page to the client.</summary>
-        void ServeRedirectPage()
-        {
-            string str = "HTTP/1.1" + " " + HTTP_MOVED_TEMP + " " + "adding page redirection" + "\r\n" +
-            "Content-Type: text/plain" + "\r\n" +
-            "Proxy-Connection: close" + "\r\n" +
-            "Location: " + RefererUri + "\r\n" +
-            "\r\n" +
-            HTTP_MOVED_TEMP + " " + "adding page redirection" +
-            "";
-            SendMessage(str);
-        }
-        /// <summary>Sends the redirect page to the client.</summary>
-        void ServeRCRequestsRedirect()
-        {
-            int status = HTTP_MOVED_PERM;
-            string strReason = "";
-            string str = "";
-
-            str = "HTTP/1.1" + " " + status + " " + strReason + "\r\n" +
-            "Location: http://www.ruralcafe.net/requests.html\r\n" +
-            "Content-Type: text/html\r\n" +
-            "\r\n";
-
-            SendMessage(str);
-        }*/
-
-        /*
-        // XXX: obsolete
-        /// <summary>Helper to get the latest request as a string.</summary>
-        string GetLatestRequestAsString()
-        {
-            //int satisfiedRequests = _localProxy.SatisfiedRequests(_clientAddress);
-            //int outstandingRequests = _localProxy.OutstandingRequests(_clientAddress);
-            LocalRequestHandler latestRequestHandler = ((RCLocalProxy)_proxy).GetLatestRequest(_clientAddress);
-            string latestRequestString;
-            //string lastRequestedPageLink;
-            if (latestRequestHandler == null ||
-                latestRequestHandler.RequestUri == ((RCLocalProxy)_proxy).RCSearchPage)
-            {
-                latestRequestString = ((RCLocalProxy)_proxy).RCSearchPage;
-            }
-            else if (latestRequestHandler.IsRCLocalSearch())
-            {
-                latestRequestString = latestRequestHandler.SearchTermsOrURI().Trim();
-            }
-            else
-            {
-                latestRequestString = latestRequestHandler.RequestUri;
-            }
-            return latestRequestString;
         }*/
 
         /*
@@ -1365,13 +1033,29 @@ namespace RuralCafe
             int userId = Int32.Parse(qscoll.Get("u"));
             string targetName = qscoll.Get("t");
             string targetUri = qscoll.Get("a");
+            string refererUri = qscoll.Get("r");
+            if (targetName == null)
+            {
+                targetName = "fake title";
+            }
+            if (targetUri == null)
+            {
+                // error
+                targetUri = "";
+                SendErrorPage(HTTP_NOT_FOUND, "malformed add request", "");
+                return;
+            }
+            if (refererUri == null)
+            {
+                refererUri = targetUri;
+            }
 
-            _rcRequest = new RCRequest(this, targetUri, targetName, _rcRequest.RefererUri);
+            _rcRequest = new RCRequest(this, targetUri, targetName, refererUri);
             //_rcRequest.ParseRCSearchFields();
 
             ((RCLocalProxy)_proxy).QueueRequest(userId, this);
             SendOkHeaders("text/html");
-            SendMessage(this.RefererUri);
+            SendMessage(RefererUri);
         }
 
         /// <summary>
@@ -1382,12 +1066,12 @@ namespace RuralCafe
             // Parse parameters
             NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
             int userId = Int32.Parse(qscoll.Get("u"));
-            string requestId = qscoll.Get("i");
+            string itemId = qscoll.Get("i");
 
             // clean up the Ruralcafe info, remove it
             //int index = RequestUri.IndexOf('=');
             //string matchingUri = RequestUri.Substring(index + 1);
-            LocalRequestHandler matchingRequestHandler = new LocalRequestHandler(requestId);
+            LocalRequestHandler matchingRequestHandler = new LocalRequestHandler(itemId);
             ((RCLocalProxy)_proxy).DequeueRequest(userId, matchingRequestHandler);
             SendOkHeaders("text/html");
         }
@@ -1400,7 +1084,7 @@ namespace RuralCafe
             // Parse parameters
             NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
             int userId = Int32.Parse(qscoll.Get("u"));
-            string requestId = qscoll.Get("i");
+            string itemId = qscoll.Get("i");
 
             // find the indexer of the matching request
             List<LocalRequestHandler> requestHandlers = ((RCLocalProxy)_proxy).GetRequests(userId);
@@ -1410,12 +1094,19 @@ namespace RuralCafe
                 SendMessage("0");
                 return;
             }
-            LocalRequestHandler matchingRequestHandler = new LocalRequestHandler(requestId);
+            LocalRequestHandler matchingRequestHandler = new LocalRequestHandler(itemId);
             int requestIndex = requestHandlers.IndexOf(matchingRequestHandler);
             if (requestIndex < 0)
             {
                 SendOkHeaders("text/html");
                 SendMessage("0");
+                return;
+            }
+
+            if (requestHandlers[requestIndex].RequestStatus == (int)RequestHandler.Status.Pending)
+            {
+                SendOkHeaders("text/html");
+                SendMessage("-1");
                 return;
             }
             string printableEta = requestHandlers[requestIndex].PrintableETA();
@@ -1432,7 +1123,8 @@ namespace RuralCafe
         {
             int eta = ((RCLocalProxy)_proxy).ETA(this);
             string etaString = "";
-            if (this.RequestStatus == (int)Status.Completed)
+            if ((this.RequestStatus == (int)Status.Completed) ||
+                (this.RequestStatus == (int)Status.Failed))
             {
                 etaString = "0";
             }
@@ -1469,12 +1161,13 @@ namespace RuralCafe
                     }
                 }
             }
-            LogDebug("eta sent: " + etaString);
+            //LogDebug("eta sent: " + etaString);
             return etaString;
         }
 
         #endregion
 
+        /*
         #region Google Translation Fun
 
         private bool IsGoogleResultLink()
@@ -1494,11 +1187,11 @@ namespace RuralCafe
             RequestUri = newLinkUri;
 
             string fileName = RCRequest.UriToFilePath(RequestUri);
-            HashedFileName = RCRequest.HashedFilePath(fileName) + fileName;
-            CacheFileName = Proxy.CachePath + HashedFileName;
+            HashPath = RCRequest.GetHashPath(fileName) + fileName;
+            CacheFileName = Proxy.CachePath + HashPath;
         }
 
-        #endregion
+        #endregion*/
 
         #region Serve Wikipedia Page Methods
 

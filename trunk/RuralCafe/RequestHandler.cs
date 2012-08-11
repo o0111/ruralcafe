@@ -49,6 +49,8 @@ namespace RuralCafe
 
         // ID
         protected int _requestId;
+        // number of outstanding requests for this object
+        protected int _outstandingRequests;
 
         // proxy this request belongs to
         protected RCProxy _proxy;
@@ -98,6 +100,7 @@ namespace RuralCafe
         public RequestHandler()
         {
             // XXX: do nothing
+            _outstandingRequests = 1;
         }
 
         /// <summary>
@@ -111,12 +114,13 @@ namespace RuralCafe
         /// <summary>
         /// Overriding Equals() from base object.
         /// Instead of testing for equality of reference,
-        /// just check if the request IDs are equal
+        /// just check if the request URIs are equal
         /// </summary>        
         public override bool Equals(object obj)
         {
-            return (RequestId.Equals(((RequestHandler)obj).RequestId));
+            return (ItemId.Equals(((RequestHandler)obj).ItemId));
         }
+        
         /// <summary>
         /// Overriding GetHashCode() from base object.
         /// Just use the hash code of the RequestUri.
@@ -133,6 +137,19 @@ namespace RuralCafe
         {
             get { return _requestId; }
         }
+        /// <summary>Unique Item ID</summary>
+        public string ItemId
+        {
+            get { return _rcRequest.ItemId; }
+        }
+        // accessors for the underlying RCRequest
+        /// <summary>Outstanding requests for this URI, i.e. the total number of times it appears in the user queues.</summary>
+        public int OutstandingRequests
+        {
+            set { _outstandingRequests = value; }
+            get { return _outstandingRequests; }
+        }
+
         /// <summary>The proxy that this request belongs to.</summary>
         public RCProxy Proxy
         {
@@ -186,11 +203,17 @@ namespace RuralCafe
             set { _rcRequest.RefererUri = value; }
             get { return _rcRequest.RefererUri; }
         }
-        /// <summary>Hashed base name of the file if the RCRequest is stored in the cache.</summary>
-        public string HashedFileName
+        /// <summary>File name of the file if the RCRequest is stored in the cache.</summary>
+        public string FileName
         {
-            set { _rcRequest.HashedFileName = value; }
-            get { return _rcRequest.HashedFileName; }
+            set { _rcRequest.FileName = value; }
+            get { return _rcRequest.FileName; }
+        }
+        /// <summary>Hashed base name of the file if the RCRequest is stored in the cache.</summary>
+        public string HashPath
+        {
+            set { _rcRequest.HashPath = value; }
+            get { return _rcRequest.HashPath; }
         }
         /// <summary>Name of the file if the RCRequest is stored in the cache.</summary>
         public string CacheFileName
@@ -246,16 +269,19 @@ namespace RuralCafe
 
                 if (CreateRequest(requestedUri, refererUri, recvString))
                 {
-                    _packageFileName = _proxy.PackagesPath + _rcRequest.HashedFileName + ".gzip";
+                    _packageFileName = _proxy.PackagesPath + _rcRequest.HashPath + _rcRequest.FileName + ".gzip";
 
                     // XXX: need to avoid duplicate request/response logging when redirecting e.g. after an add
                     // handle the request
-                    if (!requestedUri.StartsWith("http://www.ruralcafe.net/request/queue.xml"))
+                    if (!requestedUri.StartsWith("http://www.ruralcafe.net/request/queue.xml") &&
+                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/eta")
+                        )
                     {
                         LogRequest();
                     }
-                    RequestStatus = HandleRequest();
-                    if (!requestedUri.StartsWith("http://www.ruralcafe.net/request/queue.xml"))
+                    HandleRequest();
+                    if (!requestedUri.StartsWith("http://www.ruralcafe.net/request/queue.xml") &&
+                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/eta"))
                     {
                         LogResponse();
                     }
@@ -314,7 +340,7 @@ namespace RuralCafe
                 IPAddress clientAddress = IPAddress.Parse(logEntry[2]);
                 requestedUri = logEntry[3];
                 string refererUri = logEntry[4];
-                int requestStatus = (int)Status.Downloading;
+                int requestStatus = (int)Status.Pending;
                 if (logEntry.Count == 6)
                 {
                     requestStatus = Int32.Parse(logEntry[5]);
@@ -326,18 +352,20 @@ namespace RuralCafe
                     _requestId = requestId;
                     _rcRequest.StartTime = startTime;
                     _clientAddress = clientAddress;
-                    _rcRequest.RequestStatus = requestStatus;
                     
-                    _packageFileName = _proxy.PackagesPath + _rcRequest.HashedFileName + ".gzip";
+                    _packageFileName = _proxy.PackagesPath + _rcRequest.HashPath + _rcRequest.FileName + ".gzip";
 
                     // XXX: need to avoid duplicate request/response logging when redirecting e.g. after an add
                     // handle the request
-                    if (!requestedUri.StartsWith("http://www.ruralcafe.net/request/queue.xml"))
+                    if (!requestedUri.StartsWith("http://www.ruralcafe.net/request/queue.xml") &&
+                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/eta"))
                     {
                         LogRequest();
                     }
-                    RequestStatus = HandleRequest();
-                    if (!requestedUri.StartsWith("http://www.ruralcafe.net/request/queue.xml"))
+                    HandleRequest();
+                    RequestStatus = requestStatus;
+                    if (!requestedUri.StartsWith("http://www.ruralcafe.net/request/queue.xml") &&
+                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/eta"))
                     {
                         LogResponse();
                     }
@@ -567,6 +595,15 @@ namespace RuralCafe
         /// <param name="contentType">The Content-Type of the request to respond to.</param>
         protected void SendOkHeaders(string contentType)
         {
+            SendOkHeaders(contentType, "");
+        }
+
+        /// <summary>
+        /// Sends an HTTP OK response to the client.
+        /// </summary>
+        /// <param name="contentType">The Content-Type of the request to respond to.</param>
+        protected void SendOkHeaders(string contentType, string additionalHeaders)
+        {
             int status = HTTP_OK;
             string strReason = "";
             string str = "";
@@ -574,6 +611,7 @@ namespace RuralCafe
             str = "HTTP/1.1" + " " + status + " " + strReason + "\r\n" +
             "Content-Type: " + contentType + "\r\n" +
             "Proxy-Connection: close" + "\r\n" +
+            additionalHeaders +
             "\r\n";
 
             SendMessage(str);

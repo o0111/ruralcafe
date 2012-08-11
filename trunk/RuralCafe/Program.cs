@@ -301,13 +301,15 @@ namespace RuralCafe
             RCRemoteProxy remoteProxy = new RCRemoteProxy(REMOTE_PROXY_IP_ADDRESS, REMOTE_PROXY_LISTEN_PORT, 
                 REMOTE_PROXY_PATH, REMOTE_CACHE_PATH, PACKAGE_PATH, LOGS_PATH);
 
+            /*
+            // XXX: buggy...
             // XXX: currently only used if both proxies are running on the same machine
             if (REMOTE_PROXY_IP_ADDRESS == LOCAL_PROXY_IP_ADDRESS)
             {
                 // set the gateway proxy info and login for the remote proxy
                 remoteProxy.SetGatewayProxy(GATEWAY_PROXY_IP_ADDRESS, GATEWAY_PROXY_LISTEN_PORT,
                                             GATEWAY_PROXY_LOGIN, GATEWAY_PROXY_PASS);
-            }
+            }*/
 
             // set the maximum downlink speed to the local proxy
             remoteProxy.MAXIMUM_DOWNLINK_BANDWIDTH = MAXIMUM_DOWNLINK_SPEED;

@@ -30,3 +30,8 @@ function addLoadEvent(func) {
     }
   }
 }
+
+function greetingMsg(){
+	document.getElementById('internet_signin').innerHTML="Hi, "+get_cookie('uname')+'<br /><a href="logout.html">Sign out</a>';
+}
+	

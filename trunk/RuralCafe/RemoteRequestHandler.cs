@@ -145,7 +145,7 @@ namespace RuralCafe
             if (IsRCURLRequest())
             {
              */
-                LogDebug("page request, downloading page as package");
+                //LogDebug("page request, downloading page as package");
                 //string requestUri = _rcRequest.GetRCSearchField("textfield");
                 string requestUri = _rcRequest.Uri;
 
@@ -163,7 +163,7 @@ namespace RuralCafe
                     {
                         // remove RuralCafe stuff from the request
                         _rcRequest = new RCRequest(this, requestUri);
-                        _rcRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
+                        //_rcRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
 
                         if (RecursivelyDownloadPage(_rcRequest, richness, depth))
                         {
@@ -344,7 +344,7 @@ namespace RuralCafe
                 return false;
             }
             _rcRequest = new RCRequest(this, pageUri);
-            _rcRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
+            //_rcRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
 
             // download the file
             long bytesDownloaded = _rcRequest.DownloadToCache();
@@ -477,7 +477,7 @@ namespace RuralCafe
             //if (
             _package.Pack(this, rcRequest, ref _quota);//)
             //{
-            //    LogDebug("[depth = " + depth + "] packed: " + rcRequest.Uri + " " + rcRequest.FileSize + " bytes, " + _quota + " left");
+                LogDebug("[depth = " + depth + "] packed: " + rcRequest.Uri + " " + rcRequest.FileSize + " bytes, " + _quota + " left");
             //}
 
             // get the embedded content of the search result page
@@ -800,6 +800,8 @@ namespace RuralCafe
 
         #region Remote Proxy Specific Helper Functions
 
+        /*
+        // XXX: obsolete
         /// <summary>
         /// Checks if the request is a RuralCafe URL request.
         /// </summary>
@@ -813,7 +815,7 @@ namespace RuralCafe
                 return true;
             }
             return false;
-        }
+        }*/
 
         /// <summary>
         /// Guesses if the URI is pointing to a text page.
@@ -918,7 +920,7 @@ namespace RuralCafe
                     }
 
                     RCRequest extractedRCRequest = new RCRequest(this, currUri);
-                    extractedRCRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
+                    //extractedRCRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
 
                     if (!extractedReferences.Contains(extractedRCRequest))
                     {
@@ -1140,7 +1142,7 @@ namespace RuralCafe
 
                     RCRequest currRCRequest = new RCRequest(this, currUri);
                     currRCRequest.ChildNumber = i - 1;
-                    currRCRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
+                    //currRCRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
 
                     resultLinks.AddLast(currRCRequest);
                 } 
