@@ -165,28 +165,15 @@ namespace RuralCafe
 
             if (IsCached(_rcRequest.CacheFileName))
             {
-                //LogDebug("sending: " + _rcRequest.GenericWebRequest.RequestUri + " from cache.");
+                // Try getting the mime type from the search index
+                string contentType = GetMimeType(RequestUri);
                 
-                // get the content type if its a Google proxied search request
-                string contentType = "";
-                /*
-                if (RequestUri.Contains("http://www.google.com/search?"))
-                {
-                    contentType = "text/html";
-                }
-                else
-                {*/
-                    // Try getting the mime type from the search index
-                    contentType = GetMimeType(RequestUri);
-                //}
-
                 // try getting the content type from the file extension
                 if (contentType.Equals("text/unknown"))
                     contentType = Util.GetContentTypeOfFile(_rcRequest.CacheFileName);
 
                 // peek at the file, major hackery...
                 string peekFile = System.IO.File.ReadAllText(_rcRequest.CacheFileName);
-                //string[] lines = peekFile.Split("\r\n");
                 if (peekFile.StartsWith("HTTP/1.1 301 Moved Permanently"))
                 {
                     // don't bother sending HTTP OK headers
@@ -369,7 +356,7 @@ namespace RuralCafe
             {
                 try
                 {
-                    ServeEtaRequest();
+                    ServeETARequest();
                 }
                 catch (Exception)
                 {
@@ -638,54 +625,18 @@ namespace RuralCafe
             SendMessage(queuePageString);
         }
 
-        void ServeRCRemoteResultPage()
+        /// <summary>Serves the RuralCafe search page.</summary>
+        private void ServeRCSearchPage(string pageUri)
         {
-            // Parse parameters
-            NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
-            int numItemsPerPage = Int32.Parse(qscoll.Get("n"));
-            int pageNumber = Int32.Parse(qscoll.Get("p"));
-            string queryString = qscoll.Get("s");
-
-            string resultsString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
-
-            /*
-            LogDebug(filteredLuceneResults.Count + " results");
-
-            // Google search
-
-
-
-            
-            resultsString = resultsString + "<search total=\"" + currentItemNumber + "\">"; //laura: total should be the total number of results
-            // Local Search Results
-            for (int i = 0; i < filteredLuceneResults.Count; i++)
+            string fileName = pageUri;
+            int offset = pageUri.LastIndexOf('/');
+            if (offset >= 0 && offset < (pageUri.Length - 1))
             {
-                Lucene.Net.Documents.Document result = filteredLuceneResults.ElementAt(i);
-
-                string uri = System.Security.SecurityElement.Escape(result.Get("uri")); // escape xml string
-                string title = System.Security.SecurityElement.Escape(result.Get("title")); //escape xml string
-                string displayUri = uri;
-                string contentSnippet = "";
-
-                // JAY: find content snippet here
-                //contentSnippet = 
-                if (uri.StartsWith("http://")) //laura: obmit http://
-                    uri = uri.Substring(7);
-                resultsString = resultsString +
-                                "<item>" +
-                                "<title>" + title + "</title>" +
-                                "<url>" + uri + "</url>" +
-                                "<snippet>" + contentSnippet + "</snippet>" +
-                                "</item>";
+                fileName = pageUri.Substring(offset + 1);
             }
 
-            resultsString = resultsString + "</search>";
-
-            SendOkHeaders("text/xml", "Cache-Control: no-cache" + "\r\n" +
-                                      "Pragma: no-cache" + "\r\n" +
-                                      "Expires: -1" + "\r\n");
-            SendMessage(resultsString);
-            */
+            SendOkHeaders("text/html");
+            StreamFromCacheToClient(((RCLocalProxy)_proxy).UIPagesPath + fileName);
         }
 
         /// <summary>
@@ -787,19 +738,113 @@ namespace RuralCafe
             SendMessage(resultsString);
         }
 
-        /// <summary>Serves the RuralCafe search page.</summary>
-        private void ServeRCSearchPage(string pageUri)
-        {
-            string fileName = pageUri;
-            int offset = pageUri.LastIndexOf('/');
-            if (offset >= 0 && offset < (pageUri.Length - 1))
-            {
-                fileName = pageUri.Substring(offset + 1);
-			}
 
-            SendOkHeaders("text/html");
-            StreamFromCacheToClient(((RCLocalProxy)_proxy).UIPagesPath + fileName);
+        void ServeRCRemoteResultPage()
+        {
+            if (_proxy.NetworkStatus == (int)RCProxy.NetworkStatusCode.Offline)
+            {
+                return;
+            }
+
+            // Parse parameters
+            NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
+            int numItemsPerPage = Int32.Parse(qscoll.Get("n"));
+            int pageNumber = Int32.Parse(qscoll.Get("p"));
+            string queryString = qscoll.Get("s");
+
+            // Google search
+            string googleSearchString = ConstructGoogleSearch(queryString);
+            _rcRequest = new RCRequest(this, googleSearchString);
+
+            //LogDebug("streaming: " + _rcRequest.GenericWebRequest.RequestUri + " to cache and client.");
+            //_rcRequest.GenericWebRequest.Proxy = null;
+            long bytesDownloaded = _rcRequest.DownloadToCache();
+            try
+            {
+                FileInfo f = new FileInfo(_rcRequest.CacheFileName);
+                if (bytesDownloaded > -1 && f.Exists)
+                {
+                    LinkedList<RCRequest> resultLinkUris = ExtractGoogleResults(_rcRequest);
+                    string resultsString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+                    resultsString = resultsString + "<search total=\"" + resultLinkUris.Count.ToString() + "\">";
+                    int currentItemNumber = 0;
+                    foreach (RCRequest linkObject in resultLinkUris)
+                    {
+                        currentItemNumber++;
+                        if ((currentItemNumber > ((pageNumber - 1) * numItemsPerPage)) &&
+                            (currentItemNumber < (pageNumber * numItemsPerPage) + 1))
+                        {
+                            string uri = linkObject.Uri; //System.Security.SecurityElement.Escape(result.Get("uri")); // escape xml string
+                            string title = linkObject.AnchorText; //System.Security.SecurityElement.Escape(result.Get("title")); //escape xml string
+                            string displayUri = uri;
+                            string contentSnippet = "";
+
+                            // JAY: find content snippet here
+                            //contentSnippet = 
+                            if (uri.StartsWith("http://")) //laura: obmit http://
+                                uri = uri.Substring(7);
+                            resultsString = resultsString +
+                                            "<item>" +
+                                            "<title>" + title + "</title>" +
+                                            "<url>" + uri + "</url>" +
+                                            "<snippet>" + contentSnippet + "</snippet>" +
+                                            "</item>";
+                        }
+                    }
+
+                    resultsString = resultsString + "</search>";
+
+                    SendOkHeaders("text/xml", "Cache-Control: no-cache" + "\r\n" +
+                                              "Pragma: no-cache" + "\r\n" +
+                                              "Expires: -1" + "\r\n");
+                    SendMessage(resultsString);
+                }
+            }
+            catch
+            {
+                // do nothing
+            }
         }
+
+        /// <summary>
+        /// Translates a RuralCafe search to a Google one.
+        /// </summary>
+        /// <returns>Google search query.</returns>
+        public string ConstructGoogleSearch(string searchString)
+        {
+            //string searchTerms = GetRCSearchField("textfield");
+            string googleWebRequestUri = "http://www.google.com/search?hl=en&q=" +
+                                        searchString.Replace(' ', '+') +
+                                        "&btnG=Google+Search&aq=f&oq=";
+
+            return googleWebRequestUri;
+        }
+
+        /*
+        // XXX: obsolete, and moved from RCRequest temporarily
+        /// <summary>
+        /// Translates a RuralCafe search to a Google one.
+        /// </summary>
+        /// <returns>Google search query.</returns>
+        public string TranslateRCSearchToGoogle()
+        {
+            NameValueCollection qscoll = Util.ParseHtmlQuery(Uri);
+            //int userId = Int32.Parse(qscoll.Get("u"));
+            string searchString = qscoll.Get("s");
+            //string targetUri = qscoll.Get("a");
+            //string refererUri = qscoll.Get("r");
+            if (searchString == null)
+            {
+                searchString = "fake query";
+            }
+            //string searchTerms = GetRCSearchField("textfield");
+            string googleWebRequestUri = "http://www.google.com/search?hl=en&q=" +
+                                        searchString.Replace(' ', '+') +
+                                        "&btnG=Google+Search&aq=f&oq=";
+
+            return googleWebRequestUri;
+        }*/
+
 
         /*
         // XXX: obsolete
@@ -1093,7 +1138,7 @@ namespace RuralCafe
         /// <summary>
         /// Gets the eta for a request in Ruralcafe's queue.
         /// </summary>
-        private void ServeEtaRequest()
+        private void ServeETARequest()
         {
             // Parse parameters
             NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
@@ -1215,6 +1260,10 @@ namespace RuralCafe
         /// <returns>True or false if the request is in the wiki cache or not.</returns>
         private bool IsInWikiCache()
         {
+            if (!((RCLocalProxy)_proxy).HasWikiIndices())
+            {
+                return false;
+            }
             if (RequestUri.StartsWith("http://en.wikipedia.org/wiki/"))
             {
                 // images aren't currently cached, just return no
