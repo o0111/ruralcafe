@@ -44,7 +44,7 @@ namespace RuralCafe
         private HttpWebResponse _webResponse;
         private long _fileSize;
 
-        private RequestHandler _rootRequest;
+        private RequestHandler _requestHandler;
         private Dictionary<string, string> _searchFields;
 
         private DateTime _startTime;
@@ -127,7 +127,7 @@ namespace RuralCafe
         /// <summary>The root requesthandler of this request.</summary>
         public RequestHandler RootRequest
         {
-            get { return _rootRequest; }
+            get { return _requestHandler; }
         }
         /// <summary>The array of events used to indicate whether the children requests in their own threads are completed.</summary>
         public ManualResetEvent[] ResetEvents
@@ -196,17 +196,18 @@ namespace RuralCafe
             _hashPath = GetHashPath(_fileName);
             _itemId = _hashPath.Replace(Path.DirectorySeparatorChar.ToString(), "");
             _cacheFileName = requestHandler.Proxy.CachePath + _hashPath + _fileName;
+            /*
             if (IsCompressed())
             {
                 _cacheFileName = _cacheFileName + ".bz2";
-            }
+            }*/
 
             _status = (int)RequestHandler.Status.Pending;
             _webRequest = (HttpWebRequest)WebRequest.Create(_uri);
 
             _fileSize = 0;
 
-            _rootRequest = requestHandler;
+            _requestHandler = requestHandler;
 
             _startTime = DateTime.Now;
             _finishTime = _startTime;
@@ -439,6 +440,8 @@ namespace RuralCafe
             return safe;
         }
 
+        /*
+        // XXX: obsolete
         /// <summary>
         /// Checks whether the request should be stored in compressed format.
         /// Synchronized with CIP implementation.
@@ -456,7 +459,7 @@ namespace RuralCafe
                 return true;
             }
             return false;
-        }
+        }*/
 
         /*
         // XXX: obsolete
@@ -518,7 +521,7 @@ namespace RuralCafe
 
             try
             {
-                writeFile = Util.CreateFile(CacheFileName);
+                writeFile = Util.CreateFile(_cacheFileName);
                 if (writeFile == null)
                 {
                     return -1;
@@ -526,6 +529,45 @@ namespace RuralCafe
 
                 // get the web response for the web request
                 _webResponse = (HttpWebResponse)_webRequest.GetResponse();
+                if (!_webResponse.ResponseUri.Equals(_webRequest.RequestUri))
+                {
+                    // redirected at some point
+                    
+                    // leave a 301 at the old cache file location
+                    string str = "HTTP/1.1" + " " + "301" + " Moved Permanently" + "\r\n" +
+                          "Location: " + _webResponse.ResponseUri.ToString() + "\r\n" +
+                          "\r\n";
+                    
+                    if (writeFile != null)
+                    {
+                        writeFile.Close();
+                    }
+                    using (StreamWriter sw = new StreamWriter(_cacheFileName))
+                    {
+                        // Add some text to the file.
+                        sw.Write(str);
+                    }
+
+                    // have to save to the new cache file location
+                    string uri = _webResponse.ResponseUri.ToString();
+                    string fileName = UriToFilePath(uri);
+                    string hashPath = GetHashPath(fileName);
+                    //string itemId = _hashPath.Replace(Path.DirectorySeparatorChar.ToString(), "");
+                    string cacheFileName = _requestHandler.Proxy.CachePath + hashPath + fileName;
+
+                    // create directory if it doesn't exist and delete the file so we can replace it
+                    if (!Util.CreateDirectoryForFile(cacheFileName) ||
+                        !Util.DeleteFile(cacheFileName))
+                    {
+                        return -1;
+                    }
+                    writeFile = Util.CreateFile(cacheFileName);
+                    if (writeFile == null)
+                    {
+                        return -1;
+                    }
+
+                }
                 Stream responseStream = GenericWebResponse.GetResponseStream();
 
                 // Read the response into a buffer.
@@ -537,11 +579,11 @@ namespace RuralCafe
                     bytesDownloaded += bytesRead;
 
                     // check to see if the time is up for this overall request object
-                    if (_rootRequest.IsTimedOut())
+                    if (_requestHandler.IsTimedOut())
                     {
                         // incomplete, clean up the partial download
-                        Util.DeleteFile(CacheFileName);
-                        _rootRequest.LogDebug("Failed, timed out: " + Uri);
+                        Util.DeleteFile(_cacheFileName);
+                        _requestHandler.LogDebug("Failed, timed out: " + Uri);
                         return -1;
                     }
 
@@ -551,13 +593,13 @@ namespace RuralCafe
             }
             catch (WebException e)
             {
-                _rootRequest.LogDebug("WebException, streaming failed: " + e.Message);
+                _requestHandler.LogDebug("WebException, streaming failed: " + e.Message);
                 return -1;
             }
             catch (Exception e)
             {
                 // XXX: not handled well
-                _rootRequest.LogDebug("Exception, Stream from server to cache failed: " + e.Message);
+                _requestHandler.LogDebug("Exception, Stream from server to cache failed: " + e.Message);
                 return -1;
             }
             finally
@@ -568,7 +610,7 @@ namespace RuralCafe
                 }
             }
 
-            _rootRequest.LogDebug("received: " + Uri + " " + bytesDownloaded + " bytes");
+            _requestHandler.LogDebug("received: " + Uri + " " + bytesDownloaded + " bytes");
             return bytesDownloaded;
         }
     }

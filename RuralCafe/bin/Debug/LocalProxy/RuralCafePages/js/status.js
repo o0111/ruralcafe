@@ -29,12 +29,10 @@ addLoadEvent(checkLogin);
 
 function loadStatus(){
 	var statusbar=document.getElementById('internet_status');
-	if (statusbar.classList.contains('cached_status'))
-		statusbar.classList.remove('cached_status');
-	else if (statusbar.classList.contains('online_status'))
-		statusbar.classList.remove('online_status');
+	statusbar.className.replace(' cached_status','');
+	statusbar.className.replace(' online_status','');
 	if (status!='offline')
-		statusbar.classList.add(status+'_status');
+		statusbar.className+=' '+status+'_status';
 	statusbar.innerHTML=status;
 	document.getElementById('tsearch').onsubmit=function(){
 		return tSearch(status);

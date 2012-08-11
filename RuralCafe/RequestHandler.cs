@@ -221,11 +221,13 @@ namespace RuralCafe
             set { _rcRequest.CacheFileName = value; }
             get { return _rcRequest.CacheFileName; }
         }
+        /*
+        // XXX: obsolete
         /// <summary>Checks whether the RCRequest is stored in the cache.</summary>
         public bool IsCompressed()
         {
             return _rcRequest.IsCompressed();
-        }
+        }*/
 
         /// <summary>Checks whether the request is blacklisted by the proxy.</summary>
         public bool IsBlacklisted(string uri)
@@ -273,15 +275,20 @@ namespace RuralCafe
 
                     // XXX: need to avoid duplicate request/response logging when redirecting e.g. after an add
                     // handle the request
-                    if (!requestedUri.StartsWith("http://www.ruralcafe.net/request/queue.xml") &&
-                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/eta")
+                    if (!(requestedUri.StartsWith("http://www.ruralcafe.net/") &&
+                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/add") &&
+                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/remove") &&
+                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/search"))
                         )
                     {
                         LogRequest();
                     }
                     HandleRequest();
-                    if (!requestedUri.StartsWith("http://www.ruralcafe.net/request/queue.xml") &&
-                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/eta"))
+                    if (!(requestedUri.StartsWith("http://www.ruralcafe.net/") &&
+                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/add") &&
+                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/remove") &&
+                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/search"))
+                        )
                     {
                         LogResponse();
                     }
@@ -357,15 +364,21 @@ namespace RuralCafe
 
                     // XXX: need to avoid duplicate request/response logging when redirecting e.g. after an add
                     // handle the request
-                    if (!requestedUri.StartsWith("http://www.ruralcafe.net/request/queue.xml") &&
-                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/eta"))
+                    if (!(requestedUri.StartsWith("http://www.ruralcafe.net/") &&
+                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/add") &&
+                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/remove") &&
+                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/search"))
+                        )
                     {
                         LogRequest();
                     }
                     HandleRequest();
                     RequestStatus = requestStatus;
-                    if (!requestedUri.StartsWith("http://www.ruralcafe.net/request/queue.xml") &&
-                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/eta"))
+                    if (!(requestedUri.StartsWith("http://www.ruralcafe.net/") &&
+                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/add") &&
+                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/remove") &&
+                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/search"))
+                        )
                     {
                         LogResponse();
                     }
@@ -469,7 +482,7 @@ namespace RuralCafe
         /// <returns>True if cacheable, false if not. </returns>
         protected bool IsCacheable()
         {
-            if (_rcRequest.CacheFileName.Length <= 255)
+            if (_rcRequest.CacheFileName.Length <= 248)
             {
                 return true;
             }
