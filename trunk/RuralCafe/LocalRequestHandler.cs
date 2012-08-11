@@ -184,8 +184,18 @@ namespace RuralCafe
                 if (contentType.Equals("text/unknown"))
                     contentType = Util.GetContentTypeOfFile(_rcRequest.CacheFileName);
 
-                SendOkHeaders(contentType);
-                _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName, _rcRequest.IsCompressed());
+                // peek at the file, major hackery...
+                string peekFile = System.IO.File.ReadAllText(_rcRequest.CacheFileName);
+                //string[] lines = peekFile.Split("\r\n");
+                if (peekFile.StartsWith("HTTP/1.1 301 Moved Permanently"))
+                {
+                    // don't bother sending HTTP OK headers
+                }
+                else
+                {
+                    SendOkHeaders(contentType);
+                }
+                _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName);
                 if (_rcRequest.FileSize < 0)
                 {
                     return (int)Status.Failed;
@@ -200,7 +210,8 @@ namespace RuralCafe
             // XXX: response time could be improved here if it downloads and streams to the client at the same time
             // XXX: basically, merge the DownloadtoCache() and StreamfromcachetoClient() methods into a new third method.
             // cacheable but not cached, cache it, then send to client if there is no remote proxy
-            if (((RCLocalProxy)_proxy).RemoteProxy == null)
+            // if online, stream to cache, then stream to client.
+            if (_proxy.NetworkStatus == (int)RCProxy.NetworkStatusCode.Online)
             {
                 LogDebug("streaming: " + _rcRequest.GenericWebRequest.RequestUri + " to cache and client.");
                 _rcRequest.GenericWebRequest.Proxy = null;
@@ -210,7 +221,7 @@ namespace RuralCafe
                     FileInfo f = new FileInfo(_rcRequest.CacheFileName);
                     if (bytesDownloaded > -1 && f.Exists)
                     {
-                        _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName, _rcRequest.IsCompressed());
+                        _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName);
                         if (_rcRequest.FileSize < 0)
                         {
                             return (int)Status.Failed;
@@ -224,8 +235,9 @@ namespace RuralCafe
                 }
             }
             
-            if (_proxy.NetworkStatus == (int)RCProxy.NetworkStatusCode.Online)
+            if (_proxy.NetworkStatus != (int)RCProxy.NetworkStatusCode.Online)
             {
+                /*
                 // online, just stream it
                 LogDebug("streaming: " + RequestUri + " to client.");
 
@@ -235,7 +247,7 @@ namespace RuralCafe
                 return (int)Status.Completed;
             }
             else
-            {
+            {*/
                 // Uncached links should be redirected to trotro-user.html?t=title&a=url when the system mode is slow or offline
                 // Parse parameters to get title
                 NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
@@ -248,6 +260,7 @@ namespace RuralCafe
 
                 return (int)Status.Completed;
             }
+            return (int)Status.Failed;
         }
 
 
@@ -384,7 +397,7 @@ namespace RuralCafe
             string contentType = Util.GetContentTypeOfFile(fileName);
             SendOkHeaders(contentType);
             //LogDebug(contentType);
-            long bytesSent = StreamFromCacheToClient(fileName, false);
+            long bytesSent = StreamFromCacheToClient(fileName);
             if (bytesSent > 0)
             {
                 return (int)Status.Completed;
@@ -515,7 +528,7 @@ namespace RuralCafe
                                       "Expires: -1" + "\r\n");
             // not building the xml file yet, just sending the dummy page for now since there's really no top categories query yet
             // for the cache path
-            StreamFromCacheToClient(((RCLocalProxy)_proxy).UIPagesPath + "index.xml", false);
+            StreamFromCacheToClient(((RCLocalProxy)_proxy).UIPagesPath + "index.xml");
         }
 
         /// <summary>
@@ -784,7 +797,7 @@ namespace RuralCafe
 			}
 
             SendOkHeaders("text/html");
-            StreamFromCacheToClient(((RCLocalProxy)_proxy).UIPagesPath + fileName, false);
+            StreamFromCacheToClient(((RCLocalProxy)_proxy).UIPagesPath + fileName);
         }
 
         /*
@@ -1337,7 +1350,7 @@ namespace RuralCafe
         /// <param name="decompress">Try to decompress then serve this file.</param>
         /// <param name="fileName">Name of the file to stream to the client.</param>
         /// <returns>Bytes streamed from the cache to the client.</returns>
-        protected long StreamFromCacheToClient(string fileName, bool decompress)
+        protected long StreamFromCacheToClient(string fileName)
         {
             long bytesSent = 0;
 
@@ -1368,6 +1381,8 @@ namespace RuralCafe
             FileStream fs = null;
             try
             {
+                /*
+                // XXX: obsoleted
                 // XXX: waste of computation, not a good tradeoff
                 if (decompress)
                 {
@@ -1379,7 +1394,7 @@ namespace RuralCafe
                     bytesSent = streamLength;
                 }
                 else
-                {
+                {*/
                     int offset = 0;
                     byte[] buffer = new byte[32]; // magic number 32
                     fs = f.Open(FileMode.Open, FileAccess.Read);
@@ -1393,7 +1408,7 @@ namespace RuralCafe
 
                         offset += bytesRead;
                     }
-                }
+                //}
             }
             catch (Exception e)
             {

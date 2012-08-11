@@ -138,8 +138,9 @@ function itemHTML(index){
 	if (itemStatus!="Pending")
 		itemhtml+='<br/><br/>Size: '+itemSize;
 	itemhtml+='</div></div>';
-	if (itemStatus=="Downloading")
-		startCountDown(itemId);
+	if (status!="offline")
+		if (itemStatus=="Downloading" || itemStatus=="Pending")
+			startCountDown(itemId);
 	return itemhtml;
 }
 
@@ -168,8 +169,8 @@ function getEST(){
 				if (request.status==200){
 					var est=request.responseText;
 					if (est && est!=''){
-						//alert(index);
-						if (est!=0){
+						alert(est);
+						if (est!='0' && est!='-1'){
 							if (document.getElementById('status_'+itemIds[index]))
 								document.getElementById('status_'+itemIds[index]).innerHTML=est.replace(/</g,'&lt;').replace(/>/g,'&gt;');
 						}

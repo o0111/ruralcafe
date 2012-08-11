@@ -651,7 +651,7 @@ namespace RuralCafe
                 return -1;
             }
 
-            LogDebug("sending results package: " + (_package.IndexSize + _package.ContentSize) + "bytes at " + _proxy.MAXIMUM_DOWNLINK_BANDWIDTH + " bytes per second." );
+            LogDebug("sending results package: " + (_package.IndexSize + _package.ContentSize) + " bytes at " + _proxy.MAXIMUM_DOWNLINK_BANDWIDTH + " bytes per second." );
             SendPackageHeaders();
 
             // stream out the pages (w/compression)
