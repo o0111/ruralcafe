@@ -44,9 +44,10 @@ namespace RuralCafe
         };
 
         // timeouts
-        public const int REQUEST_PACKAGE_DEFAULT_TIMEOUT = Timeout.Infinite; // in milliseconds
-        public const int WEB_REQUEST_DEFAULT_TIMEOUT = 30000; // in milliseconds
-
+        public const int LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT = Timeout.Infinite; // in milliseconds
+        public const int REMOTE_REQUEST_PACKAGE_DEFAULT_TIMEOUT = 180000; // in milliseconds
+        public const int WEB_REQUEST_DEFAULT_TIMEOUT = 60000; // in milliseconds
+        
         // ID
         protected int _requestId;
         // number of outstanding requests for this object
@@ -295,16 +296,11 @@ namespace RuralCafe
                 }
                 else
                 {
-                    /* XXX: was streaming these unparsable URIs, but this is disabled for now
-                    LogDebug("streaming: " + requestedUri);
-                    long bytesSent = StreamTransparently();
-
-                    Status = GenericRequest.STATUS_NOTCACHEABLE;
-                    //_rcRequest._fileSize = bytesSent;
-
-                    LogDebug("unhandled request streamed: " + requestedUri);
-                     */
-                    throw (new IOException());
+                    // XXX: was streaming these unparsable URIs, but this is disabled for now
+                    // XXX: mangled version of the one in LocalRequestHandler, duplicate, and had to move the StreamTransparently() up to this parent class
+                    LogDebug("streaming: " + requestedUri + " to client.");
+                    long bytesSent = StreamTransparently(recvString);
+                    return;
                 }
             }
             catch (Exception e)
@@ -457,6 +453,69 @@ namespace RuralCafe
             }
             return statusString;
         }
+
+
+        /// <summary>
+        /// Stream the request to the server and the response back to the client transparently.
+        /// XXX: does not have gateway support or tunnel to remote proxy support
+        /// </summary>
+        /// <returns>The length of the streamed result.</returns>
+        protected long  StreamTransparently(string recvString)
+        {
+            long bytesSent = 0;
+            
+            string clientRequest = "";
+            if(recvString.Equals("")) {
+                clientRequest = _rcRequest._recvString;
+            }
+            else {
+                clientRequest = recvString;
+            }
+            Encoding ASCII = Encoding.ASCII;
+            Byte[] byteGetString = ASCII.GetBytes(clientRequest);
+            Byte[] receiveByte = new Byte[256];
+            Socket socket = null;
+
+            // establish the connection to the server
+            try
+            {
+                string hostName = GetHeaderValue(clientRequest, "Host");
+                IPHostEntry ipEntry = Dns.GetHostEntry(hostName);
+                IPAddress[] addr = ipEntry.AddressList;
+
+                IPEndPoint ip = new IPEndPoint(addr[0], 80);
+                socket = new Socket(ip.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                socket.Connect(ip);
+            }
+            catch (SocketException)
+            {
+                // do nothing
+                return -1;
+            }
+
+            // send the request, get the response, and transparently send it to the client
+            socket.Send(byteGetString, byteGetString.Length, 0);
+            Int32 bytesRead = socket.Receive(receiveByte, receiveByte.Length, 0);
+            _clientSocket.Send(receiveByte, bytesRead, 0);
+            bytesSent += bytesRead;
+
+            // continue to stream the data
+            while (bytesRead > 0)
+            {
+                bytesRead = socket.Receive(receiveByte, receiveByte.Length, 0);
+
+                // check speed limit
+                while (!((RCLocalProxy)_proxy).HasDownlinkBandwidth(bytesRead))
+                {
+                    Thread.Sleep(100);
+                }
+                _clientSocket.Send(receiveByte, bytesRead, 0);
+                bytesSent += bytesRead;
+            }
+            socket.Close();
+
+            return bytesSent;
+        }
  
         #region Methods for Checking Requests
 
@@ -496,7 +555,7 @@ namespace RuralCafe
         /// <returns>True if cached, false if not.</returns>
         protected bool IsCached(string fileName)
         {
-            if (fileName == null || fileName.Equals(""))
+            if (fileName == null || fileName.Equals("") || (fileName.Length > 248))
             {
                 return false;
             }

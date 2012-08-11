@@ -204,6 +204,7 @@ namespace RuralCafe
 
             _status = (int)RequestHandler.Status.Pending;
             _webRequest = (HttpWebRequest)WebRequest.Create(_uri);
+            _webRequest.Timeout = RequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT;
 
             _fileSize = 0;
 
@@ -218,7 +219,7 @@ namespace RuralCafe
         /// </summary>
         /// <param name="proxy">Proxy info.</param>
         /// <param name="timeout">Timeout.</param>
-        public void SetProxy(WebProxy proxy, int timeout) {
+        public void SetProxyAndTimeout(WebProxy proxy, int timeout) {
              GenericWebRequest.Proxy = proxy;
              GenericWebRequest.Timeout = timeout;
         }
@@ -578,6 +579,8 @@ namespace RuralCafe
                     writeFile.Write(readBuffer, 0, bytesRead);
                     bytesDownloaded += bytesRead;
 
+                    /*
+                    // XXX: obsolete, setting the webrequest timeout prior to this
                     // check to see if the time is up for this overall request object
                     if (_requestHandler.IsTimedOut())
                     {
@@ -585,7 +588,7 @@ namespace RuralCafe
                         Util.DeleteFile(_cacheFileName);
                         _requestHandler.LogDebug("Failed, timed out: " + Uri);
                         return -1;
-                    }
+                    }*/
 
                     // Read the next part of the response
                     bytesRead = responseStream.Read(readBuffer, 0, 32);

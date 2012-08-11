@@ -278,11 +278,11 @@ namespace RuralCafe
                         }
                         if (_gatewayProxy != null)
                         {
-                            requestHandler.RCRequest.SetProxy(_gatewayProxy, System.Threading.Timeout.Infinite);
+                            requestHandler.RCRequest.SetProxyAndTimeout(_gatewayProxy, System.Threading.Timeout.Infinite);
                         }
                         else
                         {
-                            requestHandler.RCRequest.SetProxy(_remoteProxy, System.Threading.Timeout.Infinite);
+                            requestHandler.RCRequest.SetProxyAndTimeout(_remoteProxy, System.Threading.Timeout.Infinite);
                         }
                         // save the request file as a package
                         requestHandler.RCRequest.CacheFileName = requestHandler.PackageFileName;
@@ -294,7 +294,7 @@ namespace RuralCafe
 
                         if (bytesDownloaded > -1)
                         {
-                            WriteDebug("unpacking: " + requestHandler.RequestUri);
+                            //WriteDebug("unpacking: " + requestHandler.RequestUri);
                             long unpackedBytes = Package.Unpack(requestHandler, _indexPath);
                             if (unpackedBytes > 0)
                             {
