@@ -1158,66 +1158,6 @@ namespace RuralCafe
             }
         }
 
-        /// <summary>
-        /// Extracts the result links from a google results page.
-        /// XXX: Probably broken all the time due to Google's constantly changing HTML format.
-        /// </summary>
-        /// <param name="rcRequest">Request to make.</param>
-        /// <returns>List of links.</returns>
-        LinkedList<RCRequest> ExtractGoogleResults(RCRequest rcRequest)
-        {
-            string[] stringSeparator = new string[] { "<cite>" };
-            LinkedList<RCRequest> resultLinks = new LinkedList<RCRequest>();
-            string fileString = Util.ReadFileAsString(rcRequest.CacheFileName);
-            string[] lines = fileString.Split(stringSeparator, StringSplitOptions.RemoveEmptyEntries);
-
-            // get links
-            int pos;
-            string currLine;
-            string currUri;
-            // stagger starting index by 1 since first split can't be a link
-            for (int i = 1; i < lines.Length; i++)
-            {
-                currLine = (string)lines[i];
-                // to the next " symbol
-                if ((pos = currLine.IndexOf("</cite>")) > 0)
-                {
-                    currUri = currLine.Substring(0, pos);
-
-                    if ((pos = currUri.IndexOf(" - ")) > 0)
-                    {
-                        currUri = currUri.Substring(0, pos);
-                    }
-
-                    currUri = currUri.Replace("<b>", "");
-                    currUri = currUri.Replace("</b>", "");
-                    currUri = currUri.Replace(" ", "");
-
-                    // instead of translating to absolute, prepend http:// to make webrequest constructor happy
-                    currUri = "http://" + currUri;
-
-                    if (!Util.IsValidUri(currUri))
-                    {
-                        continue;
-                    }
-
-                    // check blacklist
-                    if (IsBlacklisted(currUri))
-                    {
-                        continue;
-                    }
-
-                    RCRequest currRCRequest = new RCRequest(this, currUri);
-                    currRCRequest.ChildNumber = i - 1;
-                    //currRCRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
-
-                    resultLinks.AddLast(currRCRequest);
-                } 
-            }
-
-            return resultLinks;
-        }
-
         #endregion
     }
 }

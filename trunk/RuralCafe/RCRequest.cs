@@ -478,28 +478,6 @@ namespace RuralCafe
 
             return "";
         }*/
-        /// <summary>
-        /// Translates a RuralCafe search to a Google one.
-        /// </summary>
-        /// <returns>Google search query.</returns>
-        public string TranslateRCSearchToGoogle()
-        {
-            NameValueCollection qscoll = Util.ParseHtmlQuery(Uri);
-            //int userId = Int32.Parse(qscoll.Get("u"));
-            string searchString = qscoll.Get("s");
-            //string targetUri = qscoll.Get("a");
-            //string refererUri = qscoll.Get("r");
-            if (searchString == null)
-            {
-                searchString = "fake query";
-            }
-            //string searchTerms = GetRCSearchField("textfield");
-            string googleWebRequestUri = "http://www.google.com/search?hl=en&q=" +
-                                        searchString.Replace(' ', '+') +
-                                        "&btnG=Google+Search&aq=f&oq=";
-
-            return googleWebRequestUri;
-        }
 
         /// <summary>
         /// Streams a request from the server into the cache.

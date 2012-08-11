@@ -206,6 +206,18 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// Checks to see if this proxy even has any Wiki indices
+        /// </summary>
+        public bool HasWikiIndices()
+        {
+            if (_wikiIndices.Count > 0)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Sets the search page interface to present to clients.
         /// </summary>
         /// <param name="searchPage">Search page filename.</param>
