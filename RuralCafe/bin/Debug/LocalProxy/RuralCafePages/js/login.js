@@ -67,6 +67,7 @@ function redirectUser()
 					else
 						document.location="trotro-user.html?u="+xmlId;
 					document.cookie = "uid="+xmlId;
+					document.cookie = "uname="+xmlUser;
 					break;
 				}
             }

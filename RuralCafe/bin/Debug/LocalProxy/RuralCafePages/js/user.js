@@ -1,12 +1,11 @@
 
-var xmlDoc = 0;
 var xhttp = 0;
 var userid="";
 var ipp = 7;//request items shown per page
 var i;
 var results;//loaded requests
 
-function loadOffline(){
+function loadOffline(){	
 	document.getElementById('left_btn').onclick=scrollLeft;
 	document.getElementById('right_btn').onclick=scrollRight;
 	document.getElementById('close_box').onclick=closeFrame;
@@ -17,16 +16,19 @@ function loadOffline(){
 				userid=path.slice(path.search('u=')+2,path.search('t=')-1);
 			else
 				userid=path.slice(path.search('u=')+2);
-		else
+		else{
 			userid=get_cookie('uid');
+		}
 		if (userid==""){//redirect to the login page
 			var index=path.search("t=");
-					if (index!=-1)
-						document.location="login.html?"+path.slice(index);
-					else
-						document.location="login.html";
+			if (index!=-1)
+				document.location="login.html?"+path.slice(index);
+			else
+				document.location="login.html";
 		}
-		
+		else{
+			greetingMsg();
+		}
 		//checking pending request
 		if (userid!="" && path.search('t=')!=-1 && (path.search('a=')!=-1)){
 			var requestTitle=path.slice(path.search('t=')+2,path.search('a=')-1);
@@ -42,6 +44,7 @@ function loadOffline(){
 addLoadEvent(loadOffline);
 
 function loadQueue(requestURL){
+	clearCountDown();
     xhttp= new ajaxRequest();
 	if (xhttp.overrideMimeType)
 		xhttp.overrideMimeType('text/xml');
@@ -55,12 +58,13 @@ function addRequest(itemTitle,itemURL){
 	mygetrequest.onreadystatechange=function(){
 		if (mygetrequest.readyState==4){
 			if (mygetrequest.status==200){
-				var itemId=mygetrequest.responseText;
+				var itemReferer=mygetrequest.responseText;
 				//item id should be returned if it is successfully created
 				//check whether item with that id is already added
-				if (itemId && itemId!='' && !document.getElementById(itemId)){		
+				if (itemReferer && itemReferer!=''){		
 					loadQueue('request/queue.xml?u='+userid+'&v=0');
 					document.getElementById('main_frame').src="newrequest.html";
+					startAnimation();
 				}
 			}
 			else{
@@ -100,15 +104,18 @@ function showXML(searchString){
 			var xmldata=xhttp.responseXML; //retrieve result as an XML object
 			var innerHtml='';
 			results=xmldata.getElementsByTagName("item");
-			for (i=0;i<Math.min(ipp,results.length);i++){
+			//result.length=9 ipp=7 
+			//queue = 8 7 6 5 4 3 2 
+			for (i=results.length-1;i>=Math.max(0,results.length-ipp);i--){
 				innerHtml+=itemHTML(i);
 			}
+			//i=1
 			document.getElementById('update_area').innerHTML=innerHtml;
 			document.getElementById('left_btn').style.display="none";
 			if (results.length<=ipp)
 				document.getElementById('right_btn').style.display="none";
 			else
-				document.getElementById('right_btn').innerHTML=(results.length-i);
+				document.getElementById('right_btn').innerHTML=(i+1);
 		}
 		else{
 			//alert("An error has occured making the request");
@@ -124,10 +131,10 @@ function itemHTML(index){
 	var itemSize=results[index].getElementsByTagName('size')[0].firstChild.nodeValue;	
 	var itemhtml="";
 	if (itemStatus=="Completed")
-		itemhtml= '<div id="'+itemId+'" class="queue_item complete_item" onclick="openPage(\''+itemURL+'\');">';
+		itemhtml= '<div id="'+itemId+'" class="queue_item complete_item"><div class="cancel_btn" onclick="removeRequest('+itemId+');"></div><span class="open_btn"  onclick="openPage(\''+itemURL+'\');"><span class="item_title">'+itemTitle+'</span><span class="status '+itemStatus+'" id="status_'+itemId+'">'+itemStatus+'</span></span>';
 	else
-		itemhtml= '<div id="'+itemId+'" class="queue_item">';
-	itemhtml+='<span class="cancel_btn" onclick="removeRequest('+itemId+');"></span><span class="item_title">'+itemTitle+'</span><span class="status '+itemStatus+'" id="status_'+itemId+'">'+itemStatus+'</span><div class="queue_detail">'+itemTitle+'<br/><br/><span id="url_'+itemId+'">'+itemURL+'</span>';
+		itemhtml= '<div id="'+itemId+'" class="queue_item"><div class="cancel_btn" onclick="removeRequest('+itemId+');"></div><span class="item_title">'+itemTitle+'</span><span class="status '+itemStatus+'" id="status_'+itemId+'">'+itemStatus+'</span>';
+	itemhtml+='<div class="queue_detail">'+itemTitle+'<br/><br/><span id="url_'+itemId+'">'+itemURL+'</span>';
 	if (itemStatus!="Pending")
 		itemhtml+='<br/><br/>Size: '+itemSize;
 	itemhtml+='</div></div>';
@@ -140,8 +147,8 @@ function openPage(url){
 	document.getElementById('main_frame').src=url;
 }
 
-var interval=false;
-var itemIds= new Array();
+var interval;
+var itemIds;
 
 function startCountDown(id){
 	itemIds.push(id);
@@ -153,16 +160,19 @@ function startCountDown(id){
 //not sure whether i can use 1 clock to send 2 reuqeust simutaneosly, wait for testing
 function getEST(){
 	for (var j=0;j<itemIds.length;j++){
-		var mygetrequest=new ajaxRequest();
 		var index=j;
-		mygetrequest.onreadystatechange=function(){
-			if (mygetrequest.readyState==4){
-				if (mygetrequest.status==200){
-					var est=mygetrequest.responseText;
+		var mygetrequests=new ajaxRequest();
+		var updateEST=function(request, index){
+			return function(){
+			if (request.readyState==4){
+				if (request.status==200){
+					var est=request.responseText;
 					if (est && est!=''){
-						alert(index);
-						if (est!=0)
-							document.getElementById('status_'+itemIds[index]).innerHTML=est;
+						//alert(index);
+						if (est!=0){
+							if (document.getElementById('status_'+itemIds[index]))
+								document.getElementById('status_'+itemIds[index]).innerHTML=est.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+						}
 						else{ //finish downloading
 							stopCountDown(index);
 							loadQueue('request/queue.xml?u='+userid+'&v=0');
@@ -173,58 +183,103 @@ function getEST(){
 					stopCountDown(index);
 				}
 			}
+			}
 		}
-		mygetrequest.open("GET", "request/eta?u="+userid+"&i="+itemIds[index]);
-		mygetrequest.send(null);
+		mygetrequests.onreadystatechange=updateEST(mygetrequests,index);
+		mygetrequests.open("GET", "request/eta?u="+userid+"&i="+itemIds[index]);
+		mygetrequests.send(null);
 	}
 }
  
+
+
 // button stop
 function stopCountDown(itemIndex) {
-	itemIds.splice(itemIndex);
-	if (itemIds.length==0){
-		//alert('stop clock');
-    	window.clearInterval(interval);
-    	intervalID = false;
-	}
-}
-
-function isCountDown(itemId) {
-	if (document.getElementById('status_'+itemIds[j]).innerHTML=="Downloading"){
-		for (var j=0;j<itemIds.length;j++){
-			if (itemIds[j]==itemId){
-				return j;
-			}
+	if (itemIndex!=-1){
+		itemIds.splice(itemIndex,1);
+		//alert(itemIds.toString());
+		if (itemIds.length==0){
+			//alert('stop clock');
+			window.clearInterval(interval);
+			intervalID = false;
 		}
 	}
 }
+
+function clearCountDown(){
+	itemIds=new Array();
+	window.clearInterval(interval);
+	interval=false;
+}
+
+function isCountDown(itemId) {
+	for (var j=0;j<itemIds.length;j++){
+		if (itemIds[j]==itemId){
+			return j;
+		}
+	}
+	return -1;
+}
 		
 function scrollRight(){
+	//result.length=9 ipp=7 
+			//queue= 8 7 6 5 4 3 2  
+	//i=1
 	var parentNode=document.getElementById('update_area');	
 	stopCountDown(isCountDown(parentNode.firstChild.id));
 	parentNode.removeChild(parentNode.firstChild);
 	parentNode.innerHTML+=itemHTML(i);
-	i++;
-	if (i-ipp>0)
+	i--;
+	//i=0
+		//queue= 7 6 5 4 3 2 1
+	if (results.length-ipp-i-1>0)
 		document.getElementById('left_btn').style.display="block";
-	if (i>=results.length)
+	// if (i+1 <1)
+	if (i<0)
 		document.getElementById('right_btn').style.display="none";
-	document.getElementById('left_btn').innerHTML=(i-ipp);
-	document.getElementById('right_btn').innerHTML=(results.length-i);
+	document.getElementById('left_btn').innerHTML=(results.length-ipp-i-1);
+	document.getElementById('right_btn').innerHTML=(i+1);
 	return false;
 }
 
 function scrollLeft(){
+	//result.length=9 ipp=7 
+			//queue= 7 6 5 4 3 2 1
+	//i=0
 	var parentNode=document.getElementById('update_area');
-	stopCountDown(isCountDown(parentNode.firstChild.id));
+	stopCountDown(isCountDown(parentNode.lastChild.id));
 	parentNode.removeChild(parentNode.lastChild);
-	i--;
-	parentNode.innerHTML=itemHTML(i)+parentNode.innerHTML;
-	if (i-ipp<=0)
+	i++;
+	//i==1;
+	//queue= 8 7 6 5 4 3 2
+	parentNode.innerHTML=itemHTML(i+ipp)+parentNode.innerHTML;
+	// if (results.length-ipp-i-1<1)
+	if (results.length-ipp-i-1<1)
 		document.getElementById('left_btn').style.display="none";
-	if (i<results.length)
+	// if (i+1>0)
+	if (i+1>0)
 		document.getElementById('right_btn').style.display="block";
-	document.getElementById('left_btn').innerHTML=(i-ipp);
-	document.getElementById('right_btn').innerHTML=(results.length-i);
+	document.getElementById('left_btn').innerHTML=(results.length-ipp-i-1);
+	document.getElementById('right_btn').innerHTML=(i+1);
 	return false;
+}
+
+var animInterval=false;
+
+function startAnimation(){
+	var dIcon=document.getElementById("download_animation");
+	dIcon.style.display='block';
+	var d=185;
+	dIcon.style.bottom=d+'px';
+	animInterval=window.setInterval(function(){
+		d-=12;
+		dIcon.style.bottom=d+'px';
+		if (d<65)
+			stopAnimation();
+	}, 50);
+}
+
+function stopAnimation(){
+	window.clearInterval(animInterval);
+	document.getElementById("download_animation").style.display='none';
 }

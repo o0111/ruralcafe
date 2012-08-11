@@ -33,7 +33,9 @@ namespace RuralCafe
         private string _uri;
         private string _anchorText;
         private string _refererUri;
-        private string _hashedFileName;
+        private string _fileName;
+        private string _hashPath;
+        private string _itemId; // hashPath without the directory seperators
         private string _cacheFileName;
 
         private int _status;
@@ -76,11 +78,23 @@ namespace RuralCafe
             set { _refererUri = value; }
             get { return _refererUri; }
         }
-        /// <summary>The hashed file name of the object.</summary>
-        public string HashedFileName
+        /// <summary>The file name of the object.</summary>
+        public string FileName
         {
-            set { _hashedFileName = value; }
-            get { return _hashedFileName; }
+            set { _fileName = value; }
+            get { return _fileName; }
+        }
+        /// <summary>The hashed file name of the object.</summary>
+        public string HashPath
+        {
+            set { _hashPath = value; }
+            get { return _hashPath; }
+        }
+        /// <summary>The itemId of the object.</summary>
+        public string ItemId
+        {
+            //set { _itemId = value; }
+            get { return _itemId; }
         }
         /// <summary>The file name of the object if it is cached.</summary>
         public string CacheFileName
@@ -143,14 +157,26 @@ namespace RuralCafe
         # endregion
 
         /// <summary>
+        /// DUMMY Constructor for a RuralCafe Request matching
+        /// </summary>
+        /// <param name="requestHandler">The handler for the request.</param>
+        /// <param name="itemId">requestId.</param>
+        public RCRequest(string itemId)
+        {
+            // do nothing
+            _itemId = itemId;
+        }
+
+        /// <summary>
         /// Constructor for a RuralCafe Request.
         /// </summary>
         /// <param name="requestHandler">The handler for the request.</param>
-        /// <param name="uri">URI requested.</param>
-        public RCRequest(RequestHandler requestHandler, string uri) 
-            : this(requestHandler, uri, "", "")
+        /// <param name="itemId">requestId.</param>
+        public RCRequest(RequestHandler requestHandler, string uri)
+            :this(requestHandler, uri, "", "")
         {
             // do nothing
+           
         }
 
         /// <summary>
@@ -166,9 +192,10 @@ namespace RuralCafe
             _anchorText = anchorText;
             _refererUri = referrerUri.Trim();
 
-            string fileName = UriToFilePath(_uri);
-            _hashedFileName = HashedFilePath(fileName) + fileName;
-            _cacheFileName = requestHandler.Proxy.CachePath + _hashedFileName;
+            _fileName = UriToFilePath(_uri);
+            _hashPath = GetHashPath(_fileName);
+            _itemId = _hashPath.Replace(Path.DirectorySeparatorChar.ToString(), "");
+            _cacheFileName = requestHandler.Proxy.CachePath + _hashPath + _fileName;
             if (IsCompressed())
             {
                 _cacheFileName = _cacheFileName + ".bz2";
@@ -263,7 +290,7 @@ namespace RuralCafe
         /// </summary>
         /// <param name="fileName">File name to hash.</param>
         /// <returns>Hashed file path.</returns>
-        public static string HashedFilePath(string fileName)
+        public static string GetHashPath(string fileName)
         {
             fileName = fileName.Replace(Path.DirectorySeparatorChar.ToString(), ""); // for compability with linux filepath delimeter
             int value1 = 0;
@@ -272,7 +299,7 @@ namespace RuralCafe
             int hashSpace = 5000;
             int length = fileName.Length;
             if (length == 0) {
-                return "0\\0\\" + fileName;
+                return "0" + Path.DirectorySeparatorChar.ToString() + "0" + Path.DirectorySeparatorChar.ToString() + fileName;
             }
 
             value1 = HashString(fileName.Substring(length/2));
@@ -431,6 +458,8 @@ namespace RuralCafe
             return false;
         }
 
+        /*
+        // XXX: obsolete
         /// <summary>
         /// Gets the value for a particular RuralCafe search field.
         /// </summary>
@@ -444,16 +473,25 @@ namespace RuralCafe
             }
 
             return "";
-        }
+        }*/
         /// <summary>
         /// Translates a RuralCafe search to a Google one.
         /// </summary>
         /// <returns>Google search query.</returns>
         public string TranslateRCSearchToGoogle()
         {
-            string searchTerms = GetRCSearchField("textfield");
+            NameValueCollection qscoll = Util.ParseHtmlQuery(Uri);
+            //int userId = Int32.Parse(qscoll.Get("u"));
+            string searchString = qscoll.Get("s");
+            //string targetUri = qscoll.Get("a");
+            //string refererUri = qscoll.Get("r");
+            if (searchString == null)
+            {
+                searchString = "fake query";
+            }
+            //string searchTerms = GetRCSearchField("textfield");
             string googleWebRequestUri = "http://www.google.com/search?hl=en&q=" +
-                                        searchTerms.Replace(' ', '+') +
+                                        searchString.Replace(' ', '+') +
                                         "&btnG=Google+Search&aq=f&oq=";
 
             return googleWebRequestUri;

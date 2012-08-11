@@ -207,7 +207,8 @@ namespace RuralCafe
                 fileExtension = stringUri.Substring(offset2);
             }
             // throw away query terms
-            fileExtension = stringUri.Split('?')[0];
+            fileExtension = fileExtension.Split('?')[0];
+            fileExtension = fileExtension.Split('#')[0];
             return fileExtension;
         }
 

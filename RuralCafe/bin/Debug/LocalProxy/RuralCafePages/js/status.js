@@ -19,7 +19,13 @@ function checkStatus(){
 	return false;
 }
 
+function checkLogin(){
+	if (get_cookie('uname')!="")
+		greetingMsg();
+}
+
 addLoadEvent(checkStatus);
+addLoadEvent(checkLogin);
 
 function loadStatus(){
 	var statusbar=document.getElementById('internet_status');
