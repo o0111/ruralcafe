@@ -88,7 +88,7 @@ namespace RuralCafe
             rcRequest.FileSize = Util.GetFileSize(rcRequest.CacheFileName);
             if (rcRequest.FileSize <= 0)
             {
-                requestHandler.LogDebug("object has no content: " + rcRequest.Uri);
+                //requestHandler.LogDebug("object has no content: " + rcRequest.Uri);
                 return false;
             }
 
@@ -123,8 +123,7 @@ namespace RuralCafe
                 // add to the package
                 if (Pack(requestHandler, request, ref quota))
                 {
-                    requestHandler.LogDebug("packed: " + request.Uri + " " + request.FileSize + " bytes - " + quota + " left");
-
+                    //requestHandler.LogDebug("packed: " + request.Uri + " " + request.FileSize + " bytes - " + quota + " left");
                     addedObjects.AddLast(request);
                 }
                 //}
@@ -195,7 +194,7 @@ namespace RuralCafe
 
                 unpackedBytes += currFileSize;
 
-                requestHandler.LogDebug("unpacking: " + rcRequest.Uri + " - " + currFileSize + " bytes");
+                //requestHandler.LogDebug("unpacking: " + rcRequest.Uri + " - " + currFileSize + " bytes");
 
                 // make sure the file doesn't already exist for indexing purposes only
                 bool existed = false;

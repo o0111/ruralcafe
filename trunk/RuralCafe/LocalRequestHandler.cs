@@ -202,7 +202,7 @@ namespace RuralCafe
             {
                 LogDebug("streaming: " + _rcRequest.GenericWebRequest.RequestUri + " to cache and client.");
                 _rcRequest.GenericWebRequest.Proxy = null;
-                long bytesDownloaded = _rcRequest.DownloadToCache();
+                long bytesDownloaded = _rcRequest.DownloadToCache(true);
                 try
                 {
                     FileInfo f = new FileInfo(_rcRequest.CacheFileName);
@@ -214,6 +214,10 @@ namespace RuralCafe
                             return (int)Status.Failed;
                         }
                         return (int)Status.Completed;
+                    }
+                    else
+                    {
+                        return (int)Status.Failed;
                     }
                 }
                 catch
@@ -242,7 +246,15 @@ namespace RuralCafe
                 string redirectUri = qscoll.Get("trotro");
                 if (redirectUri == null)
                 {
-                    redirectUri = "fake title";
+                    // XXX: temporary title
+                    redirectUri = RequestUri;
+                    int pos = redirectUri.LastIndexOf("/");
+                    while (pos > 20)
+                    {
+                        redirectUri = redirectUri.Substring(0, pos);
+                        pos = redirectUri.LastIndexOf("/");
+                    }
+                    //redirectUri = "fake title";
                 }
                 SendRedirect(redirectUri, RequestUri);
 
@@ -758,7 +770,7 @@ namespace RuralCafe
 
             //LogDebug("streaming: " + _rcRequest.GenericWebRequest.RequestUri + " to cache and client.");
             //_rcRequest.GenericWebRequest.Proxy = null;
-            long bytesDownloaded = _rcRequest.DownloadToCache();
+            long bytesDownloaded = _rcRequest.DownloadToCache(true);
             try
             {
                 FileInfo f = new FileInfo(_rcRequest.CacheFileName);
@@ -798,6 +810,10 @@ namespace RuralCafe
                                               "Pragma: no-cache" + "\r\n" +
                                               "Expires: -1" + "\r\n");
                     SendMessage(resultsString);
+                }
+                else
+                {
+                    // do nothing
                 }
             }
             catch
@@ -1127,9 +1143,6 @@ namespace RuralCafe
             int userId = Int32.Parse(qscoll.Get("u"));
             string itemId = qscoll.Get("i");
 
-            // clean up the Ruralcafe info, remove it
-            //int index = RequestUri.IndexOf('=');
-            //string matchingUri = RequestUri.Substring(index + 1);
             LocalRequestHandler matchingRequestHandler = new LocalRequestHandler(itemId);
             ((RCLocalProxy)_proxy).DequeueRequest(userId, matchingRequestHandler);
             SendOkHeaders("text/html");
