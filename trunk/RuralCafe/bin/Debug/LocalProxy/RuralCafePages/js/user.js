@@ -146,7 +146,7 @@ function itemHTML(index){
 }
 
 function openPage(url){
-	document.getElementById('main_frame').src=url;
+	window.open(url,'_newtab');
 }
 
 var interval;

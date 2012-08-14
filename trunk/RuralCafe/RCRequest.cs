@@ -352,6 +352,15 @@ namespace RuralCafe
             {
                 _resetEvents[_childNumber].Set();
             }
+            /*
+            for (int i = 0; i < _resetEvents.Length; i++)
+            {
+                if (_resetEvents[i] != null)
+                {
+                    //_resetEvents[i].WaitOne(0).ToString()
+                    _requestHandler.LogDebug("Child: " + i + " " + _resetEvents[i].WaitOne(0).ToString());
+                }
+            }*/
         }
 
         /// <summary>
@@ -503,7 +512,7 @@ namespace RuralCafe
             long fileSize = Util.GetFileSize(cacheFileName);
             if (fileSize > 0 && !replace)
             {
-                _requestHandler.LogDebug("exists: " + cacheFileName + " " + fileSize + " bytes");
+                //_requestHandler.LogDebug("exists: " + cacheFileName + " " + fileSize + " bytes");
                 return fileSize;
             }
             else
@@ -516,9 +525,10 @@ namespace RuralCafe
 
             try
             {
-                //_requestHandler.LogDebug("downloading: " + _webRequest.RequestUri);
+                _requestHandler.LogDebug("downloading: " + _webRequest.RequestUri);
                 // get the web response for the web request
                 _webResponse = (HttpWebResponse)_webRequest.GetResponse();
+                _requestHandler.LogDebug("downloading done: " + _webRequest.RequestUri);
                 if (!_webResponse.ResponseUri.Equals(_webRequest.RequestUri))
                 {
                     // redirected at some point
@@ -531,6 +541,7 @@ namespace RuralCafe
                     using (StreamWriter sw = new StreamWriter(cacheFileName))
                     {
                         sw.Write(str);
+                        sw.Close();
                     }
 
                     // have to save to the new cache file location
@@ -570,14 +581,17 @@ namespace RuralCafe
 
                 }
 
+                //_requestHandler.LogDebug("downloading2: " + _webRequest.RequestUri);
                 // Read and save the response
                 Stream responseStream = GenericWebResponse.GetResponseStream();
+                //_requestHandler.LogDebug("downloading done2: " + _webRequest.RequestUri);
 
                 writeFile = Util.CreateFile(cacheFileName);
                 if (writeFile == null)
                 {
                     return -1;
                 }
+                //_requestHandler.LogDebug("downloading3: " + Uri + " " + bytesDownloaded + " bytes");
                 bytesRead = responseStream.Read(readBuffer, 0, 32);
                 while (bytesRead != 0)
                 {
@@ -586,6 +600,7 @@ namespace RuralCafe
                     bytesDownloaded += bytesRead;
 
                     // Read the next part of the response
+                    //_requestHandler.LogDebug("downloading4: " + Uri + " " + bytesDownloaded + " bytes");
                     bytesRead = responseStream.Read(readBuffer, 0, 32);
                 }
                 _requestHandler.LogDebug("received: " + Uri + " " + bytesDownloaded + " bytes");

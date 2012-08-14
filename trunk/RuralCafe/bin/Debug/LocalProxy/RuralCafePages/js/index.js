@@ -39,7 +39,7 @@ function showXML(){
 				var catItem=categories[i].getElementsByTagName('item');
 				for (var j=0;j<catItem.length;j++){
 					var itemTitle=catItem[j].firstChild.nodeValue;
-					innerHtml+='<div class="index_page"><p><a href="'+catTitle+'" onclick="onSearch(this.href,this);">'+catTitle+'</a></p></div>';
+					innerHtml+='<div class="index_page"><p><a href="'+itemTitle+'" onclick="onSearch(this.href,this);">'+itemTitle+'</a></p></div>';
 				}
 				innerHtml+="</div>";
 				if (i%2==1) innerHtml+='</div>';

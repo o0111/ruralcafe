@@ -596,6 +596,16 @@ namespace RuralCafe
                     string itemId = System.Security.SecurityElement.Escape("" + requestHandler.ItemId);
                     string linkAnchorText = System.Security.SecurityElement.Escape(requestHandler.AnchorText);
                     string linkTarget = System.Security.SecurityElement.Escape(requestHandler.RequestUri);
+
+                    // XXX: temporary hack to change the way the Title is being displayed
+                    Uri tempUri = new Uri(linkTarget);
+                    string linkAnchorText = tempUri.Segments.Last();
+                    if (linkAnchorText == "/")
+                        if (tempUri.Segments.Length > 1)
+                            linkAnchorText = tempUri.Segments[tempUri.Segments.Length - 2];
+                        else
+                            linkAnchorText = tempUri.Host;
+
                     string statusString = "";
                     DateTime requestDate = requestHandler.StartTime;
 
@@ -1125,6 +1135,7 @@ namespace RuralCafe
                 refererUri = targetUri;
             }
 
+            _originalRequestUri = RequestUri;
             _rcRequest = new RCRequest(this, targetUri, targetName, refererUri);
             //_rcRequest.ParseRCSearchFields();
 

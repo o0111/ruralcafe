@@ -631,12 +631,12 @@ namespace RuralCafe
                     if (_package.RCRequests.Contains(currChild))
                     {
                         // skip it
-                        parentRequest.SetDone();
+                        currChild.SetDone();
                         continue;
                     }                    
  
                     // download the page
-                    LogDebug("queueing: " + currChild.Uri);
+                    //LogDebug("queueing: " + currChild.ChildNumber + " " + currChild.Uri);
                     ThreadPool.QueueUserWorkItem(new WaitCallback(DownloadPageWorkerThread), (object)currChild);
                 }
 
@@ -684,17 +684,18 @@ namespace RuralCafe
                 if (endTime.CompareTo(currTime) > 0)
                 {
                     request.GenericWebRequest.Timeout = (int)(endTime.Subtract(currTime)).TotalMilliseconds;
+
+                    // download the page
+                    long bytesDownloaded = request.DownloadToCache(false);
                 }
                 else
                 {
                     request.GenericWebRequest.Timeout = 0;
                 }
-                
-                // download the page
-                long bytesDownloaded = request.DownloadToCache(false);
             }
 
             // mark this thread as done
+            //LogDebug("Child Number: " + request.ChildNumber + " done.");
             request.SetDone();
         }
 
@@ -935,8 +936,8 @@ namespace RuralCafe
         /// </summary>
         LinkedList<RCRequest> ExtractEmbeddedObjects(RCRequest rcRequest)
         {
-            string[] stringSeparator = new string[] { "src=\"", "link href=\"" };
-            return ExtractReferences(rcRequest, stringSeparator);
+            //string[] stringSeparator = new string[] { "src=\"", "link href=\"", "SRC=\"" };
+            return ExtractReferences(rcRequest, HtmlParser.EmbeddedObjectTagAttributes);
         }
 
         /// <summary>
@@ -946,8 +947,8 @@ namespace RuralCafe
         /// </summary>
         LinkedList<RCRequest> ExtractLinks(RCRequest rcRequest)
         {
-            string[] stringSeparator = new string[] { "a href=\"" };
-            return ExtractReferences(rcRequest, stringSeparator);
+            //string[] stringSeparator = new string[] { "a href=\"" };
+            return ExtractReferences(rcRequest, HtmlParser.LinkTagAttributes);
         }
 
         /// <summary>
@@ -955,14 +956,48 @@ namespace RuralCafe
         /// XXX: should replace and obsolete this with a better HTML parser.
         /// </summary>
         /// <param name="rcRequest">Page to parse.</param>
-        /// <param name="stringSeparator">Seperator token.</param>
+        /// <param name="tagAttributes">Seperator tokens.</param>
         /// <returns>List of references.</returns>
-        LinkedList<RCRequest> ExtractReferences(RCRequest rcRequest, string[] stringSeparator)
+        LinkedList<RCRequest> ExtractReferences(RCRequest rcRequest, string[,] tagAttributes)
         {
             LinkedList<RCRequest> extractedReferences = new LinkedList<RCRequest>();
 
-            string fileString = Util.ReadFileAsString(rcRequest.CacheFileName);
+            string fileString = Util.ReadFileAsString(rcRequest.CacheFileName).ToLower();
 
+            for (int i = 0; i < tagAttributes.GetLength(0); i++)
+            {
+                string tag = tagAttributes[i, 0];
+                string attribute = tagAttributes[i, 1];
+
+                HtmlParser parse = new HtmlParser(fileString);
+                HtmlTag foundTag;
+                while (parse.ParseNext(tag, out foundTag))
+                {
+                    // See if this attribute exists
+                    string currUri;
+                    if (foundTag.Attributes.TryGetValue(attribute, out currUri))
+                    {
+                        // value contains URL referenced by this link
+                        // convert to absolute addresses before setting as a uri
+                        currUri = TranslateToAbsoluteAddress(rcRequest.Uri, currUri);
+                        // XXX: need to make sure the currUri isn't going to cause an exception to be thrown
+                        if (!Util.IsValidUri(currUri))
+                        {
+                            continue;
+                        }
+
+                        RCRequest extractedRCRequest = new RCRequest(this, currUri);
+                        //extractedRCRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
+
+                        if (!extractedReferences.Contains(extractedRCRequest))
+                        {
+                            extractedReferences.AddLast(extractedRCRequest);
+                        }
+                    }
+                }
+            }
+
+            /*
             string[] lines = fileString.Split(stringSeparator, StringSplitOptions.RemoveEmptyEntries);
 
             // get links
@@ -995,7 +1030,7 @@ namespace RuralCafe
                     }
                 }
             }
-
+            */
             return extractedReferences;
         }
 
