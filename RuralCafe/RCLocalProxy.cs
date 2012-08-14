@@ -331,7 +331,7 @@ namespace RuralCafe
                         requestHandler.FinishTime = DateTime.Now;
                         UpdateTimePerRequest(requestHandler.StartTime, requestHandler.FinishTime);
 
-                        requestHandler.LogResponse();
+                        requestHandler.LogServerResponse();
                     }
                     else
                     {
@@ -479,9 +479,19 @@ namespace RuralCafe
                     {
                         requestId = lineTokens[0];
                         string httpCommand = lineTokens[4];
-                        string targetUri = lineTokens[5];
+                        string requestUri = lineTokens[5];
                         string status = lineTokens[6];
 
+                        // Parse parameters
+                        NameValueCollection qscoll = Util.ParseHtmlQuery(requestUri);
+                        string targetUri = qscoll.Get("a");
+                        if (targetUri == null)
+                        {
+                            // error
+                            //SendErrorPage(HTTP_NOT_FOUND, "malformed add request", "");
+                            line = tr.ReadLine();
+                            continue;
+                        }
                         string fileName = RCRequest.UriToFilePath(targetUri);
                         string hashPath = RCRequest.GetHashPath(fileName);
                         string itemId = hashPath.Replace(Path.DirectorySeparatorChar.ToString(), "");
