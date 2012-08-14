@@ -599,7 +599,7 @@ namespace RuralCafe
 
                     // XXX: temporary hack to change the way the Title is being displayed
                     Uri tempUri = new Uri(linkTarget);
-                    string linkAnchorText = tempUri.Segments.Last();
+                    linkAnchorText = tempUri.Segments.Last();
                     if (linkAnchorText == "/")
                         if (tempUri.Segments.Length > 1)
                             linkAnchorText = tempUri.Segments[tempUri.Segments.Length - 2];
