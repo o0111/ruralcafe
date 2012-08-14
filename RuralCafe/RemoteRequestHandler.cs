@@ -461,7 +461,7 @@ namespace RuralCafe
             }
                      
             // download the page
-            long bytesDownloaded = rcRequest.DownloadToCache();
+            long bytesDownloaded = rcRequest.DownloadToCache(false);
             if (bytesDownloaded < 0 )
             {
                 LogDebug("[depth = " + depth + "] error downloading: " + rcRequest.Uri);
@@ -581,7 +581,7 @@ namespace RuralCafe
                     } 
                      
                     // download the page
-                    currChild.DownloadToCache();
+                    currChild.DownloadToCache(false);
 
                     if (IsTimedOut())
                     {
@@ -691,7 +691,7 @@ namespace RuralCafe
                 }
                 
                 // download the page
-                long bytesDownloaded = request.DownloadToCache();
+                long bytesDownloaded = request.DownloadToCache(false);
             }
 
             // mark this thread as done
@@ -935,7 +935,7 @@ namespace RuralCafe
         /// </summary>
         LinkedList<RCRequest> ExtractEmbeddedObjects(RCRequest rcRequest)
         {
-            string[] stringSeparator = new string[] { "src=\"" };
+            string[] stringSeparator = new string[] { "src=\"", "link href=\"" };
             return ExtractReferences(rcRequest, stringSeparator);
         }
 

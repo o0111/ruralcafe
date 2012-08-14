@@ -302,7 +302,7 @@ namespace RuralCafe
                         requestHandler.RequestStatus = (int)RequestHandler.Status.Downloading;
 
                         WriteDebug("dispatching to remote proxy: " + requestHandler.RequestUri);
-                        long bytesDownloaded = requestHandler.RCRequest.DownloadToCache();
+                        long bytesDownloaded = requestHandler.RCRequest.DownloadToCache(true);
 
                         if (bytesDownloaded > -1)
                         {
@@ -469,14 +469,6 @@ namespace RuralCafe
                             }
                             // remove it from the queue
                             //Console.WriteLine("Removing from queue: " + itemId);
-                            /*
-                            List<string> logEntry = new List<string>();
-                            logEntry.Add(requestId);
-                            logEntry.Add(startTime);
-                            logEntry.Add(clientAddress);
-                            logEntry.Add(requestedUri);
-                            logEntry.Add(refererUri);
-                            */
                             if (loggedRequestQueueMap.ContainsKey(itemId))
                             {
                                 loggedRequestQueueMap.Remove(itemId);
@@ -548,21 +540,6 @@ namespace RuralCafe
                     // grab the existing handler instead of the new one
                     int existingRequestIndex = _globalRequestQueue.IndexOf(requestHandler);
                     requestHandler = _globalRequestQueue[existingRequestIndex];
-                    
-                    /*
-                    // XXX: this should never happen, all requestHandlers are popped off when they're finished.
-                    if (existingRequestHandler.RequestStatus == (int)RequestHandler.Status.Failed)
-                    {
-                        // requeue failed request
-                        _globalRequestQueue.Remove(existingRequestHandler);
-                        _globalRequestQueue.Add(requestHandler);
-                        _newRequestEvent.Set();
-                        isRequeue = true;
-                    }
-                    else
-                    {
-                        // request exists, do nothing
-                    }*/
                 }
                 else
                 {
@@ -658,8 +635,8 @@ namespace RuralCafe
         /// <summary>
         /// Removes a single request from the queues.
         /// </summary>
-        /// <param name="clientAddress">The IP address of the client.</param>
-        /// <param name="request">The request to dequeue.</param>
+        /// <param name="userId">The userId of the client.</param>
+        /// <param name="requestHandler">The request to dequeue.</param>
         public void DequeueRequest(int userId, LocalRequestHandler requestHandler)
         {
             // remove the request from the global queue
@@ -720,53 +697,10 @@ namespace RuralCafe
             return requestHandler;
         }
 
-        /*
-        // XXX: obsolete
-        /// <summary>
-        /// Gets the last request for a client.
-        /// </summary>
-        /// <param name="clientAddress">The IP address of the client.</param>
-        /// <returns>The last request of the client or null if it does not exist.</returns>
-        public LocalRequestHandler GetLatestRequest(int userId)
-        {
-            LocalRequestHandler requestHandler = null;
-            lock (_clientLastRequestMap)
-            {
-                if (_clientLastRequestMap.ContainsKey(userId))
-                {
-                    requestHandler = _clientLastRequestMap[userId];
-                }
-            }
-            return requestHandler;
-        }*/
-
-        /*
-        // XXX: obsolete
-        /// <summary>
-        /// Sets the last request for a client.
-        /// </summary>
-        /// <param name="clientAddress">The IP address of the client.</param>
-        /// <param name="request">The request to set as the last request.</param>
-        public void SetLastRequest(int userId, LocalRequestHandler requestHandler)
-        {
-            lock (_clientLastRequestMap)
-            {
-                if (!_clientLastRequestMap.ContainsKey(userId))
-                {
-                    _clientLastRequestMap.Add(userId, requestHandler);
-                }
-                else
-                {
-                    _clientLastRequestMap[userId] = requestHandler;
-                }
-            }
-            return;
-        }*/
-
         /// <summary>
         /// Gets the request queue for a particular client.
         /// </summary>
-        /// <param name="clientAddress">The IP address of the client.</param>
+        /// <param name="userId">The IP address of the client.</param>
         /// <returns>A list of the requests that belong to a client or null if they does not exist.</returns>
         public List<LocalRequestHandler> GetRequests(int userId)
         {
@@ -811,7 +745,7 @@ namespace RuralCafe
         /// Returns the number of seconds until request is expected to be satisfied.
         /// Calculates the ETA by looking at the average satisfied time and the position of this request.
         /// </summary>
-        /// <param name="request">The request for which we want the ETA.</param>
+        /// <param name="requestHandler">The request for which we want the ETA.</param>
         /// <returns>ETA in seconds.</returns>
         public int ETA(LocalRequestHandler requestHandler)
         {
@@ -870,7 +804,7 @@ namespace RuralCafe
         /// Returns the number of satisfied requests.
         /// Unused at the moment.
         /// </summary>
-        /// <param name="clientAddress">The IP address of the client.</param>
+        /// <param name="userId">The userId of the client.</param>
         /// <returns>The number of satisfied requests for the client.</returns>
         public int NumFinishedRequests(int userId)
         {

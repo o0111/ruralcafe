@@ -138,6 +138,7 @@ function itemHTML(index){
 	if (itemStatus!="Pending")
 		itemhtml+='<br/><br/>Size: '+itemSize;
 	itemhtml+='</div></div>';
+	//pending
 	if (status!="offline")
 		if (itemStatus=="Downloading" || itemStatus=="Pending")
 			startCountDown(itemId);
@@ -169,12 +170,16 @@ function getEST(){
 				if (request.status==200){
 					var est=request.responseText;
 					if (est && est!=''){
-						alert(est);
+						//pending.... est=-1
 						if (est!='0' && est!='-1'){
-							if (document.getElementById('status_'+itemIds[index]))
-								document.getElementById('status_'+itemIds[index]).innerHTML=est.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+							var statusspan=document.getElementById('status_'+itemIds[index]);
+							if (statusspan){
+								statusspan.innerHTML=est.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+								statusspan.className="status Downloading";
+							}
 						}
-						else{ //finish downloading
+						//else if downloading... est=0 
+						else if (est=='0'){ //finish downloading
 							stopCountDown(index);
 							loadQueue('request/queue.xml?u='+userid+'&v=0');
 						}

@@ -276,21 +276,17 @@ namespace RuralCafe
 
                     // XXX: need to avoid duplicate request/response logging when redirecting e.g. after an add
                     // handle the request
-                    if (!(requestedUri.StartsWith("http://www.ruralcafe.net/") &&
-                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/add") &&
-                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/remove") &&
-                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/search"))
+                    if ((requestedUri.StartsWith("http://www.ruralcafe.net/") ||
+                        requestedUri.StartsWith("http://www.ruralcafe.net/request/add") ||
+                        requestedUri.StartsWith("http://www.ruralcafe.net/request/remove") ||
+                        requestedUri.StartsWith("http://www.ruralcafe.net/request/search"))
                         )
                     {
-                        LogRequest();
+                        HandleRequest();
                     }
-                    HandleRequest();
-                    if (!(requestedUri.StartsWith("http://www.ruralcafe.net/") &&
-                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/add") &&
-                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/remove") &&
-                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/search"))
-                        )
-                    {
+                    else {
+                        LogRequest();
+                        HandleRequest();
                         LogResponse();
                     }
                 }
@@ -360,22 +356,18 @@ namespace RuralCafe
 
                     // XXX: need to avoid duplicate request/response logging when redirecting e.g. after an add
                     // handle the request
-                    if (!(requestedUri.StartsWith("http://www.ruralcafe.net/") &&
-                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/add") &&
-                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/remove") &&
-                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/search"))
+                    if ((requestedUri.StartsWith("http://www.ruralcafe.net/") ||
+                        requestedUri.StartsWith("http://www.ruralcafe.net/request/add") ||
+                        requestedUri.StartsWith("http://www.ruralcafe.net/request/remove") ||
+                        requestedUri.StartsWith("http://www.ruralcafe.net/request/search"))
                         )
+                    {
+                        HandleRequest();
+                    }
+                    else
                     {
                         LogRequest();
-                    }
-                    HandleRequest();
-                    RequestStatus = requestStatus;
-                    if (!(requestedUri.StartsWith("http://www.ruralcafe.net/") &&
-                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/add") &&
-                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/remove") &&
-                        !requestedUri.StartsWith("http://www.ruralcafe.net/request/search"))
-                        )
-                    {
+                        HandleRequest();
                         LogResponse();
                     }
                 }
@@ -791,7 +783,7 @@ namespace RuralCafe
             "\r\n";
 
             string fullUrl = "<meta HTTP-EQUIV=\"REFRESH\" content=\"0; url=http://www.ruralcafe.net/trotro-user.html?" + 
-                "t=" + title + "&" + "a=" + url + "\">";
+                "t=" + title + "&amp;" + "a=" + url + "\">";
             str = str + fullUrl;
             SendMessage(str);
         }
