@@ -129,12 +129,6 @@ namespace RuralCafe
                 return ServeRCPage();
             }
 
-            /*
-            if (IsGoogleResultLink())
-            {
-                TranslateGoogleResultLink();
-            }*/
-
             if (IsBlacklisted(RequestUri))
             {
                 LogDebug("ignoring blacklisted: " + RequestUri);
@@ -182,6 +176,7 @@ namespace RuralCafe
                 {
                     SendOkHeaders(contentType);
                 }
+
                 _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName);
                 if (_rcRequest.FileSize < 0)
                 {
@@ -796,13 +791,12 @@ namespace RuralCafe
                         if ((currentItemNumber > ((pageNumber - 1) * numItemsPerPage)) &&
                             (currentItemNumber < (pageNumber * numItemsPerPage) + 1))
                         {
-                            string uri = linkObject.Uri; //System.Security.SecurityElement.Escape(result.Get("uri")); // escape xml string
-                            string title = linkObject.AnchorText; //System.Security.SecurityElement.Escape(result.Get("title")); //escape xml string
-                            string displayUri = uri;
+                            string uri = System.Security.SecurityElement.Escape(linkObject.Uri); //System.Security.SecurityElement.Escape(result.Get("uri")); // escape xml string
+                            string title = System.Security.SecurityElement.Escape(linkObject.AnchorText); //System.Security.SecurityElement.Escape(result.Get("title")); //escape xml string
+                            //string displayUri = uri;
                             string contentSnippet = "";
 
-                            // JAY: find content snippet here
-                            //contentSnippet = 
+                            // XXX: find content snippet here
                             if (uri.StartsWith("http://")) //laura: obmit http://
                                 uri = uri.Substring(7);
                             resultsString = resultsString +
@@ -1136,8 +1130,10 @@ namespace RuralCafe
             }
 
             _originalRequestUri = RequestUri;
+            // preserve the original request status (for HandleLogRequest)
+            int originalRequestStatus = _rcRequest.RequestStatus;
             _rcRequest = new RCRequest(this, targetUri, targetName, refererUri);
-            //_rcRequest.ParseRCSearchFields();
+            _rcRequest.RequestStatus = originalRequestStatus;
 
             ((RCLocalProxy)_proxy).QueueRequest(userId, this);
             SendOkHeaders("text/html");

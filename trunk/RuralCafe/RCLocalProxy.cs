@@ -541,21 +541,24 @@ namespace RuralCafe
         /// <param name="requestHandler">The request to queue.</param>
         public void QueueRequest(int userId, LocalRequestHandler requestHandler)
         {
-            //bool isRequeue = false;
-            // add the request to the global queue
-            lock (_globalRequestQueue)
+            // if the request is already completed (due to HandleLogRequest) then don't add to global queue
+            if (!(requestHandler.RequestStatus == (int)RequestHandler.Status.Completed))
             {
-                if (_globalRequestQueue.Contains(requestHandler))
+                // add the request to the global queue
+                lock (_globalRequestQueue)
                 {
-                    // grab the existing handler instead of the new one
-                    int existingRequestIndex = _globalRequestQueue.IndexOf(requestHandler);
-                    requestHandler = _globalRequestQueue[existingRequestIndex];
-                }
-                else
-                {
-                    // queue new request
-                    _globalRequestQueue.Add(requestHandler);
-                    _newRequestEvent.Set();
+                    if (_globalRequestQueue.Contains(requestHandler))
+                    {
+                        // grab the existing handler instead of the new one
+                        int existingRequestIndex = _globalRequestQueue.IndexOf(requestHandler);
+                        requestHandler = _globalRequestQueue[existingRequestIndex];
+                    }
+                    else
+                    {
+                        // queue new request
+                        _globalRequestQueue.Add(requestHandler);
+                        _newRequestEvent.Set();
+                    }
                 }
             }
 

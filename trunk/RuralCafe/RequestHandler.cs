@@ -344,11 +344,6 @@ namespace RuralCafe
                 if (logEntry.Count == 6)
                 {
                     requestStatus = Int32.Parse(logEntry[5]);
-                    if (requestStatus == (int)Status.Completed)
-                    {
-                        // ignore completed requests
-                        return true;
-                    }
                 }
 
                 if (CreateRequest(_originalRequestUri, refererUri, ""))
@@ -357,6 +352,11 @@ namespace RuralCafe
                     _requestId = requestId;
                     _rcRequest.StartTime = startTime;
                     _clientAddress = clientAddress;
+                    if (requestStatus == (int)Status.Completed)
+                    {
+                        // Completed requests should not be added to the GLOBAL queue
+                        _rcRequest.RequestStatus = requestStatus;
+                    }
                     
                     _packageFileName = _proxy.PackagesPath + _rcRequest.HashPath + _rcRequest.FileName + ".gzip";
 
@@ -376,7 +376,13 @@ namespace RuralCafe
                     {
                         LogRequest();
                         HandleRequest();
+
                         LogResponse();
+                        if (requestStatus == (int)Status.Completed)
+                        {
+                            // Completed requests should have a fake response in the log to indicate they're completed
+                            LogServerResponse();
+                        }
                     }
                 }
                 return true;
@@ -680,37 +686,6 @@ namespace RuralCafe
             }
             return true;
         }
-
-        /*
-        // XXX: obsolete
-        /// <summary>
-        /// Checks to see if the request is a RuralCafe search.
-        /// </summary>
-        /// <returns>True if yes, false if not.</returns>
-        public bool IsRCLocalSearch()
-        {
-            if (IsRCRequest() &&_rcRequest.GetRCSearchField("button") == "Search")
-            {
-                return true;
-            }
-            return false;
-        }*/
-
-        /*
-        // XXX: obsolete
-        /// <summary>
-        /// Checks if the request is a RuralCafe remote query.
-        /// </summary>
-        /// <returns>True if yes, false if not.</returns>
-        public bool IsRCRemoteQuery()
-        {
-            if (IsRCRequest() && _rcRequest.GetRCSearchField("button") == "Queue Request")
-            {
-                return true;
-            }
-            return false;
-        }
-        */
 
         #endregion
 
