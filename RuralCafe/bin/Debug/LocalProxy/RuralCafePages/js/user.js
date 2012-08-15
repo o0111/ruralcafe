@@ -228,19 +228,13 @@ function isCountDown(itemId) {
 }
 		
 function scrollRight(){
-	//result.length=9 ipp=7 
-			//queue= 8 7 6 5 4 3 2  
-	//i=1
 	var parentNode=document.getElementById('update_area');	
 	stopCountDown(isCountDown(parentNode.firstChild.id));
 	parentNode.removeChild(parentNode.firstChild);
 	parentNode.innerHTML+=itemHTML(i);
 	i--;
-	//i=0
-		//queue= 7 6 5 4 3 2 1
 	if (results.length-ipp-i-1>0)
 		document.getElementById('left_btn').style.display="block";
-	// if (i+1 <1)
 	if (i<0)
 		document.getElementById('right_btn').style.display="none";
 	document.getElementById('left_btn').innerHTML=(results.length-ipp-i-1);
@@ -249,20 +243,13 @@ function scrollRight(){
 }
 
 function scrollLeft(){
-	//result.length=9 ipp=7 
-			//queue= 7 6 5 4 3 2 1
-	//i=0
 	var parentNode=document.getElementById('update_area');
 	stopCountDown(isCountDown(parentNode.lastChild.id));
 	parentNode.removeChild(parentNode.lastChild);
 	i++;
-	//i==1;
-	//queue= 8 7 6 5 4 3 2
 	parentNode.innerHTML=itemHTML(i+ipp)+parentNode.innerHTML;
-	// if (results.length-ipp-i-1<1)
 	if (results.length-ipp-i-1<1)
 		document.getElementById('left_btn').style.display="none";
-	// if (i+1>0)
 	if (i+1>0)
 		document.getElementById('right_btn').style.display="block";
 	document.getElementById('left_btn').innerHTML=(results.length-ipp-i-1);

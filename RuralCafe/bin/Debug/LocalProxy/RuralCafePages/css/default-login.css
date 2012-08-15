@@ -323,3 +323,9 @@ ul.nav a, ul.nav a:visited { /* grouping these selectors makes sure that your li
 	height:120px;
 	background-image:url(../img/download_icon.png);
 }
+
+.nav_btn{
+	width:30px;
+	height:50px;
+	float:left;
+}

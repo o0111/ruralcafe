@@ -1,13 +1,10 @@
 function loadReferer(){
-	if (window.location.pathname){
-		var path=window.location.href;
-		refererurl=path.slice(path.search('r=')+2);
-		//changfe here now no p is passed
-		if (searchString!="")
-			document.getElementById('back_link').href=refererurl;
+	if(get_cookie('referrer')!=""){
+		document.getElementById('back_link').innerHTML="Back to previous page";
+		document.getElementById('back_link').href=get_cookie('referrer');
 	}
-	else
-		alert("Your browser does not support javascript");
+	if (get_cookie('status')!="" && get_cookie('status')!="Offline")
+		document.getElementById('message_div').innerHTML='<h4>The page you are trying to view is being downloaded now. </h4><h4>Please continue browsing when Trotro is getting the page.</h4>';
 }
 
-addLoadEvent(loadReferer);
+window.onload=loadReferer;
