@@ -20,7 +20,13 @@ Each of the machines where the RuralCafe software will be running requires Windo
 
 Install .NET 3.5.
  * RuralCafe needs to be configured via the configuration file in "RuralCafe/config.txt".
- * To use RuralCafe as a disconnected CIP, set the "DEFAULT_SEARCH_PAGE=cip.html" in RuralCafe/config.txt
+ * To manually configure the network setting, set the "NETWORK_STATUS=" to "offline", "slow", or "online" in RuralCafe/config.txt.
+ * To manually add an user account, edit the users.xml file in RuralCafe/bin/Debug/LocalProxy/RuralCafePages. Users can be added in the format of: 
+    <pre><customer custid="userid"></pre>
+        <pre><user>username</user></pre>
+        <pre><pwd>password</pwd></pre>
+    <pre></customer></pre>
+ * To manually add topics to the index page, edit the index.xml file in RuralCafe/bin/Debug/LocalProxy/RuralCafePages.
  * After the configuration is completed start RuralCafe by executing "RuralCafe/bin/Debug/RuralCafe.exe".
 
 To interact with RuralCafe, the browser must be configured to use RuralCafe as the proxy using the IP address and port of the local proxy set in the configuration (below). These settings can be found in the connection settings of any modern browser (IE, Firefox, Chrome). Also, the browser's homepage set to "http://www.ruralcafe.net/".
