@@ -1,6 +1,8 @@
 #labels Featured,Phase-Implementation,Phase-Deploy
 RuralCafe is a platform for web search and browsing over extremely slow or intermittent networks.
 
+<img src="http://ruralcafe.googlecode.com/files/v2_multitasking.jpg" width="400" alt="screenshot"/>
+
 RuralCafe improves web search and browsing this by providing an expanded search query interface which allows a user to specify additional query terms to maximize the utility of the results returned by a search query. Given knowledge of the limited available network resources, RuralCafe performs optimizations to prefetch pages to best satisfy a search query based on a user.s search preferences. In addition, RuralCafe does not require modifications to the web browser, and can provide single round search results tailored to various types of networks and economic constraints.
 
 RuralCafe consists of two main components the local proxy and remote proxy. Each proxy is responsible for a different set of web optimizations. The local proxy is meant to be deployed at the local area network gateway to perform caching, enable local search, and manage client requests. The remote proxy resides on a separate machine on the other end of the slow network link, and is presumably well-connected to the Internet. The remote proxy coordinates with the local proxy by accepting requests, and attempts to prefetch useful pages and filter unwanted content on behalf of the local proxy. Together, the two proxies coordinate across the slow link to maximize its overall effectiveness.
