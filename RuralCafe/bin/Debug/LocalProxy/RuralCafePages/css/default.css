@@ -3,8 +3,8 @@
 	margin:0;
 }
 
-
 body{
+	height: 100%;
 	font-family: Verdana ,Arial, sans-serif;
 	font-size:12px;
 	margin: 0;
@@ -41,7 +41,6 @@ body{
 	right: 0;
 	bottom: 0; /*Set bottom value to HeightOfBottomFrameDiv*/
 	background: #ffffff;
-	
 	min-width:700px;
 }
 #main_frame{
@@ -68,7 +67,8 @@ a img{
 	float:left;
 }
 
-#search_input{
+#search_input{	
+	margin-left:10px;
 	height:45px;
 	border:solid 1px #C8D5D5;
 	font-size:24px;
@@ -77,8 +77,14 @@ a img{
 }
 
 #search_btn{
-	width:45px;
+	padding-right:90px;
+	padding-top:6px;
+	color:#ddd;
+	font-size:12px;
+	font-weight:bold;
+	width:185px;
 	height:45px;
+	margin-left:10px;
 	background-image:url(../img/search_btn.png);
 	border:0;
 }
@@ -96,18 +102,6 @@ a img{
 	height:55px;
 	width:120px;
 	color:#999;
-}
-
-#internet_box{
-	float:left;
-	padding:15px 10px 10px 10px;
-}
-
-#internet_status{
-	font-weight:bold;
-	line-height:18px;
-	font-size:24px;
-	text-transform:capitalize;
 }
 
 #internet_signin{

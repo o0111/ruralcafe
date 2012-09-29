@@ -1,5 +1,15 @@
-var status="offline";
+/* Laura Li 09-06-2012: handle different network connectivity*/
 
+var status="offline";	//the network status, can either be "offline", "online", or "cached"
+var statusInterval=30000;
+
+//check the network status every statusInterval milliseconds
+function initiateStatus(){
+	checkStatus();
+	window.setInterval('checkStatus()', statusInterval);
+}
+
+//send a ajax request to check for the network status
 function checkStatus(){
 	var mygetrequest=new ajaxRequest()
 	mygetrequest.onreadystatechange=function(){
@@ -19,21 +29,23 @@ function checkStatus(){
 	return false;
 }
 
+//check whether user is logged in
 function checkLogin(){
 	if (get_cookie('uname')!="")
 		greetingMsg();
 }
 
-addLoadEvent(checkStatus);
+addLoadEvent(initiateStatus);
 addLoadEvent(checkLogin);
 
+//load the network status, register search function according to the network status 
 function loadStatus(){
-	var statusbar=document.getElementById('internet_status');
-	statusbar.className.replace(' cached_status','');
-	statusbar.className.replace(' online_status','');
-	if (status!='offline')
-		statusbar.className+=' '+status+'_status';
-	statusbar.innerHTML=status;
+	if (status=="offline")
+		document.getElementById('search_btn').value="offline";
+	else if (status=="cached")
+		document.getElementById('search_btn').value="offline & live";
+	else if (status=="online")
+		document.getElementById('search_btn').value="live";
 	document.getElementById('tsearch').onsubmit=function(){
 		return tSearch(status);
 	};

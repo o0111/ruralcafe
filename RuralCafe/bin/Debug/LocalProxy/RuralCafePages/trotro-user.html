@@ -11,9 +11,9 @@
 </script>
 <script type="text/javascript" src="js/ajax.js">
 </script>
-<script type="text/javascript" src="js/user.js">
-</script>
 <script type="text/javascript" src="js/status.js">
+</script>
+<script type="text/javascript" src="js/user.js">
 </script>
 </head>
 
@@ -24,23 +24,17 @@
 		<a href="index.html" alt="trotro homepage" onclick="return gotoPage(this.href);"><img id="trotro_icon" src="img/icon.png"/></a>
     </div>
     
-    
-    <div id="internet_box">
-    <div id="internet_status">Offline</div>
-    	search:
-    </div>
-    
     <div id="search_box">
    	<form action="" method="get" id="tsearch" onsubmit="return tSearch('offline');">
     	<input type="text" id="search_input" name="s" value=""/>
-        <input type="submit" id="search_btn" name="search_btn" value=""/>
+        <input type="submit" id="search_btn" name="search_btn" value="local"/>
     </form>
     </div>
     
     <div id="right_box">
         <div id="internet_signin"><a href="login.html">Sign in</a>
         </div>
-		<div id="close_box"></div>
+		<div id="close_box" onclick="closeFrame();"></div>
     </div>
     
 </div>
@@ -66,7 +60,7 @@
 </div>
 </div>
 <div id="main_div">
-	<iframe id="main_frame" src="index.html?x=offline" />
+	<iframe id="main_frame" frameBorder="0" src="index.html?x=offline" />
 </div>
 </body>
 </html>

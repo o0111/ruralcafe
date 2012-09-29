@@ -17,4 +17,14 @@
         <user>laura</user>
         <pwd>1111</pwd>
     </customer>
+
+    <customer custid="005">
+        <user>john</user>
+        <pwd>1111</pwd>
+    </customer>
+	
+    <customer custid="006">
+        <user>peter</user>
+        <pwd>1042</pwd>
+    </customer>	
 </customers>

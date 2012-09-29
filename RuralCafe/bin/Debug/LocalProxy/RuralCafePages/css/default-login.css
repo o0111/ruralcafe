@@ -13,6 +13,7 @@ body{
 	height: 100%;
 	max-height: 100%; 
 	color:#222;
+	height:100%;
 }
 
 .online_status, a:link{
@@ -80,6 +81,7 @@ a img{
 }
 
 #search_input{
+	margin-left:10px;
 	height:45px;
 	border:solid 1px #C8D5D5;
 	font-size:24px;
@@ -88,8 +90,14 @@ a img{
 }
 
 #search_btn{
-	width:45px;
+	padding-right:90px;
+	padding-top:6px;
+	color:#ddd;
+	font-size:12px;
+	font-weight:bold;
+	width:185px;
 	height:45px;
+	margin-left:10px;
 	background-image:url(../img/search_btn.png);
 	border:0;
 }
@@ -109,17 +117,7 @@ a img{
 	color:#999;
 }
 
-#internet_box{
-	float:left;
-	padding:15px 10px 10px 10px;
-}
 
-#internet_status{
-	font-weight:bold;
-	line-height:18px;
-	font-size:24px;	
-	text-transform:capitalize;
-}
 
 #internet_signin{
 	padding: 15px 10px;
@@ -234,16 +232,6 @@ ul.nav a, ul.nav a:visited { /* grouping these selectors makes sure that your li
 	background-image:url(../img/left_btn_hover.png);
 }
 
-#queue_box .queue_item{
-	overflow:hidden;
-	border: solid 1px #C8D5D5;
-	float:left;
-	height:40px;
-	width: 10%;
-	padding:5px;
-	background-image:url(../img/item-bg.png);
-	background-repeat:repeat-x;
-}
 
 
 #queue_box .cancel_btn{
@@ -262,13 +250,14 @@ ul.nav a, ul.nav a:visited { /* grouping these selectors makes sure that your li
 
 #queue_box .item_title{
 	display:block;
-	height:14px;
+	height:16px;
 	overflow:hidden;
 }
 
 #queue_box .status{
 	display:block;
-	margin-top:10px;
+	margin-top:7px;
+	font-weight:bold;
 }
 
 #queue_box .Pending{
@@ -284,12 +273,27 @@ ul.nav a, ul.nav a:visited { /* grouping these selectors makes sure that your li
 }
 
 #queue_box .Completed{
-	color:#1e7e00;
+	color:#000;
+}
+
+#queue_box .queue_item, #queue_box .complete_item{
+	overflow:hidden;
+	float:left;
+	height:40px;
+	width: 10%;
+	padding:5px;
+	background-repeat:repeat-x;
+}
+
+#queue_box .queue_item{
+	background-image:url(../img/item-bg.png);
+	border: solid 1px #C8D5D5;
 }
 
 #queue_box .complete_item{
 	background-image:url(../img/item-bg-cmp.png);
-	border-color: #96d38d;
+	border:solid 1px #83887f;
+	color:#103717;
 }
 
 #queue_box .queue_detail{
@@ -304,7 +308,7 @@ ul.nav a, ul.nav a:visited { /* grouping these selectors makes sure that your li
 	word-break: normal; 
 }
 
-#queue_box .queue_item:hover div.queue_detail{
+#queue_box .queue_item:hover div.queue_detail, #queue_box .complete_item:hover div.queue_detail{
 	display:block;
 }
 
@@ -314,11 +318,19 @@ ul.nav a, ul.nav a:visited { /* grouping these selectors makes sure that your li
 	border-color:#a6b3b3;
 }
 
+#queue_box .complete_item:hover{
+	cursor:pointer;
+	background-image:url(../img/item-bg-cmph.png);
+	border-color:#50554c;
+}
+
+
 #queue_div #download_animation{
 	position:absolute;
 	display:none;
 	bottom:65px;
 	top:auto;
+	left:30px;
 	width:80px;
 	height:120px;
 	background-image:url(../img/download_icon.png);
