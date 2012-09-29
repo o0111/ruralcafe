@@ -1,18 +1,20 @@
-var xmlDocl = 0;
-var xhttpl = 0;
-var noil=10; //number of items per page
-var pageNuml=1; //the initial page number, if there are multiple pages 
-var searchString="";
-var nop=10; //maximum number of links to results pages shown on each page
+/* Laura Li 09-06-2012: show the online search results*/
 
+var xmlDocl = 0;	//xml file for search results
+var xhttpl = 0;		//ajax request for retrieving search results
+var noil=10; 		//number of items per page
+var pageNuml=1; 	//the initial page number, if there are multiple pages 
+var searchString="";//the search query string
+var nop=10; 		//maximum number of links to results pages shown on each page
 
-function loadLiveResult(){
-	if (window.location.pathname){
-		var path=window.location.href;
-		searchString=path.slice(path.search('s=')+2);
+//send a ajax request to retrieve live search results
+function loadLiveResult() {
+	if (window.location.pathname) {
+		var path = window.location.href;
+		searchString = path.slice(path.search('s=')+2);
 		//changfe here now no p is passed
-		pageNuml=parseInt(path.slice(path.search('p=')+2,path.search('&'))) || 1;
-		if (searchString!="")
+		pageNuml = parseInt(path.slice(path.search('p=')+2,path.search('&'))) || 1;
+		if (searchString != "")
 			showResultl('request/search.xml?n='+noil+'&p='+pageNuml+'&s='+searchString);
 	}
 	else
@@ -22,7 +24,8 @@ function loadLiveResult(){
 
 addLoadEvent(loadLiveResult);
 
-function showResultl(requestURL){
+//show the live search results with given request url
+function showResultl(requestURL) {
     xhttpl= new ajaxRequest();
 	if (xhttpl.overrideMimeType)
 		xhttpl.overrideMimeType('text/xml');
@@ -31,6 +34,7 @@ function showResultl(requestURL){
     xhttpl.send(null);
 }
 
+//display the live search results in HTML
 function showXMLl(){
 	if (xhttpl.readyState==4){
 		if (xhttpl.status==200){
@@ -42,13 +46,14 @@ function showXMLl(){
 			var innerHtml="";
 			var results=xmldata.getElementsByTagName("item");
 			for (var i=0;i<results.length;i++){
-				var itemTitle=results[i].getElementsByTagName('title')[0].firstChild.nodeValue;
-				var itemURL=results[i].getElementsByTagName('url')[0].firstChild.nodeValue;
-				var itemSnippet;
-				if (results[i].getElementsByTagName('snippet')[0].firstChild)
-					itemSnippet=results[i].getElementsByTagName('snippet')[0].firstChild.nodeValue;
-				else itemSnippet='';
-				innerHtml+='<div class="result_page"><p><a href="http://'+itemURL+'" target="_parent">'+itemTitle+'</a></p><p class="url">'+itemURL+'</p><p>'+itemSnippet+'</p></div>';
+				//if url is not empty
+				if(results[i].getElementsByTagName('url')[0].firstChild){
+					var itemURL=results[i].getElementsByTagName('url')[0].firstChild.nodeValue;
+					
+					var itemTitle=results[i].getElementsByTagName('title')[0].firstChild?results[i].getElementsByTagName('title')[0].firstChild.nodeValue:itemURL;
+					var itemSnippet=results[i].getElementsByTagName('snippet')[0].firstChild?results[i].getElementsByTagName('snippet')[0].firstChild.nodeValue:"";
+					innerHtml+='<div class="result_page"><p><a href="http://'+itemURL+'" target="_parent">'+itemTitle+'</a></p><p class="url">'+itemURL+'</p><p>'+itemSnippet+'</p></div>';
+				}
 			}
 			document.getElementById('live_updateArea').innerHTML=innerHtml;
 			changelive_nav(total);
@@ -59,6 +64,7 @@ function showXMLl(){
 	}
 }
 
+//change the navigation links for a result page, given total number of pages and page number of the first page shown in the navigation links
 function changelive_nav(total,startpage){
 	if (total>noil){//results does not fit into one page
 		var html="";

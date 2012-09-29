@@ -22,16 +22,10 @@
 		<a href="index.html" alt="trotro homepage" onclick="return gotoPage(this.href);"><img id="trotro_icon" src="img/icon.png"/></a>
     </div>
     
-    
-    <div id="internet_box">
-    <div id="internet_status">offline</div>
-    	search:
-    </div>
-    
     <div id="search_box">
    	<form action="" id="tsearch" method="get" onsubmit="return tSearch('offline');">
     	<input type="text" id="search_input" name="s" value=""/>
-        <input type="submit" id="search_btn" name="search_btn" value=""/>
+        <input type="submit" id="search_btn" name="search_btn" value="Search offline"/>
     </form>
     </div>
     
@@ -44,7 +38,7 @@
 </div>
 
 <div id="main_div">
-	<iframe id="main_frame" src="index.html?x=offline" />
+	<iframe id="main_frame" frameBorder="0" src="index.html?x=offline" />
 </div>
 </body>
 </html>

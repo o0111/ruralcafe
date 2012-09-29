@@ -1,14 +1,15 @@
+/* Laura Li 09-06-2012: handle requests submitted by a user*/
 
-var xhttp = 0;
-var userid="";
-var ipp = 7;//request items shown per page
-var i;
-var results;//loaded requests
+var xhttp = 0;	//ajax request
+var userid="";	//user id
+var ipp = 7;	//request items shown per page
+var i;			//index of first item in the queue
+var results;	//loaded requests
 
+//initiate the page, send a ajax request to fetch requests in user queue
 function loadOffline(){	
 	document.getElementById('left_btn').onclick=scrollLeft;
 	document.getElementById('right_btn').onclick=scrollRight;
-	document.getElementById('close_box').onclick=closeFrame;
 	if (window.location.pathname){
 		var path=window.location.href;
 		if (path.search('u=')!=-1)
@@ -43,6 +44,7 @@ function loadOffline(){
 
 addLoadEvent(loadOffline);
 
+//initiate the user queue
 function loadQueue(requestURL){
 	clearCountDown();
     xhttp= new ajaxRequest();
@@ -53,6 +55,7 @@ function loadQueue(requestURL){
     xhttp.send(null);
 }
 
+//add a new request with given item title and item url 
 function addRequest(itemTitle,itemURL){
 	var mygetrequest=new ajaxRequest()
 	mygetrequest.onreadystatechange=function(){
@@ -72,14 +75,12 @@ function addRequest(itemTitle,itemURL){
 			}
 		}
 	}
-	//var tvalue=encodeURIComponent(itemTitle);
-	//var avalue=encodeURIComponent(itemURL);
-
 	mygetrequest.open("GET", "request/add?u="+userid+"&t="+itemTitle+'&a='+itemURL, true);
 	mygetrequest.send(null);
 	return false;
 }
 
+//remove a request with given item id
 function removeRequest(itemId){
 	var mygetrequest=new ajaxRequest()
 	mygetrequest.onreadystatechange=function(){
@@ -98,14 +99,13 @@ function removeRequest(itemId){
 	return false;
 }
 
+//show the user queue in a bar
 function showXML(searchString){
 	if (xhttp.readyState==4){
 		if (xhttp.status==200){
 			var xmldata=xhttp.responseXML; //retrieve result as an XML object
 			var innerHtml='';
 			results=xmldata.getElementsByTagName("item");
-			//result.length=9 ipp=7 
-			//queue = 8 7 6 5 4 3 2 
 			for (i=results.length-1;i>=Math.max(0,results.length-ipp);i--){
 				innerHtml+=itemHTML(i);
 			}
@@ -123,6 +123,7 @@ function showXML(searchString){
 	}
 }
 
+//perpare the html code for an item with given index
 function itemHTML(index){
 	var itemId=results.item(index).attributes[0].nodeValue;
 	var itemTitle=results[index].getElementsByTagName('title')[0].firstChild.nodeValue;
@@ -131,10 +132,9 @@ function itemHTML(index){
 	var itemSize=results[index].getElementsByTagName('size')[0].firstChild.nodeValue;	
 	var itemhtml="";
 	if (itemStatus=="Completed")
-		itemhtml= '<div id="'+itemId+'" class="queue_item complete_item"><div class="cancel_btn" onclick="removeRequest('+itemId+');"></div><span class="open_btn"  onclick="openPage(\''+itemURL+'\');"><span class="item_title">'+itemTitle+'</span><span class="status '+itemStatus+'" id="status_'+itemId+'">'+itemStatus+'</span></span>';
+		itemhtml= '<div id="'+itemId+'" class="complete_item"><div class="cancel_btn" onclick="removeRequest('+itemId+');"></div><span class="open_btn"  onclick="openPage(\''+itemURL+'\');"><span class="item_title">'+itemTitle+'</span><span class="status '+itemStatus+'" id="status_'+itemId+'">'+itemStatus+'</span></span><div class="queue_detail">'+itemTitle+'<br/><br/><span id="url_'+itemId+'"><a href='+itemURL+' target="_newtab">'+itemURL+'</a></span>';
 	else
-		itemhtml= '<div id="'+itemId+'" class="queue_item"><div class="cancel_btn" onclick="removeRequest('+itemId+');"></div><span class="item_title">'+itemTitle+'</span><span class="status '+itemStatus+'" id="status_'+itemId+'">'+itemStatus+'</span>';
-	itemhtml+='<div class="queue_detail">'+itemTitle+'<br/><br/><span id="url_'+itemId+'">'+itemURL+'</span>';
+		itemhtml= '<div id="'+itemId+'" class="queue_item"><div class="cancel_btn" onclick="removeRequest('+itemId+');"></div><span class="item_title">'+itemTitle+'</span><span class="status '+itemStatus+'" id="status_'+itemId+'">'+itemStatus+'</span><div class="queue_detail">'+itemTitle+'<br/><br/><span id="url_'+itemId+'">'+itemURL+'</span>';
 	if (itemStatus!="Pending")
 		itemhtml+='<br/><br/>Size: '+itemSize;
 	itemhtml+='</div></div>';
@@ -145,13 +145,15 @@ function itemHTML(index){
 	return itemhtml;
 }
 
+//open the url in a new tab
 function openPage(url){
 	window.open(url,'_newtab');
 }
 
-var interval;
-var itemIds;
+var interval;	//interval for checking request status and EST
+var itemIds;	//an array of ids of the items in user queue
 
+//start checking for request status and ETS every second
 function startCountDown(id){
 	itemIds.push(id);
 	if (!interval) {
@@ -159,7 +161,7 @@ function startCountDown(id){
     }
 }
 
-//not sure whether i can use 1 clock to send 2 reuqeust simutaneosly, wait for testing
+//retriev and display the request status and updating EST
 function getEST(){
 	for (var j=0;j<itemIds.length;j++){
 		var index=j;
@@ -174,7 +176,7 @@ function getEST(){
 						if (est!='0' && est!='-1'){
 							var statusspan=document.getElementById('status_'+itemIds[index]);
 							if (statusspan){
-								statusspan.innerHTML=est.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+								statusspan.innerHTML='<img src="img/downloading.gif" /> '+est.replace(/</g,'&lt;').replace(/>/g,'&gt;');
 								statusspan.className="status Downloading";
 							}
 						}
@@ -198,8 +200,7 @@ function getEST(){
 }
  
 
-
-// button stop
+//stop checking for the request status and ETA
 function stopCountDown(itemIndex) {
 	if (itemIndex!=-1){
 		itemIds.splice(itemIndex,1);
@@ -212,12 +213,14 @@ function stopCountDown(itemIndex) {
 	}
 }
 
+//remove timer for checking the request status and ETA
 function clearCountDown(){
 	itemIds=new Array();
 	window.clearInterval(interval);
 	interval=false;
 }
 
+//check wether an item's status is being updated
 function isCountDown(itemId) {
 	for (var j=0;j<itemIds.length;j++){
 		if (itemIds[j]==itemId){
@@ -226,7 +229,8 @@ function isCountDown(itemId) {
 	}
 	return -1;
 }
-		
+
+//sroll the bar to the right, show the next item
 function scrollRight(){
 	var parentNode=document.getElementById('update_area');	
 	stopCountDown(isCountDown(parentNode.firstChild.id));
@@ -242,6 +246,7 @@ function scrollRight(){
 	return false;
 }
 
+//sroll the bar to the left, show the previous item
 function scrollLeft(){
 	var parentNode=document.getElementById('update_area');
 	stopCountDown(isCountDown(parentNode.lastChild.id));
@@ -257,22 +262,24 @@ function scrollLeft(){
 	return false;
 }
 
-var animInterval=false;
+var animInterval=false;	//interval for showing an animated arrow
 
+//start the animation for the arrow
 function startAnimation(){
 	var dIcon=document.getElementById("download_animation");
 	dIcon.style.display='block';
 	var d=185;
 	dIcon.style.bottom=d+'px';
 	animInterval=window.setInterval(function(){
-		d-=12;
+		d-=10;
 		dIcon.style.bottom=d+'px';
-		if (d<65)
+		if (d<68)
 			stopAnimation();
 	}, 50);
 }
 
+//stop animation for the arrow
 function stopAnimation(){
 	window.clearInterval(animInterval);
-	document.getElementById("download_animation").style.display='none';
+	//document.getElementById("download_animation").style.display='none';
 }
