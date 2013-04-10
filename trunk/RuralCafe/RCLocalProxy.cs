@@ -38,8 +38,8 @@ namespace RuralCafe
         private string _rcSearchPage;
         private string _indexPath;
         private string _wikiDumpPath;
-        //public int _activeRequests;
-        //public int MAXIMUM_ACTIVE_REQUESTS = 50;
+        public int _activeRequests;
+        public int MAXIMUM_ACTIVE_REQUESTS = 50;
 
         // remoteProxy
         private WebProxy _remoteProxy;
@@ -56,7 +56,7 @@ namespace RuralCafe
 
         // state for maintaining the time for request/responses for measuring the ETA
         private TimeSpan _averageTimePerRequest;
-        
+
         // wiki indices (currently only wikipedia)
         private static Dictionary<string, Indexer> _wikiIndices = new Dictionary<string, Indexer>();
 
@@ -109,10 +109,10 @@ namespace RuralCafe
         /// <param name="logsPath">Path to the proxy's logs.</param>
         public RCLocalProxy(IPAddress listenAddress, int listenPort, string proxyPath, string indexPath,
             string cachePath, string wikiDumpPath, string packagesPath, string logsPath)
-            : base(LOCAL_PROXY_NAME, listenAddress, listenPort, proxyPath, 
+            : base(LOCAL_PROXY_NAME, listenAddress, listenPort, proxyPath,
             cachePath, packagesPath, logsPath)
         {
-            //_activeRequests = 0;
+            _activeRequests = 0;
             _uiPagesPath = proxyPath + "RuralCafePages" + Path.DirectorySeparatorChar;
             _indexPath = indexPath;
             _wikiDumpPath = wikiDumpPath;
@@ -170,15 +170,9 @@ namespace RuralCafe
         /// <returns>True or false for success or not.</returns>
         private bool InitializeIndex(string indexPath)
         {
-            bool created;
-            created = IndexWrapper.EnsureIndexExists(indexPath);
-            if (!created)
-            {
-                return false;
-            }
-            return true;
+            return IndexWrapper.EnsureIndexExists(indexPath);
         }
-        
+
         /// <summary>
         /// Initialize the wiki index.
         /// </summary>
@@ -201,7 +195,7 @@ namespace RuralCafe
 
             // load the index
             _wikiIndices.Add(dumpFile.ToLowerInvariant(), ixr);
-			
+
             return true;
         }
 
@@ -210,11 +204,7 @@ namespace RuralCafe
         /// </summary>
         public bool HasWikiIndices()
         {
-            if (_wikiIndices.Count > 0)
-            {
-                return true;
-            }
-            return false;
+            return (_wikiIndices.Count > 0);
         }
 
         /// <summary>
@@ -241,21 +231,21 @@ namespace RuralCafe
                 // loop and listen for the next connection request
                 while (true)
                 {
-                    /*
+
                     while (_activeRequests >= MAXIMUM_ACTIVE_REQUESTS)
                     {
                         Thread.Sleep(100);
-                    }*/
+                    }
 
                     // accept connections on the proxy port (blocks)
                     Socket socket = sockServer.AcceptSocket();
-                    //_activeRequests++;
 
                     // handle the accepted connection in a separate thread
                     LocalRequestHandler requestHandler = new LocalRequestHandler(this, socket);
-                    Thread proxyThread = new Thread(new ThreadStart(requestHandler.Go));
+                    // Start own method StartRequestHandler in the thread, which also decreases _activeRequests
+                    Thread proxyThread = new Thread(new ParameterizedThreadStart(this.StartRequestHandler));
                     //proxyThread.Name = String.Format("LocalRequest" + socket.RemoteEndPoint.ToString());
-                    proxyThread.Start();
+                    proxyThread.Start(requestHandler);
                 }
             }
             catch (SocketException ex)
@@ -266,6 +256,26 @@ namespace RuralCafe
             {
                 WriteDebug("Exception in StartLocalListener: " + e.StackTrace + " " + e.Message);
             }
+        }
+
+        /// <summary>
+        /// Invokes the <see cref="RequestHandler.Go"/> method. While it is running, the number of
+        /// active requests is increased.
+        /// </summary>
+        /// <param name="localRequestHandler">The local request handler of type
+        /// <see cref="LocalRequestHandler"/></param>
+        private void StartRequestHandler(Object localRequestHandler)
+        {
+            if (!(localRequestHandler is LocalRequestHandler))
+            {
+                throw new ArgumentException("localRequestHandler must be of type LocalRequestHandler");
+            }
+            // Increment number of active requests
+            System.Threading.Interlocked.Increment(ref _activeRequests);
+            // Start request handler
+            ((LocalRequestHandler)localRequestHandler).Go();
+            // Decrement number of active requests
+            System.Threading.Interlocked.Decrement(ref _activeRequests);
         }
 
         /// <summary>
@@ -496,8 +506,8 @@ namespace RuralCafe
                         string hashPath = RCRequest.GetHashPath(fileName);
                         string itemId = hashPath.Replace(Path.DirectorySeparatorChar.ToString(), "");
 
-                        if ((httpCommand == "RSP") && 
-                            loggedRequestQueueMap.ContainsKey(itemId) && 
+                        if ((httpCommand == "RSP") &&
+                            loggedRequestQueueMap.ContainsKey(itemId) &&
                             Int32.Parse(status) != (int)RequestHandler.Status.Pending)
                         {
                             // parse the response
@@ -736,7 +746,7 @@ namespace RuralCafe
         /// updates the time per request given a timespan
         /// Exponential moving average alpha = 0.2
         /// </summary>
-        private void UpdateTimePerRequest(DateTime startTime, DateTime finishTime) 
+        private void UpdateTimePerRequest(DateTime startTime, DateTime finishTime)
         {
             TimeSpan totalProcessingTime = finishTime - startTime;
 
