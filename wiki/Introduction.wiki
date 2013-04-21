@@ -38,10 +38,11 @@ Note that for deployments where RuralCafe is running the local and remote compon
 
 The configuration fields are fairly straightforward and are defaulted to work as a standalone service on a single machine (as in this example). In the case where the local and remote proxies are setup on seperate machines, the config.txt should be identical on both machines.
 
-The local proxy settings are where RuralCafe listens to requests from the browser, these are the IP address and port settings that the browser should be configured with to use RuralCafe.
+The local proxy settings are where RuralCafe listens to requests from the browser, these are the IP address and port settings that the browser should be configured with to use RuralCafe. In addition, the maximum number of active requests can be configured.
 
  * LOCAL_PROXY_IP_ADDRESS=127.0.0.1
  * LOCAL_PROXY_LISTEN_PORT=8080
+ * LOCAL_MAXIMUM_ACTIVE_REQUESTS=50
 
 The remote proxy settings are where RuralCafe's remote proxy listens to requests from the local proxy. These settings are also used by the local proxy to know where to forward requests to the remote proxy.
 
