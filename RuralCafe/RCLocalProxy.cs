@@ -38,8 +38,8 @@ namespace RuralCafe
         private string _rcSearchPage;
         private string _indexPath;
         private string _wikiDumpPath;
-        public int _activeRequests;
-        public int MAXIMUM_ACTIVE_REQUESTS = 50;
+        private int _activeRequests;
+        private const int MAXIMUM_ACTIVE_REQUESTS = 50;
 
         // remoteProxy
         private WebProxy _remoteProxy;

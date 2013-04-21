@@ -142,6 +142,7 @@ namespace RuralCafe
         {
             string packageIndexSizeStr = requestHandler.RCRequest.GenericWebResponse.GetResponseHeader("Package-IndexSize");
             string packageContentSizeStr = requestHandler.RCRequest.GenericWebResponse.GetResponseHeader("Package-ContentSize");
+            //XXX: Unhandled Exception if sizes not sent by server.
             long packageIndexSize = Int64.Parse(packageIndexSizeStr);
             long packageContentSize = Int64.Parse(packageContentSizeStr);
             string packageFileName = requestHandler.PackageFileName;
