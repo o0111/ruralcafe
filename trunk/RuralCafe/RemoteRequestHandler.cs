@@ -893,20 +893,45 @@ namespace RuralCafe
         /// <returns>True or false guess for is or is not.</returns>
         bool PossiblyATextPage(string pageUri)
         {
-            int offset = pageUri.LastIndexOf('.');
-            if (offset > 0)
+            // XXX: Logging
+            WebRequest request = WebRequest.Create(pageUri);
+            // Only send a HEAD request.
+            request.Method = "HEAD";
+            WebResponse response;
+            try
             {
-                string fileExtension = pageUri.Substring(offset);
-                string contentType = Util.GetContentType(fileExtension);
-                if (contentType.Contains("image") ||
-                    contentType.Contains("audio"))
-                {
-                    return false;
-                }
+                response = request.GetResponse();
+            }
+            catch (WebException)
+            {
+                // probably 404
+                return false;
             }
 
+            string contentType = "";
+            if (response != null)
+            {
+                contentType = response.ContentType;
+                return (!contentType.Contains("image") && !contentType.Contains("audio")
+                    && !contentType.Contains("video"));
+            }
+            // any other error
+            return false;
+
+            // previous implementation not sending any request:
+            //int offset = pageUri.LastIndexOf('.');
+            //if (offset > 0)
+            //{
+            //    string fileExtension = pageUri.Substring(offset);
+            //    string contentType = Util.GetContentType(fileExtension);
+            //    if (contentType.Contains("image") ||
+            //        contentType.Contains("audio"))
+            //    {
+            //        return false;
+            //    }
+            //}
             // no idea
-            return true;
+            //return true;
         }
         /// <summary>
         /// Guesses if the URI is pointing to an image page.

@@ -615,12 +615,8 @@ namespace RuralCafe
         /// <returns>True if it is a GET or HEAD request, false if otherwise.</returns>
         protected bool IsGetOrHeadHeader()
         {
-            if (_rcRequest.GenericWebRequest.Method == "GET" ||
-                _rcRequest.GenericWebRequest.Method == "HEAD")
-            {
-                return true;
-            }
-            return false;
+            return (_rcRequest.GenericWebRequest.Method == "GET" ||
+                _rcRequest.GenericWebRequest.Method == "HEAD");
         }
 
         /// <summary>
@@ -631,11 +627,7 @@ namespace RuralCafe
         /// <returns>True if cacheable, false if not. </returns>
         protected bool IsCacheable()
         {
-            if (_rcRequest.CacheFileName.Length <= 248)
-            {
-                return true;
-            }
-            return false;
+            return (_rcRequest.CacheFileName.Length <= 248);
         }
 
         /// <summary>

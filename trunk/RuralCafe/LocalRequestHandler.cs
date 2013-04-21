@@ -110,12 +110,8 @@ namespace RuralCafe
         /// <returns>True if it is, false if not.</returns>
         private bool IsRCRequest()
         {
-            if (RequestUri.StartsWith("www.ruralcafe.net") ||
-                RequestUri.StartsWith("http://www.ruralcafe.net"))
-            {
-                return true;
-            }
-            return false;
+            return (RequestUri.StartsWith("www.ruralcafe.net") ||
+                RequestUri.StartsWith("http://www.ruralcafe.net"));
         }
 
         /// <summary>
@@ -164,8 +160,9 @@ namespace RuralCafe
                 
                 // try getting the content type from the file extension
                 if (contentType.Equals("text/unknown"))
+                {
                     contentType = Util.GetContentTypeOfFile(_rcRequest.CacheFileName);
-
+                }
                 // peek at the file, major hackery...
                 string peekFile = System.IO.File.ReadAllText(_rcRequest.CacheFileName);
                 if (peekFile.StartsWith("HTTP/1.1 301 Moved Permanently"))
