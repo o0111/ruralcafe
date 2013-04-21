@@ -886,11 +886,11 @@ namespace RuralCafe
         }*/
 
         /// <summary>
-        /// Guesses if the URI is pointing to a text page.
+        /// Determines if the URI is pointing to a text page.
         /// Used for downloading embedded objects.
         /// </summary>
         /// <param name="pageUri">URI.</param>
-        /// <returns>True or false guess for is or is not.</returns>
+        /// <returns>True or false for is or is not.</returns>
         bool PossiblyATextPage(string pageUri)
         {
             // XXX: Logging

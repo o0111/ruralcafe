@@ -36,6 +36,7 @@ namespace RuralCafe
         private static IPAddress LOCAL_PROXY_IP_ADDRESS;
         private static int LOCAL_PROXY_LISTEN_PORT;
         private static string DEFAULT_SEARCH_PAGE;
+        private static int LOCAL_MAXIMUM_ACTIVE_REQUESTS;
 
         // Remote Proxy Settings
         private static IPAddress REMOTE_PROXY_IP_ADDRESS;
@@ -54,10 +55,10 @@ namespace RuralCafe
         private static int MAXIMUM_DOWNLINK_SPEED;
 
         // Path Settings
-        private static string LOCAL_PROXY_PATH = Directory.GetCurrentDirectory() 
-			+ Path.DirectorySeparatorChar + "LocalProxy" + Path.DirectorySeparatorChar;
-        private static string REMOTE_PROXY_PATH = Directory.GetCurrentDirectory() 
-			+ Path.DirectorySeparatorChar + "RemoteProxy" + Path.DirectorySeparatorChar;
+        private static string LOCAL_PROXY_PATH = Directory.GetCurrentDirectory()
+            + Path.DirectorySeparatorChar + "LocalProxy" + Path.DirectorySeparatorChar;
+        private static string REMOTE_PROXY_PATH = Directory.GetCurrentDirectory()
+            + Path.DirectorySeparatorChar + "RemoteProxy" + Path.DirectorySeparatorChar;
         private static string PACKAGE_PATH = "Packages" + Path.DirectorySeparatorChar;
         private static string LOGS_PATH = "Logs" + Path.DirectorySeparatorChar;
         private static string INDEX_PATH;
@@ -143,19 +144,20 @@ namespace RuralCafe
                 // Local Proxy Settings
                 LOCAL_PROXY_IP_ADDRESS = IPAddress.Parse(configSettings["LOCAL_PROXY_IP_ADDRESS"]);
                 LOCAL_PROXY_LISTEN_PORT = Int32.Parse(configSettings["LOCAL_PROXY_LISTEN_PORT"]);
+                LOCAL_MAXIMUM_ACTIVE_REQUESTS = Int32.Parse(configSettings["LOCAL_MAXIMUM_ACTIVE_REQUESTS"]);
 
-                INDEX_PATH = configSettings["INDEX_PATH"] +	Path.DirectorySeparatorChar;
+                INDEX_PATH = configSettings["INDEX_PATH"] + Path.DirectorySeparatorChar;
                 LOCAL_CACHE_PATH = configSettings["LOCAL_CACHE_PATH"] + Path.DirectorySeparatorChar;
                 if (!INDEX_PATH.Contains(":\\"))
                 {
                     INDEX_PATH = LOCAL_PROXY_PATH + INDEX_PATH;
-                } 
+                }
                 if (!LOCAL_CACHE_PATH.Contains(":\\"))
                 {
                     LOCAL_CACHE_PATH = LOCAL_PROXY_PATH + LOCAL_CACHE_PATH;
                 }
-                WIKI_DUMP_FILE = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar+configSettings["WIKI_DUMP_DIR"]
-					+ Path.DirectorySeparatorChar + configSettings["WIKI_DUMP_FILE"];
+                WIKI_DUMP_FILE = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + configSettings["WIKI_DUMP_DIR"]
+                    + Path.DirectorySeparatorChar + configSettings["WIKI_DUMP_FILE"];
 
                 /*
                 string a = Directory.GetCurrentDirectory();
@@ -183,9 +185,10 @@ namespace RuralCafe
                     REMOTE_PROXY_LISTEN_PORT = Int32.Parse(configSettings["REMOTE_PROXY_LISTEN_PORT"]);
                 }
 
-                REMOTE_CACHE_PATH = configSettings["REMOTE_CACHE_PATH"]+ Path.DirectorySeparatorChar;
-				
-                if (!REMOTE_CACHE_PATH.Contains(":\\")) {
+                REMOTE_CACHE_PATH = configSettings["REMOTE_CACHE_PATH"] + Path.DirectorySeparatorChar;
+
+                if (!REMOTE_CACHE_PATH.Contains(":\\"))
+                {
                     REMOTE_CACHE_PATH = REMOTE_PROXY_PATH + REMOTE_CACHE_PATH;
                 }
 
@@ -232,12 +235,12 @@ namespace RuralCafe
                 Console.WriteLine("EXTERNAL_PROXY_IP_ADDRESS: " + GATEWAY_PROXY_IP_ADDRESS);
                 Console.WriteLine("EXTERNAL_PROXY_LISTEN_PORT: " + GATEWAY_PROXY_LISTEN_PORT);
                 Console.WriteLine("EXTERNAL_PROXY_LOGIN: " + GATEWAY_PROXY_LOGIN);
-				Console.WriteLine("INDEX_PATH: " + INDEX_PATH);
-				Console.WriteLine("LOCAL_CACHE_PATH: " + LOCAL_CACHE_PATH);
-				Console.WriteLine("LOCAL_PROXY_PATH: " + LOCAL_PROXY_PATH);
-				Console.WriteLine("REMOTE_CACHE_PATH: " + REMOTE_CACHE_PATH);
-				Console.WriteLine("WIKI_DUMP_FILE: " + WIKI_DUMP_FILE);
-				
+                Console.WriteLine("INDEX_PATH: " + INDEX_PATH);
+                Console.WriteLine("LOCAL_CACHE_PATH: " + LOCAL_CACHE_PATH);
+                Console.WriteLine("LOCAL_PROXY_PATH: " + LOCAL_PROXY_PATH);
+                Console.WriteLine("REMOTE_CACHE_PATH: " + REMOTE_CACHE_PATH);
+                Console.WriteLine("WIKI_DUMP_FILE: " + WIKI_DUMP_FILE);
+
             }
             catch (Exception)
             {
@@ -249,10 +252,11 @@ namespace RuralCafe
         /// <summary>
         /// Starts the local proxy.
         /// </summary>
-        public static RCLocalProxy StartLocalProxy() {
+        public static RCLocalProxy StartLocalProxy()
+        {
             // create the proxy
-            RCLocalProxy localProxy = new RCLocalProxy(LOCAL_PROXY_IP_ADDRESS, LOCAL_PROXY_LISTEN_PORT, 
-                LOCAL_PROXY_PATH, INDEX_PATH, LOCAL_CACHE_PATH, WIKI_DUMP_FILE, PACKAGE_PATH, LOGS_PATH);
+            RCLocalProxy localProxy = new RCLocalProxy(LOCAL_PROXY_IP_ADDRESS, LOCAL_PROXY_LISTEN_PORT,
+                LOCAL_PROXY_PATH, INDEX_PATH, LOCAL_CACHE_PATH, WIKI_DUMP_FILE, PACKAGE_PATH, LOGS_PATH, LOCAL_MAXIMUM_ACTIVE_REQUESTS);
 
             // set the remote proxy
             localProxy.SetRemoteProxy(REMOTE_PROXY_IP_ADDRESS, REMOTE_PROXY_LISTEN_PORT);
@@ -269,7 +273,7 @@ namespace RuralCafe
             // set the RC search page
             localProxy.SetRCSearchPage(DEFAULT_SEARCH_PAGE);
             localProxy.NetworkStatus = NETWORK_STATUS;
-            
+
             // load the blacklisted domains
             localProxy.LoadBlacklist("blacklist.txt");
 
@@ -298,7 +302,7 @@ namespace RuralCafe
         public static RCRemoteProxy StartRemoteProxy()
         {
             // create the proxy
-            RCRemoteProxy remoteProxy = new RCRemoteProxy(REMOTE_PROXY_IP_ADDRESS, REMOTE_PROXY_LISTEN_PORT, 
+            RCRemoteProxy remoteProxy = new RCRemoteProxy(REMOTE_PROXY_IP_ADDRESS, REMOTE_PROXY_LISTEN_PORT,
                 REMOTE_PROXY_PATH, REMOTE_CACHE_PATH, PACKAGE_PATH, LOGS_PATH);
 
             /*

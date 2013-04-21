@@ -39,7 +39,7 @@ namespace RuralCafe
         private string _indexPath;
         private string _wikiDumpPath;
         private int _activeRequests;
-        private const int MAXIMUM_ACTIVE_REQUESTS = 50;
+        private int MAXIMUM_ACTIVE_REQUESTS;
 
         // remoteProxy
         private WebProxy _remoteProxy;
@@ -107,8 +107,9 @@ namespace RuralCafe
         /// <param name="wikiDumpPath">Path to the wiki dump file.</param>
         /// <param name="packagePath">Path to the downloaded packages.</param>
         /// <param name="logsPath">Path to the proxy's logs.</param>
+        /// <param name="maxRequests">Maximum active requests.</param>
         public RCLocalProxy(IPAddress listenAddress, int listenPort, string proxyPath, string indexPath,
-            string cachePath, string wikiDumpPath, string packagesPath, string logsPath)
+            string cachePath, string wikiDumpPath, string packagesPath, string logsPath, int maxRequests)
             : base(LOCAL_PROXY_NAME, listenAddress, listenPort, proxyPath,
             cachePath, packagesPath, logsPath)
         {
@@ -121,6 +122,7 @@ namespace RuralCafe
             _clientLastRequestMap = new Dictionary<int, LocalRequestHandler>();
             _newRequestEvent = new AutoResetEvent(false);
             _averageTimePerRequest = new TimeSpan(0);
+            MAXIMUM_ACTIVE_REQUESTS = maxRequests;
 
             bool success = false;
 
