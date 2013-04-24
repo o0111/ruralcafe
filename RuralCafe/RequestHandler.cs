@@ -42,6 +42,14 @@ namespace RuralCafe
             Downloading = 1,
             Completed = 2
         };
+        /// <summary>
+        /// Richness setting for requests.
+        /// </summary>
+        public enum Richness
+        {
+            Normal = 0,
+            Low = 1
+        }
 
         // timeouts
         public const int LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT = Timeout.Infinite; // in milliseconds
@@ -259,7 +267,7 @@ namespace RuralCafe
                 }
 
                 // get the requested URI
-                // the client browser sends a GET command followed by a space, then the URL, then and identifer for the HTTP version
+                // the client browser sends a GET command followed by a space, then the URL, then an identifer for the HTTP version
                 int index1 = recvString.IndexOf(' ');
                 int index2 = recvString.IndexOf(' ', index1 + 1);
                 if ((index1 < 0) || (index2 < 0))
@@ -832,7 +840,7 @@ namespace RuralCafe
         public void LogRequest()
         {
             string str = _rcRequest.StartTime + " " + _clientAddress.ToString() +
-                         " GET " + RequestUri +
+                         " " + _rcRequest.GenericWebRequest.Method + " " + RequestUri +
                          " REFERER " + RefererUri + " " + 
                          RequestStatus + " " + _rcRequest.FileSize;
             _proxy.WriteMessage(_requestId, str);

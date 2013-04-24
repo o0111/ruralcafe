@@ -176,7 +176,6 @@ namespace RuralCafe
             :this(requestHandler, uri, "", "")
         {
             // do nothing
-           
         }
 
         /// <summary>
