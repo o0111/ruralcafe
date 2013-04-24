@@ -50,7 +50,7 @@ namespace RuralCafe
 
         private static int DEFAULT_QUOTA;
         private static int DEFAULT_DEPTH;
-        private static string DEFAULT_RICHNESS;
+        private static RuralCafe.RequestHandler.Richness DEFAULT_RICHNESS;
         private static int DEFAULT_LOW_WATERMARK;
         private static int MAXIMUM_DOWNLINK_SPEED;
 
@@ -210,7 +210,7 @@ namespace RuralCafe
                 DEFAULT_SEARCH_PAGE = configSettings["DEFAULT_SEARCH_PAGE"];
                 DEFAULT_QUOTA = Int32.Parse(configSettings["DEFAULT_QUOTA"]);
                 DEFAULT_DEPTH = Int32.Parse(configSettings["DEFAULT_DEPTH"]);
-                DEFAULT_RICHNESS = configSettings["DEFAULT_RICHNESS"];
+                DEFAULT_RICHNESS = (RuralCafe.RequestHandler.Richness) Enum.Parse(typeof(RuralCafe.RequestHandler.Richness), configSettings["DEFAULT_RICHNESS"], true);
                 DEFAULT_LOW_WATERMARK = DEFAULT_QUOTA / 20;
                 MAXIMUM_DOWNLINK_SPEED = Int32.Parse(configSettings["MAXIMUM_DOWNLOAD_SPEED"]);
                 // XXX: hardcoded for now, stub

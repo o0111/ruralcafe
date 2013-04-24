@@ -42,7 +42,7 @@ namespace RuralCafe
 
         public static int DEFAULT_QUOTA;
         public static int DEFAULT_DEPTH;
-        public static string DEFAULT_RICHNESS;
+        public static Richness DEFAULT_RICHNESS;
 
         /// <summary>
         /// Constructor for a local proxy's request handler.
@@ -369,6 +369,19 @@ namespace RuralCafe
                 return (int)Status.Completed;
             }
 
+            if (IsRichnessRequest())
+            {
+                try
+                {
+                    RichnessRequest();
+                }
+                catch (Exception)
+                {
+                    return (int)Status.Failed;
+                }
+                return (int)Status.Pending;
+            }
+
             if (IsRCHomePage())
             {
                 try
@@ -402,102 +415,68 @@ namespace RuralCafe
         /// <summary>Checks if the request is for the RuralCafe command to get the index page.</summary>
         bool IsIndex()
         {
-            if (RequestUri.StartsWith("http://www.ruralcafe.net/request/index.xml"))
-            {
-                return true;
-            }
-            return false;
+            return RequestUri.StartsWith("http://www.ruralcafe.net/request/index.xml");
         }
 
         /// <summary>Checks if the request is for the RuralCafe command to get the queue.</summary>
         bool IsQueue()
         {
-            if (RequestUri.StartsWith("http://www.ruralcafe.net/request/queue.xml"))
-            {
-                return true;
-            }
-            return false;
+            return RequestUri.StartsWith("http://www.ruralcafe.net/request/queue.xml");
         }
         bool IsRemoteResult()
         {
-            if (RequestUri.StartsWith("http://www.ruralcafe.net/request/search.xml"))
-            {
-                return true;
-            }
-            return false;
+            return RequestUri.StartsWith("http://www.ruralcafe.net/request/search.xml");
         }
         /// <summary>Checks if the request is for the RuralCafe command to get the search results.</summary>
         bool IsResult()
         {
-            if (RequestUri.StartsWith("http://www.ruralcafe.net/request/result.xml"))
-            {
-                return true;
-            }
-            return false;
+            return RequestUri.StartsWith("http://www.ruralcafe.net/request/result.xml");
         }
 
         /// <summary>Checks if the request is for the RuralCafe homepage.</summary>
         private bool IsRCHomePage()
         {
-            if (RequestUri.Equals("http://www.ruralcafe.net") ||
+            return RequestUri.Equals("http://www.ruralcafe.net") ||
                 RequestUri.Equals("http://www.ruralcafe.net/") ||
                 RequestUri.Equals("www.ruralcafe.net") ||
-                RequestUri.Equals("www.ruralcafe.net/"))
+                RequestUri.Equals("www.ruralcafe.net/");
             //    RequestUri.Equals("http://www.ruralcafe.net/index.html") ||
             //    RequestUri.Equals("www.ruralcafe.net/index.html"))
-            {
-                return true;
-            }
-            return false;
+            
         }
 
         /// <summary>Checks if the request is for the RuralCafe command to check whether the network is up.</summary>
         bool IsRequestNetworkStatus()
         {
-            if (RequestUri.StartsWith("http://www.ruralcafe.net/request/status"))
-            {
-                return true;
-            }
-            return false;
+            return RequestUri.StartsWith("http://www.ruralcafe.net/request/status");
         }
         /// <summary>Checks if the request is for the RuralCafe command to add a URI.</summary>
         bool IsAddPage()
         {
-            if (RequestUri.StartsWith("http://www.ruralcafe.net/request/add?"))
             // if (RequestUri.StartsWith("http://www.ruralcafe.net/addpage="))
-            {
-                return true;
-            } 
-            return false;
+            return RequestUri.StartsWith("http://www.ruralcafe.net/request/add?");
         }
         /// <summary>Checks if the request is for the RuralCafe command to remove a URI.</summary>
         bool IsRemovePage()
         {
-            if (RequestUri.StartsWith("http://www.ruralcafe.net/request/remove?"))
             // if (RequestUri.StartsWith("http://www.ruralcafe.net/removepage="))
-            {
-                return true;
-            }
-            return false;
+            return RequestUri.StartsWith("http://www.ruralcafe.net/request/remove?");
         } 
         /// <summary>Checks if the request is for the RuralCafe command to remove all URIs for a client.</summary>
         bool IsRemoveAllPage()
         {
-            if (RequestUri.StartsWith("http://www.ruralcafe.net/removeall"))
-            {
-                return true;
-            }
-            return false;
+            return RequestUri.StartsWith("http://www.ruralcafe.net/removeall");
         }
         /// <summary>Checks if the request is for the RuralCafe command to add a URI.</summary>
         bool IsEtaRequest()
         {
-            if (RequestUri.StartsWith("http://www.ruralcafe.net/request/eta"))
             // if (RequestUri.StartsWith("http://www.ruralcafe.net/addpage="))
-            {
-                return true;
-            }
-            return false;
+            return RequestUri.StartsWith("http://www.ruralcafe.net/request/eta");
+        }
+        /// <summary>Checks if the request is for the RuralCafe command to change richness.</summary>
+        bool IsRichnessRequest()
+        {
+            return RequestUri.StartsWith("http://www.ruralcafe.net/request/richness");
         }
 
         /// <summary>
@@ -1094,6 +1073,29 @@ namespace RuralCafe
             {
                 SendMessage("online");
             }
+        }
+
+        /// <summary>
+        /// Client changes richness. TODO
+        /// 
+        /// TODO Logging
+        /// </summary>
+        private void RichnessRequest()
+        {
+            // Parse parameters
+            NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
+            Richness richness;
+            try
+            {
+                richness = (Richness)Enum.Parse(typeof(Richness), qscoll.Get("r"), true);
+            }
+            catch (Exception) 
+            {
+                return;
+            }
+            Console.WriteLine("Richness would have been set to: " + richness);
+            SendOkHeaders("text/html");
+            SendMessage("Richness set.");
         }
         
         #endregion

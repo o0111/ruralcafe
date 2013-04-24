@@ -233,10 +233,14 @@ namespace RuralCafe
                 // loop and listen for the next connection request
                 while (true)
                 {
-
-                    while (_activeRequests >= MAXIMUM_ACTIVE_REQUESTS)
+                    //XXX: Debug Console Print
+                    if (_activeRequests >= MAXIMUM_ACTIVE_REQUESTS)
                     {
-                        Thread.Sleep(100);
+                        Console.WriteLine("Waiting. Active Requests: " + _activeRequests);
+                        while (_activeRequests >= MAXIMUM_ACTIVE_REQUESTS)
+                        {
+                            Thread.Sleep(100);
+                        }
                     }
 
                     // accept connections on the proxy port (blocks)

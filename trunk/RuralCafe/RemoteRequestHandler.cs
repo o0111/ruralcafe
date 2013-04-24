@@ -34,7 +34,7 @@ namespace RuralCafe
     {
         public static int DEFAULT_QUOTA;
         public static int DEFAULT_MAX_DEPTH;
-        public static string DEFAULT_RICHNESS;
+        public static Richness DEFAULT_RICHNESS;
         public static int DEFAULT_LOW_WATERMARK;
 
         //private static int _nextId = 1;
@@ -99,7 +99,8 @@ namespace RuralCafe
                 return (int)Status.Ignored;
             }*/
 
-            string richness = DEFAULT_RICHNESS;//_rcRequest.GetRCSearchField("richness");
+            // XXX: Get current richness!
+            Richness richness = DEFAULT_RICHNESS;//_rcRequest.GetRCSearchField("richness");
 
             // XXX: static quota for now
             /* QUOTA parameterization in the UI
@@ -430,7 +431,7 @@ namespace RuralCafe
         /// <param name="richness">Richness setting.</param>
         /// <param name="depth">Depth to download.</param>
         /// <returns></returns>
-        private bool RecursivelyDownloadPage(RCRequest rcRequest, string richness, int depth)
+        private bool RecursivelyDownloadPage(RCRequest rcRequest, Richness richness, int depth)
         {
             if (_quota < DEFAULT_LOW_WATERMARK)
             {
@@ -492,7 +493,7 @@ namespace RuralCafe
         /// <param name="rcRequest">Request page to start from.</param>
         /// <param name="richness">Richness setting.</param>
         /// <returns>List of RCRequests of embedded objects downloaded</returns>
-        private LinkedList<RCRequest> DownloadEmbeddedObjects(RCRequest rcRequest, string richness)
+        private LinkedList<RCRequest> DownloadEmbeddedObjects(RCRequest rcRequest, Richness richness)
         {
             LinkedList<RCRequest> filteredEmbeddedObjects = new LinkedList<RCRequest>();
 
@@ -514,11 +515,11 @@ namespace RuralCafe
                     continue;
                 }
 
-                if (richness.Equals("normal"))
+                if (richness == Richness.Normal)
                 {
                     filteredEmbeddedObjects.AddLast(embeddedObject);
                 }
-                else if (richness.Equals("low"))
+                else if (richness == Richness.Low)
                 {
                     // XXX: logic here is ugly, and not perfect 
                     // XXX: since the implementation of PossiblyATextPage is incomplete
