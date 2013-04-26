@@ -30,7 +30,6 @@ namespace RuralCafe
 {
     public class RCRequest
     {
-        private string _uri;
         private string _anchorText;
         private string _refererUri;
         private string _fileName;
@@ -39,6 +38,9 @@ namespace RuralCafe
         private string _cacheFileName;
 
         private int _status;
+        /// <summary>
+        /// The underlying web request.
+        /// </summary>
         private HttpWebRequest _webRequest;
 
         private HttpWebResponse _webResponse;
@@ -59,12 +61,9 @@ namespace RuralCafe
 
 
         # region Accessors
-
-        /// <summary>The URI of the request object.</summary>
         public string Uri
         {
-            set { _uri = value; }
-            get { return _uri; }
+            get { return _webRequest.RequestUri.ToString(); }
         }
         /// <summary>The anchor Text of the requested Uri.</summary>
         public string AnchorText
@@ -171,9 +170,9 @@ namespace RuralCafe
         /// Constructor for a RuralCafe Request.
         /// </summary>
         /// <param name="requestHandler">The handler for the request.</param>
-        /// <param name="itemId">requestId.</param>
-        public RCRequest(RequestHandler requestHandler, string uri)
-            :this(requestHandler, uri, "", "")
+        /// <param name="request">The request.</param>
+        public RCRequest(RequestHandler requestHandler, HttpWebRequest request)
+            :this(requestHandler, request, "", "")
         {
             // do nothing
         }
@@ -182,16 +181,20 @@ namespace RuralCafe
         /// Constructor for a RuralCafe Request.
         /// </summary>
         /// <param name="requestHandler">The handler for the request.</param>
-        /// <param name="uri">URI requested.</param>
-        /// <param name="anchorText">text of the anchor tag.</param>
+        /// <param name="request">The request.</param>
+        /// <param name="anchorText">Text of the anchor tag.</param>
         /// <param name="referrerUri">URI of the referer.</param>
-        public RCRequest(RequestHandler requestHandler, string uri, string anchorText, string referrerUri)
+        public RCRequest(RequestHandler requestHandler, HttpWebRequest request, string anchorText, string referrerUri)
         {
-            _uri = uri.Trim();
             _anchorText = anchorText;
             _refererUri = referrerUri.Trim();
 
-            _fileName = UriToFilePath(_uri);
+            _status = (int)RequestHandler.Status.Pending;
+
+            _webRequest = request;
+            _webRequest.Timeout = RequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT;
+
+            _fileName = UriToFilePath(_webRequest.RequestUri.ToString());
             _hashPath = GetHashPath(_fileName);
             _itemId = _hashPath.Replace(Path.DirectorySeparatorChar.ToString(), "");
             _cacheFileName = requestHandler.Proxy.CachePath + _hashPath + _fileName;
@@ -200,11 +203,6 @@ namespace RuralCafe
             {
                 _cacheFileName = _cacheFileName + ".bz2";
             }*/
-
-            _status = (int)RequestHandler.Status.Pending;
-            _webRequest = (HttpWebRequest)WebRequest.Create(_uri);
-            _webRequest.Timeout = RequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT;
-
             _fileSize = 0;
 
             _requestHandler = requestHandler;
