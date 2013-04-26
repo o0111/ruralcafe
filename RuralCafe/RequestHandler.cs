@@ -257,6 +257,7 @@ namespace RuralCafe
 
             try
             {
+                // TODO dont do all this manually!
                 // Read the incoming text on the socket into recvString
                 int bytes = RecvMessage(_recvBuffer, ref recvString);
                 if (bytes == 0 || recvString.Length == 0)
@@ -265,6 +266,10 @@ namespace RuralCafe
                     throw (new IOException("empty request"));
                 }
 
+                if (recvString.Contains("localhost") & (!(recvString.Contains("status.xml") || (recvString.Contains("eta")))))
+                {
+                    int a = 5;
+                }
                 // get the requested URI
                 // the client browser sends a GET command followed by a space, then the URL, then an identifer for the HTTP version
                 int index1 = recvString.IndexOf(' ');
@@ -397,7 +402,13 @@ namespace RuralCafe
             catch (Exception e)
             {
                 // do nothing
-                LogDebug("error handling request: " + _originalRequest.RequestUri.ToString() + " " + e.Message + e.StackTrace);
+                String errmsg = "error handling request: ";
+                if (_originalRequest != null)
+                {
+                    errmsg += " " + _originalRequest.RequestUri.ToString(); ;
+                }
+                errmsg += " " + e.GetType() + ": " + e.Message + "\n" + e.StackTrace;
+                LogDebug(errmsg); LogDebug("error handling request: " + _originalRequest.RequestUri.ToString() + " " + e.Message + e.StackTrace);
             }
             return false;
         }
@@ -588,7 +599,7 @@ namespace RuralCafe
                     currUri = currUri.Trim();
 
                     // instead of translating to absolute, prepend http:// to make webrequest constructor happy
-                    currUri = "http://" + currUri;
+                    currUri = AddHttpPrefix(currUri);
 
                     if (!Util.IsValidUri(currUri))
                     {
@@ -628,8 +639,7 @@ namespace RuralCafe
         /// <returns>If it is or not.</returns>
         protected bool IsRCRequest()
         {
-            return _originalRequest.RequestUri.ToString().Equals("http://www.ruralcafe.net/") ||
-                        _originalRequest.RequestUri.ToString().StartsWith("http://www.ruralcafe.net/request/");
+            return _originalRequest.RequestUri.ToString().StartsWith("http://www.ruralcafe.net/");
         }
 
         /// <summary>
@@ -644,7 +654,7 @@ namespace RuralCafe
 
         /// <summary>
         /// Checks if the page is cacheable.
-        /// Currently, just based on the file length.
+        /// Currently, just based on the file name length.
         /// XXX: This should be changed so that even long file names can be cached.
         /// </summary>
         /// <returns>True if cacheable, false if not. </returns>

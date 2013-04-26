@@ -105,16 +105,6 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Checks if the request is a RuralCafe specific request.
-        /// </summary>
-        /// <returns>True if it is, false if not.</returns>
-        private bool IsRCRequest()
-        {
-            return (RequestUri.StartsWith("www.ruralcafe.net") ||
-                RequestUri.StartsWith("http://www.ruralcafe.net"));
-        }
-
-        /// <summary>
         /// Main logic of RuralCafe LPRequestHandler.
         /// Called by Go() in the base RequestHandler class.
         /// </summary>
@@ -246,7 +236,6 @@ namespace RuralCafe
                         redirectUri = redirectUri.Substring(0, pos);
                         pos = redirectUri.LastIndexOf("/");
                     }
-                    //redirectUri = "fake title";
                 }
                 SendRedirect(redirectUri, RequestUri);
 
