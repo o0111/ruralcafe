@@ -747,7 +747,7 @@ namespace RuralCafe
 
             // Google search
             string googleSearchString = ConstructGoogleSearch(queryString);
-            _rcRequest = new RCRequest(this, googleSearchString);
+            _rcRequest = new RCRequest(this, (HttpWebRequest)WebRequest.Create(googleSearchString.Trim()));
 
             //LogDebug("streaming: " + _rcRequest.GenericWebRequest.RequestUri + " to cache and client.");
             //_rcRequest.GenericWebRequest.Proxy = null;
@@ -1103,6 +1103,8 @@ namespace RuralCafe
 
         /// <summary>
         /// Queues this request.
+        /// 
+        /// TODO Method missing. Parameters (POST) missing.
         /// </summary>
         private void AddRequest()
         {
@@ -1128,10 +1130,11 @@ namespace RuralCafe
                 refererUri = targetUri;
             }
 
-            _originalRequestUri = RequestUri;
+            // XXX: correct?
+            _originalRequest = (HttpWebRequest)WebRequest.Create(RequestUri.Trim());
             // preserve the original request status (for HandleLogRequest)
             int originalRequestStatus = _rcRequest.RequestStatus;
-            _rcRequest = new RCRequest(this, targetUri, targetName, refererUri);
+            _rcRequest = new RCRequest(this, (HttpWebRequest)WebRequest.Create(targetUri.Trim()), targetName, refererUri);
             _rcRequest.RequestStatus = originalRequestStatus;
 
             ((RCLocalProxy)_proxy).QueueRequest(userId, this);

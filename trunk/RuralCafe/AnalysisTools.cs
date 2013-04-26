@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Threading;
+using System.Net;
 
 namespace RuralCafe
 {
@@ -90,7 +91,7 @@ namespace RuralCafe
                     RemoteRequestHandler requestHandler = new RemoteRequestHandler(remoteProxy, null);
                     if (Util.IsValidUri(urlRequest))
                     {
-                        requestHandler.RCRequest = new RCRequest(requestHandler, urlRequest);
+                        requestHandler.RCRequest = new RCRequest(requestHandler, (HttpWebRequest) WebRequest.Create(urlRequest.Trim()));
                         requestHandler.RCRequest.SetProxyAndTimeout(remoteProxy.GatewayProxy, RemoteRequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT);
                         //requestHandler.PrefetchAnalysis("high", 1);
 

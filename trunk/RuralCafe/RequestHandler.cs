@@ -75,7 +75,7 @@ namespace RuralCafe
         protected IPAddress _clientAddress;
 
         // the actual request object variables
-        protected string _originalRequestUri;
+        protected HttpWebRequest _originalRequest;
         protected RCRequest _rcRequest;
         protected int _requestTimeout; // timeout in milliseconds
 
@@ -198,7 +198,6 @@ namespace RuralCafe
         /// <summary>URI of the request.</summary>
         public string RequestUri
         {
-            set { _rcRequest.Uri = value; }
             get { return _rcRequest.Uri; }
         }
         /// <summary>Anchor text of the request.</summary>
@@ -260,10 +259,10 @@ namespace RuralCafe
             {
                 // Read the incoming text on the socket into recvString
                 int bytes = RecvMessage(_recvBuffer, ref recvString);
-                if (bytes == 0)
+                if (bytes == 0 || recvString.Length == 0)
                 {
                     // no bytes, it's an error just return.
-                    throw (new IOException());
+                    throw (new IOException("empty request"));
                 }
 
                 // get the requested URI
@@ -272,26 +271,24 @@ namespace RuralCafe
                 int index2 = recvString.IndexOf(' ', index1 + 1);
                 if ((index1 < 0) || (index2 < 0))
                 {
-                    throw (new IOException());
+                    throw (new IOException("invalid request: " + recvString));
                 }
-                _originalRequestUri = recvString.Substring(index1 + 1, index2 - index1).Trim();
+                String method = recvString.Substring(0, index1);
+                String uri = AddHttpPrefix(recvString.Substring(index1 + 1, index2 - index1).Trim());
+
+                _originalRequest = (HttpWebRequest) WebRequest.Create(uri);
+                _originalRequest.Method = method;
 
                 // get the referer URI
                 refererUri = GetHeaderValue(recvString, "Referer");
 
-                if (CreateRequest(_originalRequestUri, refererUri, recvString))
+                if (CreateRequest(_originalRequest, refererUri, recvString))
                 {
                     _packageFileName = _proxy.PackagesPath + _rcRequest.HashPath + _rcRequest.FileName + ".gzip";
 
                     // XXX: need to avoid duplicate request/response logging when redirecting e.g. after an add
                     // handle the request
-                    if ((_originalRequestUri.Equals("http://www.ruralcafe.net/") ||
-                        _originalRequestUri.StartsWith("http://www.ruralcafe.net/request/eta") ||
-                        _originalRequestUri.StartsWith("http://www.ruralcafe.net/request/queue") ||
-                        //requestedUri.StartsWith("http://www.ruralcafe.net/request/add") ||
-                        //requestedUri.StartsWith("http://www.ruralcafe.net/request/remove") ||
-                        _originalRequestUri.StartsWith("http://www.ruralcafe.net/request/search"))
-                        )
+                    if (IsRCRequest())
                     {
                         HandleRequest();
                     }
@@ -305,14 +302,20 @@ namespace RuralCafe
                 {
                     // XXX: was streaming these unparsable URIs, but this is disabled for now
                     // XXX: mangled version of the one in LocalRequestHandler, duplicate, and had to move the StreamTransparently() up to this parent class
-                    LogDebug("streaming: " + _originalRequestUri + " to client.");
+                    LogDebug("streaming: " + _originalRequest.RequestUri.ToString() + " to client.");
                     long bytesSent = StreamTransparently(recvString);
                     return;
                 }
             }
             catch (Exception e)
             {
-                LogDebug("error handling request: " + _originalRequestUri + " " + e.Message + e.StackTrace);
+                String errmsg = "error handling request: ";
+                if (_originalRequest != null)
+                {
+                    errmsg += " " +_originalRequest.RequestUri.ToString(); ;
+                }
+                errmsg += " " + e.GetType() + ": " + e.Message + "\n" + e.StackTrace;
+                LogDebug(errmsg);
             }
             finally
             {
@@ -333,6 +336,8 @@ namespace RuralCafe
         /// <summary>
         /// Creates and handles the logged request
         /// logEntry format: (requestId, startTime, clientAddress, requestedUri, refererUri, [status])
+        /// 
+        /// TODO no support for Method, POST parameters.
         /// </summary>
         public bool HandleLogRequest(List<string> logEntry)
         {
@@ -346,7 +351,7 @@ namespace RuralCafe
                 int requestId = Int32.Parse(logEntry[0]);
                 DateTime startTime = DateTime.Parse(logEntry[1]);
                 IPAddress clientAddress = IPAddress.Parse(logEntry[2]);
-                _originalRequestUri = logEntry[3];
+                _originalRequest = (HttpWebRequest) WebRequest.Create(logEntry[3]);
                 string refererUri = logEntry[4];
                 int requestStatus = (int)Status.Pending;
                 if (logEntry.Count == 6)
@@ -354,7 +359,7 @@ namespace RuralCafe
                     requestStatus = Int32.Parse(logEntry[5]);
                 }
 
-                if (CreateRequest(_originalRequestUri, refererUri, ""))
+                if (CreateRequest(_originalRequest, refererUri, ""))
                 {
                     // from log book-keeping
                     _requestId = requestId;
@@ -370,13 +375,7 @@ namespace RuralCafe
 
                     // XXX: need to avoid duplicate request/response logging when redirecting e.g. after an add
                     // handle the request
-                    if ((_originalRequestUri.Equals("http://www.ruralcafe.net/") ||
-                        _originalRequestUri.StartsWith("http://www.ruralcafe.net/request/eta") ||
-                        _originalRequestUri.StartsWith("http://www.ruralcafe.net/request/queue") ||
-                        //requestedUri.StartsWith("http://www.ruralcafe.net/request/add") ||
-                        //requestedUri.StartsWith("http://www.ruralcafe.net/request/remove") ||
-                        _originalRequestUri.StartsWith("http://www.ruralcafe.net/request/search"))
-                        )
+                    if (IsRCRequest())
                     {
                         HandleRequest();
                     }
@@ -398,7 +397,7 @@ namespace RuralCafe
             catch (Exception e)
             {
                 // do nothing
-                LogDebug("error handling request: " + _originalRequestUri + " " + e.Message + e.StackTrace);
+                LogDebug("error handling request: " + _originalRequest.RequestUri.ToString() + " " + e.Message + e.StackTrace);
             }
             return false;
         }
@@ -406,12 +405,16 @@ namespace RuralCafe
         /// <summary>
         /// Creates RCRequest object for the request.
         /// </summary>
-        protected bool CreateRequest(string requestedUri, string refererUri, string recvString)
+        /// <param name="request">The HTTP request.</param>
+        /// <param name="refererUri">The referrer.</param>
+        /// <param name="recvString">The whole received string.</param>
+        /// <returns></returns>
+        protected bool CreateRequest(HttpWebRequest request, string refererUri, string recvString)
         {
-            if (Util.IsValidUri(requestedUri))
+            if (Util.IsValidUri(request.RequestUri.ToString()))
             {
                 // create the request object
-                _rcRequest = new RCRequest(this, requestedUri, "", refererUri);
+                _rcRequest = new RCRequest(this, request, "", refererUri);
                 // XXX: obsolete
                 //_rcRequest.ParseRCSearchFields();
                 _rcRequest.GenericWebRequest.Referer = refererUri;
@@ -602,7 +605,7 @@ namespace RuralCafe
                     {
                         continue;
                     }
-                    RCRequest currRCRequest = new RCRequest(this, currUri);
+                    RCRequest currRCRequest = new RCRequest(this, (HttpWebRequest)WebRequest.Create(currUri));
                     currRCRequest.AnchorText = currTitle;
                     //currRCRequest.ChildNumber = i - 1;
                     //currRCRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
@@ -616,6 +619,18 @@ namespace RuralCafe
 
  
         #region Methods for Checking Requests
+
+        // Simplified to just check if it starts with request. Seemed more
+        // apropriate.
+        /// <summary>
+        /// Checks if the original request is a RC request.
+        /// </summary>
+        /// <returns>If it is or not.</returns>
+        protected bool IsRCRequest()
+        {
+            return _originalRequest.RequestUri.ToString().Equals("http://www.ruralcafe.net/") ||
+                        _originalRequest.RequestUri.ToString().StartsWith("http://www.ruralcafe.net/request/");
+        }
 
         /// <summary>
         /// Checks if the request is GET or HEAD.
@@ -691,6 +706,20 @@ namespace RuralCafe
 
 
         #region HTTP Helper Functions
+
+        /// <summary>
+        /// Adds "http://" to the given URI, if it does not start with it already.
+        /// </summary>
+        /// <param name="uri">The current URI.</param>
+        /// <returns>The new URI.</returns>
+        public static String AddHttpPrefix(String uri)
+        {
+            if (!uri.StartsWith("http://"))
+            {
+                return "http://" + uri;
+            }
+            return uri;
+        }
 
         /// <summary>
         /// Gets the HTTP header value for a particular header.
@@ -825,7 +854,7 @@ namespace RuralCafe
         protected int RecvMessage(byte[] buf, ref string strMessage)
         {
             int iBytes = _clientSocket.Receive(buf, 1024, 0);
-            strMessage = Encoding.ASCII.GetString(buf);
+            strMessage = Encoding.ASCII.GetString(buf).Replace("\0", "");
             return (iBytes);
         }
 
@@ -861,7 +890,7 @@ namespace RuralCafe
         /// </summary>
         public void LogServerResponse()
         {
-            string str = _rcRequest.FinishTime + " RSP " + _originalRequestUri + " " +
+            string str = _rcRequest.FinishTime + " RSP " + _originalRequest.RequestUri.ToString() + " " +
                         RequestStatus + " " + _rcRequest.FileSize;
             _proxy.WriteMessage(_requestId, str);
         }

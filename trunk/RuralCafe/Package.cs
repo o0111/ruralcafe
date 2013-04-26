@@ -21,6 +21,7 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.IO.Compression;
+using System.Net;
 
 namespace RuralCafe
 {
@@ -191,7 +192,7 @@ namespace RuralCafe
                     requestHandler.LogDebug("problem unpacking: " + currUri);
                     return unpackedBytes;
                 }
-                RCRequest rcRequest = new RCRequest(requestHandler, currUri);
+                RCRequest rcRequest = new RCRequest(requestHandler, (HttpWebRequest)WebRequest.Create(currUri.Trim()));
 
                 unpackedBytes += currFileSize;
 

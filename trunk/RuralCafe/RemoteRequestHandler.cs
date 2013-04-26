@@ -137,15 +137,12 @@ namespace RuralCafe
                 if (requestUri.Trim().Length > 0)
                 {
                     string fileExtension = Util.GetFileExtension(requestUri);
-                    if (!requestUri.StartsWith("http://"))
-                    {
-                        requestUri = "http://" + requestUri;
-                    }
+                    requestUri = AddHttpPrefix(requestUri);
 
                     if (IsCacheable())
                     {
                         // remove RuralCafe stuff from the request
-                        _rcRequest = new RCRequest(this, requestUri);
+                        _rcRequest = new RCRequest(this, (HttpWebRequest)WebRequest.Create(requestUri.Trim()));
                         //_rcRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
 
                         if (RecursivelyDownloadPage(_rcRequest, richness, 0))
@@ -1012,7 +1009,7 @@ namespace RuralCafe
                             continue;
                         }
 
-                        RCRequest extractedRCRequest = new RCRequest(this, currUri);
+                        RCRequest extractedRCRequest = new RCRequest(this, (HttpWebRequest)WebRequest.Create(currUri.Trim()));
                         //extractedRCRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
 
                         if (!extractedReferences.Contains(extractedRCRequest))
