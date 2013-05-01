@@ -35,6 +35,7 @@ namespace RuralCafe
     {
         // response status
         // XXX: kind of ugly since this is being used by both the Generic/Local/RemoteRequest and RCRequests
+        // TODO: downloading && offline -> waiting (new status)
         public enum Status
         {
             Failed = -1,
@@ -190,7 +191,7 @@ namespace RuralCafe
         
         // accessors for the underlying RCRequest
         /// <summary>Status of the request.</summary>
-        public int RequestStatus
+        public Status RequestStatus
         {
             set { _rcRequest.RequestStatus = value; }
             get { return _rcRequest.RequestStatus; }
@@ -358,10 +359,12 @@ namespace RuralCafe
                 IPAddress clientAddress = IPAddress.Parse(logEntry[2]);
                 _originalRequest = (HttpWebRequest) WebRequest.Create(logEntry[3]);
                 string refererUri = logEntry[4];
-                int requestStatus = (int)Status.Pending;
+                Status requestStatus = Status.Pending;
                 if (logEntry.Count == 6)
                 {
-                    requestStatus = Int32.Parse(logEntry[5]);
+                    // Adapted to read the text of the status instead of the number.
+                    // Therefore old logs won't work anymore.
+                    requestStatus = (Status) Enum.Parse(typeof(Status),logEntry[5]);
                 }
 
                 if (CreateRequest(_originalRequest, refererUri, ""))
@@ -370,7 +373,7 @@ namespace RuralCafe
                     _requestId = requestId;
                     _rcRequest.StartTime = startTime;
                     _clientAddress = clientAddress;
-                    if (requestStatus == (int)Status.Completed)
+                    if (requestStatus == Status.Completed)
                     {
                         // Completed requests should not be added to the GLOBAL queue
                         _rcRequest.RequestStatus = requestStatus;
@@ -390,7 +393,7 @@ namespace RuralCafe
                         HandleRequest();
 
                         LogResponse();
-                        if (requestStatus == (int)Status.Completed)
+                        if (requestStatus == Status.Completed)
                         {
                             // Completed requests should have a fake response in the log to indicate they're completed
                             LogServerResponse();
@@ -436,51 +439,7 @@ namespace RuralCafe
         }
 
         /// <summary>Abstract method for proxies to handle requests.</summary>
-        public abstract int HandleRequest();
-
-        /// <summary>Converts a RC status code to a string.
-        /// Failed = -1,
-        /// Received = 0,
-        /// Requested = 1,
-        /// Completed = 2,
-        /// Cached = 3,             
-        /// NotCacheable = 4,
-        /// NotFound = 5,
-        /// StreamedTransparently = 6,
-        /// Ignored = 7
-        /// </summary>
-        /// <param name="status">status code</param>
-        /// <returns>status code as a string</returns>
-        protected string StatusCodeToString(int status) 
-        {
-            string statusString = "";
-            
-            if (status == (int)Status.Failed)
-            {
-                statusString = "Failed";
-            }
-            else if (status == (int)Status.Pending)
-            {
-                statusString = "Pending";
-            }
-            else if (status == (int)Status.Downloading)
-            {
-                if (this._proxy.NetworkStatus == (int)RCProxy.NetworkStatusCode.Offline)
-                {
-                    statusString = "Pending";
-                }
-                else
-                {
-                    statusString = "Downloading";
-                }
-
-            }
-            else if (status == (int)Status.Completed)
-            {
-                statusString = "Completed";
-            }
-            return statusString;
-        }
+        public abstract Status HandleRequest();
 
 
         /// <summary>

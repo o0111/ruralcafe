@@ -37,7 +37,7 @@ namespace RuralCafe
         private string _itemId; // hashPath without the directory seperators
         private string _cacheFileName;
 
-        private int _status;
+        private RequestHandler.Status _status;
         /// <summary>
         /// The underlying web request.
         /// </summary>
@@ -102,7 +102,7 @@ namespace RuralCafe
             get { return _cacheFileName; }
         }
         /// <summary>The status of this request.</summary>
-        public int RequestStatus
+        public RequestHandler.Status RequestStatus
         {
             set { _status = value; }
             get { return _status; }
@@ -189,7 +189,7 @@ namespace RuralCafe
             _anchorText = anchorText;
             _refererUri = referrerUri.Trim();
 
-            _status = (int)RequestHandler.Status.Pending;
+            _status = RequestHandler.Status.Pending;
 
             _webRequest = request;
             _webRequest.Timeout = RequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT;
