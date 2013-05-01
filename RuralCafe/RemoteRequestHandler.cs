@@ -901,7 +901,7 @@ namespace RuralCafe
             // Only send a HEAD request, if no file extension
             request.Method = "HEAD";
             // TODO configurable!?
-            request.Timeout = 1000;
+            request.Timeout = HEAD_REQUEST_DEFAULT_TIMEOUT;
             WebResponse response;
             try
             {
