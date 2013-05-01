@@ -108,7 +108,7 @@ namespace RuralCafe
         /// Main logic of RuralCafe LPRequestHandler.
         /// Called by Go() in the base RequestHandler class.
         /// </summary>
-        public override int HandleRequest()
+        public override Status HandleRequest()
         {
             if (IsRCRequest())
             {
@@ -119,7 +119,7 @@ namespace RuralCafe
             {
                 LogDebug("ignoring blacklisted: " + RequestUri);
                 SendErrorPage(HTTP_NOT_FOUND, "ignoring blacklisted", RequestUri);
-                return (int)Status.Failed;
+                return Status.Failed;
             }
 
             // XXX: this function will return true if the domain is wikipedia even if the file isn't in the archive
@@ -140,7 +140,7 @@ namespace RuralCafe
                 long bytesSent = StreamTransparently("");
                 _rcRequest.FileSize = bytesSent;
 
-                return (int)Status.Completed;
+                return Status.Completed;
             }
 
             if (IsCached(_rcRequest.CacheFileName))
@@ -167,9 +167,9 @@ namespace RuralCafe
                 _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName);
                 if (_rcRequest.FileSize < 0)
                 {
-                    return (int)Status.Failed;
+                    return Status.Failed;
                 }
-                return (int)Status.Completed;
+                return Status.Completed;
             }
 
             // XXX: not sure if this should even be here, technically for a cacheable file that's not cached, this is
@@ -193,20 +193,20 @@ namespace RuralCafe
                         _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName);
                         if (_rcRequest.FileSize < 0)
                         {
-                            return (int)Status.Failed;
+                            return Status.Failed;
                         }
-                        return (int)Status.Completed;
+                        return Status.Completed;
                     }
                     else
                     {
-                        return (int)Status.Failed;
+                        return Status.Failed;
                     }
                 }
                 catch
                 {
                     // do nothing
                 }
-                return (int)Status.Failed;
+                return Status.Failed;
             }
             
             if (_proxy.NetworkStatus != (int)RCProxy.NetworkStatusCode.Online)
@@ -239,9 +239,9 @@ namespace RuralCafe
                 }
                 SendRedirect(redirectUri, RequestUri);
 
-                return (int)Status.Completed;
+                return Status.Completed;
             }
-            return (int)Status.Failed;
+            return Status.Failed;
         }
 
 
@@ -252,7 +252,7 @@ namespace RuralCafe
         /// XXX: this entire group of RC display/handling methods will most likely all be obsoleted in the next major revision.
         /// </summary>
         /// <returns>Request status.</returns>
-        private int ServeRCPage()
+        private Status ServeRCPage()
         {
             if (IsIndex())
             {
@@ -262,9 +262,9 @@ namespace RuralCafe
                 }
                 catch (Exception)
                 {
-                    return (int)Status.Failed;
+                    return Status.Failed;
                 }
-                return (int)Status.Completed;
+                return Status.Completed;
             }
 
             if (IsRemoteResult())
@@ -275,9 +275,9 @@ namespace RuralCafe
                 }
                 catch (Exception)
                 {
-                    return (int)Status.Failed;
+                    return Status.Failed;
                 }
-                return (int)Status.Completed;
+                return Status.Completed;
             }
 
             if (IsResult())
@@ -288,9 +288,9 @@ namespace RuralCafe
                 }
                 catch (Exception)
                 {
-                    return (int)Status.Failed;
+                    return Status.Failed;
                 }
-                return (int)Status.Completed;
+                return Status.Completed;
             }
 
             if (IsQueue())
@@ -301,9 +301,9 @@ namespace RuralCafe
                 }
                 catch (Exception)
                 {
-                    return (int)Status.Failed;
+                    return Status.Failed;
                 }
-                return (int)Status.Completed;
+                return Status.Completed;
             }
 
             if (IsRemovePage())
@@ -314,9 +314,9 @@ namespace RuralCafe
                 }
                 catch (Exception)
                 {
-                    return (int)Status.Failed;
+                    return Status.Failed;
                 }
-                return (int)Status.Completed;
+                return Status.Completed;
             }
 
             if (IsAddPage())
@@ -327,9 +327,9 @@ namespace RuralCafe
                 }
                 catch (Exception)
                 {
-                    return (int)Status.Failed;
+                    return Status.Failed;
                 }
-                return (int)Status.Pending;
+                return Status.Pending;
             }
 
             if (IsRequestNetworkStatus())
@@ -340,9 +340,9 @@ namespace RuralCafe
                 }
                 catch (Exception)
                 {
-                    return (int)Status.Failed;
+                    return Status.Failed;
                 }
-                return (int)Status.Completed;
+                return Status.Completed;
             }
 
             if (IsEtaRequest())
@@ -353,9 +353,9 @@ namespace RuralCafe
                 }
                 catch (Exception)
                 {
-                    return (int)Status.Failed;
+                    return Status.Failed;
                 }
-                return (int)Status.Completed;
+                return Status.Completed;
             }
 
             if (IsRichnessRequest())
@@ -366,9 +366,9 @@ namespace RuralCafe
                 }
                 catch (Exception)
                 {
-                    return (int)Status.Failed;
+                    return Status.Failed;
                 }
-                return (int)Status.Pending;
+                return Status.Pending;
             }
 
             if (IsRCHomePage())
@@ -379,9 +379,9 @@ namespace RuralCafe
                 }
                 catch (Exception)
                 {
-                    return (int)Status.Failed;
+                    return Status.Failed;
                 }
-                return (int)Status.Completed;
+                return Status.Completed;
             }
 
             // everything else
@@ -394,11 +394,11 @@ namespace RuralCafe
             long bytesSent = StreamFromCacheToClient(fileName);
             if (bytesSent > 0)
             {
-                return (int)Status.Completed;
+                return Status.Completed;
             }
 
             SendErrorPage(HTTP_NOT_FOUND, "page does not exist", RequestUri);
-            return (int)RequestHandler.Status.Failed;
+            return RequestHandler.Status.Failed;
         }
 
         /// <summary>Checks if the request is for the RuralCafe command to get the index page.</summary>
@@ -493,7 +493,7 @@ namespace RuralCafe
 
         /// <summary>
         /// Sends the frame page to the client.
-        /// xml file of reuqests in the queue, content will be displayed in frame-offline-login.html
+        /// xml file of requests in the queue, content will be displayed in frame-offline-login.html
         /// Please organize the item in chronological order (older items first)
         /// GET request will be sent to request/queue.xml?u=a01&v=24-05-2012 where
         /// u is the user id
@@ -585,7 +585,7 @@ namespace RuralCafe
                             linkTarget = requestHandler.RCRequest.TranslateRCSearchToGoogle();
                         }*/
 
-                        statusString = System.Security.SecurityElement.Escape(StatusCodeToString(requestHandler.RequestStatus));
+                        statusString = System.Security.SecurityElement.Escape(requestHandler.RequestStatus.ToString());
 
                         // build the actual element
                         queuePageString = queuePageString +
@@ -1122,7 +1122,7 @@ namespace RuralCafe
             // XXX: correct?
             _originalRequest = (HttpWebRequest)WebRequest.Create(RequestUri.Trim());
             // preserve the original request status (for HandleLogRequest)
-            int originalRequestStatus = _rcRequest.RequestStatus;
+            Status originalRequestStatus = _rcRequest.RequestStatus;
             _rcRequest = new RCRequest(this, (HttpWebRequest)WebRequest.Create(targetUri.Trim()), targetName, refererUri);
             _rcRequest.RequestStatus = originalRequestStatus;
 
@@ -1173,7 +1173,7 @@ namespace RuralCafe
                 return;
             }
 
-            if (requestHandlers[requestIndex].RequestStatus == (int)RequestHandler.Status.Pending)
+            if (requestHandlers[requestIndex].RequestStatus == RequestHandler.Status.Pending)
             {
                 SendOkHeaders("text/html");
                 SendMessage("-1");
@@ -1193,8 +1193,8 @@ namespace RuralCafe
         {
             int eta = ((RCLocalProxy)_proxy).ETA(this);
             string etaString = "";
-            if ((this.RequestStatus == (int)Status.Completed) ||
-                (this.RequestStatus == (int)Status.Failed))
+            if ((this.RequestStatus == Status.Completed) ||
+                (this.RequestStatus == Status.Failed))
             {
                 etaString = "0";
             }
@@ -1210,7 +1210,7 @@ namespace RuralCafe
                 {
                     if (eta == 1)
                     {
-                        etaString = "1 min";// eta.ToString() + " minute";
+                        etaString = "1 min";
                     }
                     else
                     {
@@ -1333,7 +1333,7 @@ namespace RuralCafe
         /// Serves a Wikipedia page using the Wiki renderer.
         /// </summary>
         /// <returns>Status of the handler.</returns>
-        private int ServeWikiURI()
+        private Status ServeWikiURI()
         {
             string response = String.Empty;
             string redirectUrl = String.Empty;
@@ -1355,9 +1355,9 @@ namespace RuralCafe
             }
             catch (Exception)
             {
-                return (int)Status.Failed;
+                return Status.Failed;
             }
-            return (int)Status.Completed;
+            return Status.Completed;
         }
 
         /// <summary>

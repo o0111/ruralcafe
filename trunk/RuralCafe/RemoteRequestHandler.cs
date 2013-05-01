@@ -85,7 +85,7 @@ namespace RuralCafe
         /// Main logic of RuralCafe RPRequestHandler.
         /// Called by Go() in the base RequestHandler class.
         /// </summary>
-        public override int HandleRequest()
+        public override Status HandleRequest()
         {
             // benchmarking
             //handleRequestStart = DateTime.Now;
@@ -150,7 +150,7 @@ namespace RuralCafe
                             _rcRequest.FileSize = SendResponsePackage();
                             if (_rcRequest.FileSize > 0)
                             {
-                                return (int)Status.Completed;
+                                return Status.Completed;
                             }
                         }
                     }
@@ -159,7 +159,7 @@ namespace RuralCafe
                         // XXX: not handled at the moment, technically nothing should be "not cacheable" though.
                         LogDebug("not cacheable, failed.");
 
-                        return (int)Status.Failed;
+                        return Status.Failed;
                     }
                 }
                 /*
@@ -183,7 +183,7 @@ namespace RuralCafe
             //handleRequestEnd = DateTime.Now;
             //SaveBenchmarkTimes();
 
-            return (int)Status.Failed;
+            return Status.Failed;
         }
         /*
         public void SaveBenchmarkTimes()

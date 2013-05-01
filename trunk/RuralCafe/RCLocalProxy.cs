@@ -299,7 +299,7 @@ namespace RuralCafe
                     LocalRequestHandler requestHandler = PopGlobalRequest();
                     if (requestHandler != null)
                     {
-                        if (requestHandler.RequestStatus != (int)RequestHandler.Status.Pending)
+                        if (requestHandler.RequestStatus != RequestHandler.Status.Pending)
                         {
                             // skip requests in global queue that are not pending, probably requeued from log
                             continue;
@@ -315,7 +315,7 @@ namespace RuralCafe
                         // save the request file as a package
                         requestHandler.RCRequest.CacheFileName = requestHandler.PackageFileName;
 
-                        requestHandler.RequestStatus = (int)RequestHandler.Status.Downloading;
+                        requestHandler.RequestStatus = RequestHandler.Status.Downloading;
 
                         WriteDebug("dispatching to remote proxy: " + requestHandler.RequestUri);
                         long bytesDownloaded = requestHandler.RCRequest.DownloadToCache(true);
@@ -328,12 +328,12 @@ namespace RuralCafe
                             {
                                 WriteDebug("unpacked: " + requestHandler.RequestUri);
                                 requestHandler.RCRequest.FileSize = unpackedBytes;
-                                requestHandler.RequestStatus = (int)RequestHandler.Status.Completed;
+                                requestHandler.RequestStatus = RequestHandler.Status.Completed;
                             }
                             else
                             {
                                 WriteDebug("failed to unpack: " + requestHandler.RequestUri);
-                                requestHandler.RequestStatus = (int)RequestHandler.Status.Failed;
+                                requestHandler.RequestStatus = RequestHandler.Status.Failed;
                             }
 
                             // XXX: for benchmarking only
@@ -341,7 +341,7 @@ namespace RuralCafe
                         }
                         else
                         {
-                            requestHandler.RequestStatus = (int)RequestHandler.Status.Failed;
+                            requestHandler.RequestStatus = RequestHandler.Status.Failed;
                         }
 
                         requestHandler.FinishTime = DateTime.Now;
@@ -514,7 +514,7 @@ namespace RuralCafe
 
                         if ((httpCommand == "RSP") &&
                             loggedRequestQueueMap.ContainsKey(itemId) &&
-                            Int32.Parse(status) != (int)RequestHandler.Status.Pending)
+                            (RequestHandler.Status) Enum.Parse(typeof(RequestHandler.Status), status) != RequestHandler.Status.Pending)
                         {
                             // parse the response
                             // check if its in the queue, if so, remove it
@@ -540,7 +540,7 @@ namespace RuralCafe
                 // update the nextId
                 NextRequestId = highestRequestId + 1;
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 Console.WriteLine("Could not read debug logs for saved state.");
                 return false;
@@ -558,7 +558,7 @@ namespace RuralCafe
         public void QueueRequest(int userId, LocalRequestHandler requestHandler)
         {
             // if the request is already completed (due to HandleLogRequest) then don't add to global queue
-            if (!(requestHandler.RequestStatus == (int)RequestHandler.Status.Completed))
+            if (!(requestHandler.RequestStatus == RequestHandler.Status.Completed))
             {
                 // add the request to the global queue
                 lock (_globalRequestQueue)
@@ -846,8 +846,8 @@ namespace RuralCafe
                     List<LocalRequestHandler> requestHandlers = _clientRequestQueueMap[userId];
                     foreach (LocalRequestHandler requestHandler in requestHandlers)
                     {
-                        if (requestHandler.RequestStatus == (int)RequestHandler.Status.Completed ||
-                            requestHandler.RequestStatus == (int)RequestHandler.Status.Failed)
+                        if (requestHandler.RequestStatus == RequestHandler.Status.Completed ||
+                            requestHandler.RequestStatus == RequestHandler.Status.Failed)
                         {
                             count++;
                         }
