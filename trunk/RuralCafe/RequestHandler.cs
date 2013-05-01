@@ -56,6 +56,7 @@ namespace RuralCafe
         public const int LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT = Timeout.Infinite; // in milliseconds
         public const int REMOTE_REQUEST_PACKAGE_DEFAULT_TIMEOUT = 180000; // in milliseconds
         public const int WEB_REQUEST_DEFAULT_TIMEOUT = 60000; // in milliseconds
+        public const int HEAD_REQUEST_DEFAULT_TIMEOUT = 1000; // in milliseconds
         
         // ID
         protected int _requestId;
