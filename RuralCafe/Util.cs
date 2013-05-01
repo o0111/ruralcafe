@@ -184,11 +184,10 @@ namespace RuralCafe
                 fileExtension = fileExtension.Substring(0, offset1);
             }
 
-            //int offset2 = fileName.LastIndexOf(Path.DirectorySeparatorChar.ToString());
             int offset2 = fileExtension.LastIndexOf(".");
             if (offset2 > 0)
             {
-                fileExtension = fileName.Substring(offset2);
+                fileExtension = fileExtension.Substring(offset2);
             }
             return fileExtension;
         }
@@ -199,17 +198,19 @@ namespace RuralCafe
         /// <returns>File extension as a string.</returns>
         public static string GetFileExtension(string stringUri)
         {
-            string fileExtension = "";
-            int offset1 = stringUri.LastIndexOf("/");
-            int offset2 = stringUri.LastIndexOf(".");
-            if (offset2 > offset1)
-            {
-                fileExtension = stringUri.Substring(offset2);
-            }
+            string fileExtension = stringUri;
             // throw away query terms
             fileExtension = fileExtension.Split('?')[0];
             fileExtension = fileExtension.Split('#')[0];
-            return fileExtension;
+
+            int offset1 = fileExtension.LastIndexOf("/");
+            int offset2 = fileExtension.LastIndexOf(".");
+            if (offset2 > offset1)
+            {
+                return fileExtension.Substring(offset2);
+            }
+            
+            return "";
         }
 
         /// <summary>
@@ -225,7 +226,7 @@ namespace RuralCafe
             }
             // JAY: not sure how squid or whatever does this
             // content/unknown, but the problem is that after caching how do we know the content type without the extension in place
-            return "text/html";
+            return "content/unknown";
         }
 
         /// <summary>

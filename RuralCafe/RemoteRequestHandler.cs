@@ -512,19 +512,13 @@ namespace RuralCafe
                     continue;
                 }
 
-                if (richness == Richness.Normal)
+                if (richness == Richness.Normal || (richness == Richness.Low && IsATextPage(embeddedObject.Uri)))
                 {
                     filteredEmbeddedObjects.AddLast(embeddedObject);
                 }
-                else if (richness == Richness.Low)
+                else 
                 {
-                    // XXX: logic here is ugly, and not perfect 
-                    // XXX: since the implementation of PossiblyATextPage is incomplete
-                    // if its an image or couldn't possibly be a text page
-                    if (!IsImagePage(embeddedObject.Uri) && PossiblyATextPage(embeddedObject.Uri))
-                    {
-                        filteredEmbeddedObjects.AddLast(embeddedObject);
-                    }
+                    continue;
                 }
                 embeddedObject.ChildNumber = objectNumber;
                 objectNumber++;
@@ -889,19 +883,33 @@ namespace RuralCafe
         /// </summary>
         /// <param name="pageUri">URI.</param>
         /// <returns>True or false for is or is not.</returns>
-        bool PossiblyATextPage(string pageUri)
+        bool IsATextPage(string pageUri)
         {
-            // XXX: Logging
+            Console.WriteLine("IsATextPage?: " + pageUri);
+            // first check if file has an extension which we know
+            // If so, we look into our map, and do not have to send any request
+            string fileExtension = Util.GetFileExtension(pageUri);
+            string contentTypeA = Util.GetContentType(fileExtension);
+            Console.WriteLine("IsATextPage? - File Extension Mapping: " + fileExtension + "->" + contentTypeA);
+            if (!contentTypeA.Equals("content/unknown"))
+            {
+                return (!contentTypeA.Contains("image") && !contentTypeA.Contains("audio")
+                    && !contentTypeA.Contains("video"));
+            }
+
             WebRequest request = WebRequest.Create(pageUri);
-            // Only send a HEAD request.
+            // Only send a HEAD request, if no file extension
             request.Method = "HEAD";
+            // TODO configurable!?
+            request.Timeout = 1000;
             WebResponse response;
             try
             {
                 response = request.GetResponse();
             }
-            catch (WebException)
+            catch (WebException e)
             {
+                Console.WriteLine("IsATextPage: " + e.Message);
                 // probably 404
                 return false;
             }
@@ -910,45 +918,11 @@ namespace RuralCafe
             if (response != null)
             {
                 contentType = response.ContentType;
+                Console.WriteLine("IsATextPage? - HEAD request response: " + contentType);
                 return (!contentType.Contains("image") && !contentType.Contains("audio")
                     && !contentType.Contains("video"));
             }
             // any other error
-            return false;
-
-            // previous implementation not sending any request:
-            //int offset = pageUri.LastIndexOf('.');
-            //if (offset > 0)
-            //{
-            //    string fileExtension = pageUri.Substring(offset);
-            //    string contentType = Util.GetContentType(fileExtension);
-            //    if (contentType.Contains("image") ||
-            //        contentType.Contains("audio"))
-            //    {
-            //        return false;
-            //    }
-            //}
-            // no idea
-            //return true;
-        }
-        /// <summary>
-        /// Guesses if the URI is pointing to an image page.
-        /// Used for downloading embedded objects.
-        /// </summary>
-        /// <param name="pageUri">URI.</param>
-        /// <returns>True or false guess for is or is not.</returns>
-        bool IsImagePage(string pageUri)
-        {
-            int offset = pageUri.LastIndexOf('.');
-            if (offset > 0)
-            {
-                string suffix = pageUri.Substring(offset);
-                if (Util.GetContentType(suffix).Contains("image"))
-                {
-                    // not an image
-                    return true;
-                }
-            }
             return false;
         }
 
