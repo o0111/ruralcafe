@@ -35,7 +35,7 @@ namespace RuralCafe
     {
         // response status
         // XXX: kind of ugly since this is being used by both the Generic/Local/RemoteRequest and RCRequests
-        // TODO: downloading && offline -> waiting (new status)
+        // TODO: downloading && offline -> waiting (new status) ???
         public enum Status
         {
             Failed = -1,
