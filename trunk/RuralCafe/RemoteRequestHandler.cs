@@ -960,6 +960,7 @@ namespace RuralCafe
             string fileString = Util.ReadFileAsString(rcRequest.CacheFileName).ToLower();
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(fileString);
+            Uri baseUri = new Uri(rcRequest.Uri);
 
             for (int i = 0; i < tagAttributes.GetLength(0); i++)
             {
@@ -974,10 +975,8 @@ namespace RuralCafe
                 foreach(HtmlNode link in results)
                 {
                     HtmlAttribute att = link.Attributes[attribute];
-                    string currUri = att.Value;
-                    // value contains URL referenced by this link
-                    // convert to absolute addresses before setting as a uri
-                    currUri = TranslateToAbsoluteAddress(rcRequest.Uri, currUri);
+                    // Get the absolute URI
+                    string currUri = new Uri(baseUri, att.Value).AbsoluteUri;
                     if (!Util.IsValidUri(currUri))
                     {
                         continue;
@@ -993,165 +992,6 @@ namespace RuralCafe
             }
             return extractedReferences;
         }
-
-        /// <summary>
-        /// Helper method to merge baseUri with currentUri to an absolute URI.
-        /// </summary>
-        /// <param name="baseUri">The base URI.</param>
-        /// <param name="currUri">The URL to translate.</param>
-        /// <returns>Absolute URI.</returns>
-        string TranslateToAbsoluteAddress(string baseUri, string currUri)
-        {
-            // relative references with path e.g. "www.blah.com/xyz.html#thisarea"
-            int index = currUri.IndexOf("#");
-            if (index > 0)
-            {
-                currUri = currUri.Substring(index);
-            }
-
-            if (currUri.StartsWith("javascript"))
-            {
-                // ignore javascript references
-                return baseUri;
-            }
-            else if (currUri.StartsWith("http://"))
-            {
-                // absolute uri
-                return currUri;
-            }
-            else if (currUri.StartsWith("www."))
-            {
-                // absolute uri
-                return "http://" + currUri;
-            }
-            else if (currUri.StartsWith("#"))
-            {
-                // local ref
-                return baseUri;
-            }
-            else if (currUri.StartsWith("/"))
-            {
-                // weird case 1
-                // trim off all but the domain from the baseUri
-
-                // check for "http://" case
-                string tempUri = "";
-                if (baseUri.StartsWith("http://"))
-                {
-                    tempUri = "http://";
-                    baseUri = baseUri.Substring(tempUri.Length);
-                }
-
-                int pos = baseUri.IndexOf("/");
-                if (pos > 0)
-                {
-                    return tempUri + baseUri.Substring(0, pos) + currUri;
-                }
-                else
-                {
-                    // maybe the baseUri is something like www.blah.com with no trailing /
-                    return tempUri + baseUri + currUri;
-                }
-            }
-            else if (currUri.StartsWith("../"))
-            {
-                // case 2
-                // trim off ../ off the currUri and blah/ off the baseUri
-
-                // tokenize baseUri
-                string[] tokens = baseUri.Split('/');
-                if (tokens.Length <= 1)
-                {
-                    // error
-                    return baseUri + currUri;
-                }
-
-                // count the number of "../"'s
-                int count = 0;
-                do
-                {
-                    count++;
-                    currUri = currUri.Substring("../".Length);
-                } while (currUri.StartsWith("../"));
-
-
-                string httpShim = "";
-                string newBaseUri = baseUri;
-                if (baseUri.StartsWith("http://"))
-                {
-                    httpShim = "http://";
-                    newBaseUri = newBaseUri.Substring(7);
-                }
-
-                // trim the current pageUri off
-                int offset = newBaseUri.LastIndexOf('/');
-                if (offset > 0)
-                {
-                    newBaseUri = newBaseUri.Substring(0, offset);
-                }
-                else
-                {
-                    // doesn't even have a / anywhere
-                    // nothing to trim
-                }
-
-                // trim the baseUri by the count
-                offset = newBaseUri.LastIndexOf('/');
-                while (count > 0 && offset > 0)
-                {
-                    newBaseUri = newBaseUri.Substring(0, offset);
-
-                    // update the count
-                    count--;
-
-                    // get new offset
-                    offset = newBaseUri.LastIndexOf('/');
-                }
-
-                if (count > 0)
-                {
-                    // degenerate case, nothing else to trim
-                }
-
-                return httpShim + newBaseUri + "/" + currUri;
-            }
-            else
-            {
-                // simple relative uri
-                // trim current page
-                string httpShim = "";
-                string newBaseUri = baseUri;
-                if (baseUri.StartsWith("http://"))
-                {
-                    httpShim = "http://";
-                    newBaseUri = newBaseUri.Substring(7);
-                }
-
-                int offset = newBaseUri.LastIndexOf('/');
-
-                /*
-                // XXX: yet another nasty piece of code
-                int offsetTwo = newBaseUri.LastIndexOf('.');
-                if (offset > offsetTwo)
-                {
-                    newBaseUri = newBaseUri + "/";
-                }
-
-                offset = newBaseUri.LastIndexOf('/');
-                 */
-                if (offset > 0)
-                {
-                    newBaseUri = newBaseUri.Substring(0, offset);
-                }
-                else
-                {
-                    // XXX: unhandled, doesn't make sense
-                    return baseUri + currUri;
-                }
-                return httpShim + newBaseUri + "/" + currUri;
-            }
-        }
-
         #endregion
     }
 }
