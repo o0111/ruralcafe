@@ -23,6 +23,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.IO;
 using System.Threading;
+using HtmlAgilityPack;
 
 namespace RuralCafe
 {
@@ -933,7 +934,6 @@ namespace RuralCafe
         /// </summary>
         LinkedList<RCRequest> ExtractEmbeddedObjects(RCRequest rcRequest)
         {
-            //string[] stringSeparator = new string[] { "src=\"", "link href=\"", "SRC=\"" };
             return ExtractReferences(rcRequest, HtmlParser.EmbeddedObjectTagAttributes);
         }
 
@@ -944,13 +944,11 @@ namespace RuralCafe
         /// </summary>
         LinkedList<RCRequest> ExtractLinks(RCRequest rcRequest)
         {
-            //string[] stringSeparator = new string[] { "a href=\"" };
             return ExtractReferences(rcRequest, HtmlParser.LinkTagAttributes);
         }
 
         /// <summary>
         /// Extracts the html references using a separator token and returns them.
-        /// XXX: should replace and obsolete this with a better HTML parser.
         /// </summary>
         /// <param name="rcRequest">Page to parse.</param>
         /// <param name="tagAttributes">Seperator tokens.</param>
@@ -960,66 +958,32 @@ namespace RuralCafe
             LinkedList<RCRequest> extractedReferences = new LinkedList<RCRequest>();
 
             string fileString = Util.ReadFileAsString(rcRequest.CacheFileName).ToLower();
+            HtmlDocument doc = new HtmlDocument();
+            doc.LoadHtml(fileString);
 
             for (int i = 0; i < tagAttributes.GetLength(0); i++)
             {
                 string tag = tagAttributes[i, 0];
                 string attribute = tagAttributes[i, 1];
 
-                HtmlParser parse = new HtmlParser(fileString);
-                HtmlTag foundTag;
-                while (parse.ParseNext(tag, out foundTag))
+                HtmlNodeCollection results = doc.DocumentNode.SelectNodes("//" + tag + "[@" + attribute + "]");
+                if (results == null)
                 {
-                    // See if this attribute exists
-                    string currUri;
-                    if (foundTag.Attributes.TryGetValue(attribute, out currUri))
-                    {
-                        // value contains URL referenced by this link
-                        // convert to absolute addresses before setting as a uri
-                        currUri = TranslateToAbsoluteAddress(rcRequest.Uri, currUri);
-                        // XXX: need to make sure the currUri isn't going to cause an exception to be thrown
-                        if (!Util.IsValidUri(currUri))
-                        {
-                            continue;
-                        }
-
-                        RCRequest extractedRCRequest = new RCRequest(this, (HttpWebRequest)WebRequest.Create(currUri.Trim()));
-                        //extractedRCRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
-
-                        if (!extractedReferences.Contains(extractedRCRequest))
-                        {
-                            extractedReferences.AddLast(extractedRCRequest);
-                        }
-                    }
+                    continue;
                 }
-            }
-
-            /*
-            string[] lines = fileString.Split(stringSeparator, StringSplitOptions.RemoveEmptyEntries);
-
-            // get links
-            int pos;
-            string currLine;
-            string currUri;
-            // stagger starting index by 1 since first split can't be a link
-            for (int i = 1; i < lines.Length; i++)
-            {
-                currLine = (string)lines[i];
-                // to the next " symbol
-                if ((pos = currLine.IndexOf("\"")) > 0)
+                foreach(HtmlNode link in results)
                 {
-                    currUri = currLine.Substring(0, pos);
-
+                    HtmlAttribute att = link.Attributes[attribute];
+                    string currUri = att.Value;
+                    // value contains URL referenced by this link
                     // convert to absolute addresses before setting as a uri
                     currUri = TranslateToAbsoluteAddress(rcRequest.Uri, currUri);
-                    // XXX: need to make sure the currUri isn't going to cause an exception to be thrown
                     if (!Util.IsValidUri(currUri))
                     {
                         continue;
                     }
 
-                    RCRequest extractedRCRequest = new RCRequest(this, currUri);
-                    //extractedRCRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
+                    RCRequest extractedRCRequest = new RCRequest(this, (HttpWebRequest)WebRequest.Create(currUri.Trim()));
 
                     if (!extractedReferences.Contains(extractedRCRequest))
                     {
@@ -1027,10 +991,8 @@ namespace RuralCafe
                     }
                 }
             }
-            */
             return extractedReferences;
         }
-
 
         /// <summary>
         /// Helper method to merge baseUri with currentUri to an absolute URI.

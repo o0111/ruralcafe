@@ -35,7 +35,7 @@ namespace RuralCafe
         string _debugFile;
 
         /// <summary>
-        /// Constructor called once by the each proxy to initialize directories for logs.
+        /// Constructor called once by each proxy to initialize directories for logs.
         /// </summary>
         /// <param name="proxyName">Name of the calling proxy to log messages for.</param>
         /// <param name="logPath">Relative or absolute path for the logs.</param>
@@ -65,16 +65,6 @@ namespace RuralCafe
                 dummyStream.Close();
             }
         }
-
-        /* unused/useless
-        /// <summary>
-        /// The path of the log file.
-        /// </summary>
-        public string Path
-        {
-            set { _logPath = value; }
-            get { return _logPath; }
-        }*/
 
         /// <summary>
         /// Write an entry to the message and debug logs regarding a request.
