@@ -30,7 +30,7 @@ namespace RuralCafe
 {
     static class Program
     {
-        private static RuralCafe.RCProxy.NetworkStatusCode NETWORK_STATUS;
+        private static RCProxy.NetworkStatusCode NETWORK_STATUS;
 
         // Local Proxy Settings
         private static IPAddress LOCAL_PROXY_IP_ADDRESS;
@@ -50,7 +50,7 @@ namespace RuralCafe
 
         private static int DEFAULT_QUOTA;
         private static int DEFAULT_DEPTH;
-        private static RuralCafe.RequestHandler.Richness DEFAULT_RICHNESS;
+        private static RequestHandler.Richness DEFAULT_RICHNESS;
         private static int DEFAULT_LOW_WATERMARK;
         private static int MAXIMUM_DOWNLINK_SPEED;
 
@@ -122,32 +122,19 @@ namespace RuralCafe
         /// </summary>
         public static void LoadConfigFile()
         {
-            // create reader, open config file
-            string s = System.IO.File.ReadAllText("config.txt");
-
-            // parse config file
-            string[] lines = s.Split('\n');
-            Dictionary<string, string> configSettings = new Dictionary<string, string>();
-            foreach (string line in lines)
-            {
-                // ignore whitespace lines
-                if (line.Trim().Equals(""))
-                {
-                    continue;
-                }
-                string[] configSetting = line.Split('=');
-                configSettings.Add(configSetting[0].Trim(), configSetting[1].Trim());
-            }
-
             try
             {
-                // Local Proxy Settings
-                LOCAL_PROXY_IP_ADDRESS = IPAddress.Parse(configSettings["LOCAL_PROXY_IP_ADDRESS"]);
-                LOCAL_PROXY_LISTEN_PORT = Int32.Parse(configSettings["LOCAL_PROXY_LISTEN_PORT"]);
-                LOCAL_MAXIMUM_ACTIVE_REQUESTS = Int32.Parse(configSettings["LOCAL_MAXIMUM_ACTIVE_REQUESTS"]);
+                // FIXME Settings are easily accesible and shouldn't be saved additionally in this class
+                // They shouldn't be handed to the Proxy Constructors, but they should get the values directly
+                // where needed. For things like change INDEX_PATH to full path this wouldn't work that way,
+                // however.
+                LOCAL_PROXY_IP_ADDRESS = IPAddress.Parse(Properties.Settings.Default.LOCAL_PROXY_IP_ADDRESS);
+                LOCAL_PROXY_LISTEN_PORT = Properties.Settings.Default.LOCAL_PROXY_LISTEN_PORT;
+                LOCAL_MAXIMUM_ACTIVE_REQUESTS = Properties.Settings.Default.LOCAL_MAXIMUM_ACTIVE_REQUESTS;
 
-                INDEX_PATH = configSettings["INDEX_PATH"] + Path.DirectorySeparatorChar;
-                LOCAL_CACHE_PATH = configSettings["LOCAL_CACHE_PATH"] + Path.DirectorySeparatorChar;
+                INDEX_PATH = Properties.Settings.Default.INDEX_PATH + Path.DirectorySeparatorChar;
+                LOCAL_CACHE_PATH = Properties.Settings.Default.LOCAL_CACHE_PATH + Path.DirectorySeparatorChar;
+
                 if (!INDEX_PATH.Contains(":\\"))
                 {
                     INDEX_PATH = LOCAL_PROXY_PATH + INDEX_PATH;
@@ -156,65 +143,48 @@ namespace RuralCafe
                 {
                     LOCAL_CACHE_PATH = LOCAL_PROXY_PATH + LOCAL_CACHE_PATH;
                 }
-                WIKI_DUMP_FILE = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + configSettings["WIKI_DUMP_DIR"]
-                    + Path.DirectorySeparatorChar + configSettings["WIKI_DUMP_FILE"];
 
-                /*
-                string a = Directory.GetCurrentDirectory();
-                char b = Path.DirectorySeparatorChar;
-                string c = configSettings["WIKI_DUMP_DIR"];
-                char d = Path.DirectorySeparatorChar;
-                string e = configSettings["WIKI_DUMP_FILE"];
-                */
+                WIKI_DUMP_FILE = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + Properties.Settings.Default.WIKI_DUMP_DIR
+                    + Path.DirectorySeparatorChar + Properties.Settings.Default.WIKI_DUMP_FILE;
 
                 // remote proxy settings
-                if (configSettings["REMOTE_PROXY_IP_ADDRESS"].Equals(""))
+                if (Properties.Settings.Default.REMOTE_PROXY_IP_ADDRESS.Equals(""))
                 {
                     REMOTE_PROXY_IP_ADDRESS = null;
                 }
                 else
                 {
-                    REMOTE_PROXY_IP_ADDRESS = IPAddress.Parse(configSettings["REMOTE_PROXY_IP_ADDRESS"]);
+                    REMOTE_PROXY_IP_ADDRESS = IPAddress.Parse(Properties.Settings.Default.REMOTE_PROXY_IP_ADDRESS);
                 }
-                if (configSettings["REMOTE_PROXY_LISTEN_PORT"].Equals(""))
-                {
-                    REMOTE_PROXY_LISTEN_PORT = 0;
-                }
-                else
-                {
-                    REMOTE_PROXY_LISTEN_PORT = Int32.Parse(configSettings["REMOTE_PROXY_LISTEN_PORT"]);
-                }
+                REMOTE_PROXY_LISTEN_PORT = Properties.Settings.Default.REMOTE_PROXY_LISTEN_PORT;
 
-                REMOTE_CACHE_PATH = configSettings["REMOTE_CACHE_PATH"] + Path.DirectorySeparatorChar;
-
+                REMOTE_CACHE_PATH = Properties.Settings.Default.REMOTE_CACHE_PATH + Path.DirectorySeparatorChar;
                 if (!REMOTE_CACHE_PATH.Contains(":\\"))
                 {
                     REMOTE_CACHE_PATH = REMOTE_PROXY_PATH + REMOTE_CACHE_PATH;
                 }
 
                 // external proxy settings (to get through a firewall)
-                if (configSettings["EXTERNAL_PROXY_IP_ADDRESS"].Equals(""))
+                if (Properties.Settings.Default.EXTERNAL_PROXY_IP_ADDRESS.Equals(""))
                 {
                     GATEWAY_PROXY_IP_ADDRESS = null;
-                    GATEWAY_PROXY_LISTEN_PORT = 0;
-                    GATEWAY_PROXY_LOGIN = "";
-                    GATEWAY_PROXY_PASS = "";
                 }
                 else
                 {
-                    GATEWAY_PROXY_IP_ADDRESS = IPAddress.Parse(configSettings["EXTERNAL_PROXY_IP_ADDRESS"]);
-                    GATEWAY_PROXY_LISTEN_PORT = Int32.Parse(configSettings["EXTERNAL_PROXY_LISTEN_PORT"]);
-                    GATEWAY_PROXY_LOGIN = configSettings["EXTERNAL_PROXY_LOGIN"];
-                    GATEWAY_PROXY_PASS = configSettings["EXTERNAL_PROXY_PASS"];
+                    GATEWAY_PROXY_IP_ADDRESS = IPAddress.Parse(Properties.Settings.Default.EXTERNAL_PROXY_IP_ADDRESS);
                 }
-                DEFAULT_SEARCH_PAGE = configSettings["DEFAULT_SEARCH_PAGE"];
-                DEFAULT_QUOTA = Int32.Parse(configSettings["DEFAULT_QUOTA"]);
-                DEFAULT_DEPTH = Int32.Parse(configSettings["DEFAULT_DEPTH"]);
-                DEFAULT_RICHNESS = (RuralCafe.RequestHandler.Richness) Enum.Parse(typeof(RequestHandler.Richness), configSettings["DEFAULT_RICHNESS"], true);
-                DEFAULT_LOW_WATERMARK = DEFAULT_QUOTA / 20;
-                MAXIMUM_DOWNLINK_SPEED = Int32.Parse(configSettings["MAXIMUM_DOWNLOAD_SPEED"]);
-                NETWORK_STATUS = (RCProxy.NetworkStatusCode)Enum.Parse(typeof(RCProxy.NetworkStatusCode), configSettings["NETWORK_STATUS"], true);
+                GATEWAY_PROXY_LISTEN_PORT = Properties.Settings.Default.EXTERNAL_PROXY_LISTEN_PORT;
+                GATEWAY_PROXY_LOGIN = Properties.Settings.Default.EXTERNAL_PROXY_LOGIN;
+                GATEWAY_PROXY_PASS = Properties.Settings.Default.EXTERNAL_PROXY_PASS;
 
+                DEFAULT_SEARCH_PAGE = Properties.Settings.Default.DEFAULT_SEARCH_PAGE;
+                DEFAULT_QUOTA = Properties.Settings.Default.DEFAULT_QUOTA;
+                DEFAULT_DEPTH = Properties.Settings.Default.DEFAULT_DEPTH;
+                DEFAULT_RICHNESS = Properties.Settings.Default.DEFAULT_RICHNESS;
+                DEFAULT_LOW_WATERMARK = DEFAULT_QUOTA / 20;
+                MAXIMUM_DOWNLINK_SPEED = Properties.Settings.Default.MAXIMUM_DOWNLOAD_SPEED;
+                NETWORK_STATUS = Properties.Settings.Default.NETWORK_STATUS;
+                
                 // print some console messages
                 Console.WriteLine("LOCAL_PROXY_IP_ADDRESS: " + LOCAL_PROXY_IP_ADDRESS);
                 Console.WriteLine("LOCAL_PROXY_LISTEN_PORT: " + LOCAL_PROXY_LISTEN_PORT);

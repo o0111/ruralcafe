@@ -21,8 +21,12 @@ Each of the machines where the RuralCafe software will be running requires Windo
 = Installation =
 
 Install .NET 3.5.
- * RuralCafe needs to be configured via the configuration file in "RuralCafe/config.txt".
- * To manually configure the network setting, set the "NETWORK_STATUS=" to "offline", "slow", or "online" in RuralCafe/config.txt.
+ * RuralCafe can be configured in Visual Studio. In the Property Page under Settings.
+   * To manually configure the network setting, set the "NETWORK_STATUS" to "Offline", "Slow", or "Online".
+   * To manually configure the result page richness, set the "DEFAULT_RICHNESS" to "Normal" or "Low".
+ * RuralCafe can also be configured via two text files, but they need to be synchronized. Some values do not appear in the first file.
+   * RuralCafe/app.config
+   * RuralCafe/Properties/Settings.settings
  * To manually add an user account, edit the users.xml file in RuralCafe/bin/Debug/LocalProxy/RuralCafePages. Users can be added in the format of: 
     <pre><customer custid="userid"></pre>
         <pre><user>username</user></pre>
@@ -36,7 +40,7 @@ Note that for deployments where RuralCafe is running the local and remote compon
 
 = Configuration =
 
-The configuration fields are fairly straightforward and are defaulted to work as a standalone service on a single machine (as in this example). In the case where the local and remote proxies are setup on seperate machines, the config.txt should be identical on both machines.
+The configuration fields are fairly straightforward and are defaulted to work as a standalone service on a single machine (as in this example). In the case where the local and remote proxies are setup on seperate machines, the configuration should be identical on both machines.
 
 The local proxy settings are where RuralCafe listens to requests from the browser, these are the IP address and port settings that the browser should be configured with to use RuralCafe. In addition, the maximum number of active requests can be configured.
 
