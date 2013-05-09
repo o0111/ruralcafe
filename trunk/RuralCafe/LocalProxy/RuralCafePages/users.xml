@@ -26,5 +26,9 @@
     <customer custid="006">
         <user>peter</user>
         <pwd>1042</pwd>
+    </customer>
+	<customer custid="007">
+        <user>Satia</user>
+        <pwd>123456</pwd>
     </customer>	
 </customers>
