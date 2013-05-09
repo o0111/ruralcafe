@@ -442,6 +442,7 @@ namespace RuralCafe
             }
 
             // check for parseable since its just some URL
+            // XXX: This is not good. Only HTML pages work hence.
             if (!Util.IsParseable(rcRequest))
             {
                 return false;
@@ -860,23 +861,6 @@ namespace RuralCafe
 
 
         #region Remote Proxy Specific Helper Functions
-
-        /*
-        // XXX: obsolete
-        /// <summary>
-        /// Checks if the request is a RuralCafe URL request.
-        /// </summary>
-        /// <returns>True if yes, false if not.</returns>
-        protected bool IsRCURLRequest()
-        {
-            string request = _rcRequest.GetRCSearchField("textfield");
-            if(request.StartsWith("http://"))
-            //if (RequestUri.Contains("Queue+Request"))
-            {
-                return true;
-            }
-            return false;
-        }*/
 
         /// <summary>
         /// Determines if the URI is pointing to a text page.

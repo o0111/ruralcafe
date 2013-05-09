@@ -133,7 +133,7 @@ namespace RuralCafe
             // XXX: not cacheable, ignore, and log it instead of streaming for now
             // XXX: we could pass through this stuff directly, but it would require bypassing all blacklist/filtering
             if ((!IsGetOrHeadHeader() || !IsCacheable()) && 
-                _proxy.NetworkStatus == (int)RCProxy.NetworkStatusCode.Online)
+                _proxy.NetworkStatus == RCProxy.NetworkStatusCode.Online)
             {
                 LogDebug("streaming: " + RequestUri + " to client.");
 
@@ -180,7 +180,7 @@ namespace RuralCafe
             // XXX: basically, merge the DownloadtoCache() and StreamfromcachetoClient() methods into a new third method.
             // cacheable but not cached, cache it, then send to client if there is no remote proxy
             // if online, stream to cache, then stream to client.
-            if (_proxy.NetworkStatus == (int)RCProxy.NetworkStatusCode.Online)
+            if (_proxy.NetworkStatus == RCProxy.NetworkStatusCode.Online)
             {
                 LogDebug("streaming: " + _rcRequest.GenericWebRequest.RequestUri + " to cache and client.");
                 _rcRequest.GenericWebRequest.Proxy = null;
@@ -209,7 +209,7 @@ namespace RuralCafe
                 return Status.Failed;
             }
             
-            if (_proxy.NetworkStatus != (int)RCProxy.NetworkStatusCode.Online)
+            if (_proxy.NetworkStatus != RCProxy.NetworkStatusCode.Online)
             {
                 /*
                 // online, just stream it
@@ -723,7 +723,7 @@ namespace RuralCafe
 
         void ServeRCRemoteResultPage()
         {
-            if (_proxy.NetworkStatus == (int)RCProxy.NetworkStatusCode.Offline)
+            if (_proxy.NetworkStatus == RCProxy.NetworkStatusCode.Offline)
             {
                 return;
             }
@@ -1050,11 +1050,11 @@ namespace RuralCafe
         private void ServeNetworkStatus()
         {
             SendOkHeaders("text/html");
-            if (_proxy.NetworkStatus == (int)RCProxy.NetworkStatusCode.Offline)
+            if (_proxy.NetworkStatus == RCProxy.NetworkStatusCode.Offline)
             {
                 SendMessage("offline");
             }
-            else if (_proxy.NetworkStatus == (int)RCProxy.NetworkStatusCode.Slow)
+            else if (_proxy.NetworkStatus == RCProxy.NetworkStatusCode.Slow)
             {
                 SendMessage("cached");
             }

@@ -294,7 +294,8 @@ namespace RuralCafe
             // go through the outstanding requests forever
             while (true)
             {
-                if (NetworkStatus == (int)NetworkStatusCode.Slow)
+                // XXX: Why only when slow!?
+                if (NetworkStatus == NetworkStatusCode.Slow)
                 {
                     LocalRequestHandler requestHandler = PopGlobalRequest();
                     if (requestHandler != null)
