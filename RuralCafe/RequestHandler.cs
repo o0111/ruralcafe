@@ -24,6 +24,7 @@ using System.Net.Sockets;
 using System.IO;
 using System.Threading;
 using System.Web;
+using System.Text.RegularExpressions;
 
 namespace RuralCafe
 {
@@ -86,6 +87,12 @@ namespace RuralCafe
 
         // temporary variables
         private Byte[] _recvBuffer = new Byte[1024];
+
+        // Util consts
+        /// <summary>
+        /// Matches "localhost" or "127.0.0.1" followed by anything but a dot.
+        /// </summary>
+        private static Regex localAddressRegex = new Regex(@"(?<add1>(localhost|127\.0\.0\.1))(?<add2>[^\.])");
 
         // benchmarking unused
         //protected DateTime requestReceived;
@@ -249,6 +256,19 @@ namespace RuralCafe
         #endregion
 
         /// <summary>
+        /// Appends a dot to "localhost" or "127.0.0.1". This is done to prevent .NET from
+        /// bypassing the remote proxy for local addresses.
+        /// 
+        /// If there is already a dot nothing is done.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        /// <returns>The new address.</returns>
+        public static String AppendDotToLocalAddress(String address)
+        {
+            return localAddressRegex.Replace(address, "${add1}.${add2}");
+        }
+
+        /// <summary>
         /// main entry point for listener threads for a HttpWebRequest.
         /// </summary>
         public void Go()
@@ -268,10 +288,6 @@ namespace RuralCafe
                     throw (new IOException("empty request"));
                 }
 
-                if (recvString.Contains("localhost") & (!(recvString.Contains("status.xml") || (recvString.Contains("eta")))))
-                {
-                    int a = 5;
-                }
                 // get the requested URI
                 // the client browser sends a GET command followed by a space, then the URL, then an identifer for the HTTP version
                 int index1 = recvString.IndexOf(' ');
@@ -282,6 +298,8 @@ namespace RuralCafe
                 }
                 String method = recvString.Substring(0, index1);
                 String uri = AddHttpPrefix(recvString.Substring(index1 + 1, index2 - index1).Trim());
+                // Appends dot to local addresses so the remote proxy won't be bypassed
+                uri = AppendDotToLocalAddress(uri);
 
                 _originalRequest = (HttpWebRequest) WebRequest.Create(uri);
                 _originalRequest.Method = method;

@@ -58,7 +58,7 @@ namespace RuralCafe
         protected string _name;
 
         // online or offline
-        protected int _networkStatus;
+        protected NetworkStatusCode _networkStatus;
 
         // bandwidth measurement
         // lock object
@@ -90,7 +90,7 @@ namespace RuralCafe
             get { return _gatewayProxy; }
         }
         /// <summary>Path to the proxy's packages.</summary>
-        public int NetworkStatus
+        public NetworkStatusCode NetworkStatus
         {
             get { return _networkStatus; }
             set { _networkStatus = value; }

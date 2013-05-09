@@ -519,7 +519,6 @@ namespace RuralCafe
                     return -1;
                 }
             }
-
             try
             {
                 _requestHandler.LogDebug("downloading: " + _webRequest.RequestUri);

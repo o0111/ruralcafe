@@ -285,14 +285,7 @@ namespace RuralCafe
         /// <returns>True or false for parseable or not.</returns>
         public static bool IsParseable(RCRequest rcRequest)
         {
-            string contentType = GetContentTypeOfFile(rcRequest.CacheFileName);
-
-            if (contentType.Contains("htm"))
-            {
-                return true;
-            }
-
-            return false;
+            return GetContentTypeOfFile(rcRequest.CacheFileName).Contains("htm");
         }
         
         /// <summary>

@@ -30,7 +30,7 @@ namespace RuralCafe
 {
     static class Program
     {
-        private static int NETWORK_STATUS;
+        private static RuralCafe.RCProxy.NetworkStatusCode NETWORK_STATUS;
 
         // Local Proxy Settings
         private static IPAddress LOCAL_PROXY_IP_ADDRESS;
@@ -210,22 +210,10 @@ namespace RuralCafe
                 DEFAULT_SEARCH_PAGE = configSettings["DEFAULT_SEARCH_PAGE"];
                 DEFAULT_QUOTA = Int32.Parse(configSettings["DEFAULT_QUOTA"]);
                 DEFAULT_DEPTH = Int32.Parse(configSettings["DEFAULT_DEPTH"]);
-                DEFAULT_RICHNESS = (RuralCafe.RequestHandler.Richness) Enum.Parse(typeof(RuralCafe.RequestHandler.Richness), configSettings["DEFAULT_RICHNESS"], true);
+                DEFAULT_RICHNESS = (RuralCafe.RequestHandler.Richness) Enum.Parse(typeof(RequestHandler.Richness), configSettings["DEFAULT_RICHNESS"], true);
                 DEFAULT_LOW_WATERMARK = DEFAULT_QUOTA / 20;
                 MAXIMUM_DOWNLINK_SPEED = Int32.Parse(configSettings["MAXIMUM_DOWNLOAD_SPEED"]);
-                // XXX: hardcoded for now, stub
-                if (configSettings["NETWORK_STATUS"] == "offline")
-                {
-                    NETWORK_STATUS = (int)RCProxy.NetworkStatusCode.Offline;
-                }
-                else if (configSettings["NETWORK_STATUS"] == "slow")
-                {
-                    NETWORK_STATUS = (int)RCProxy.NetworkStatusCode.Slow;
-                }
-                else
-                {
-                    NETWORK_STATUS = (int)RCProxy.NetworkStatusCode.Online;
-                }
+                NETWORK_STATUS = (RCProxy.NetworkStatusCode)Enum.Parse(typeof(RCProxy.NetworkStatusCode), configSettings["NETWORK_STATUS"], true);
 
                 // print some console messages
                 Console.WriteLine("LOCAL_PROXY_IP_ADDRESS: " + LOCAL_PROXY_IP_ADDRESS);
