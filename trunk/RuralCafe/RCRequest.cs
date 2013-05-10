@@ -342,7 +342,6 @@ namespace RuralCafe
         }
 
         /// <summary>Set the reset event.</summary>
-        /// <param name="objectNumber">The object number of this request.</param>
         public void SetDone()
         {
             if (_childNumber < _resetEvents.Length)

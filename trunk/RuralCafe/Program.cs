@@ -86,23 +86,20 @@ namespace RuralCafe
         /// </summary>
         private static void StartRuralCafe()
         {
-            Console.WindowWidth = Console.LargestWindowWidth;
-            Console.WindowHeight = Console.LargestWindowHeight;
+            // XXX check if positive for mega small screens
+            Console.WindowWidth = Console.LargestWindowWidth - 10;
+            Console.WindowHeight = Console.LargestWindowHeight - 10;
             Console.SetWindowPosition(0, 0);
 
             // fill extension map
             Util.FillExtMap();
 
+            // Setting form at startup.
+            SettingsForm sf = new SettingsForm();
+            sf.ShowDialog();
+
             // load Configuration Settings
             LoadConfigFile();
-
-            /* JJJ: Disabled query suggestions
-            // load LDC data
-            NGrams.Load1Grams();
-            NGrams.Load2Grams();
-            NGrams.Load3Grams();
-            NGrams.Load4Grams();
-            */
 
             // start the local proxy
             if (LOCAL_PROXY_IP_ADDRESS != null)
@@ -198,6 +195,8 @@ namespace RuralCafe
                 Console.WriteLine("LOCAL_PROXY_PATH: " + LOCAL_PROXY_PATH);
                 Console.WriteLine("REMOTE_CACHE_PATH: " + REMOTE_CACHE_PATH);
                 Console.WriteLine("WIKI_DUMP_FILE: " + WIKI_DUMP_FILE);
+                Console.WriteLine("NETWORK_STATUS: " + NETWORK_STATUS);
+                Console.WriteLine("DEFAULT_RICHNESS: " + DEFAULT_RICHNESS);
 
             }
             catch (Exception)

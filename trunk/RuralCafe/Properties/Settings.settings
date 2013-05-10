@@ -2,64 +2,64 @@
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="RuralCafe.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
-    <Setting Name="LOCAL_PROXY_IP_ADDRESS" Type="System.String" Scope="Application">
+    <Setting Name="LOCAL_PROXY_IP_ADDRESS" Type="System.String" Scope="User">
       <Value Profile="(Default)">127.0.0.1</Value>
     </Setting>
-    <Setting Name="LOCAL_PROXY_LISTEN_PORT" Type="System.Int32" Scope="Application">
+    <Setting Name="LOCAL_PROXY_LISTEN_PORT" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">8080</Value>
     </Setting>
-    <Setting Name="REMOTE_PROXY_IP_ADDRESS" Type="System.String" Scope="Application">
+    <Setting Name="REMOTE_PROXY_IP_ADDRESS" Type="System.String" Scope="User">
       <Value Profile="(Default)">127.0.0.1</Value>
     </Setting>
-    <Setting Name="REMOTE_PROXY_LISTEN_PORT" Type="System.Int32" Scope="Application">
+    <Setting Name="REMOTE_PROXY_LISTEN_PORT" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">8081</Value>
     </Setting>
-    <Setting Name="NETWORK_STATUS" Type="RuralCafe.RCProxy.NetworkStatusCode" Scope="Application">
+    <Setting Name="NETWORK_STATUS" Type="RuralCafe.RCProxy.NetworkStatusCode" Scope="User">
       <Value Profile="(Default)">Slow</Value>
     </Setting>
-    <Setting Name="EXTERNAL_PROXY_IP_ADDRESS" Type="System.String" Scope="Application">
+    <Setting Name="EXTERNAL_PROXY_IP_ADDRESS" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
-    <Setting Name="EXTERNAL_PROXY_LISTEN_PORT" Type="System.Int32" Scope="Application">
+    <Setting Name="EXTERNAL_PROXY_LISTEN_PORT" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">0</Value>
     </Setting>
-    <Setting Name="EXTERNAL_PROXY_LOGIN" Type="System.String" Scope="Application">
+    <Setting Name="EXTERNAL_PROXY_LOGIN" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
-    <Setting Name="EXTERNAL_PROXY_PASS" Type="System.String" Scope="Application">
+    <Setting Name="EXTERNAL_PROXY_PASS" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
-    <Setting Name="DEFAULT_SEARCH_PAGE" Type="System.String" Scope="Application">
+    <Setting Name="DEFAULT_SEARCH_PAGE" Type="System.String" Scope="User">
       <Value Profile="(Default)">trotro.html</Value>
     </Setting>
-    <Setting Name="DEFAULT_QUOTA" Type="System.Int32" Scope="Application">
+    <Setting Name="DEFAULT_QUOTA" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">2000000</Value>
     </Setting>
-    <Setting Name="DEFAULT_DEPTH" Type="System.Int32" Scope="Application">
+    <Setting Name="DEFAULT_DEPTH" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">1</Value>
     </Setting>
-    <Setting Name="DEFAULT_RICHNESS" Type="RuralCafe.RequestHandler.Richness" Scope="Application">
+    <Setting Name="DEFAULT_RICHNESS" Type="RuralCafe.RequestHandler.Richness" Scope="User">
       <Value Profile="(Default)">Normal</Value>
     </Setting>
-    <Setting Name="MAXIMUM_DOWNLOAD_SPEED" Type="System.Int32" Scope="Application">
+    <Setting Name="MAXIMUM_DOWNLOAD_SPEED" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">5000000</Value>
     </Setting>
-    <Setting Name="INDEX_PATH" Type="System.String" Scope="Application">
+    <Setting Name="INDEX_PATH" Type="System.String" Scope="User">
       <Value Profile="(Default)">index-computer_studies-test</Value>
     </Setting>
-    <Setting Name="LOCAL_CACHE_PATH" Type="System.String" Scope="Application">
+    <Setting Name="LOCAL_CACHE_PATH" Type="System.String" Scope="User">
       <Value Profile="(Default)">files-computer_studies-test</Value>
     </Setting>
-    <Setting Name="REMOTE_CACHE_PATH" Type="System.String" Scope="Application">
+    <Setting Name="REMOTE_CACHE_PATH" Type="System.String" Scope="User">
       <Value Profile="(Default)">Cache</Value>
     </Setting>
-    <Setting Name="WIKI_DUMP_DIR" Type="System.String" Scope="Application">
+    <Setting Name="WIKI_DUMP_DIR" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
-    <Setting Name="WIKI_DUMP_FILE" Type="System.String" Scope="Application">
+    <Setting Name="WIKI_DUMP_FILE" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
-    <Setting Name="LOCAL_MAXIMUM_ACTIVE_REQUESTS" Type="System.Int32" Scope="Application">
+    <Setting Name="LOCAL_MAXIMUM_ACTIVE_REQUESTS" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">50</Value>
     </Setting>
   </Settings>

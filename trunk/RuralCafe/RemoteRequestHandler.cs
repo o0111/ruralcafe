@@ -441,13 +441,6 @@ namespace RuralCafe
                 return false;
             }
 
-            // check for parseable since its just some URL
-            // XXX: This is not good. Only HTML pages work hence.
-            if (!Util.IsParseable(rcRequest))
-            {
-                return false;
-            }
-
             // reduce the timer
             DateTime currTime = DateTime.Now;
             DateTime endTime = StartTime.AddMilliseconds(RequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT);
