@@ -102,14 +102,15 @@ function removeRequest(itemId){
 //set the richness
 function setRichness(richness){
 	var mygetrequest=new ajaxRequest()
-	mygetrequest.onreadystatechange=function(){
-		if (mygetrequest.readyState==4){
-			if (mygetrequest.status==200){
-				loadQueue('request/queue.xml?u='+userid+'&v=0');
-			}
-		}
-	}
 	mygetrequest.open("GET", "request/richness?r="+richness, true);
+	mygetrequest.send(null);
+	return false;
+}
+
+//signup
+function sendSignupRequest(username, password, id){
+	var mygetrequest=new ajaxRequest()
+	mygetrequest.open("GET", "request/signup?u="+username+"&p="+password+"&i="+id, true);
 	mygetrequest.send(null);
 	return false;
 }

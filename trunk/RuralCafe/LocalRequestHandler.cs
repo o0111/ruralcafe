@@ -29,6 +29,7 @@ using System.Web;
 using Lucene.Net.Search;
 using System.Collections.Specialized;
 using BzReader;
+using System.Xml;
 
 namespace RuralCafe
 {
@@ -371,6 +372,19 @@ namespace RuralCafe
                 return Status.Pending;
             }
 
+            if (IsSignupRequest())
+            {
+                try
+                {
+                    SignupRequest();
+                }
+                catch (Exception)
+                {
+                    return Status.Failed;
+                }
+                return Status.Pending;
+            }
+
             if (IsRCHomePage())
             {
                 try
@@ -466,6 +480,11 @@ namespace RuralCafe
         bool IsRichnessRequest()
         {
             return RequestUri.StartsWith("http://www.ruralcafe.net/request/richness");
+        }
+        /// <summary>Checks if the request is for the RuralCafe command to change richness.</summary>
+        bool IsSignupRequest()
+        {
+            return RequestUri.StartsWith("http://www.ruralcafe.net/request/signup");
         }
 
         /// <summary>
@@ -1085,6 +1104,40 @@ namespace RuralCafe
             Console.WriteLine("Richness would have been set to: " + richness);
             SendOkHeaders("text/html");
             SendMessage("Richness set.");
+        }
+
+        /// <summary>
+        /// Client signs up for a new account. Preconditions have already been checked in JS.
+        /// 
+        /// TODO Logging
+        /// TODO password should actually be sent as POST, not GET for a bare minimum of security.
+        /// </summary>
+        private void SignupRequest()
+        {
+            // Parse parameters
+            NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
+            String username = qscoll.Get("u");
+            String pw = qscoll.Get("p");
+            int custid = Int32.Parse(qscoll.Get("i"));
+            // Append zeros
+            String custidStr = custid.ToString("D3");
+
+            // Open users.xml
+            String filename = "LocalProxy" + Path.DirectorySeparatorChar + "RuralCafePages"
+                + Path.DirectorySeparatorChar + "users.xml";
+            XmlDocument doc = new XmlDocument();
+            doc.Load(filename);
+            XmlNode custsNode = doc.SelectSingleNode("customers");
+            // Add new user
+            custsNode.AppendChild(custsNode.LastChild.CloneNode(true));
+            custsNode.LastChild.Attributes["custid"].Value = custidStr;
+            custsNode.LastChild.SelectSingleNode("user").InnerText = username;
+            custsNode.LastChild.SelectSingleNode("pwd").InnerText = pw;
+            //Save
+            doc.Save(filename);
+           
+            SendOkHeaders("text/html");
+            SendMessage("Signup successful.");
         }
         
         #endregion

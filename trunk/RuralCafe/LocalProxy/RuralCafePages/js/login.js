@@ -3,7 +3,7 @@
 var xmlDoc = 0;	//xml object for user accounts
 var xhttp = 0;	//ajax request for checking user account
 
-//display error messages for empty fields, user not exsit or wrong password
+//display error messages for empty fields, if user does not exist or wrong password
 function redirectUser() {
 	if (xhttp != 0) {
     var logcode = 1; // xml file is read
