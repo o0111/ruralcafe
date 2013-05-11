@@ -389,6 +389,9 @@
     <Content Include="LocalProxy\RuralCafePages\js\result.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="LocalProxy\RuralCafePages\js\signup.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="LocalProxy\RuralCafePages\js\status.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -471,6 +474,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="LocalProxy\RuralCafePages\searchpage.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="LocalProxy\RuralCafePages\signup.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="LocalProxy\RuralCafePages\trotro-user.html">
