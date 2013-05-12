@@ -70,7 +70,7 @@ namespace RuralCafe
                     Socket socket = sockServer.AcceptSocket();
 
                     // handle the accepted connection in a separate thread
-                    RemoteRequestHandler requestHandler = new RemoteRequestHandler(this, socket);
+                    RequestHandler requestHandler = RequestHandler.PrepareNewRequestHandler(this, socket);
                     Thread proxyThread = new Thread(new ThreadStart(requestHandler.Go));
                     proxyThread.Start();
                 }

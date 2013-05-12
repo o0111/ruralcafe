@@ -198,11 +198,6 @@ namespace RuralCafe
             _hashPath = GetHashPath(_fileName);
             _itemId = _hashPath.Replace(Path.DirectorySeparatorChar.ToString(), "");
             _cacheFileName = requestHandler.Proxy.CachePath + _hashPath + _fileName;
-            /*
-            if (IsCompressed())
-            {
-                _cacheFileName = _cacheFileName + ".bz2";
-            }*/
             _fileSize = 0;
 
             _requestHandler = requestHandler;
@@ -445,44 +440,6 @@ namespace RuralCafe
 
             return safe;
         }
-
-        /*
-        // XXX: obsolete
-        /// <summary>
-        /// Checks whether the request should be stored in compressed format.
-        /// Synchronized with CIP implementation.
-        /// XXX: Should probably remove this, it saves HD space at the cost of processing.
-        /// </summary>
-        /// <returns>True or false if the request should be compressed or not.</returns>
-        public bool IsCompressed()
-        {
-            if (Uri.EndsWith(".html") ||
-                Uri.EndsWith(".htm") ||
-                Uri.EndsWith(".txt") ||
-                Uri.EndsWith(".xml") ||
-                Uri.EndsWith(".js"))
-            {
-                return true;
-            }
-            return false;
-        }*/
-
-        /*
-        // XXX: obsolete
-        /// <summary>
-        /// Gets the value for a particular RuralCafe search field.
-        /// </summary>
-        /// <param name="key">Key of the field.</param>
-        /// <returns>The value for the field.</returns>
-        public string GetRCSearchField(string key)
-        {
-            if (_searchFields.ContainsKey(key))
-            {
-                return _searchFields[key];
-            }
-
-            return "";
-        }*/
 
         /// <summary>
         /// Streams a request from the server into the cache.
