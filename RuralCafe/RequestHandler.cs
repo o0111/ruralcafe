@@ -67,12 +67,6 @@ namespace RuralCafe
         // proxy this request belongs to
         protected RCProxy _proxy;
 
-        /*
-        // type of request
-        protected string _cachePath;
-        protected string _logPath;
-         */
-
         // client info
         protected Socket _clientSocket;
         protected IPAddress _clientAddress;
@@ -87,6 +81,8 @@ namespace RuralCafe
 
         // temporary variables
         private Byte[] _recvBuffer = new Byte[1024];
+        // If request is valid
+        private bool _validRequest = true;
 
         // Util consts
         /// <summary>
@@ -103,7 +99,7 @@ namespace RuralCafe
         /// </summary>
         /// <param name="proxy">Proxy that this request belongs to.</param>
         /// <param name="socket">Socket on which the request came in on.</param>
-        public RequestHandler(RCProxy proxy, Socket socket)
+        protected RequestHandler(RCProxy proxy, Socket socket)
         {
             _proxy = proxy;
             _clientSocket = socket;
@@ -114,11 +110,10 @@ namespace RuralCafe
         }
         /// <summary>
         /// DUMMY used for request matching.
-        /// Not the cleanest implementation need to instantiate a whole object just to match
+        /// XXX: Not the cleanest implementation need to instantiate a whole object just to match
         /// </summary> 
         public RequestHandler()
         {
-            // XXX: do nothing
             _outstandingRequests = 1;
         }
 
@@ -174,11 +169,22 @@ namespace RuralCafe
         {
             get { return _proxy; }
         }
-        /// <summary>Time this request started.</summary>
+        /// <summary>The request.</summary>
         public RCRequest RCRequest
         {
             set { _rcRequest = value; }
             get { return _rcRequest; }
+        }
+        /// <summary>The original request.</summary>
+        public HttpWebRequest OriginalRequest
+        {
+            set { _originalRequest = value; }
+            get { return _originalRequest; }
+        }
+        /// <summary>The Socket.</summary>
+        public Socket Socket
+        {
+            get { return _clientSocket; }
         }
         /// <summary>The name of the package if this is to be a package.</summary>
         public string PackageFileName
@@ -239,13 +245,6 @@ namespace RuralCafe
             set { _rcRequest.CacheFileName = value; }
             get { return _rcRequest.CacheFileName; }
         }
-        /*
-        // XXX: obsolete
-        /// <summary>Checks whether the RCRequest is stored in the cache.</summary>
-        public bool IsCompressed()
-        {
-            return _rcRequest.IsCompressed();
-        }*/
 
         /// <summary>Checks whether the request is blacklisted by the proxy.</summary>
         public bool IsBlacklisted(string uri)
@@ -268,20 +267,14 @@ namespace RuralCafe
             return localAddressRegex.Replace(address, "${add1}.${add2}");
         }
 
-        /// <summary>
-        /// main entry point for listener threads for a HttpWebRequest.
-        /// </summary>
-        public void Go()
+        public static RequestHandler PrepareNewRequestHandler(RCProxy proxy, Socket socket)
         {
             string recvString = "";
-            //string _originalRequestUri = "";
-            string refererUri = "";
-
+            HttpWebRequest originalRequest = null;
             try
             {
-                // TODO dont do all this manually!
                 // Read the incoming text on the socket into recvString
-                int bytes = RecvMessage(_recvBuffer, ref recvString);
+                int bytes = RecvMessage(new byte[1024], ref recvString, socket);
                 if (bytes == 0 || recvString.Length == 0)
                 {
                     // no bytes, it's an error just return.
@@ -301,9 +294,71 @@ namespace RuralCafe
                 // Appends dot to local addresses so the remote proxy won't be bypassed
                 uri = AppendDotToLocalAddress(uri);
 
-                _originalRequest = (HttpWebRequest) WebRequest.Create(uri);
-                _originalRequest.Method = method;
+                originalRequest = (HttpWebRequest)WebRequest.Create(uri);
+                originalRequest.Method = method;
 
+                RequestHandler result;
+                if (proxy is RCLocalProxy)
+                {
+                    if (IsRCRequest(originalRequest))
+                    {
+                        result = new LocalInternalRequestHandler((RCLocalProxy)proxy, socket);
+                    }
+                    else
+                    {
+                        result = new LocalRequestHandler((RCLocalProxy)proxy, socket);
+                    }
+                }
+                else
+                {
+                    // TODO also internal here
+                    result = new RemoteRequestHandler((RCRemoteProxy)proxy, socket);
+                }
+                // Set original request.
+                result._originalRequest = originalRequest;
+
+                return result;
+            }
+            catch (Exception e)
+            {
+                // temp handler: Internal is not needed
+                RequestHandler temp;
+                if (proxy is RCLocalProxy)
+                {
+                    temp = new LocalRequestHandler((RCLocalProxy)proxy, socket);
+                }
+                else
+                {
+                    temp = new RemoteRequestHandler((RCRemoteProxy)proxy, socket);
+                }
+                String errmsg = "error handling request: ";
+                if (originalRequest != null)
+                {
+                    errmsg += " " + originalRequest.RequestUri.ToString(); ;
+                }
+                errmsg += " " + e.GetType() + ": " + e.Message + "\n" + e.StackTrace;
+                temp.LogDebug(errmsg);
+                // Erroneous has been handled
+                temp._validRequest = false;
+                return temp;
+            }
+        }
+
+        /// <summary>
+        /// Main entry point for listener threads for a HttpWebRequest.
+        /// </summary>
+        public void Go()
+        {
+            string recvString = "";
+            string refererUri = "";
+
+            try
+            {
+                if (!_validRequest)
+                {
+                    // finally will still be executed!
+                    return;
+                }
                 // get the referer URI
                 refererUri = GetHeaderValue(recvString, "Referer");
 
@@ -352,7 +407,6 @@ namespace RuralCafe
                         _clientSocket.Close();
                     }
                 }
-
                 // XXX: _rcRequest.FinishTime = DateTime.Now;
             }
             // returning from this method will terminate the thread
@@ -524,6 +578,72 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// Stream the file from the cache to the client.
+        /// </summary>
+        /// <param name="fileName">Name of the file to stream to the client.</param>
+        /// <returns>Bytes streamed from the cache to the client.</returns>
+        protected long StreamFromCacheToClient(string fileName)
+        {
+            long bytesSent = 0;
+
+            // make sure the file exists.
+            FileInfo f;
+            try
+            {
+                int offset = fileName.LastIndexOf("?"); // laura: check get parameters
+                string htmlQuery = "";
+                if (offset >= 0)
+                {
+                    htmlQuery = fileName.Substring(offset + 1);
+                    fileName = fileName.Substring(0, offset);
+                }
+                f = new FileInfo(fileName);
+                if (!f.Exists)
+                {
+                    LogDebug("error file doesn't exist: " + fileName);
+                    return -1;
+                }
+            }
+            catch (Exception e)
+            {
+                LogDebug("problem getting file info: " + fileName + " " + e.Message);
+                return -1;
+            }
+
+            FileStream fs = null;
+            try
+            {
+                int offset = 0;
+                byte[] buffer = new byte[32]; // XXX: magic number 32
+                fs = f.Open(FileMode.Open, FileAccess.Read);
+                int bytesRead = fs.Read(buffer, 0, 32);
+                while (bytesRead > 0)
+                {
+                    _clientSocket.Send(buffer, bytesRead, 0);
+                    bytesSent += bytesRead;
+
+                    bytesRead = fs.Read(buffer, 0, 32);
+
+                    offset += bytesRead;
+                }
+            }
+            catch (Exception e)
+            {
+                SendErrorPage(HTTP_NOT_FOUND, "problem serving from RuralCafe cache: ", e.Message);
+                bytesSent = -1;
+            }
+            finally
+            {
+                if (fs != null)
+                {
+                    fs.Close();
+                }
+
+            }
+            return bytesSent;
+        }
+
+        /// <summary>
         /// Extracts the result links from a google results page.
         /// XXX: Probably broken all the time due to Google's constantly changing HTML format.
         /// </summary>
@@ -609,15 +729,22 @@ namespace RuralCafe
  
         #region Methods for Checking Requests
 
-        // Simplified to just check if it starts with request. Seemed more
-        // apropriate.
         /// <summary>
         /// Checks if the original request is a RC request.
         /// </summary>
         /// <returns>If it is or not.</returns>
         protected bool IsRCRequest()
         {
-            return _originalRequest.RequestUri.ToString().StartsWith("http://www.ruralcafe.net/");
+            return IsRCRequest(_originalRequest);
+        }
+        /// <summary>
+        /// Checks if the request is a RC request.
+        /// </summary>
+        /// <param name="request">The request.</param>
+        /// <returns>If it is or not.</returns>
+        protected static bool IsRCRequest(HttpWebRequest request)
+        {
+            return request.RequestUri.ToString().StartsWith("http://www.ruralcafe.net/");
         }
 
         /// <summary>
@@ -841,7 +968,19 @@ namespace RuralCafe
         /// <returns>The length of the string read from the socket.</returns>
         protected int RecvMessage(byte[] buf, ref string strMessage)
         {
-            int iBytes = _clientSocket.Receive(buf, 1024, 0);
+            return RecvMessage(buf, ref strMessage, _clientSocket);
+        }
+
+        /// <summary>
+        /// Reads a string form the given socket.
+        /// </summary>
+        /// <param name="buf">Temporary buffer to store the bytes.</param>
+        /// <param name="strMessage">Message read from the socket.</param>
+        /// <param name="socket">The socket to read from.</param>
+        /// <returns>The length of the string read from the socket.</returns>
+        protected static int RecvMessage(byte[] buf, ref string strMessage, Socket socket)
+        {
+            int iBytes = socket.Receive(buf, 1024, 0);
             strMessage = Encoding.ASCII.GetString(buf).Replace("\0", "");
             return (iBytes);
         }

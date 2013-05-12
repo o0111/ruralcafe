@@ -247,8 +247,8 @@ namespace RuralCafe
                     Socket socket = sockServer.AcceptSocket();
 
                     // handle the accepted connection in a separate thread
-                    LocalRequestHandler requestHandler = new LocalRequestHandler(this, socket);
-                    // Start own method StartRequestHandler in the thread, which also decreases _activeRequests
+                    RequestHandler requestHandler = RequestHandler.PrepareNewRequestHandler(this, socket);
+                    // Start own method StartRequestHandler in the thread, which also in- and decreases _activeRequests
                     Thread proxyThread = new Thread(new ParameterizedThreadStart(this.StartRequestHandler));
                     //proxyThread.Name = String.Format("LocalRequest" + socket.RemoteEndPoint.ToString());
                     proxyThread.Start(requestHandler);
@@ -268,18 +268,18 @@ namespace RuralCafe
         /// Invokes the <see cref="RequestHandler.Go"/> method. While it is running, the number of
         /// active requests is increased.
         /// </summary>
-        /// <param name="localRequestHandler">The local request handler of type
-        /// <see cref="LocalRequestHandler"/></param>
-        private void StartRequestHandler(Object localRequestHandler)
+        /// <param name="requestHandler">The local or internal local request handler of type
+        /// <see cref="RequestHandler"/></param>
+        private void StartRequestHandler(Object requestHandler)
         {
-            if (!(localRequestHandler is LocalRequestHandler))
+            if (!(requestHandler is RequestHandler))
             {
                 throw new ArgumentException("localRequestHandler must be of type LocalRequestHandler");
             }
             // Increment number of active requests
             System.Threading.Interlocked.Increment(ref _activeRequests);
             // Start request handler
-            ((LocalRequestHandler)localRequestHandler).Go();
+            ((RequestHandler)requestHandler).Go();
             // Decrement number of active requests
             System.Threading.Interlocked.Decrement(ref _activeRequests);
         }
@@ -580,7 +580,7 @@ namespace RuralCafe
             }
 
             List<LocalRequestHandler> requestHandlers = null;
-            // add the request to the client's queue
+            // add client queue, if it does not exist yet
             lock (_clientRequestQueueMap)
             {
                 if (_clientRequestQueueMap.ContainsKey(userId))
@@ -612,55 +612,6 @@ namespace RuralCafe
                 }
             }
         }
-
-        /*
-        // XXX: obsolete
-        /// <summary>
-        /// Removes all requests for a client from the queues.
-        /// </summary>
-        /// <param name="userId">The user Id to remove all requests for.</param>
-        public void ClearRequestQueues(int userId)
-        {
-            // remove from the global queue
-            lock (_globalRequestQueue)
-            {
-                if (_clientRequestQueueMap.ContainsKey(userId))
-                {
-                    List<LocalRequestHandler> requestHandlers = _clientRequestQueueMap[userId];
-
-                    foreach (LocalRequestHandler requestHandler in requestHandlers)
-                    {
-                        // check to see if this URI is requested more than once
-                        // if so, just decrement count
-                        // if not, remove it
-                        if (requestHandler.OutstandingRequests == 1)
-                        {
-                            _globalRequestQueue.Remove(requestHandler);
-                        }
-                        else
-                        {
-                            requestHandler.OutstandingRequests = requestHandler.OutstandingRequests - 1;
-                            requestHandlers.Remove(requestHandler);
-                        }
-                    }
-                }
-            }
-
-            // remove the client address' request queue map.
-            lock (_clientRequestQueueMap)
-            {
-                if (_clientRequestQueueMap.ContainsKey(userId))
-                {
-                    // lock to prevent any additions to the clientRequests
-                    List<LocalRequestHandler> requestHandlers = _clientRequestQueueMap[userId];
-                    lock (requestHandlers)
-                    {
-                        _clientRequestQueueMap.Remove(userId);
-                    }
-                }
-            }
-        }
-        */
 
         /// <summary>
         /// Removes a single request from the queues.

@@ -28,7 +28,7 @@ namespace RuralCafe
             Util.FillExtMap();
 
             // load Configuration Settings
-            Program.LoadConfigFile();
+            Program.saveConfigs();
 
             // start the local proxy
             //StartLocalProxy();
