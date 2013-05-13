@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
@@ -18,6 +19,10 @@ namespace RuralCafe
         /// </summary>
         protected class RoutineMethod
         {
+            private String _methodName;
+            private String[] _parameterNames;
+            private Type[] _parameterTypes;
+
             /// <summary>
             /// A routine without parameters.
             /// </summary>
@@ -41,10 +46,6 @@ namespace RuralCafe
                 this._parameterTypes = parameterTypes;
             }
 
-            private String _methodName;
-            private String[] _parameterNames;
-            private Type[] _parameterTypes;
-
             public String MethodName
             {
                 get { return _methodName; }
@@ -58,6 +59,116 @@ namespace RuralCafe
                 get { return _parameterTypes; }
             }
         }
+
+        /// <summary>
+        /// A HTTP Error.
+        /// </summary>
+        protected class HttpException : Exception
+        {
+            HttpStatusCode _status;
+            string _strReason;
+            string _strText;
+
+            /// <summary>
+            ///  Construct an HttpError
+            /// </summary>
+            /// <param name="status">Error status.</param>
+            /// <param name="strReason">The reason for the status.</param>
+            public HttpException(HttpStatusCode status, string strReason)
+            {
+                _status = status;
+                _strReason = strReason;
+                _strText = "";
+            }
+
+            /// <summary>
+            ///  Construct an HttpError
+            /// </summary>
+            /// <param name="status">Error status.</param>
+            /// <param name="strReason">The reason for the status.</param>
+            /// <param name="strText">Any additional text.</param>
+            public HttpException(HttpStatusCode status, string strReason, string strText)
+            {
+                _status = status;
+                _strReason = strReason;
+                _strText = strText;
+            }
+
+            public HttpStatusCode Status
+            {
+                get { return _status; }
+            }
+            public String Reason
+            {
+                get { return _strReason; }
+            }
+            public String Text
+            {
+                get { return _strText; }
+            }
+        }
+
+        /// <summary>
+        /// All routines must return e Response, if they do not throw an HttpException.
+        /// </summary>
+        public class Response
+        {
+            private string _contentType;
+            private string _additionalHeaders;
+            private string _message;
+            private string _streamFileName;
+
+            public Response(string contentType)
+            {
+                _contentType = contentType;
+                _message = "";
+                _additionalHeaders = "";
+            }
+
+            public Response(string contentType, string message)
+            {
+                _contentType = contentType;
+                _message = message;
+                _additionalHeaders = "";
+            }
+
+            public Response(string contentType, string additionalHeaders, string message)
+                : this(contentType, additionalHeaders, message, false)
+            {
+            }
+
+            public Response(string contentType, string additionalHeaders, string addition, bool isStreamFileName)
+            {
+                _contentType = contentType;
+                _additionalHeaders = additionalHeaders;
+                if (isStreamFileName)
+                {
+                    _streamFileName = addition;
+                }
+                else
+                {
+                    _message = addition;
+                }
+            }
+
+            public string ContentType
+            {
+                get { return _contentType; }
+            }
+            public string Message
+            {
+                get { return _message; }
+            }
+            public string AdditionalHeader
+            {
+                get { return _additionalHeaders; }
+            }
+            public string StreamFileName
+            {
+                get { return _streamFileName; }
+            }
+        }
+
 
         /// <summary>
         /// All routines of this handler.
@@ -103,15 +214,55 @@ namespace RuralCafe
                     LogDebug("Unknown method in internal handler: " + method.MethodName);
                     return RequestHandler.Status.Failed;
                 }
-                mInfo.Invoke(this, GetParameters(method));
+                Object result = mInfo.Invoke(this, GetParameters(method));
+                if (result == null || !(result is Response))
+                {
+                    LogDebug("Return type wrong: " + method.MethodName);
+                    SendErrorPage(HttpStatusCode.InternalServerError, "", "Return type wrong: " + method.MethodName);
+                    return RequestHandler.Status.Failed;
+                }
+                // Send result
+                Response response = (Response)result;
+                SendOkHeaders(response.ContentType, response.AdditionalHeader);
+                if (response.Message != null)
+                {
+                    SendMessage(response.Message);
+                }
+                else if (response.StreamFileName != null)
+                {
+                    long bytesSent = StreamFromCacheToClient(response.StreamFileName);
+                    if (bytesSent <= 0)
+                    {
+                        SendErrorPage(HttpStatusCode.NotFound, "page does not exist", RequestUri);
+                        return RequestHandler.Status.Failed;
+                    }
+                }
+                return RequestHandler.Status.Completed;
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                // Get inner Exception
+                Exception innerE = e.InnerException;
+                if (innerE is HttpException)
+                {
+                    // an intended Exception
+                    HttpException httpe = (HttpException)innerE;
+                    SendErrorPage(httpe.Status, httpe.Reason, httpe.Text);
+                }
+                else
+                {
+                    // an unknown exception
+                    SendErrorPage(HttpStatusCode.InternalServerError, "", innerE.Message);
+                }
                 return RequestHandler.Status.Failed;
             }
-            return RequestHandler.Status.Completed;
         }
 
+        /// <summary>
+        /// Parses the URI Parameters for the given method.
+        /// </summary>
+        /// <param name="method">The method to parse the parameters for.</param>
+        /// <returns>The Parameters as an Object[].</returns>
         private Object[] GetParameters(RoutineMethod method)
         {
             if (method.ParameterNames == null)

@@ -111,7 +111,7 @@ namespace RuralCafe
             if (IsBlacklisted(RequestUri))
             {
                 LogDebug("ignoring blacklisted: " + RequestUri);
-                SendErrorPage(HTTP_NOT_FOUND, "ignoring blacklisted", RequestUri);
+                SendErrorPage(HttpStatusCode.NotFound, "ignoring blacklisted", RequestUri);
                 return Status.Failed;
             }
 
