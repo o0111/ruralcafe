@@ -757,7 +757,7 @@ namespace RuralCafe
             catch (Exception e)
             {
                 // XXX: don't think this is the way to handle such an error.
-                SendErrorPage(HTTP_SERVER_ERROR, "problem streaming the package from disk to client", e.StackTrace + " " + e.Message);
+                SendErrorPage(HttpStatusCode.InternalServerError, "problem streaming the package from disk to client", e.StackTrace + " " + e.Message);
             }
             finally
             {
@@ -822,18 +822,15 @@ namespace RuralCafe
         /// </summary>
         void SendPackageHeaders()
         {
-            int status = HTTP_OK;
+            int statusCode = (int)HttpStatusCode.OK;
             string strReason = "";
             string str = "";
 
-            str = "HTTP/1.1" + " " + status + " " + strReason + "\r\n" +
+            str = "HTTP/1.1" + " " + statusCode + " " + strReason + "\r\n" +
             "Content-Type: ruralcafe-package" + "\r\n";
 
             // gzip stuff
             str += "Content-Encoding: gzip\r\n";
-//            str += "Content-Length: ";
-//            str += _package._indexSize + _package._contentSize;
-//            str += "\r\n";
 
             str += "Package-IndexSize: ";
             str += _package.IndexSize;
@@ -846,7 +843,6 @@ namespace RuralCafe
             str += "Proxy-Connection: close" + "\r\n" +
                 "\r\n";
 
-            //LogDebug("Sending package: " + str);
             SendMessage(str);
         }
 

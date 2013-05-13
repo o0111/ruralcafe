@@ -47,6 +47,11 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// The path to the UI pages.
+        /// </summary>
+        private string UIPagesPath;
+
+        /// <summary>
         /// Constructor for a local internal proxy's request handler.
         /// </summary>
         /// <param name="proxy">Proxy this request handler belongs to.</param>
@@ -57,6 +62,7 @@ namespace RuralCafe
             _requestId = _proxy.NextRequestId;
             _proxy.NextRequestId = _proxy.NextRequestId + 1;
             _requestTimeout = LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT;
+            UIPagesPath = ((RCLocalProxy)_proxy).UIPagesPath;
         }
 
         #region RC display and handling Methods
@@ -64,20 +70,14 @@ namespace RuralCafe
         /// <summary>
         /// For everything else.
         /// </summary>
-        public void DefaultPage()
+        public Response DefaultPage()
         {
             string fileName = _originalRequest.RequestUri.LocalPath.Substring(1);
             fileName = fileName.Replace('/', Path.DirectorySeparatorChar);
             fileName = ((RCLocalProxy)_proxy).UIPagesPath + fileName;
             string contentType = Util.GetContentTypeOfFile(fileName);
-            SendOkHeaders(contentType);
-            long bytesSent = StreamFromCacheToClient(fileName);
-            if (bytesSent <= 0)
-            {
-                SendErrorPage(HTTP_NOT_FOUND, "page does not exist", RequestUri);
-                // will be handled in InternalRequestHandler.HandleRequest
-                throw new Exception("page does not exist");
-            }
+
+            return new Response(contentType, "", fileName, true);
         }
 
         /// <summary>
@@ -87,14 +87,14 @@ namespace RuralCafe
         /// n is the maximum number of items in a category, the number of <item> allowed
         /// s is the upper level category which the user want to explore (the top level category is defined as 'root')
         /// </summary>
-        public void ServeRCIndexPage(int numItems, int numCategories, string searchString)
+        public Response ServeRCIndexPage(int numItems, int numCategories, string searchString)
         {
-            SendOkHeaders("text/xml", "Cache-Control: no-cache" + "\r\n" +
-                                      "Pragma: no-cache" + "\r\n" +
-                                      "Expires: -1" + "\r\n");
-            // XXX: not building the xml file yet, just sending the dummy page for now since there's really no top categories query yet
+			 // XXX: not building the xml file yet, just sending the dummy page for now since there's really no top categories query yet
             // for the cache path
-            StreamFromCacheToClient(((RCLocalProxy)_proxy).UIPagesPath + "index.xml");
+            return new Response("text/xml", "Cache-Control: no-cache" + "\r\n" +
+                                      "Pragma: no-cache" + "\r\n" +
+                                      "Expires: -1" + "\r\n",
+                                      UIPagesPath + "index.xml", true);
         }
 
         /// <summary>
@@ -107,7 +107,7 @@ namespace RuralCafe
         /// If t is set to dd-mm-yyyy or mm-yyyy, only the requests submitted during that day/month will be returned. 
         /// If v is set to 0, all requests submitted by the user should be returned.
         /// </summary>
-        public void ServeRCQueuePage(int userId, string date)
+        public Response ServeRCQueuePage(int userId, string date)
         {
             // parse date
             bool queryOnDate = true;
@@ -190,14 +190,14 @@ namespace RuralCafe
             }
 
             queuePageString = queuePageString + "</queue>"; //end tag
-            SendOkHeaders("text/xml", "Cache-Control: no-cache" + "\r\n" +
+            return new Response("text/xml", "Cache-Control: no-cache" + "\r\n" +
                                       "Pragma: no-cache" + "\r\n" +
-                                      "Expires: -1" + "\r\n");
-            SendMessage(queuePageString);
+                                      "Expires: -1" + "\r\n",
+                                      queuePageString);
         }
 
         /// <summary>Serves the RuralCafe search page.</summary>
-        public void HomePage()
+        public Response HomePage()
         {
             string pageUri = ((RCLocalProxy)_proxy).RCSearchPage;
             string fileName = pageUri;
@@ -207,8 +207,7 @@ namespace RuralCafe
                 fileName = pageUri.Substring(offset + 1);
             }
 
-            SendOkHeaders("text/html");
-            StreamFromCacheToClient(((RCLocalProxy)_proxy).UIPagesPath + fileName);
+            return new Response("text/html", "", UIPagesPath + fileName, true);
         }
 
         /// <summary>
@@ -218,7 +217,7 @@ namespace RuralCafe
         /// p is the current page number, if there are multipage pages, page number starts from 1, 2, 3...,
         /// s is the search query string
         /// </summary>
-        public void ServeRCResultPage(int numItemsPerPage, int pageNumber, string queryString)
+        public Response ServeRCResultPage(int numItemsPerPage, int pageNumber, string queryString)
         {
             string resultsString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 
@@ -298,18 +297,18 @@ namespace RuralCafe
 
             resultsString = resultsString + "</search>";
 
-            SendOkHeaders("text/xml", "Cache-Control: no-cache" + "\r\n" +
+            return new Response("text/xml", "Cache-Control: no-cache" + "\r\n" +
                                       "Pragma: no-cache" + "\r\n" +
-                                      "Expires: -1" + "\r\n");
-            SendMessage(resultsString);
+                                      "Expires: -1" + "\r\n",
+                                      resultsString);
         }
 
-
-        public void ServeRCRemoteResultPage(int numItemsPerPage, int pageNumber, string queryString)
+        //TODO: comment. Offline?
+        public Response ServeRCRemoteResultPage(int numItemsPerPage, int pageNumber, string queryString)
         {
             if (_proxy.NetworkStatus == RCProxy.NetworkStatusCode.Offline)
             {
-                return;
+                return new Response("text/html");
             }
             // Google search
             string googleSearchString = ConstructGoogleSearch(queryString);
@@ -350,19 +349,19 @@ namespace RuralCafe
 
                     resultsString = resultsString + "</search>";
 
-                    SendOkHeaders("text/xml", "Cache-Control: no-cache" + "\r\n" +
+                    return new Response("text/xml", "Cache-Control: no-cache" + "\r\n" +
                                               "Pragma: no-cache" + "\r\n" +
-                                              "Expires: -1" + "\r\n");
-                    SendMessage(resultsString);
+                                              "Expires: -1" + "\r\n",
+                                              resultsString);
                 }
                 else
                 {
-                    // do nothing
+                    return new Response("text/html");
                 }
             }
             catch
             {
-                // do nothing
+                return new Response("text/html");
             }
         }
 
@@ -370,7 +369,7 @@ namespace RuralCafe
         /// Translates a RuralCafe search to a Google one.
         /// </summary>
         /// <returns>Google search query.</returns>
-        public string ConstructGoogleSearch(string searchString)
+        private string ConstructGoogleSearch(string searchString)
         {
             //string searchTerms = GetRCSearchField("textfield");
             string googleWebRequestUri = "http://www.google.com/search?hl=en&q=" +
@@ -385,21 +384,22 @@ namespace RuralCafe
         /// <summary>
         /// Client asks proxy whether the network is on.
         /// </summary>
-        public void ServeNetworkStatus()
+        public Response ServeNetworkStatus()
         {
-            SendOkHeaders("text/html");
+            string status;
             if (_proxy.NetworkStatus == RCProxy.NetworkStatusCode.Offline)
             {
-                SendMessage("offline");
+                status = "offline";
             }
             else if (_proxy.NetworkStatus == RCProxy.NetworkStatusCode.Slow)
             {
-                SendMessage("cached");
+                status = "cached";
             }
             else
             {
-                SendMessage("online");
+                status = "online";
             }
+            return new Response("text/html", status);
         }
 
         /// <summary>
@@ -407,7 +407,7 @@ namespace RuralCafe
         /// 
         /// TODO Logging
         /// </summary>
-        public void RichnessRequest(string richnessString)
+        public Response RichnessRequest(string richnessString)
         {
             Richness richness;
             try
@@ -416,12 +416,10 @@ namespace RuralCafe
             }
             catch (Exception)
             {
-                SendErrorPage(HTTP_BAD_REQUEST, "unknown richness setting", "");
-                throw;
+                throw new HttpException(HttpStatusCode.BadRequest, "unknown richness setting", richnessString);
             }
             Console.WriteLine("Richness would have been set to: " + richness);
-            SendOkHeaders("text/html");
-            SendMessage("Richness set.");
+            return new Response("text/html", "Richness set.");
         }
 
         /// <summary>
@@ -429,7 +427,7 @@ namespace RuralCafe
         /// 
         /// TODO Logging
         /// </summary>
-        public void SignupRequest(String username, String pw, int custid)
+        public Response SignupRequest(String username, String pw, int custid)
         {
             // Append zeros
             String custidStr = custid.ToString("D3");
@@ -447,9 +445,7 @@ namespace RuralCafe
             custsNode.LastChild.SelectSingleNode("pwd").InnerText = pw;
             //Save
             doc.Save(filename);
-
-            SendOkHeaders("text/html");
-            SendMessage("Signup successful.");
+            return new Response("text/html", "Signup successful.");
         }
 
         #endregion
@@ -460,8 +456,9 @@ namespace RuralCafe
         /// 
         /// TODO Method missing. Parameters (POST) missing.
         /// TODO remove the whole AddRequest logic.
+        /// FIXME if URI contains "?" -> error
         /// </summary>
-        public void AddRequest(int userId, string targetName, string targetUri, string refererUri)
+        public Response AddRequest(int userId, string targetName, string targetUri, string refererUri)
         {
             if (targetName == null)
             {
@@ -469,10 +466,7 @@ namespace RuralCafe
             }
             if (targetUri == null)
             {
-                // error
-                targetUri = "";
-                SendErrorPage(HTTP_NOT_FOUND, "malformed add request", "");
-                return;
+                throw new HttpException(HttpStatusCode.BadRequest, "malformed add request: no targetUri");
             }
             if (refererUri == null)
             {
@@ -488,52 +482,42 @@ namespace RuralCafe
             lrh.RCRequest.RequestStatus = originalRequestStatus;
 
             ((RCLocalProxy)_proxy).QueueRequest(userId, lrh);
-            SendOkHeaders("text/html");
-            SendMessage(refererUri);
+            return new Response("text/html", refererUri);
         }
 
         /// <summary>
         /// Removes the request from Ruralcafe's queue.
         /// </summary>
-        public void RemoveRequest(int userId, string itemId)
+        public Response RemoveRequest(int userId, string itemId)
         {
             LocalRequestHandler matchingRequestHandler = new LocalRequestHandler(itemId);
             ((RCLocalProxy)_proxy).DequeueRequest(userId, matchingRequestHandler);
-            SendOkHeaders("text/html");
+            return new Response("text/html");
         }
 
         /// <summary>
         /// Gets the eta for a request in Ruralcafe's queue.
         /// </summary>
-        public void ServeETARequest(int userId, string itemId)
+        public Response ServeETARequest(int userId, string itemId)
         {
             // find the indexer of the matching request
             List<LocalRequestHandler> requestHandlers = ((RCLocalProxy)_proxy).GetRequests(userId);
             if (requestHandlers == null)
             {
-                SendOkHeaders("text/html");
-                SendMessage("0");
-                return;
+                return new Response("text/html", "0");
             }
             LocalRequestHandler matchingRequestHandler = new LocalRequestHandler(itemId);
             int requestIndex = requestHandlers.IndexOf(matchingRequestHandler);
             if (requestIndex < 0)
             {
-                SendOkHeaders("text/html");
-                SendMessage("0");
-                return;
+                return new Response("text/html", "0");
             }
 
             if (requestHandlers[requestIndex].RequestStatus == RequestHandler.Status.Pending)
             {
-                SendOkHeaders("text/html");
-                SendMessage("-1");
-                return;
+                return new Response("text/html", "-1");
             }
-            string printableEta = requestHandlers[requestIndex].PrintableETA();
-
-            SendOkHeaders("text/html");
-            SendMessage(printableEta);
+            return new Response("text/html", requestHandlers[requestIndex].PrintableETA());
         }
 
         #endregion

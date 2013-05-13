@@ -627,10 +627,9 @@ namespace RuralCafe
                     offset += bytesRead;
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                SendErrorPage(HTTP_NOT_FOUND, "problem serving from RuralCafe cache: ", e.Message);
-                bytesSent = -1;
+                return -1;
             }
             finally
             {
@@ -879,11 +878,11 @@ namespace RuralCafe
         /// <param name="contentType">The Content-Type of the request to respond to.</param>
         protected void SendOkHeaders(string contentType, string additionalHeaders)
         {
-            int status = HTTP_OK;
+            int statusCode = (int)HttpStatusCode.OK;
             string strReason = "";
             string str = "";
 
-            str = "HTTP/1.1" + " " + status + " " + strReason + "\r\n" +
+            str = "HTTP/1.1" + " " + statusCode + " " + strReason + "\r\n" +
             "Content-Type: " + contentType + "\r\n" +
             "Proxy-Connection: close" + "\r\n" +
             additionalHeaders +
@@ -898,13 +897,13 @@ namespace RuralCafe
         /// <param name="url">Destination url.</param>
         protected void SendRedirect(string title, string url)
         {
-            int status = HTTP_OK;
+            int statusCode = (int)HttpStatusCode.OK;
             string strReason = "";
             string str = "";
             title = HttpUtility.UrlEncode(title);
             url = HttpUtility.UrlEncode(url);
 
-            str = "HTTP/1.1" + " " + status + " " + strReason + "\r\n" +
+            str = "HTTP/1.1" + " " + statusCode + " " + strReason + "\r\n" +
             "Content-Type: " + "text/html" + "\r\n" +
             "Proxy-Connection: close" + "\r\n" +
             "\r\n";
@@ -915,19 +914,22 @@ namespace RuralCafe
             SendMessage(str);
         }
 
+        // FIXME: Does apparently not create a proper header/html response. Same may be true for
+        // SendOKHeaders
         /// <summary>
         ///  Write an error response to the client.
         /// </summary>
         /// <param name="status">Error status.</param>
         /// <param name="strReason">The reason for the status.</param>
         /// <param name="strText">Any additional text.</param>
-        protected void SendErrorPage(int status, string strReason, string strText)
+        protected void SendErrorPage(HttpStatusCode status, string strReason, string strText)
         {
-            string str = "HTTP/1.1" + " " + status + " " + strReason + "\r\n" +
+            int statusCode = (int)status;
+            string str = "HTTP/1.1" + " " + statusCode + " " + strReason + "\r\n" +
                 "Content-Type: text/plain" + "\r\n" +
                 "Proxy-Connection: close" + "\r\n" +
                 "\r\n" +
-                status + " " + strReason + " " + strText;
+                statusCode + " " + strReason + " " + strText;
             SendMessage(str);
 
             LogDebug(status + " " + strReason + " " + strText);
@@ -945,7 +947,6 @@ namespace RuralCafe
 
             if ((_clientSocket == null) || !_clientSocket.Connected)
             {
-                //LogDebug("socket closed for some reason");
                 return -1;
             }
             try
@@ -1029,56 +1030,6 @@ namespace RuralCafe
         {
             _proxy.WriteDebug(_requestId, str);
         }
-
-        #endregion
-
-
-        #region HTTP Response Codes
-
-        public static byte[] EOL = { (byte)'\r', (byte)'\n' };
-
-        /** 2XX: generally "OK" */
-        public const int HTTP_OK = 200;
-        public const int HTTP_CREATED = 201;
-        public const int HTTP_ACCEPTED = 202;
-        public const int HTTP_NOT_AUTHORITATIVE = 203;
-        public const int HTTP_NO_CONTENT = 204;
-        public const int HTTP_RESET = 205;
-        public const int HTTP_PARTIAL = 206;
-
-        /** 3XX: relocation/redirect */
-        public const int HTTP_MULT_CHOICE = 300;
-        public const int HTTP_MOVED_PERM = 301;
-        public const int HTTP_MOVED_TEMP = 302;
-        public const int HTTP_SEE_OTHER = 303;
-        public const int HTTP_NOT_MODIFIED = 304;
-        public const int HTTP_USE_PROXY = 305;
-
-        /** 4XX: client error */
-        public const int HTTP_BAD_REQUEST = 400;
-        public const int HTTP_UNAUTHORIZED = 401;
-        public const int HTTP_PAYMENT_REQUIRED = 402;
-        public const int HTTP_FORBIDDEN = 403;
-        public const int HTTP_NOT_FOUND = 404;
-        public const int HTTP_BAD_METHOD = 405;
-        public const int HTTP_NOT_ACCEPTABLE = 406;
-        public const int HTTP_PROXY_AUTH = 407;
-        public const int HTTP_CLIENT_TIMEOUT = 408;
-        public const int HTTP_CONFLICT = 409;
-        public const int HTTP_GONE = 410;
-        public const int HTTP_LENGTH_REQUIRED = 411;
-        public const int HTTP_PRECON_FAILED = 412;
-        public const int HTTP_ENTITY_TOO_LARGE = 413;
-        public const int HTTP_REQ_TOO_LONG = 414;
-        public const int HTTP_UNSUPPORTED_TYPE = 415;
-
-        /** 5XX: server error */
-        public const int HTTP_SERVER_ERROR = 500;
-        public const int HTTP_INTERNAL_ERROR = 501;
-        public const int HTTP_BAD_GATEWAY = 502;
-        public const int HTTP_UNAVAILABLE = 503;
-        public const int HTTP_GATEWAY_TIMEOUT = 504;
-        public const int HTTP_VERSION = 505;
 
         #endregion
     }
