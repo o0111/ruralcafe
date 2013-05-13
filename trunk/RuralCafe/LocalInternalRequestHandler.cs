@@ -14,15 +14,45 @@ namespace RuralCafe
     /// <summary>
     /// Handles internal requests. These are e.g. queue, richness, remove, etc.
     /// </summary>
-    public class LocalInternalRequestHandler : RequestHandler
+    public class LocalInternalRequestHandler : InternalRequestHandler
     {
+        private static Dictionary<String, RoutineMethod> routines = new Dictionary<String, RoutineMethod>();
+        private static RoutineMethod defaultMethod = new RoutineMethod("DefaultPage");
+
+        /// <summary>
+        /// Static Constructor. Defines routines.
+        /// </summary>
+        static LocalInternalRequestHandler()
+        {
+            routines.Add("/request/index.xml", new RoutineMethod("ServeRCIndexPage",
+                new string[] { "n", "c", "s" }, new Type[] { typeof(int), typeof(int), typeof(string) }));
+            routines.Add("/request/search.xml", new RoutineMethod("ServeRCRemoteResultPage",
+                new string[] { "n", "p", "s" }, new Type[] { typeof(int), typeof(int), typeof(string) }));
+            routines.Add("/request/result.xml", new RoutineMethod("ServeRCResultPage",
+                new string[] { "n", "p", "s" }, new Type[] { typeof(int), typeof(int), typeof(string) }));
+            routines.Add("/request/queue.xml", new RoutineMethod("ServeRCQueuePage",
+                new string[] { "u", "v" }, new Type[] { typeof(int),  typeof(string) }));
+            routines.Add("/request/status.xml", new RoutineMethod("ServeNetworkStatus"));
+            routines.Add("/request/remove", new RoutineMethod("RemoveRequest",
+                new string[] { "u", "i" }, new Type[] { typeof(int), typeof(string) }));
+            routines.Add("/request/add", new RoutineMethod("AddRequest",
+                new string[] { "u", "t", "a", "r" }, new Type[] { typeof(int), typeof(string), typeof(string), typeof(string) }));
+            routines.Add("/request/eta", new RoutineMethod("ServeETARequest",
+                new string[] { "u", "i" }, new Type[] { typeof(int), typeof(string) }));
+            routines.Add("/request/richness", new RoutineMethod("RichnessRequest",
+                new string[] { "r" }, new Type[] { typeof(string) }));
+            routines.Add("/request/signup", new RoutineMethod("SignupRequest",
+                new string[] { "u", "p", "i" }, new Type[] { typeof(string), typeof(string), typeof(int) }));
+            routines.Add("/", new RoutineMethod("HomePage"));
+        }
+
         /// <summary>
         /// Constructor for a local internal proxy's request handler.
         /// </summary>
         /// <param name="proxy">Proxy this request handler belongs to.</param>
         /// <param name="socket">Client socket.</param>
         public LocalInternalRequestHandler(RCLocalProxy proxy, Socket socket)
-            : base(proxy, socket)
+            : base(proxy, socket, routines, defaultMethod)
         {
             _requestId = _proxy.NextRequestId;
             _proxy.NextRequestId = _proxy.NextRequestId + 1;
@@ -32,241 +62,22 @@ namespace RuralCafe
         #region RC display and handling Methods
 
         /// <summary>
-        /// Handles an RC internal request.
+        /// For everything else.
         /// </summary>
-        /// <returns>The status.</returns>
-        public override Status HandleRequest()
+        public void DefaultPage()
         {
-            if (IsIndex())
-            {
-                try
-                {
-                    ServeRCIndexPage();
-                }
-                catch (Exception)
-                {
-                    return RequestHandler.Status.Failed;
-                }
-                return RequestHandler.Status.Completed;
-            }
-
-            if (IsRemoteResult())
-            {
-                try
-                {
-                    ServeRCRemoteResultPage();
-                }
-                catch (Exception)
-                {
-                    return RequestHandler.Status.Failed;
-                }
-                return RequestHandler.Status.Completed;
-            }
-
-            if (IsResult())
-            {
-                try
-                {
-                    ServeRCResultPage();
-                }
-                catch (Exception)
-                {
-                    return RequestHandler.Status.Failed;
-                }
-                return RequestHandler.Status.Completed;
-            }
-
-            if (IsQueue())
-            {
-                try
-                {
-                    ServeRCQueuePage();
-                }
-                catch (Exception)
-                {
-                    return RequestHandler.Status.Failed;
-                }
-                return RequestHandler.Status.Completed;
-            }
-
-            if (IsRemovePage())
-            {
-                try
-                {
-                    RemoveRequest();
-                }
-                catch (Exception)
-                {
-                    return RequestHandler.Status.Failed;
-                }
-                return RequestHandler.Status.Completed;
-            }
-
-            if (IsAddPage())
-            {
-                try
-                {
-                    AddRequest();
-                }
-                catch (Exception)
-                {
-                    return RequestHandler.Status.Failed;
-                }
-                return RequestHandler.Status.Pending;
-            }
-
-            if (IsRequestNetworkStatus())
-            {
-                try
-                {
-                    ServeNetworkStatus();
-                }
-                catch (Exception)
-                {
-                    return RequestHandler.Status.Failed;
-                }
-                return RequestHandler.Status.Completed;
-            }
-
-            if (IsEtaRequest())
-            {
-                try
-                {
-                    ServeETARequest();
-                }
-                catch (Exception)
-                {
-                    return RequestHandler.Status.Failed;
-                }
-                return RequestHandler.Status.Completed;
-            }
-
-            if (IsRichnessRequest())
-            {
-                try
-                {
-                    RichnessRequest();
-                }
-                catch (Exception)
-                {
-                    return RequestHandler.Status.Failed;
-                }
-                return RequestHandler.Status.Pending;
-            }
-
-            if (IsSignupRequest())
-            {
-                try
-                {
-                    SignupRequest();
-                }
-                catch (Exception)
-                {
-                    return RequestHandler.Status.Failed;
-                }
-                return RequestHandler.Status.Pending;
-            }
-
-            if (IsRCHomePage())
-            {
-                try
-                {
-                    ServeRCSearchPage(((RCLocalProxy)_proxy).RCSearchPage);
-                }
-                catch (Exception)
-                {
-                    return RequestHandler.Status.Failed;
-                }
-                return RequestHandler.Status.Completed;
-            }
-
-            // everything else
-            string fileName = RequestUri.Replace("http://www.ruralcafe.net/", "");
+            string fileName = _originalRequest.RequestUri.LocalPath.Substring(1);
             fileName = fileName.Replace('/', Path.DirectorySeparatorChar);
             fileName = ((RCLocalProxy)_proxy).UIPagesPath + fileName;
             string contentType = Util.GetContentTypeOfFile(fileName);
             SendOkHeaders(contentType);
-            //LogDebug(contentType);
             long bytesSent = StreamFromCacheToClient(fileName);
-            if (bytesSent > 0)
+            if (bytesSent <= 0)
             {
-                return RequestHandler.Status.Completed;
+                SendErrorPage(HTTP_NOT_FOUND, "page does not exist", RequestUri);
+                // will be handled in InternalRequestHandler.HandleRequest
+                throw new Exception("page does not exist");
             }
-
-            SendErrorPage(HTTP_NOT_FOUND, "page does not exist", RequestUri);
-            return RequestHandler.Status.Failed;
-        }
-
-        /// <summary>Checks if the request is for the RuralCafe command to get the index page.</summary>
-        bool IsIndex()
-        {
-            return RequestUri.StartsWith("http://www.ruralcafe.net/request/index.xml");
-        }
-
-        /// <summary>Checks if the request is for the RuralCafe command to get the queue.</summary>
-        bool IsQueue()
-        {
-            return RequestUri.StartsWith("http://www.ruralcafe.net/request/queue.xml");
-        }
-        bool IsRemoteResult()
-        {
-            return RequestUri.StartsWith("http://www.ruralcafe.net/request/search.xml");
-        }
-        /// <summary>Checks if the request is for the RuralCafe command to get the search results.</summary>
-        bool IsResult()
-        {
-            return RequestUri.StartsWith("http://www.ruralcafe.net/request/result.xml");
-        }
-
-        /// <summary>Checks if the request is for the RuralCafe homepage.</summary>
-        private bool IsRCHomePage()
-        {
-            return RequestUri.Equals("http://www.ruralcafe.net") ||
-                RequestUri.Equals("http://www.ruralcafe.net/") ||
-                RequestUri.Equals("www.ruralcafe.net") ||
-                RequestUri.Equals("www.ruralcafe.net/");
-            //    RequestUri.Equals("http://www.ruralcafe.net/index.html") ||
-            //    RequestUri.Equals("www.ruralcafe.net/index.html"))
-
-        }
-
-        /// <summary>Checks if the request is for the RuralCafe command to check whether the network is up.</summary>
-        bool IsRequestNetworkStatus()
-        {
-            return RequestUri.StartsWith("http://www.ruralcafe.net/request/status");
-        }
-        /// <summary>Checks if the request is for the RuralCafe command to add a URI.</summary>
-        bool IsAddPage()
-        {
-            // if (RequestUri.StartsWith("http://www.ruralcafe.net/addpage="))
-            return RequestUri.StartsWith("http://www.ruralcafe.net/request/add?");
-        }
-        /// <summary>Checks if the request is for the RuralCafe command to remove a URI.</summary>
-        bool IsRemovePage()
-        {
-            // if (RequestUri.StartsWith("http://www.ruralcafe.net/removepage="))
-            return RequestUri.StartsWith("http://www.ruralcafe.net/request/remove?");
-        }
-        /// <summary>Checks if the request is for the RuralCafe command to remove all URIs for a client.</summary>
-        bool IsRemoveAllPage()
-        {
-            return RequestUri.StartsWith("http://www.ruralcafe.net/removeall");
-        }
-        /// <summary>Checks if the request is for the RuralCafe command to add a URI.</summary>
-        bool IsEtaRequest()
-        {
-            // if (RequestUri.StartsWith("http://www.ruralcafe.net/addpage="))
-            return RequestUri.StartsWith("http://www.ruralcafe.net/request/eta");
-        }
-        /// <summary>Checks if the request is for the RuralCafe command to change richness.</summary>
-        bool IsRichnessRequest()
-        {
-            return RequestUri.StartsWith("http://www.ruralcafe.net/request/richness");
-        }
-        /// <summary>Checks if the request is for the RuralCafe command to change richness.</summary>
-        bool IsSignupRequest()
-        {
-            return RequestUri.StartsWith("http://www.ruralcafe.net/request/signup");
         }
 
         /// <summary>
@@ -276,18 +87,12 @@ namespace RuralCafe
         /// n is the maximum number of items in a category, the number of <item> allowed
         /// s is the upper level category which the user want to explore (the top level category is defined as 'root')
         /// </summary>
-        void ServeRCIndexPage()
+        public void ServeRCIndexPage(int numItems, int numCategories, string searchString)
         {
-            // Parse parameters
-            NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
-            int numItems = Int32.Parse(qscoll.Get("n"));
-            int numCategories = Int32.Parse(qscoll.Get("c"));
-            string searchString = qscoll.Get("s");
-
             SendOkHeaders("text/xml", "Cache-Control: no-cache" + "\r\n" +
                                       "Pragma: no-cache" + "\r\n" +
                                       "Expires: -1" + "\r\n");
-            // not building the xml file yet, just sending the dummy page for now since there's really no top categories query yet
+            // XXX: not building the xml file yet, just sending the dummy page for now since there's really no top categories query yet
             // for the cache path
             StreamFromCacheToClient(((RCLocalProxy)_proxy).UIPagesPath + "index.xml");
         }
@@ -302,13 +107,8 @@ namespace RuralCafe
         /// If t is set to dd-mm-yyyy or mm-yyyy, only the requests submitted during that day/month will be returned. 
         /// If v is set to 0, all requests submitted by the user should be returned.
         /// </summary>
-        void ServeRCQueuePage()
+        public void ServeRCQueuePage(int userId, string date)
         {
-            // Parse parameters
-            NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
-            int userId = Int32.Parse(qscoll.Get("u"));
-            string date = qscoll.Get("v");
-
             // parse date
             bool queryOnDate = true;
             bool queryOnDay = false;
@@ -345,8 +145,6 @@ namespace RuralCafe
 
             // get requests for this user
             List<LocalRequestHandler> requestHandlers = ((RCLocalProxy)_proxy).GetRequests(userId);
-            // in reverse chronological order
-            // requestHandlers.Reverse();
 
             string queuePageString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + "<queue>";
             int i = 1;
@@ -399,8 +197,9 @@ namespace RuralCafe
         }
 
         /// <summary>Serves the RuralCafe search page.</summary>
-        private void ServeRCSearchPage(string pageUri)
+        public void HomePage()
         {
+            string pageUri = ((RCLocalProxy)_proxy).RCSearchPage;
             string fileName = pageUri;
             int offset = pageUri.LastIndexOf('/');
             if (offset >= 0 && offset < (pageUri.Length - 1))
@@ -419,14 +218,8 @@ namespace RuralCafe
         /// p is the current page number, if there are multipage pages, page number starts from 1, 2, 3...,
         /// s is the search query string
         /// </summary>
-        void ServeRCResultPage()
+        public void ServeRCResultPage(int numItemsPerPage, int pageNumber, string queryString)
         {
-            // Parse parameters
-            NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
-            int numItemsPerPage = Int32.Parse(qscoll.Get("n"));
-            int pageNumber = Int32.Parse(qscoll.Get("p"));
-            string queryString = qscoll.Get("s");
-
             string resultsString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 
             List<Lucene.Net.Documents.Document> tempLuceneResults = new List<Lucene.Net.Documents.Document>();
@@ -493,7 +286,7 @@ namespace RuralCafe
 
                 // JAY: find content snippet here
                 //contentSnippet = 
-                if (uri.StartsWith("http://")) //laura: obmit http://
+                if (uri.StartsWith("http://")) //laura: omit http://
                     uri = uri.Substring(7);
                 resultsString = resultsString +
                                 "<item>" +
@@ -512,25 +305,16 @@ namespace RuralCafe
         }
 
 
-        void ServeRCRemoteResultPage()
+        public void ServeRCRemoteResultPage(int numItemsPerPage, int pageNumber, string queryString)
         {
             if (_proxy.NetworkStatus == RCProxy.NetworkStatusCode.Offline)
             {
                 return;
             }
-
-            // Parse parameters
-            NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
-            int numItemsPerPage = Int32.Parse(qscoll.Get("n"));
-            int pageNumber = Int32.Parse(qscoll.Get("p"));
-            string queryString = qscoll.Get("s");
-
             // Google search
             string googleSearchString = ConstructGoogleSearch(queryString);
             _rcRequest = new RCRequest(this, (HttpWebRequest)WebRequest.Create(googleSearchString.Trim()));
 
-            //LogDebug("streaming: " + _rcRequest.GenericWebRequest.RequestUri + " to cache and client.");
-            //_rcRequest.GenericWebRequest.Proxy = null;
             long bytesDownloaded = _rcRequest.DownloadToCache(true);
             try
             {
@@ -547,13 +331,13 @@ namespace RuralCafe
                         if ((currentItemNumber > ((pageNumber - 1) * numItemsPerPage)) &&
                             (currentItemNumber < (pageNumber * numItemsPerPage) + 1))
                         {
-                            string uri = System.Security.SecurityElement.Escape(linkObject.Uri); //System.Security.SecurityElement.Escape(result.Get("uri")); // escape xml string
-                            string title = System.Security.SecurityElement.Escape(linkObject.AnchorText); //System.Security.SecurityElement.Escape(result.Get("title")); //escape xml string
+                            string uri = System.Security.SecurityElement.Escape(linkObject.Uri);
+                            string title = System.Security.SecurityElement.Escape(linkObject.AnchorText);
                             //string displayUri = uri;
                             string contentSnippet = "";
 
                             // XXX: find content snippet here
-                            if (uri.StartsWith("http://")) //laura: obmit http://
+                            if (uri.StartsWith("http://")) //laura: omit http://
                                 uri = uri.Substring(7);
                             resultsString = resultsString +
                                             "<item>" +
@@ -592,7 +376,6 @@ namespace RuralCafe
             string googleWebRequestUri = "http://www.google.com/search?hl=en&q=" +
                                         searchString.Replace(' ', '+') +
                                         "&btnG=Google+Search&aq=f&oq=";
-
             return googleWebRequestUri;
         }
 
@@ -602,7 +385,7 @@ namespace RuralCafe
         /// <summary>
         /// Client asks proxy whether the network is on.
         /// </summary>
-        private void ServeNetworkStatus()
+        public void ServeNetworkStatus()
         {
             SendOkHeaders("text/html");
             if (_proxy.NetworkStatus == RCProxy.NetworkStatusCode.Offline)
@@ -624,18 +407,17 @@ namespace RuralCafe
         /// 
         /// TODO Logging
         /// </summary>
-        private void RichnessRequest()
+        public void RichnessRequest(string richnessString)
         {
-            // Parse parameters
-            NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
             Richness richness;
             try
             {
-                richness = (Richness)Enum.Parse(typeof(Richness), qscoll.Get("r"), true);
+                richness = (Richness)Enum.Parse(typeof(Richness), richnessString, true);
             }
             catch (Exception)
             {
-                return;
+                SendErrorPage(HTTP_BAD_REQUEST, "unknown richness setting", "");
+                throw;
             }
             Console.WriteLine("Richness would have been set to: " + richness);
             SendOkHeaders("text/html");
@@ -647,13 +429,8 @@ namespace RuralCafe
         /// 
         /// TODO Logging
         /// </summary>
-        private void SignupRequest()
+        public void SignupRequest(String username, String pw, int custid)
         {
-            // Parse parameters
-            NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
-            String username = qscoll.Get("u");
-            String pw = qscoll.Get("p");
-            int custid = Int32.Parse(qscoll.Get("i"));
             // Append zeros
             String custidStr = custid.ToString("D3");
 
@@ -682,15 +459,10 @@ namespace RuralCafe
         /// Queues this request.
         /// 
         /// TODO Method missing. Parameters (POST) missing.
+        /// TODO remove the whole AddRequest logic.
         /// </summary>
-        private void AddRequest()
+        public void AddRequest(int userId, string targetName, string targetUri, string refererUri)
         {
-            // Parse parameters
-            NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
-            int userId = Int32.Parse(qscoll.Get("u"));
-            string targetName = qscoll.Get("t");
-            string targetUri = qscoll.Get("a");
-            string refererUri = qscoll.Get("r");
             if (targetName == null)
             {
                 targetName = "fake title";
@@ -723,13 +495,8 @@ namespace RuralCafe
         /// <summary>
         /// Removes the request from Ruralcafe's queue.
         /// </summary>
-        private void RemoveRequest()
+        public void RemoveRequest(int userId, string itemId)
         {
-            // Parse parameters
-            NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
-            int userId = Int32.Parse(qscoll.Get("u"));
-            string itemId = qscoll.Get("i");
-
             LocalRequestHandler matchingRequestHandler = new LocalRequestHandler(itemId);
             ((RCLocalProxy)_proxy).DequeueRequest(userId, matchingRequestHandler);
             SendOkHeaders("text/html");
@@ -738,13 +505,8 @@ namespace RuralCafe
         /// <summary>
         /// Gets the eta for a request in Ruralcafe's queue.
         /// </summary>
-        private void ServeETARequest()
+        public void ServeETARequest(int userId, string itemId)
         {
-            // Parse parameters
-            NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
-            int userId = Int32.Parse(qscoll.Get("u"));
-            string itemId = qscoll.Get("i");
-
             // find the indexer of the matching request
             List<LocalRequestHandler> requestHandlers = ((RCLocalProxy)_proxy).GetRequests(userId);
             if (requestHandlers == null)

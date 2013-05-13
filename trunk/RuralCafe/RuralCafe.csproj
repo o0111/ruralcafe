@@ -95,6 +95,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AnalysisTools.cs" />
+    <Compile Include="InternalRequestHandler.cs" />
     <Compile Include="LocalInternalRequestHandler.cs" />
     <Compile Include="SettingsForm.cs">
       <SubType>Form</SubType>
