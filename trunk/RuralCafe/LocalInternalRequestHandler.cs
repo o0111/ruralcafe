@@ -39,11 +39,12 @@ namespace RuralCafe
                 new string[] { "u", "t", "a", "r" }, new Type[] { typeof(int), typeof(string), typeof(string), typeof(string) }));
             routines.Add("/request/eta", new RoutineMethod("ServeETARequest",
                 new string[] { "u", "i" }, new Type[] { typeof(int), typeof(string) }));
-            routines.Add("/request/richness", new RoutineMethod("RichnessRequest",
-                new string[] { "r" }, new Type[] { typeof(string) }));
             routines.Add("/request/signup", new RoutineMethod("SignupRequest",
                 new string[] { "u", "p", "i" }, new Type[] { typeof(string), typeof(string), typeof(int) }));
             routines.Add("/", new RoutineMethod("HomePage"));
+
+            // All delegated routines
+            routines.Add("/request/richness", new RoutineMethod("DelegateToRemoteProxy"));
         }
 
         /// <summary>
@@ -403,26 +404,6 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Client changes richness. TODO
-        /// 
-        /// TODO Logging
-        /// </summary>
-        public Response RichnessRequest(string richnessString)
-        {
-            Richness richness;
-            try
-            {
-                richness = (Richness)Enum.Parse(typeof(Richness), richnessString, true);
-            }
-            catch (Exception)
-            {
-                throw new HttpException(HttpStatusCode.BadRequest, "unknown richness setting", richnessString);
-            }
-            Console.WriteLine("Richness would have been set to: " + richness);
-            return new Response("text/html", "Richness set.");
-        }
-
-        /// <summary>
         /// Client signs up for a new account. Preconditions have already been checked in JS.
         /// 
         /// TODO Logging
@@ -518,6 +499,23 @@ namespace RuralCafe
                 return new Response("text/html", "-1");
             }
             return new Response("text/html", requestHandlers[requestIndex].PrintableETA());
+        }
+
+        #endregion
+        #region Remote Delegation
+
+        /// <summary>
+        /// Delegates a routine call to the remote proxy and responds with his response.
+        /// 
+        /// GET Parameters in the URI are passed. Other stuff ATM not, but this isn't even necessary.
+        /// </summary>
+        /// <returns>The remote proxy's response.</returns>
+        public Response DelegateToRemoteProxy()
+        {
+            // Set Proxy for the request
+            _rcRequest.SetProxyAndTimeout(((RCLocalProxy)_proxy).RemoteProxy, System.Threading.Timeout.Infinite);
+            HttpWebResponse response = (HttpWebResponse)_rcRequest.GenericWebRequest.GetResponse();
+            return createResponse(response);
         }
 
         #endregion

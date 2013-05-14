@@ -53,6 +53,12 @@ namespace RuralCafe
             Low = 1
         }
 
+        // Util consts
+        /// <summary>
+        /// Matches "localhost" or "127.0.0.1" followed by anything but a dot.
+        /// </summary>
+        private static Regex localAddressRegex = new Regex(@"(?<add1>(localhost|127\.0\.0\.1))(?<add2>[^\.])");
+
         // timeouts
         public const int LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT = Timeout.Infinite; // in milliseconds
         public const int REMOTE_REQUEST_PACKAGE_DEFAULT_TIMEOUT = 180000; // in milliseconds
@@ -79,16 +85,13 @@ namespace RuralCafe
         // filename for the package
         protected string _packageFileName;
 
-        // temporary variables
-        private Byte[] _recvBuffer = new Byte[1024];
         // If request is valid
         private bool _validRequest = true;
+        // The received String
+        private string _recvString;
 
-        // Util consts
-        /// <summary>
-        /// Matches "localhost" or "127.0.0.1" followed by anything but a dot.
-        /// </summary>
-        private static Regex localAddressRegex = new Regex(@"(?<add1>(localhost|127\.0\.0\.1))(?<add2>[^\.])");
+        // temporary variables
+        private Byte[] _recvBuffer = new Byte[1024];
 
         // benchmarking unused
         //protected DateTime requestReceived;
@@ -311,12 +314,18 @@ namespace RuralCafe
                 }
                 else
                 {
-                    // TODO also internal here
-                    result = new RemoteRequestHandler((RCRemoteProxy)proxy, socket);
+                    if (IsRCRequest(originalRequest))
+                    {
+                        result = new RemoteInternalRequestHandler((RCRemoteProxy)proxy, socket);
+                    }
+                    else
+                    {
+                        result = new RemoteRequestHandler((RCRemoteProxy)proxy, socket);
+                    }
                 }
                 // Set original request.
                 result._originalRequest = originalRequest;
-
+                result._recvString = recvString;
                 return result;
             }
             catch (Exception e)
@@ -338,7 +347,7 @@ namespace RuralCafe
                 }
                 errmsg += " " + e.GetType() + ": " + e.Message + "\n" + e.StackTrace;
                 temp.LogDebug(errmsg);
-                // Erroneous has been handled
+                // Erroneous request has been handled
                 temp._validRequest = false;
                 return temp;
             }
@@ -349,7 +358,6 @@ namespace RuralCafe
         /// </summary>
         public void Go()
         {
-            string recvString = "";
             string refererUri = "";
 
             try
@@ -360,9 +368,9 @@ namespace RuralCafe
                     return;
                 }
                 // get the referer URI
-                refererUri = GetHeaderValue(recvString, "Referer");
+                refererUri = GetHeaderValue(_recvString, "Referer");
 
-                if (CreateRequest(_originalRequest, refererUri, recvString))
+                if (CreateRequest(_originalRequest, refererUri, _recvString))
                 {
                     _packageFileName = _proxy.PackagesPath + _rcRequest.HashPath + _rcRequest.FileName + ".gzip";
 
@@ -383,7 +391,7 @@ namespace RuralCafe
                     // XXX: was streaming these unparsable URIs, but this is disabled for now
                     // XXX: mangled version of the one in LocalRequestHandler, duplicate, and had to move the StreamTransparently() up to this parent class
                     LogDebug("streaming: " + _originalRequest.RequestUri.ToString() + " to client.");
-                    long bytesSent = StreamTransparently(recvString);
+                    long bytesSent = StreamTransparently(_recvString);
                     return;
                 }
             }
