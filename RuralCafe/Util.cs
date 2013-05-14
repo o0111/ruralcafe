@@ -467,6 +467,16 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// Streams the whole Body of a HttpWebResponse.
+        /// </summary>
+        /// <param name="response">The response.</param>
+        /// <returns>The whole Body as a string.</returns>
+        public static string StreamContent(HttpWebResponse response)
+        {
+            return new StreamReader(response.GetResponseStream()).ReadToEnd();
+        }
+
+        /// <summary>
         /// Fills in the extension to content-type map with static mappings.
         /// </summary>
         public static void FillExtMap()

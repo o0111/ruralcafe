@@ -102,7 +102,7 @@ function removeRequest(itemId){
 //set the richness
 function setRichness(richness){
 	var mygetrequest=new ajaxRequest()
-	mygetrequest.open("GET", "request/richness?r="+richness, true);
+	mygetrequest.open("GET", "request/richness?u="+userid+"&r="+richness, true);
 	mygetrequest.send(null);
 	return false;
 }

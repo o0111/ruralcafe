@@ -91,15 +91,6 @@ namespace RuralCafe
             // benchmarking
             //handleRequestStart = DateTime.Now;
 
-            /* 
-            // XXX: obsolete
-            // not checking this anymore, make sure you can establish the connection properly, after that its all good.
-            if (!IsRCRemoteQuery())
-            {
-                LogDebug("error not RuralCafe URL or search request: " + RequestUri);
-                return (int)Status.Ignored;
-            }*/
-
             // XXX: Get current richness!
             Richness richness = DEFAULT_RICHNESS;//_rcRequest.GetRCSearchField("richness");
 
@@ -125,60 +116,36 @@ namespace RuralCafe
                     LogException("Couldn't parse quota: " + e.StackTrace + " " + e.Message);
                 }                
             }*/
-            
-            /*
-            // XXX: obsolete
-            if (IsRCURLRequest())
+            string requestUri = _rcRequest.Uri;
+
+            if (requestUri.Trim().Length > 0)
             {
-             */
-                //LogDebug("page request, downloading page as package");
-                //string requestUri = _rcRequest.GetRCSearchField("textfield");
-                string requestUri = _rcRequest.Uri;
+                string fileExtension = Util.GetFileExtension(requestUri);
+                requestUri = AddHttpPrefix(requestUri);
 
-                if (requestUri.Trim().Length > 0)
+                if (IsCacheable())
                 {
-                    string fileExtension = Util.GetFileExtension(requestUri);
-                    requestUri = AddHttpPrefix(requestUri);
+                    // remove RuralCafe stuff from the request
+                    _rcRequest = new RCRequest(this, (HttpWebRequest)WebRequest.Create(requestUri.Trim()));
+                    //_rcRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
 
-                    if (IsCacheable())
+                    if (RecursivelyDownloadPage(_rcRequest, richness, 0))
                     {
-                        // remove RuralCafe stuff from the request
-                        _rcRequest = new RCRequest(this, (HttpWebRequest)WebRequest.Create(requestUri.Trim()));
-                        //_rcRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
-
-                        if (RecursivelyDownloadPage(_rcRequest, richness, 0))
+                        _rcRequest.FileSize = SendResponsePackage();
+                        if (_rcRequest.FileSize > 0)
                         {
-                            _rcRequest.FileSize = SendResponsePackage();
-                            if (_rcRequest.FileSize > 0)
-                            {
-                                return Status.Completed;
-                            }
+                            return Status.Completed;
                         }
                     }
-                    else   
-                    {
-                        // XXX: not handled at the moment, technically nothing should be "not cacheable" though.
-                        LogDebug("not cacheable, failed.");
-
-                        return Status.Failed;
-                    }
                 }
-                /*
-                // XXX: obsolete
-            }
-            else
-            {
-                LogDebug("RuralCafe search request: " + RequestUri);
-
-                if (PrefetchBFS(richness, depth))
+                else   
                 {
-                    _rcRequest.FileSize = SendResponsePackage();
-                    if (_rcRequest.FileSize > 0)
-                    {
-                        return (int)Status.Completed;
-                    }
+                    // XXX: not handled at the moment, technically nothing should be "not cacheable" though.
+                    LogDebug("not cacheable, failed.");
+
+                    return Status.Failed;
                 }
-            }*/
+            }
 
             // benchmarking
             //handleRequestEnd = DateTime.Now;

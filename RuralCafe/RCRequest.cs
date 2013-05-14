@@ -216,42 +216,6 @@ namespace RuralCafe
              GenericWebRequest.Timeout = timeout;
         }
 
-        /*
-        // XXX: obsolete into settings?
-        /// <summary>
-        /// Parses the RuralCafe search fields for later use.
-        /// </summary>
-        public void ParseRCSearchFields()
-        {
-            _searchFields = new Dictionary<string, string>();
-
-            string queryString = "";
-            int offset = Uri.IndexOf('?');
-            if (offset >= 0)
-            {
-                queryString = (offset < Uri.Length - 1) ? Uri.Substring(offset + 1) : String.Empty;
-
-                // Parse the query string variables into a NameValueCollection.
-                try
-                {
-                    NameValueCollection qscoll = HttpUtility.ParseQueryString(queryString);
-
-                    foreach (String key in qscoll.AllKeys)
-                    {
-                        if (!_searchFields.ContainsKey(key))
-                        {
-                            _searchFields.Add(key, qscoll[key]);
-                        }
-                    }
-                }
-                catch (Exception)
-                {
-                    // nothing to parse
-                    return;
-                }
-            }
-        }*/
-
         /// <summary>Override object equality for request matching.</summary>
         public override bool Equals(object obj)
         {
@@ -267,18 +231,6 @@ namespace RuralCafe
             return Uri.GetHashCode();
         }
 
-        /*
-        /// <summary>
-        /// Helper that returns the hashed file path given a file name.
-        /// </summary>
-        /// <param name="fileName">File name.</param>
-        /// <returns>Hashed file path.</returns>
-        private static string HashedFileName(string fileName)
-        {
-            string hashedFileName = HashedFilePath(fileName) + fileName;
-            return hashedFileName;
-        }
-         */
         /// <summary>
         /// Actually hashes the file name to a file path.
         /// </summary>
@@ -343,15 +295,6 @@ namespace RuralCafe
             {
                 _resetEvents[_childNumber].Set();
             }
-            /*
-            for (int i = 0; i < _resetEvents.Length; i++)
-            {
-                if (_resetEvents[i] != null)
-                {
-                    //_resetEvents[i].WaitOne(0).ToString()
-                    _requestHandler.LogDebug("Child: " + i + " " + _resetEvents[i].WaitOne(0).ToString());
-                }
-            }*/
         }
 
         /// <summary>
@@ -535,6 +478,8 @@ namespace RuralCafe
 
                 //_requestHandler.LogDebug("downloading2: " + _webRequest.RequestUri);
                 // Read and save the response
+
+                // XXX: Use a stream reader!?
                 Stream responseStream = GenericWebResponse.GetResponseStream();
                 //_requestHandler.LogDebug("downloading done2: " + _webRequest.RequestUri);
 

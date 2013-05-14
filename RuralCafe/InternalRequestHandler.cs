@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -109,7 +110,7 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// All routines must return e Response, if they do not throw an HttpException.
+        /// All routines must return a Response, if they do not throw an HttpException.
         /// </summary>
         public class Response
         {
@@ -137,6 +138,13 @@ namespace RuralCafe
             {
             }
 
+            /// <summary>
+            /// Only for the local internal request handler.
+            /// </summary>
+            /// <param name="contentType">The content type.</param>
+            /// <param name="additionalHeaders">Additional headers.</param>
+            /// <param name="addition">Either a message, or a filename to stream.</param>
+            /// <param name="isStreamFileName">if true, addition is handled as a filename, as a message otherwise</param>
             public Response(string contentType, string additionalHeaders, string addition, bool isStreamFileName)
             {
                 _contentType = contentType;
@@ -184,7 +192,7 @@ namespace RuralCafe
         /// </summary>
         /// <param name="proxy">Proxy this request handler belongs to.</param>
         /// <param name="socket">Client socket.</param>
-        protected InternalRequestHandler(RCLocalProxy proxy, Socket socket, 
+        protected InternalRequestHandler(RCProxy proxy, Socket socket, 
             Dictionary<String, RoutineMethod> routines, RoutineMethod defaultMethod)
             : base(proxy, socket)
         {
@@ -281,6 +289,21 @@ namespace RuralCafe
                 result[i] = Convert.ChangeType(parameterCollection.Get(parameterName), parameterType);
             }
             return result;
+        }
+
+        /// <summary>
+        /// Will hopefully be obsoleted, when we don't need "own" Responses any more...
+        /// Creates only a response with a message, not for streaming files.
+        /// </summary>
+        /// <param name="originalResponse">The original HttpWebResponse.</param>
+        /// <returns>The generated Response.</returns>
+        public static Response createResponse(HttpWebResponse originalResponse)
+        {
+            string contentType = originalResponse.ContentType;
+            // XXX: additional headers lost ATM
+            // Will be fixed, when we only use HttpWebResponse
+            string message = Util.StreamContent(originalResponse);
+            return new Response(contentType, message);
         }
     }
 }
