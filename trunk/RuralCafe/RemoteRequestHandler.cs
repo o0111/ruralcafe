@@ -66,8 +66,8 @@ namespace RuralCafe
         /// </summary>
         /// <param name="proxy">Proxy this request handler belongs to.</param>
         /// <param name="socket">Client socket.</param>
-        public RemoteRequestHandler(RCRemoteProxy proxy, Socket socket) 
-            : base(proxy, socket)
+        public RemoteRequestHandler(RCRemoteProxy proxy, HttpListenerContext context)
+            : base(proxy, context)
         {
             _requestId = _proxy.NextRequestId;
             _proxy.NextRequestId = proxy.NextRequestId + 1;
@@ -674,7 +674,7 @@ namespace RuralCafe
             }
 
             LogDebug("sending results package: " + (_package.IndexSize + _package.ContentSize) + " bytes at " + _proxy.MAXIMUM_DOWNLINK_BANDWIDTH + " bytes per second." );
-            SendPackageHeaders();
+            DefinePackageHeaders();
 
             // stream out the pages (w/compression)
             LinkedList<string> fileNames = new LinkedList<string>();
@@ -685,56 +685,6 @@ namespace RuralCafe
             }
             MemoryStream ms = GZipWrapper.GZipCompress(fileNames);
             return StreamToClient(ms);
-        }
-
-        /// <summary>
-        /// Streams data from a MemoryStream to the client socket.
-        /// </summary>
-        /// <param name="ms">Data source.</param>
-        /// <returns>Number of bytes streamed.</returns>
-        private long StreamToClient(MemoryStream ms)
-        {
-            long bytesSent = 0;
-            int offset = 0;
-            byte[] buffer = new byte[32]; // magic number 32
-            int bytesRead = 0;
-
-            try
-            {
-                // loop and get the bytes we need if we couldn't get it in one go
-                bytesRead = ms.Read(buffer, 0, 32);
-                while (bytesRead > 0)
-                {
-                    // check speed limit
-                    while (!_proxy.HasDownlinkBandwidth(bytesRead))
-                    {
-                        Thread.Sleep(100);
-                    }
-
-                    // send bytes
-                    _clientSocket.Send(buffer, bytesRead, 0);
-                    bytesSent += bytesRead;
-
-                    // read bytes from cache
-                    bytesRead = ms.Read(buffer, 0, 32);
-
-                    offset += bytesRead;
-                }
-            }
-            catch (Exception e)
-            {
-                // XXX: don't think this is the way to handle such an error.
-                SendErrorPage(HttpStatusCode.InternalServerError, "problem streaming the package from disk to client", e.StackTrace + " " + e.Message);
-            }
-            finally
-            {
-                if (ms != null)
-                {
-                    ms.Close();
-                }
-
-            }
-            return bytesSent;
         }
 
         /// <summary>
@@ -787,30 +737,12 @@ namespace RuralCafe
         /// Specialty RuralCafe only headers are "Package-IndexSize" and "Package-ContentSize".
         /// The "Content-Encoding" is also set to gzip.
         /// </summary>
-        void SendPackageHeaders()
+        void DefinePackageHeaders()
         {
-            int statusCode = (int)HttpStatusCode.OK;
-            string strReason = "";
-            string str = "";
-
-            str = "HTTP/1.1" + " " + statusCode + " " + strReason + "\r\n" +
-            "Content-Type: ruralcafe-package" + "\r\n";
-
-            // gzip stuff
-            str += "Content-Encoding: gzip\r\n";
-
-            str += "Package-IndexSize: ";
-            str += _package.IndexSize;
-            str += "\r\n";
-
-            str += "Package-ContentSize: ";
-            str += _package.ContentSize;
-            str += "\r\n";
-
-            str += "Proxy-Connection: close" + "\r\n" +
-                "\r\n";
-
-            SendMessage(str);
+            // XXX: Set endoding? Will the response be automitically and therefore one time to much
+            // gzipped?
+            _clientHttpContext.Response.AddHeader("Package-IndexSize", "" + _package.IndexSize);
+            _clientHttpContext.Response.AddHeader("Package-ContentSize", "" + _package.ContentSize);
         }
 
         #endregion
@@ -916,7 +848,16 @@ namespace RuralCafe
                 {
                     HtmlAttribute att = link.Attributes[attribute];
                     // Get the absolute URI
-                    string currUri = new Uri(baseUri, att.Value).AbsoluteUri;
+                    string currUri;
+                    try
+                    {
+                        currUri = new Uri(baseUri, att.Value).AbsoluteUri;
+                    }
+                    catch(UriFormatException)
+                    {
+                        continue;
+                    }
+                     
                     if (!Util.IsValidUri(currUri))
                     {
                         continue;

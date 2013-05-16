@@ -33,8 +33,8 @@ namespace RuralCafe
         /// </summary>
         /// <param name="proxy">Proxy this request handler belongs to.</param>
         /// <param name="socket">Client socket.</param>
-        public RemoteInternalRequestHandler(RCRemoteProxy proxy, Socket socket)
-            : base(proxy, socket, routines, defaultMethod)
+        public RemoteInternalRequestHandler(RCRemoteProxy proxy, HttpListenerContext context)
+            : base(proxy, context, routines, defaultMethod)
         {
             _requestId = _proxy.NextRequestId;
             _proxy.NextRequestId = _proxy.NextRequestId + 1;
@@ -54,10 +54,10 @@ namespace RuralCafe
             }
             catch (Exception)
             {
-                throw new HttpException(HttpStatusCode.BadRequest, "unknown richness setting", richnessString);
+                throw new HttpException(HttpStatusCode.BadRequest, "unknown richness setting: " + richnessString);
             }
             Console.WriteLine("Richness would have been set to: " + richness + " by user " + userid);
-            return new Response("text/html", "Richness set.");
+            return new Response("Richness set.");
         }
 
         #endregion

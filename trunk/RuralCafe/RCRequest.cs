@@ -56,9 +56,6 @@ namespace RuralCafe
         private ManualResetEvent[] _resetEvents;
         private int _childNumber;
 
-        // only used by the transparent part of the proxy
-        public string _recvString;
-
 
         # region Accessors
         public string Uri

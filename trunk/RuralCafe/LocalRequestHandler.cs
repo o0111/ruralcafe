@@ -48,7 +48,7 @@ namespace RuralCafe
         /// <param name="proxy">Proxy this request handler belongs to.</param>
         /// <param name="socket">Client socket.</param>
         public LocalRequestHandler(LocalInternalRequestHandler internalHandler)
-            : base(internalHandler.Proxy, internalHandler.Socket)
+            : base(internalHandler.Proxy, internalHandler.Context)
         {
             _requestId = _proxy.NextRequestId;
             _proxy.NextRequestId = _proxy.NextRequestId + 1;
@@ -63,8 +63,8 @@ namespace RuralCafe
         /// </summary>
         /// <param name="proxy">Proxy this request handler belongs to.</param>
         /// <param name="socket">Client socket.</param>
-        public LocalRequestHandler(RCLocalProxy proxy, Socket socket)
-            : base(proxy, socket)
+        public LocalRequestHandler(RCLocalProxy proxy, HttpListenerContext context)
+            : base(proxy, context)
         {
             _requestId = _proxy.NextRequestId;
             _proxy.NextRequestId = _proxy.NextRequestId + 1;
@@ -111,7 +111,7 @@ namespace RuralCafe
             if (IsBlacklisted(RequestUri))
             {
                 LogDebug("ignoring blacklisted: " + RequestUri);
-                SendErrorPage(HttpStatusCode.NotFound, "ignoring blacklisted", RequestUri);
+                SendErrorPage(HttpStatusCode.NotFound, "blacklisted: " + RequestUri);
                 return Status.Failed;
             }
 
@@ -130,7 +130,7 @@ namespace RuralCafe
             {
                 LogDebug("streaming: " + RequestUri + " to client.");
 
-                long bytesSent = StreamTransparently("");
+                long bytesSent = StreamTransparently();
                 _rcRequest.FileSize = bytesSent;
 
                 return Status.Completed;
@@ -151,10 +151,11 @@ namespace RuralCafe
                 if (peekFile.StartsWith("HTTP/1.1 301 Moved Permanently"))
                 {
                     // don't bother sending HTTP OK headers
+                    // FIXME this does not work that way any more...
                 }
                 else
                 {
-                    SendOkHeaders(contentType);
+                    _clientHttpContext.Response.ContentType = contentType;
                 }
 
                 _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName);
@@ -204,22 +205,27 @@ namespace RuralCafe
             
             if (_proxy.NetworkStatus != RCProxy.NetworkStatusCode.Online)
             {
-                // Uncached links should be redirected to trotro-user.html?t=title&a=url when the system mode is slow or offline
+                // Uncached links should be redirected to trotro-user.html?t=title&a=id when the system mode is slow or offline
                 // Parse parameters to get title
-                NameValueCollection qscoll = Util.ParseHtmlQuery(RequestUri);
-                string redirectUri = qscoll.Get("trotro");
-                if (redirectUri == null)
+                NameValueCollection qscoll = HttpUtility.ParseQueryString(_originalRequest.Url.Query);
+                string title = qscoll.Get("trotro");
+                if (title == null)
                 {
-                    // XXX: temporary title
-                    redirectUri = RequestUri;
-                    int pos = redirectUri.LastIndexOf("/");
+                    title = RequestUri;
+                    int pos = title.LastIndexOf("/");
                     while (pos > 20)
                     {
-                        redirectUri = redirectUri.Substring(0, pos);
-                        pos = redirectUri.LastIndexOf("/");
+                        title = title.Substring(0, pos);
+                        pos = title.LastIndexOf("/");
                     }
                 }
-                SendRedirect(redirectUri, RequestUri);
+
+                // Save the request in the "without user" queue
+                string id = "" + ((RCLocalProxy)_proxy).AddRequestWithoutUser(this);
+
+                string redirectUrl = "http://www.ruralcafe.net/trotro-user.html?t=" + title + "&a=" + id;
+                _clientHttpContext.Response.Redirect(redirectUrl);
+                //SendRedirect(title, id);
 
                 return Status.Completed;
             }
@@ -352,9 +358,6 @@ namespace RuralCafe
         /// <param name="e">Request parameters.</param>
         private void ServeWikiURLRenderPage(UrlRequestedEventArgs e)
         {
-            string response = "Not found";
-            string redirect = String.Empty;
-
             PageInfo page = null;
 
             if (page == null ||
@@ -372,13 +375,10 @@ namespace RuralCafe
 
             if (page != null)
             {
-                response = page.GetFormattedContent();
-                redirect = page.RedirectToTopic;
+                e.Response = page.GetFormattedContent();
+                e.RedirectTarget = page.RedirectToTopic;
+                e.Redirect = !String.IsNullOrEmpty(e.RedirectTarget);
             }
-
-            e.Redirect = !String.IsNullOrEmpty(redirect);
-            e.RedirectTarget = redirect;
-            e.Response = response;
         }
 
         /// <summary>
@@ -387,9 +387,6 @@ namespace RuralCafe
         /// <returns>Status of the handler.</returns>
         private Status ServeWikiURI()
         {
-            string response = String.Empty;
-            string redirectUrl = String.Empty;
-
             try
             {
                 Uri uri = new Uri(RequestUri);
@@ -397,13 +394,13 @@ namespace RuralCafe
                 UrlRequestedEventArgs urea = new UrlRequestedEventArgs(HttpUtility.UrlDecode(uri.AbsolutePath.Substring(6)));
 
                 ServeWikiURLRenderPage(urea);
-
-                redirectUrl = urea.Redirect ? urea.RedirectTarget : String.Empty;
-                response = urea.Redirect ? "302 Moved" : urea.Response;
-
-                byte[] sendBuf = Encoding.UTF8.GetBytes(response);
-                SendWikiHeader("HTTP/1.1", sendBuf.Length, redirectUrl, _clientSocket);
-                _clientSocket.Send(sendBuf);
+                if (urea.Redirect)
+                {
+                    // This sets Location header and status code!
+                    _clientHttpContext.Response.Redirect(urea.RedirectTarget);
+                }
+                //SendWikiHeader("HTTP/1.1", sendBuf.Length, redirectUrl, _clientHttpContext);
+                SendMessage(urea.Response);
             }
             catch (Exception)
             {
@@ -420,38 +417,6 @@ namespace RuralCafe
         public string GenerateUrl(string term)
         {
             return String.Format("http://en.wikipedia.org/wiki/{0}", HttpUtility.UrlEncode(term));
-        }
-
-        /// <summary>
-        /// Sends HTTP header to the client for the wiki URI.
-        /// </summary>
-        /// <param name="httpVersion">Http version string</param>
-        /// <param name="bytesCount">The number of bytes in the response stream</param>
-        /// <param name="statusCode">HTTP status code</param>
-        /// <param name="socket">The socket where to write to</param>
-        public void SendWikiHeader(string httpVersion, int bytesCount, string redirectLocation, Socket socket)
-        {
-            StringBuilder sb = new StringBuilder();
-
-            sb.Append(httpVersion);
-            sb.Append(" ");
-            sb.Append(String.IsNullOrEmpty(redirectLocation) ? "200" : "302");
-            sb.AppendLine();
-            sb.AppendLine("Content-Type: text/html");
-
-            if (!String.IsNullOrEmpty(redirectLocation))
-            {
-                sb.Append("Location: ");
-                sb.AppendLine(GenerateUrl(redirectLocation));
-            }
-
-            sb.AppendLine("Accept-Ranges: bytes");
-            sb.Append("Content-Length: ");
-            sb.Append(bytesCount);
-            sb.AppendLine();
-            sb.AppendLine();
-
-            socket.Send(Encoding.ASCII.GetBytes(sb.ToString()));
         }
 
         # endregion

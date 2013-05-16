@@ -36,7 +36,7 @@ namespace RuralCafe
             routines.Add("/request/remove", new RoutineMethod("RemoveRequest",
                 new string[] { "u", "i" }, new Type[] { typeof(int), typeof(string) }));
             routines.Add("/request/add", new RoutineMethod("AddRequest",
-                new string[] { "u", "t", "a", "r" }, new Type[] { typeof(int), typeof(string), typeof(string), typeof(string) }));
+                new string[] { "u", "t", "a", "r" }, new Type[] { typeof(int), typeof(string), typeof(int), typeof(string) }));
             routines.Add("/request/eta", new RoutineMethod("ServeETARequest",
                 new string[] { "u", "i" }, new Type[] { typeof(int), typeof(string) }));
             routines.Add("/request/signup", new RoutineMethod("SignupRequest",
@@ -57,8 +57,8 @@ namespace RuralCafe
         /// </summary>
         /// <param name="proxy">Proxy this request handler belongs to.</param>
         /// <param name="socket">Client socket.</param>
-        public LocalInternalRequestHandler(RCLocalProxy proxy, Socket socket)
-            : base(proxy, socket, routines, defaultMethod)
+        public LocalInternalRequestHandler(RCLocalProxy proxy, HttpListenerContext context)
+            : base(proxy, context, routines, defaultMethod)
         {
             _requestId = _proxy.NextRequestId;
             _proxy.NextRequestId = _proxy.NextRequestId + 1;
@@ -66,6 +66,30 @@ namespace RuralCafe
             UIPagesPath = ((RCLocalProxy)_proxy).UIPagesPath;
         }
 
+        #region helper methods
+
+        private void PrepareXMLRequestAnswer()
+        {
+            _clientHttpContext.Response.ContentType = "text/xml";
+            _clientHttpContext.Response.AddHeader("Cache-Control", "no-cache");
+            _clientHttpContext.Response.AddHeader("Pragma", "no-cache");
+            _clientHttpContext.Response.AddHeader("Expires", "-1");
+        }
+
+        /// <summary>
+        /// Translates a RuralCafe search to a Google one.
+        /// </summary>
+        /// <returns>Google search query.</returns>
+        private string ConstructGoogleSearch(string searchString)
+        {
+            //string searchTerms = GetRCSearchField("textfield");
+            string googleWebRequestUri = "http://www.google.com/search?hl=en&q=" +
+                                        searchString.Replace(' ', '+') +
+                                        "&btnG=Google+Search&aq=f&oq=";
+            return googleWebRequestUri;
+        }
+
+        #endregion
         #region RC display and handling Methods
 
         /// <summary>
@@ -73,12 +97,14 @@ namespace RuralCafe
         /// </summary>
         public Response DefaultPage()
         {
-            string fileName = _originalRequest.RequestUri.LocalPath.Substring(1);
+            // FIXME why "result-", not "result-offline"?
+            string fileName = _originalRequest.Url.LocalPath.Substring(1);
             fileName = fileName.Replace('/', Path.DirectorySeparatorChar);
             fileName = ((RCLocalProxy)_proxy).UIPagesPath + fileName;
             string contentType = Util.GetContentTypeOfFile(fileName);
 
-            return new Response(contentType, "", fileName, true);
+            _clientHttpContext.Response.ContentType = contentType;
+            return new Response(fileName, true);
         }
 
         /// <summary>
@@ -92,10 +118,8 @@ namespace RuralCafe
         {
 			 // XXX: not building the xml file yet, just sending the dummy page for now since there's really no top categories query yet
             // for the cache path
-            return new Response("text/xml", "Cache-Control: no-cache" + "\r\n" +
-                                      "Pragma: no-cache" + "\r\n" +
-                                      "Expires: -1" + "\r\n",
-                                      UIPagesPath + "index.xml", true);
+            PrepareXMLRequestAnswer();
+            return new Response(UIPagesPath + "index.xml", true);
         }
 
         /// <summary>
@@ -191,10 +215,8 @@ namespace RuralCafe
             }
 
             queuePageString = queuePageString + "</queue>"; //end tag
-            return new Response("text/xml", "Cache-Control: no-cache" + "\r\n" +
-                                      "Pragma: no-cache" + "\r\n" +
-                                      "Expires: -1" + "\r\n",
-                                      queuePageString);
+            PrepareXMLRequestAnswer();
+            return new Response(queuePageString);
         }
 
         /// <summary>Serves the RuralCafe search page.</summary>
@@ -208,7 +230,7 @@ namespace RuralCafe
                 fileName = pageUri.Substring(offset + 1);
             }
 
-            return new Response("text/html", "", UIPagesPath + fileName, true);
+            return new Response(UIPagesPath + fileName, true);
         }
 
         /// <summary>
@@ -298,10 +320,8 @@ namespace RuralCafe
 
             resultsString = resultsString + "</search>";
 
-            return new Response("text/xml", "Cache-Control: no-cache" + "\r\n" +
-                                      "Pragma: no-cache" + "\r\n" +
-                                      "Expires: -1" + "\r\n",
-                                      resultsString);
+            PrepareXMLRequestAnswer();
+            return new Response(resultsString);
         }
 
         //TODO: comment. Offline?
@@ -309,7 +329,7 @@ namespace RuralCafe
         {
             if (_proxy.NetworkStatus == RCProxy.NetworkStatusCode.Offline)
             {
-                return new Response("text/html");
+                return new Response();
             }
             // Google search
             string googleSearchString = ConstructGoogleSearch(queryString);
@@ -350,33 +370,18 @@ namespace RuralCafe
 
                     resultsString = resultsString + "</search>";
 
-                    return new Response("text/xml", "Cache-Control: no-cache" + "\r\n" +
-                                              "Pragma: no-cache" + "\r\n" +
-                                              "Expires: -1" + "\r\n",
-                                              resultsString);
+                    PrepareXMLRequestAnswer();
+                    return new Response(resultsString);
                 }
                 else
                 {
-                    return new Response("text/html");
+                    return new Response();
                 }
             }
             catch
             {
-                return new Response("text/html");
+                return new Response();
             }
-        }
-
-        /// <summary>
-        /// Translates a RuralCafe search to a Google one.
-        /// </summary>
-        /// <returns>Google search query.</returns>
-        private string ConstructGoogleSearch(string searchString)
-        {
-            //string searchTerms = GetRCSearchField("textfield");
-            string googleWebRequestUri = "http://www.google.com/search?hl=en&q=" +
-                                        searchString.Replace(' ', '+') +
-                                        "&btnG=Google+Search&aq=f&oq=";
-            return googleWebRequestUri;
         }
 
         #endregion
@@ -400,7 +405,7 @@ namespace RuralCafe
             {
                 status = "online";
             }
-            return new Response("text/html", status);
+            return new Response(status);
         }
 
         /// <summary>
@@ -426,7 +431,7 @@ namespace RuralCafe
             custsNode.LastChild.SelectSingleNode("pwd").InnerText = pw;
             //Save
             doc.Save(filename);
-            return new Response("text/html", "Signup successful.");
+            return new Response("Signup successful.");
         }
 
         #endregion
@@ -434,36 +439,27 @@ namespace RuralCafe
 
         /// <summary>
         /// Queues this request.
-        /// 
-        /// TODO Method missing. Parameters (POST) missing.
-        /// TODO remove the whole AddRequest logic.
-        /// FIXME if URI contains "?" -> error
         /// </summary>
-        public Response AddRequest(int userId, string targetName, string targetUri, string refererUri)
+        public Response AddRequest(int userId, string targetName, int id, string refererUri)
         {
             if (targetName == null)
             {
                 targetName = "fake title";
             }
-            if (targetUri == null)
+            if (id == null)
             {
                 throw new HttpException(HttpStatusCode.BadRequest, "malformed add request: no targetUri");
             }
+            // Get original request from Dictionary
+            LocalRequestHandler lrh = ((RCLocalProxy)_proxy).PopRequestWithoutUser(id);
+
             if (refererUri == null)
             {
-                refererUri = targetUri;
+                refererUri = lrh.OriginalRequest.RawUrl.ToString();
             }
 
-            // New local request handler (the request being added is not internal)
-            LocalRequestHandler lrh = new LocalRequestHandler(this);
-            lrh.OriginalRequest = (HttpWebRequest)WebRequest.Create(RequestUri.Trim());
-            // preserve the original request status (for HandleLogRequest)
-            Status originalRequestStatus = _rcRequest.RequestStatus;
-            lrh.RCRequest = new RCRequest(lrh, (HttpWebRequest)WebRequest.Create(targetUri.Trim()), targetName, refererUri);
-            lrh.RCRequest.RequestStatus = originalRequestStatus;
-
             ((RCLocalProxy)_proxy).QueueRequest(userId, lrh);
-            return new Response("text/html", refererUri);
+            return new Response(refererUri);
         }
 
         /// <summary>
@@ -473,7 +469,7 @@ namespace RuralCafe
         {
             LocalRequestHandler matchingRequestHandler = new LocalRequestHandler(itemId);
             ((RCLocalProxy)_proxy).DequeueRequest(userId, matchingRequestHandler);
-            return new Response("text/html");
+            return new Response();
         }
 
         /// <summary>
@@ -485,20 +481,20 @@ namespace RuralCafe
             List<LocalRequestHandler> requestHandlers = ((RCLocalProxy)_proxy).GetRequests(userId);
             if (requestHandlers == null)
             {
-                return new Response("text/html", "0");
+                return new Response("0");
             }
             LocalRequestHandler matchingRequestHandler = new LocalRequestHandler(itemId);
             int requestIndex = requestHandlers.IndexOf(matchingRequestHandler);
             if (requestIndex < 0)
             {
-                return new Response("text/html", "0");
+                return new Response("0");
             }
 
             if (requestHandlers[requestIndex].RequestStatus == RequestHandler.Status.Pending)
             {
-                return new Response("text/html", "-1");
+                return new Response("-1");
             }
-            return new Response("text/html", requestHandlers[requestIndex].PrintableETA());
+            return new Response(requestHandlers[requestIndex].PrintableETA());
         }
 
         #endregion
@@ -517,7 +513,6 @@ namespace RuralCafe
             HttpWebResponse response = (HttpWebResponse)_rcRequest.GenericWebRequest.GetResponse();
             return createResponse(response);
         }
-
         #endregion
     }
 }

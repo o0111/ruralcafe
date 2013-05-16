@@ -25,6 +25,7 @@ using System.IO;
 using System.Threading;
 using BzReader;
 using System.Collections.Specialized;
+using System.Web;
 
 namespace RuralCafe
 {
@@ -50,6 +51,10 @@ namespace RuralCafe
         private Dictionary<int, List<LocalRequestHandler>> _clientRequestQueueMap;
         // dictionary of last requested page by each client
         private Dictionary<int, LocalRequestHandler> _clientLastRequestMap;
+        // dictionary of requests without a user. They await to be "added" via trotro by a specific user
+        private Dictionary<int, LocalRequestHandler> _requestsWithoutUser;
+        // Random for the keys of the above Dictionary
+        private Random _random;
 
         // notifies that a new request has arrived
         private AutoResetEvent _newRequestEvent;
@@ -120,6 +125,8 @@ namespace RuralCafe
             _globalRequestQueue = new List<LocalRequestHandler>();
             _clientRequestQueueMap = new Dictionary<int, List<LocalRequestHandler>>();
             _clientLastRequestMap = new Dictionary<int, LocalRequestHandler>();
+            _requestsWithoutUser = new Dictionary<int, LocalRequestHandler>();
+            _random = new Random();
             _newRequestEvent = new AutoResetEvent(false);
             _averageTimePerRequest = new TimeSpan(0);
             MAXIMUM_ACTIVE_REQUESTS = maxRequests;
@@ -226,9 +233,10 @@ namespace RuralCafe
             WriteDebug("Started Listener on " + _listenAddress + ":" + _listenPort);
             try
             {
-                // create a listener for the proxy port
-                TcpListener sockServer = new TcpListener(_listenAddress, _listenPort);
-                sockServer.Start();
+                HttpListener listener = new HttpListener();
+                // prefix URL at which the listener will listen
+                listener.Prefixes.Add("http://*:" + _listenPort + "/");
+                listener.Start();
 
                 // loop and listen for the next connection request
                 while (true)
@@ -242,12 +250,11 @@ namespace RuralCafe
                             Thread.Sleep(100);
                         }
                     }
-
                     // accept connections on the proxy port (blocks)
-                    Socket socket = sockServer.AcceptSocket();
+                    HttpListenerContext context = listener.GetContext();
 
                     // handle the accepted connection in a separate thread
-                    RequestHandler requestHandler = RequestHandler.PrepareNewRequestHandler(this, socket);
+                    RequestHandler requestHandler = RequestHandler.PrepareNewRequestHandler(this, context);
                     // Start own method StartRequestHandler in the thread, which also in- and decreases _activeRequests
                     Thread proxyThread = new Thread(new ParameterizedThreadStart(this.StartRequestHandler));
                     //proxyThread.Name = String.Format("LocalRequest" + socket.RemoteEndPoint.ToString());
@@ -321,7 +328,7 @@ namespace RuralCafe
                         WriteDebug("dispatching to remote proxy: " + requestHandler.RequestUri);
                         long bytesDownloaded = requestHandler.RCRequest.DownloadToCache(true);
 
-                        if (bytesDownloaded > -1)
+                        if (bytesDownloaded > 0)
                         {
                             //WriteDebug("unpacking: " + requestHandler.RequestUri);
                             long unpackedBytes = Package.Unpack(requestHandler, _indexPath);
@@ -438,14 +445,15 @@ namespace RuralCafe
                         // make sure that its actually a search query
                         string clientAddress = lineTokens[4];
                         string httpCommand = lineTokens[5];
-                        string requestUri = lineTokens[6];
+                        string requestUriString = lineTokens[6];
+                        Uri requestUri = new Uri(requestUriString);
                         string refererUri = lineTokens[8];
                         string startTime = lineTokens[1] + " " + lineTokens[2] + " " + lineTokens[3];
 
-                        if ((httpCommand == "GET") && requestUri.StartsWith("http://www.ruralcafe.net/request/add?"))
+                        if ((httpCommand == "GET") && requestUri.AbsolutePath.StartsWith("http://www.ruralcafe.net/request/add"))
                         {
                             // Parse parameters
-                            NameValueCollection qscoll = Util.ParseHtmlQuery(requestUri);
+                            NameValueCollection qscoll = HttpUtility.ParseQueryString(requestUri.Query);
                             string targetUri = qscoll.Get("a");
                             if (targetUri == null)
                             {
@@ -464,7 +472,7 @@ namespace RuralCafe
                             logEntry.Add(requestId);
                             logEntry.Add(startTime);
                             logEntry.Add(clientAddress);
-                            logEntry.Add(requestUri);
+                            logEntry.Add(requestUriString);
                             logEntry.Add(refererUri);
                             if (!loggedRequestQueueMap.ContainsKey(itemId))
                             {
@@ -472,10 +480,10 @@ namespace RuralCafe
                             }
                         }
 
-                        if ((httpCommand == "GET") && requestUri.StartsWith("http://www.ruralcafe.net/request/remove?"))
+                        if ((httpCommand == "GET") && requestUri.AbsolutePath.StartsWith("http://www.ruralcafe.net/request/remove"))
                         {
                             // Parse parameters
-                            NameValueCollection qscoll = Util.ParseHtmlQuery(requestUri);
+                            NameValueCollection qscoll = HttpUtility.ParseQueryString(requestUri.Query);
                             string itemId = qscoll.Get("i");
                             if (itemId == null)
                             {
@@ -495,12 +503,13 @@ namespace RuralCafe
                     else if (lineTokens.Length >= 7)
                     {
                         requestId = lineTokens[0];
-                        string httpCommand = lineTokens[4];
-                        string requestUri = lineTokens[5];
+                        string httpCommand = lineTokens[4]; 
+                        string requestUriString = lineTokens[6];
+                        Uri requestUri = new Uri(requestUriString);
                         string status = lineTokens[6];
 
                         // Parse parameters
-                        NameValueCollection qscoll = Util.ParseHtmlQuery(requestUri);
+                        NameValueCollection qscoll = HttpUtility.ParseQueryString(requestUri.Query);
                         string targetUri = qscoll.Get("a");
                         if (targetUri == null)
                         {
@@ -694,6 +703,42 @@ namespace RuralCafe
                 }
             }
             return requestHandlers;
+        }
+
+        /// <summary>
+        /// Adds a request, where the user is unknown yet, to the Dictionary
+        /// </summary>
+        /// <param name="uri">The key.</param>
+        /// <param name="handler">The value.</param>
+        /// <returns>The id of the request.</returns>
+        public int AddRequestWithoutUser(LocalRequestHandler handler)
+        {
+            int id = _random.Next();
+            lock (_requestsWithoutUser)
+            {
+                _requestsWithoutUser.Add(id, handler);
+            }
+            return id;
+        }
+
+        /// <summary>
+        /// Gets and removes the RequestHandler associated with the given URI. If the URI is no key
+        /// in the Dictionary, an Exception is thrown.
+        /// </summary>
+        /// <param name="uri">The uri.</param>
+        /// <returns>The LocalRequestHandler.</returns>
+        public LocalRequestHandler PopRequestWithoutUser(int id)
+        {
+            lock (_requestsWithoutUser)
+            {
+                if(_requestsWithoutUser.ContainsKey(id))
+                {
+                    LocalRequestHandler result = _requestsWithoutUser[id];
+                    _requestsWithoutUser.Remove(id);
+                    return result;
+                }
+                throw new Exception("this request did not exist");
+            }
         }
 
         # endregion
