@@ -118,16 +118,12 @@ namespace RuralCafe
             // add files that were completed to the package
             foreach (RCRequest request in requests)
             {
-                // check watermark
-                //if (quota > requestHandler.DEFAULT_LOW_WATERMARK)
-                //{
                 // add to the package
                 if (Pack(requestHandler, request, ref quota))
                 {
                     //requestHandler.LogDebug("packed: " + request.Uri + " " + request.FileSize + " bytes - " + quota + " left");
                     addedObjects.AddLast(request);
                 }
-                //}
             }
             
             return addedObjects;
@@ -143,9 +139,20 @@ namespace RuralCafe
         {
             string packageIndexSizeStr = requestHandler.RCRequest.GenericWebResponse.GetResponseHeader("Package-IndexSize");
             string packageContentSizeStr = requestHandler.RCRequest.GenericWebResponse.GetResponseHeader("Package-ContentSize");
-            //XXX: Unhandled Exception if sizes not sent by server: Package has never been sent!
-            long packageIndexSize = Int64.Parse(packageIndexSizeStr);
-            long packageContentSize = Int64.Parse(packageContentSizeStr);
+            
+            long packageIndexSize;
+            long packageContentSize;
+            try
+            {
+                packageIndexSize = Int64.Parse(packageIndexSizeStr);
+                packageContentSize = Int64.Parse(packageContentSizeStr);
+            }
+            catch (FormatException)
+            {
+                // This is internal error that should not happen!
+                return 0;
+            }
+            
             string packageFileName = requestHandler.PackageFileName;
             string unpackedPackageFileName = packageFileName.Replace(".gzip", "");
 
@@ -200,6 +207,7 @@ namespace RuralCafe
 
                 // make sure the file doesn't already exist for indexing purposes only
                 bool existed = false;
+                // XXX: FileName too long: unhandled exceptions
                 FileInfo ftest = new FileInfo(rcRequest.CacheFileName);
                 if (ftest.Exists)
                 {

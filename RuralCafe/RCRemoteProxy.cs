@@ -60,17 +60,19 @@ namespace RuralCafe
             try
             {
                 // create a listener for the proxy port
-                TcpListener sockServer = new TcpListener(_listenAddress, _listenPort);
-                sockServer.Start();
+                HttpListener listener = new HttpListener();
+                // prefix URL at which the listener will listen
+                listener.Prefixes.Add("http://*:" + _listenPort + "/");
+                listener.Start();
 
                 // loop and listen for the next connection request
                 while (true)
                 {
                     // accept connections on the proxy port (blocks)
-                    Socket socket = sockServer.AcceptSocket();
+                    HttpListenerContext context = listener.GetContext();
 
                     // handle the accepted connection in a separate thread
-                    RequestHandler requestHandler = RequestHandler.PrepareNewRequestHandler(this, socket);
+                    RequestHandler requestHandler = RequestHandler.PrepareNewRequestHandler(this, context);
                     Thread proxyThread = new Thread(new ThreadStart(requestHandler.Go));
                     proxyThread.Start();
                 }

@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
+using System.Web;
 
 namespace RuralCafe
 {
@@ -67,18 +68,15 @@ namespace RuralCafe
         protected class HttpException : Exception
         {
             HttpStatusCode _status;
-            string _strReason;
             string _strText;
 
             /// <summary>
             ///  Construct an HttpError
             /// </summary>
             /// <param name="status">Error status.</param>
-            /// <param name="strReason">The reason for the status.</param>
-            public HttpException(HttpStatusCode status, string strReason)
+            public HttpException(HttpStatusCode status)
             {
                 _status = status;
-                _strReason = strReason;
                 _strText = "";
             }
 
@@ -87,21 +85,15 @@ namespace RuralCafe
             /// </summary>
             /// <param name="status">Error status.</param>
             /// <param name="strReason">The reason for the status.</param>
-            /// <param name="strText">Any additional text.</param>
-            public HttpException(HttpStatusCode status, string strReason, string strText)
+            public HttpException(HttpStatusCode status, string strText)
             {
                 _status = status;
-                _strReason = strReason;
                 _strText = strText;
             }
 
             public HttpStatusCode Status
             {
                 get { return _status; }
-            }
-            public String Reason
-            {
-                get { return _strReason; }
             }
             public String Text
             {
@@ -110,45 +102,34 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// All routines must return a Response, if they do not throw an HttpException.
+        /// All routines must return a Response, if they do not throw a HttpException.
         /// </summary>
         public class Response
         {
-            private string _contentType;
-            private string _additionalHeaders;
             private string _message;
             private string _streamFileName;
 
-            public Response(string contentType)
-            {
-                _contentType = contentType;
-                _message = "";
-                _additionalHeaders = "";
-            }
+            /// <summary>
+            /// Empty response.
+            /// </summary>
+            public Response() { }
 
-            public Response(string contentType, string message)
+            /// <summary>
+            /// Normal Response with a string.
+            /// </summary>
+            /// <param name="message">The message.</param>
+            public Response(string message)
             {
-                _contentType = contentType;
                 _message = message;
-                _additionalHeaders = "";
-            }
-
-            public Response(string contentType, string additionalHeaders, string message)
-                : this(contentType, additionalHeaders, message, false)
-            {
             }
 
             /// <summary>
             /// Only for the local internal request handler.
             /// </summary>
-            /// <param name="contentType">The content type.</param>
-            /// <param name="additionalHeaders">Additional headers.</param>
             /// <param name="addition">Either a message, or a filename to stream.</param>
             /// <param name="isStreamFileName">if true, addition is handled as a filename, as a message otherwise</param>
-            public Response(string contentType, string additionalHeaders, string addition, bool isStreamFileName)
+            public Response(string addition, bool isStreamFileName)
             {
-                _contentType = contentType;
-                _additionalHeaders = additionalHeaders;
                 if (isStreamFileName)
                 {
                     _streamFileName = addition;
@@ -159,17 +140,9 @@ namespace RuralCafe
                 }
             }
 
-            public string ContentType
-            {
-                get { return _contentType; }
-            }
             public string Message
             {
                 get { return _message; }
-            }
-            public string AdditionalHeader
-            {
-                get { return _additionalHeaders; }
             }
             public string StreamFileName
             {
@@ -192,9 +165,9 @@ namespace RuralCafe
         /// </summary>
         /// <param name="proxy">Proxy this request handler belongs to.</param>
         /// <param name="socket">Client socket.</param>
-        protected InternalRequestHandler(RCProxy proxy, Socket socket, 
+        protected InternalRequestHandler(RCProxy proxy, HttpListenerContext context, 
             Dictionary<String, RoutineMethod> routines, RoutineMethod defaultMethod)
-            : base(proxy, socket)
+            : base(proxy, context)
         {
             _requestId = _proxy.NextRequestId;
             _proxy.NextRequestId = _proxy.NextRequestId + 1;
@@ -209,9 +182,9 @@ namespace RuralCafe
         /// <returns>The status.</returns>
         public override Status HandleRequest()
         {
-            LogDebug("Processing internal request: " + _originalRequest.RequestUri);
+            LogDebug("Processing internal request: " + _originalRequest.Url);
 
-            String path = _originalRequest.RequestUri.LocalPath;
+            String path = _originalRequest.Url.LocalPath;
             RoutineMethod method = _routines.ContainsKey(path) ? _routines[path] : _defaultMethod;
 
             try
@@ -226,12 +199,16 @@ namespace RuralCafe
                 if (result == null || !(result is Response))
                 {
                     LogDebug("Return type wrong: " + method.MethodName);
-                    SendErrorPage(HttpStatusCode.InternalServerError, "", "Return type wrong: " + method.MethodName);
+                    SendErrorPage(HttpStatusCode.InternalServerError, "Return type wrong: " + method.MethodName);
                     return RequestHandler.Status.Failed;
+                }
+                // Specify content type as "text/html" if not set before
+                if (_clientHttpContext.Response.ContentType == null)
+                {
+                    _clientHttpContext.Response.ContentType = "text/html";
                 }
                 // Send result
                 Response response = (Response)result;
-                SendOkHeaders(response.ContentType, response.AdditionalHeader);
                 if (response.Message != null)
                 {
                     SendMessage(response.Message);
@@ -241,7 +218,7 @@ namespace RuralCafe
                     long bytesSent = StreamFromCacheToClient(response.StreamFileName);
                     if (bytesSent <= 0)
                     {
-                        SendErrorPage(HttpStatusCode.NotFound, "page does not exist", RequestUri);
+                        SendErrorPage(HttpStatusCode.NotFound, "page does not exist: " + RequestUri);
                         return RequestHandler.Status.Failed;
                     }
                 }
@@ -255,12 +232,13 @@ namespace RuralCafe
                 {
                     // an intended Exception
                     HttpException httpe = (HttpException)innerE;
-                    SendErrorPage(httpe.Status, httpe.Reason, httpe.Text);
+                    SendErrorPage(httpe.Status, httpe.Text);
                 }
                 else
                 {
                     // an unknown exception
-                    SendErrorPage(HttpStatusCode.InternalServerError, "", innerE.Message);
+                    string message = innerE != null ? innerE.Message : e.Message;
+                    SendErrorPage(HttpStatusCode.InternalServerError, message);
                 }
                 return RequestHandler.Status.Failed;
             }
@@ -279,12 +257,14 @@ namespace RuralCafe
                 return null;
             }
             Object[] result = new Object[method.ParameterNames.Length];
+
             // Parse parameters
-            NameValueCollection parameterCollection = Util.ParseHtmlQuery(RequestUri);
+            NameValueCollection parameterCollection = HttpUtility.ParseQueryString(_originalRequest.Url.Query);
             for (int i = 0; i < method.ParameterNames.Length; i++)
             {
                 String parameterName = method.ParameterNames[i];
                 Type parameterType = method.ParameterTypes[i];
+                //_originalRequest.
                 // Convert to required type
                 result[i] = Convert.ChangeType(parameterCollection.Get(parameterName), parameterType);
             }
@@ -292,7 +272,6 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Will hopefully be obsoleted, when we don't need "own" Responses any more...
         /// Creates only a response with a message, not for streaming files.
         /// </summary>
         /// <param name="originalResponse">The original HttpWebResponse.</param>
@@ -301,9 +280,8 @@ namespace RuralCafe
         {
             string contentType = originalResponse.ContentType;
             // XXX: additional headers lost ATM
-            // Will be fixed, when we only use HttpWebResponse
             string message = Util.StreamContent(originalResponse);
-            return new Response(contentType, message);
+            return new Response(message);
         }
     }
 }

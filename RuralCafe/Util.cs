@@ -157,17 +157,6 @@ namespace RuralCafe
             return -1;
         }
 
-        public static NameValueCollection ParseHtmlQuery(string requestUri)
-        {
-            string htmlQuery = "";
-            int offset = requestUri.LastIndexOf("?");
-            if (offset >= 0)
-            {
-                htmlQuery = requestUri.Substring(offset + 1);
-            }
-            return HttpUtility.ParseQueryString(htmlQuery);
-        }
-
 
         /// <summary>
         /// Gets the file extension from the file name.
@@ -474,6 +463,12 @@ namespace RuralCafe
         public static string StreamContent(HttpWebResponse response)
         {
             return new StreamReader(response.GetResponseStream()).ReadToEnd();
+        }
+
+        public static HttpWebRequest CreateWebRequest(HttpListenerRequest listenerRequest)
+        {
+            // TODO more stuff!
+            return (HttpWebRequest)WebRequest.Create(listenerRequest.RawUrl);
         }
 
         /// <summary>

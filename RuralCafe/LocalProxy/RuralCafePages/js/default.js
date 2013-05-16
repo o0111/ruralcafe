@@ -9,7 +9,7 @@ function gotoPage(pagelink) {
 }
 
 
-//show search results, status can either be "cached", "online" or "online"
+//show search results, status can either be "cached", "online" or "offline"
 function tSearch(status) {
 	var searchStr = document.getElementById('search_input').value;
 	gotoPage('result-'+status+'.html?s='+searchStr);
