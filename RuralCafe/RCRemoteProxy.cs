@@ -28,10 +28,15 @@ using System.Collections;
 namespace RuralCafe
 {
     /// <summary>
-    /// Remote proxy implementation, inherits from GenericProxy.
+    /// Remote proxy implementation, inherits from RCProxy.
     /// </summary>
     public class RCRemoteProxy : RCProxy
     {
+        /// <summary>
+        /// user id -> user settings.
+        /// </summary>
+        private Dictionary<int, RCUserSettings> _userSettings;
+
         /// <summary>
         /// Constructor for remote proxy.
         /// </summary>
@@ -47,6 +52,7 @@ namespace RuralCafe
             cachePath, packagesPath, logsPath)
         {
             _requestQueue = new List<string>();
+            _userSettings = new Dictionary<int, RCUserSettings>();
         }
 
         /// <summary>
@@ -84,6 +90,24 @@ namespace RuralCafe
             catch (Exception e)
             {
                 WriteDebug("Exception in StartRemoteListener: " + e.StackTrace + " " + e.Message);
+            }
+        }
+
+        /// <summary>
+        /// Gets the setting of the user with the given id. Creates a new settings object
+        /// if there wasn't one before.
+        /// </summary>
+        /// <param name="userID">The users id.</param>
+        /// <returns>The users settings.</returns>
+        public RCUserSettings GetUserSettings(int userID)
+        {
+            lock (_userSettings)
+            {
+                if (!_userSettings.ContainsKey(userID))
+                {
+                    _userSettings[userID] = new RCUserSettings();
+                }
+                return _userSettings[userID];
             }
         }
 

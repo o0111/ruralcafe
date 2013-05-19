@@ -91,8 +91,16 @@ namespace RuralCafe
             // benchmarking
             //handleRequestStart = DateTime.Now;
 
-            // XXX: Get current richness!
-            Richness richness = DEFAULT_RICHNESS;//_rcRequest.GetRCSearchField("richness");
+            // Get RC headers
+            RCSpecificRequestHeaders rcHeaders = GetRCSpecificRequestHeaders();
+
+            // Get current richness!
+            Richness richness = ((RCRemoteProxy)_proxy).GetUserSettings(rcHeaders.RCUserID).richness;
+            if (richness == null || richness == 0)
+            {
+                // Use default when nothing is set.
+                richness = DEFAULT_RICHNESS;
+            }
 
             // XXX: static quota for now
             /* QUOTA parameterization in the UI

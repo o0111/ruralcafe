@@ -34,6 +34,10 @@ namespace RuralCafe
     {
         // map from file extension to HTTP MIME type
         private static Dictionary<string, string> _extMap = new Dictionary<string, string>();
+        /// <summary>
+        /// The buffer size for streaming.
+        /// </summary>
+        private static int _streamBufferSize = 32768;
 
         private static Object filesystemLock = new Object();
 
@@ -465,10 +469,113 @@ namespace RuralCafe
             return new StreamReader(response.GetResponseStream()).ReadToEnd();
         }
 
+        /// <summary>
+        /// Streams all content from an input- to an output stream. Any exceptions are forwarded.
+        /// </summary>
+        /// <param name="inStream">The input stream.</param>
+        /// <param name="outStream">The output stream.</param>
+        /// <returns>The bytes written to the output stream.</returns>
+        public static long Stream(Stream inStream, Stream outStream)
+        {
+            byte[] buffer = new byte[_streamBufferSize];
+            long bytesWritten = 0;
+            while (true)
+            {
+                int read = inStream.Read(buffer, 0, buffer.Length);
+                if (read <= 0)
+                    break;
+                outStream.Write(buffer, 0, read);
+                bytesWritten += read;
+            }
+            return bytesWritten;
+        }
+
+        /// <summary>
+        /// Flattens a string[] into one string, comma separated.
+        /// </summary>
+        /// <param name="array">The array.</param>
+        /// <returns>The string.</returns>
+        public static string flattenStringArray(string[] array)
+        {
+            StringBuilder sb = new StringBuilder();
+            foreach (string content in array)
+            {
+                sb.Append(content);
+                sb.Append(",");
+            }
+            sb.Remove(sb.Length - 1, 1);
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Creates an outgoing HttpWebRequest from an incoming HttpListenerRequest.
+        /// </summary>
+        /// <param name="listenerRequest">The HttpListenerRequest.</param>
+        /// <returns>The HttpWebRequest.</returns>
         public static HttpWebRequest CreateWebRequest(HttpListenerRequest listenerRequest)
         {
-            // TODO more stuff!
-            return (HttpWebRequest)WebRequest.Create(listenerRequest.RawUrl);
+            HttpWebRequest webRequest =  (HttpWebRequest)WebRequest.Create(listenerRequest.RawUrl);
+            webRequest.Method = listenerRequest.HttpMethod;
+            foreach(string key in listenerRequest.Headers)
+            {
+                // We handle these after the foreach loop (Do NOT set Host- or Proxy-Connection-header!)
+                if (key.Equals("User-Agent") || key.Equals("Accept") || key.Equals("Referer")
+                     || key.Equals("Content-Type") || key.Equals("Content-Length")
+                     || key.Equals("Host") || key.Equals("Proxy-Connection"))
+                {
+                    continue;
+                }
+                foreach (string value in listenerRequest.Headers.GetValues(key))
+                {
+                    // Headers that need special treatment
+                    if (key.Equals("If-Modified-Since"))
+                    {
+                        webRequest.IfModifiedSince = DateTime.Parse(value);
+                        continue;
+                    }
+                    if (key.Equals("Connection"))
+                    {
+                        if(value.Equals("keep-alive"))
+                        {
+                            webRequest.KeepAlive = true;
+                            continue;
+                        }
+                        if (value.Equals("close"))
+                        {
+                            webRequest.KeepAlive = false;
+                            continue;
+                        }
+                        // else:
+                        webRequest.Connection = value;
+                    }
+                    try
+                    {
+                        webRequest.Headers.Add(key, value);
+                    }
+                    catch(Exception e)
+                    {
+                        // XXX: remove the try-catch, when we are sure we did not forget any header field
+                        // that needs "special treatment"
+                        Console.WriteLine(e.Message);
+                    }
+                }
+            }
+            // Copy headers where C# offers properties or methods (except Host!)
+            webRequest.Accept = flattenStringArray(listenerRequest.AcceptTypes);
+            webRequest.UserAgent = listenerRequest.UserAgent;
+            webRequest.ContentLength = listenerRequest.ContentLength64;
+            webRequest.ContentType = listenerRequest.ContentType;
+            webRequest.Referer = listenerRequest.UrlReferrer == null ? null : listenerRequest.UrlReferrer.ToString();
+            
+            // Stream body for non HEAD/GET requests
+            if (webRequest.Method != "HEAD" && webRequest.Method != "GET")
+            {
+                // XXX: This is still untested!
+                Stream(listenerRequest.InputStream, webRequest.GetRequestStream());
+                webRequest.GetRequestStream().Close();
+            }
+            
+            return webRequest;
         }
 
         /// <summary>
