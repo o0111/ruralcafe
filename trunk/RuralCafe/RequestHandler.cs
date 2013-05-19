@@ -25,6 +25,8 @@ using System.IO;
 using System.Threading;
 using System.Web;
 using System.Text.RegularExpressions;
+using System.Collections.Specialized;
+using System.Reflection;
 
 namespace RuralCafe
 {
@@ -49,8 +51,9 @@ namespace RuralCafe
         /// </summary>
         public enum Richness
         {
-            Normal = 0,
-            Low = 1
+            // Do NOT give away value zero! Used to distinguish as there is no null for enums.
+            Normal = 1,
+            Low = 2
         }
 
         // Util consts
@@ -554,20 +557,9 @@ namespace RuralCafe
         protected long StreamToClient(Stream ms)
         {
             Stream output = _clientHttpContext.Response.OutputStream;
-
-            byte[] buffer = new byte[32768];
-            int bytesWritten = 0;
             try
             {
-                while (true)
-                {
-                    int read = ms.Read(buffer, 0, buffer.Length);
-                    if (read <= 0)
-                        break;
-                    output.Write(buffer, 0, read);
-                    bytesWritten += read;
-                }
-                return bytesWritten;
+                return Util.Stream(ms, output);
             }
             catch (Exception e)
             {
@@ -667,7 +659,46 @@ namespace RuralCafe
             return resultLinks;
         }
 
- 
+        #region RC Headers
+
+        /// <summary>
+        /// Adds all headers for the inter-proxy-protocol.
+        /// </summary>
+        /// <param name="userId">The user ID.</param>
+        public void AddRCSpecificRequestHeaders(RCSpecificRequestHeaders headers)
+        {
+            // Iterate through all fields of the RCSpecificRequestHeaders class.
+            foreach(FieldInfo field in headers.GetType().GetFields())
+            {
+                string name = field.Name;
+                object value = field.GetValue(headers);
+                if (value != null)
+                {
+                    RCRequest.GenericWebRequest.Headers.Add(name, value.ToString());
+                }
+            }
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <returns>Gets all RC specific headers.</returns>
+        public RCSpecificRequestHeaders GetRCSpecificRequestHeaders()
+        {
+            RCSpecificRequestHeaders result = new RCSpecificRequestHeaders();
+            // Iterate through all fields of the RCSpecificRequestHeaders class.
+            foreach (FieldInfo field in result.GetType().GetFields())
+            {
+                string name = field.Name;
+                string value = _originalRequest.Headers[name];
+                if (value != null)
+                {
+                    field.SetValue(result, Convert.ChangeType(value, field.FieldType));
+                }
+            }
+            return result;
+        }
+
+        #endregion
         #region Methods for Checking Requests
 
         /// <summary>
@@ -768,8 +799,6 @@ namespace RuralCafe
         }
 
         #endregion
-
-
         #region HTTP Helper Functions
 
         /// <summary>
@@ -821,8 +850,6 @@ namespace RuralCafe
         }
 
         #endregion
-
-
         #region Logging
 
         /// <summary>

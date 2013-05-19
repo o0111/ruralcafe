@@ -14,3 +14,15 @@ C:\cygwin\home\jchen\ruralcafe\ruralcafe\bin\ICSharpCode.SharpZipLib.pdb
 C:\cygwin\home\jchen\ruralcafe\ruralcafe\SharpZipLib\obj\Debug\ResolveAssemblyReference.cache
 C:\cygwin\home\jchen\ruralcafe\ruralcafe\SharpZipLib\obj\Debug\ICSharpCode.SharpZipLib.dll
 C:\cygwin\home\jchen\ruralcafe\ruralcafe\SharpZipLib\obj\Debug\ICSharpCode.SharpZipLib.pdb
+I:\CTED\C#-Workspace\RuralCafe\Repo\trunk\bin\ICSharpCode.SharpZipLib.xml
+I:\CTED\C#-Workspace\RuralCafe\Repo\trunk\bin\ICSharpCode.SharpZipLib.dll
+I:\CTED\C#-Workspace\RuralCafe\Repo\trunk\bin\ICSharpCode.SharpZipLib.pdb
+I:\CTED\C#-Workspace\RuralCafe\Repo\trunk\SharpZipLib\obj\Debug\ICSharpCode.SharpZLib.csprojResolveAssemblyReference.cache
+I:\CTED\C#-Workspace\RuralCafe\Repo\trunk\SharpZipLib\obj\Debug\ICSharpCode.SharpZipLib.dll
+I:\CTED\C#-Workspace\RuralCafe\Repo\trunk\SharpZipLib\obj\Debug\ICSharpCode.SharpZipLib.pdb
+C:\Users\Satia\Documents\Visual Studio 2012\Projects\Rural Cafe\trunk\bin\ICSharpCode.SharpZipLib.xml
+C:\Users\Satia\Documents\Visual Studio 2012\Projects\Rural Cafe\trunk\bin\ICSharpCode.SharpZipLib.dll
+C:\Users\Satia\Documents\Visual Studio 2012\Projects\Rural Cafe\trunk\bin\ICSharpCode.SharpZipLib.pdb
+C:\Users\Satia\Documents\Visual Studio 2012\Projects\Rural Cafe\trunk\SharpZipLib\obj\Debug\ICSharpCode.SharpZipLib.dll
+C:\Users\Satia\Documents\Visual Studio 2012\Projects\Rural Cafe\trunk\SharpZipLib\obj\Debug\ICSharpCode.SharpZipLib.pdb
+C:\Users\Satia\Documents\Visual Studio 2012\Projects\Rural Cafe\trunk\SharpZipLib\obj\Debug\ICSharpCode.SharpZLib.csprojResolveAssemblyReference.cache

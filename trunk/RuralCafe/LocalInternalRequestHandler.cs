@@ -452,12 +452,14 @@ namespace RuralCafe
             }
             // Get original request from Dictionary
             LocalRequestHandler lrh = ((RCLocalProxy)_proxy).PopRequestWithoutUser(id);
+            // Set RC headers
+            RCSpecificRequestHeaders headers = new RCSpecificRequestHeaders(userId);
+            lrh.AddRCSpecificRequestHeaders(headers);
 
             if (refererUri == null)
             {
                 refererUri = lrh.OriginalRequest.RawUrl.ToString();
             }
-
             ((RCLocalProxy)_proxy).QueueRequest(userId, lrh);
             return new Response(refererUri);
         }
