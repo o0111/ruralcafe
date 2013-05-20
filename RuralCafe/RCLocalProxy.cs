@@ -330,8 +330,10 @@ namespace RuralCafe
 
                         if (bytesDownloaded > 0)
                         {
-                            //WriteDebug("unpacking: " + requestHandler.RequestUri);
-                            long unpackedBytes = Package.Unpack(requestHandler, _indexPath);
+                            // Get RC response headers
+                            RCSpecificResponseHeaders headers = requestHandler.GetRCSpecificResponseHeaders();
+
+                            long unpackedBytes = Package.Unpack(requestHandler, headers, _indexPath);
                             if (unpackedBytes > 0)
                             {
                                 WriteDebug("unpacked: " + requestHandler.RequestUri);
@@ -458,7 +460,6 @@ namespace RuralCafe
                             if (targetUri == null)
                             {
                                 // error
-                                //SendErrorPage(HTTP_NOT_FOUND, "malformed add request", "");
                                 line = tr.ReadLine();
                                 continue;
                             }
@@ -488,7 +489,6 @@ namespace RuralCafe
                             if (itemId == null)
                             {
                                 // error
-                                //SendErrorPage(HTTP_NOT_FOUND, "malformed add request", "");
                                 line = tr.ReadLine();
                                 continue;
                             }
@@ -514,7 +514,6 @@ namespace RuralCafe
                         if (targetUri == null)
                         {
                             // error
-                            //SendErrorPage(HTTP_NOT_FOUND, "malformed add request", "");
                             line = tr.ReadLine();
                             continue;
                         }
@@ -548,7 +547,7 @@ namespace RuralCafe
                 }
 
                 // update the nextId
-                NextRequestId = highestRequestId + 1;
+                _nextRequestId = highestRequestId + 1;
             }
             catch (Exception)
             {

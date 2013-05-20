@@ -95,7 +95,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AnalysisTools.cs" />
-    <Compile Include="RCSpecificRequestHeaders.cs" />
+    <Compile Include="RCSpecificHeaders.cs" />
     <Compile Include="RCUserSettings.cs" />
     <Compile Include="RemoteInternalRequestHandler.cs" />
     <Compile Include="InternalRequestHandler.cs" />

@@ -169,8 +169,6 @@ namespace RuralCafe
             Dictionary<String, RoutineMethod> routines, RoutineMethod defaultMethod)
             : base(proxy, context)
         {
-            _requestId = _proxy.NextRequestId;
-            _proxy.NextRequestId = _proxy.NextRequestId + 1;
             _requestTimeout = LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT;
             _routines = routines;
             _defaultMethod = defaultMethod;

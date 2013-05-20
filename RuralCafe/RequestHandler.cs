@@ -58,6 +58,11 @@ namespace RuralCafe
 
         // Util consts
         /// <summary>
+        /// The name of our homepage.
+        /// </summary>
+        private static string rcPage = "http://www.ruralcafe.net/";
+        private static string rcPageWithoutWWW = "http://ruralcafe.net/";
+        /// <summary>
         /// Matches "localhost" or "127.0.0.1" followed by anything but a dot.
         /// </summary>
         private static Regex localAddressRegex = new Regex(@"(?<add1>(localhost|127\.0\.0\.1))(?<add2>[^\.])");
@@ -105,6 +110,7 @@ namespace RuralCafe
             _proxy = proxy;
             _clientHttpContext = context;
             _originalRequest = context.Request;
+            _requestId = _proxy.GetAndIncrementNextRequestID();
             if (context != null)
             {
                 _clientAddress = ((IPEndPoint)(context.Request.RemoteEndPoint)).Address;
@@ -662,9 +668,9 @@ namespace RuralCafe
         #region RC Headers
 
         /// <summary>
-        /// Adds all headers for the inter-proxy-protocol.
+        /// Adds all headers for the inter-proxy-protocol request. Used in local request handler.
         /// </summary>
-        /// <param name="userId">The user ID.</param>
+        /// <param name="headers">The headers.</param>
         public void AddRCSpecificRequestHeaders(RCSpecificRequestHeaders headers)
         {
             // Iterate through all fields of the RCSpecificRequestHeaders class.
@@ -680,8 +686,9 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// Used in remote request handler.
         /// </summary>
-        /// <returns>Gets all RC specific headers.</returns>
+        /// <returns>Gets all RC specific request headers.</returns>
         public RCSpecificRequestHeaders GetRCSpecificRequestHeaders()
         {
             RCSpecificRequestHeaders result = new RCSpecificRequestHeaders();
@@ -690,6 +697,44 @@ namespace RuralCafe
             {
                 string name = field.Name;
                 string value = _originalRequest.Headers[name];
+                if (value != null)
+                {
+                    field.SetValue(result, Convert.ChangeType(value, field.FieldType));
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Adds all headers for the inter-proxy-protocol response. Used in remote request handler.
+        /// </summary>
+        /// <param name="headers">The headers.</param>
+        public void AddRCSpecificResponseHeaders(RCSpecificResponseHeaders headers)
+        {
+            // Iterate through all fields of the RCSpecificRequestHeaders class.
+            foreach (FieldInfo field in headers.GetType().GetFields())
+            {
+                string name = field.Name;
+                object value = field.GetValue(headers);
+                if (value != null)
+                {
+                    _clientHttpContext.Response.AddHeader(name, value.ToString());
+                }
+            }
+        }
+
+        /// <summary>
+        /// Used in local request handler/Package.unpack(..)
+        /// </summary>
+        /// <returns>Gets all RC specific response headers.</returns>
+        public RCSpecificResponseHeaders GetRCSpecificResponseHeaders()
+        {
+            RCSpecificResponseHeaders result = new RCSpecificResponseHeaders();
+            // Iterate through all fields of the RCSpecificRequestHeaders class.
+            foreach (FieldInfo field in result.GetType().GetFields())
+            {
+                string name = field.Name;
+                string value = RCRequest.GenericWebResponse.Headers[name];
                 if (value != null)
                 {
                     field.SetValue(result, Convert.ChangeType(value, field.FieldType));
@@ -716,7 +761,7 @@ namespace RuralCafe
         /// <returns>If it is or not.</returns>
         protected static bool IsRCRequest(HttpWebRequest request)
         {
-            return request.RequestUri.ToString().StartsWith("http://www.ruralcafe.net/");
+            return IsRCRequest(request.RequestUri.ToString());
         }
         /// <summary>
         /// Checks if the request is a RC request.
@@ -725,7 +770,17 @@ namespace RuralCafe
         /// <returns>If it is or not.</returns>
         protected static bool IsRCRequest(HttpListenerRequest request)
         {
-            return request.RawUrl.ToString().StartsWith("http://www.ruralcafe.net/");
+            return IsRCRequest(request.RawUrl);
+        }
+
+        /// <summary>
+        /// Checks if the uri is a request to rural cafe
+        /// </summary>
+        /// <param name="uri">The URI.</param>
+        /// <returns>If it is or not.</returns>
+        protected static bool IsRCRequest(string uri)
+        {
+            return uri.StartsWith(rcPage) || uri.StartsWith(rcPageWithoutWWW);
         }
 
         /// <summary>
@@ -746,7 +801,7 @@ namespace RuralCafe
         /// <returns>True if cacheable, false if not. </returns>
         protected bool IsCacheable()
         {
-            return (_rcRequest.CacheFileName.Length <= 248);
+            return Util.IsNotTooLongFileName(_rcRequest.CacheFileName);
         }
 
         /// <summary>
