@@ -69,8 +69,6 @@ namespace RuralCafe
         public RemoteRequestHandler(RCRemoteProxy proxy, HttpListenerContext context)
             : base(proxy, context)
         {
-            _requestId = _proxy.NextRequestId;
-            _proxy.NextRequestId = proxy.NextRequestId + 1;
             _requestTimeout = REMOTE_REQUEST_PACKAGE_DEFAULT_TIMEOUT;
 
             _quota = DEFAULT_QUOTA;
@@ -134,7 +132,7 @@ namespace RuralCafe
                 if (IsCacheable())
                 {
                     // remove RuralCafe stuff from the request
-                    _rcRequest = new RCRequest(this, (HttpWebRequest)WebRequest.Create(requestUri.Trim()));
+                    _rcRequest = new RCRequest(this, Util.CreateWebRequest(_originalRequest));
                     //_rcRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
 
                     if (RecursivelyDownloadPage(_rcRequest, richness, 0))
@@ -682,7 +680,10 @@ namespace RuralCafe
             }
 
             LogDebug("sending results package: " + (_package.IndexSize + _package.ContentSize) + " bytes at " + _proxy.MAXIMUM_DOWNLINK_BANDWIDTH + " bytes per second." );
-            DefinePackageHeaders();
+
+            // Add response headers
+            RCSpecificResponseHeaders headers = new RCSpecificResponseHeaders(_package.IndexSize, _package.ContentSize);
+            AddRCSpecificResponseHeaders(headers);
 
             // stream out the pages (w/compression)
             LinkedList<string> fileNames = new LinkedList<string>();
@@ -738,19 +739,6 @@ namespace RuralCafe
             }
 
             return true;
-        }
-
-        /// <summary>
-        /// Sends the package headers to the client.
-        /// Specialty RuralCafe only headers are "Package-IndexSize" and "Package-ContentSize".
-        /// The "Content-Encoding" is also set to gzip.
-        /// </summary>
-        void DefinePackageHeaders()
-        {
-            // XXX: Set endoding? Will the response be automitically and therefore one time to much
-            // gzipped?
-            _clientHttpContext.Response.AddHeader("Package-IndexSize", "" + _package.IndexSize);
-            _clientHttpContext.Response.AddHeader("Package-ContentSize", "" + _package.ContentSize);
         }
 
         #endregion

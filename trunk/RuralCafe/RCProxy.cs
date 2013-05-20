@@ -95,12 +95,6 @@ namespace RuralCafe
             get { return _networkStatus; }
             set { _networkStatus = value; }
         }
-        /// <summary>Path to the proxy's packages.</summary>
-        public int NextRequestId
-        {
-            get { return _nextRequestId; }
-            set { _nextRequestId = value; }
-        }
 
         # endregion
 
@@ -333,6 +327,15 @@ namespace RuralCafe
                 }
             }
             return false;
+        }
+
+        /// <summary>
+        /// Increments the value of next request ID by one and returns the old value.
+        /// </summary>
+        /// <returns>The old value.</returns>
+        public int GetAndIncrementNextRequestID()
+        {
+            return System.Threading.Interlocked.   Increment(ref _nextRequestId) - 1;
         }
     }
 }

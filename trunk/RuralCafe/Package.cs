@@ -135,19 +135,12 @@ namespace RuralCafe
         /// <param name="indexPath">Path to the index.</param>
         /// <param name="requestHandler">Calling handler for this method.</param>
         /// <returns>Total unpacked content size.</returns>
-        public static long Unpack(LocalRequestHandler requestHandler, string indexPath)
+        public static long Unpack(LocalRequestHandler requestHandler, RCSpecificResponseHeaders headers,
+            string indexPath)
         {
-            string packageIndexSizeStr = requestHandler.RCRequest.GenericWebResponse.GetResponseHeader("Package-IndexSize");
-            string packageContentSizeStr = requestHandler.RCRequest.GenericWebResponse.GetResponseHeader("Package-ContentSize");
-            
-            long packageIndexSize;
-            long packageContentSize;
-            try
-            {
-                packageIndexSize = Int64.Parse(packageIndexSizeStr);
-                packageContentSize = Int64.Parse(packageContentSizeStr);
-            }
-            catch (FormatException)
+            long packageIndexSize = headers.RCPackageIndexSize;
+            long packageContentSize = headers.RCPackageContentSize;
+            if (packageIndexSize == 0 || packageContentSize == 0)
             {
                 // This is internal error that should not happen!
                 return 0;
@@ -207,7 +200,14 @@ namespace RuralCafe
 
                 // make sure the file doesn't already exist for indexing purposes only
                 bool existed = false;
-                // XXX: FileName too long: unhandled exceptions
+
+                if (!Util.IsNotTooLongFileName(rcRequest.CacheFileName))
+                {
+                    // We can't save the file
+                    requestHandler.LogDebug("problem unpacking, filename too long for uri: " + currUri);
+                    return unpackedBytes;
+                }
+
                 FileInfo ftest = new FileInfo(rcRequest.CacheFileName);
                 if (ftest.Exists)
                 {

@@ -50,8 +50,7 @@ namespace RuralCafe
         public LocalRequestHandler(LocalInternalRequestHandler internalHandler)
             : base(internalHandler.Proxy, internalHandler.Context)
         {
-            _requestId = _proxy.NextRequestId;
-            _proxy.NextRequestId = _proxy.NextRequestId + 1;
+            _requestId = _proxy.GetAndIncrementNextRequestID();
             _requestTimeout = LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT;
             // Copy fields from internalHandler
             _outstandingRequests = internalHandler.OutstandingRequests;
@@ -66,8 +65,7 @@ namespace RuralCafe
         public LocalRequestHandler(RCLocalProxy proxy, HttpListenerContext context)
             : base(proxy, context)
         {
-            _requestId = _proxy.NextRequestId;
-            _proxy.NextRequestId = _proxy.NextRequestId + 1;
+            _requestId = _proxy.GetAndIncrementNextRequestID();
             _requestTimeout = LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT;
         }
         /// <summary>

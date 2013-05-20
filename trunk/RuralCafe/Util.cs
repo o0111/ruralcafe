@@ -579,6 +579,18 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// Checks if a filename is too long. A filename must be shorter than 260 chars and its
+        /// path must be shorter than 248 chars.
+        /// </summary>
+        /// <param name="fileName">The filename.</param>
+        /// <returns>true, if the filename is OK; false, if it is too long.</returns>
+        public static bool IsNotTooLongFileName(string fileName)
+        {
+            string pathName = fileName.Substring(fileName.LastIndexOf(Path.DirectorySeparatorChar));
+            return pathName.Length < 248 && fileName.Length < 260;
+        }
+
+        /// <summary>
         /// Fills in the extension to content-type map with static mappings.
         /// </summary>
         public static void FillExtMap()
