@@ -518,10 +518,12 @@ namespace RuralCafe
             webRequest.Method = listenerRequest.HttpMethod;
             foreach(string key in listenerRequest.Headers)
             {
+                // FIXME ATM no Accept-Encoding due to GZIP failure
                 // We handle these after the foreach loop (Do NOT set Host- or Proxy-Connection-header!)
                 if (key.Equals("User-Agent") || key.Equals("Accept") || key.Equals("Referer")
                      || key.Equals("Content-Type") || key.Equals("Content-Length")
-                     || key.Equals("Host") || key.Equals("Proxy-Connection"))
+                     || key.Equals("Host") || key.Equals("Proxy-Connection")
+                     || key.Equals("Accept-Encoding"))
                 {
                     continue;
                 }
@@ -567,15 +569,23 @@ namespace RuralCafe
             webRequest.ContentType = listenerRequest.ContentType;
             webRequest.Referer = listenerRequest.UrlReferrer == null ? null : listenerRequest.UrlReferrer.ToString();
             
+            return webRequest;
+        }
+
+        /// <summary>
+        /// Streams the body for a request.
+        /// </summary>
+        /// <param name="listenerRequest">The incoming request.</param>
+        /// <param name="webRequest">The outgoing request.</param>
+        public static void StreamBody(HttpListenerRequest listenerRequest, HttpWebRequest webRequest)
+        {
             // Stream body for non HEAD/GET requests
             if (webRequest.Method != "HEAD" && webRequest.Method != "GET")
             {
                 // XXX: This is still untested!
                 Stream(listenerRequest.InputStream, webRequest.GetRequestStream());
-                webRequest.GetRequestStream().Close();
+                //webRequest.GetRequestStream().Close();
             }
-            
-            return webRequest;
         }
 
         /// <summary>

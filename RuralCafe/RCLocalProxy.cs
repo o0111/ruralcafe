@@ -26,9 +26,23 @@ using System.Threading;
 using BzReader;
 using System.Collections.Specialized;
 using System.Web;
+using System.Collections.ObjectModel;
 
 namespace RuralCafe
 {
+    /// <summary>
+    /// Used for the requests without user. Like this we have both list and
+    /// dictionary functionality. Both is required.
+    /// </summary>
+    public class LRHDict : KeyedCollection<int, KeyValuePair<int,LocalRequestHandler>>
+    {
+        public LRHDict() : base() { }
+        protected override int GetKeyForItem(KeyValuePair<int, LocalRequestHandler> item)
+        {
+            return item.Key;
+        }
+    }
+
     /// <summary>
     /// Local proxy implementation, inherits from GenericProxy.
     /// </summary>
@@ -52,7 +66,8 @@ namespace RuralCafe
         // dictionary of last requested page by each client
         private Dictionary<int, LocalRequestHandler> _clientLastRequestMap;
         // dictionary of requests without a user. They await to be "added" via trotro by a specific user
-        private Dictionary<int, LocalRequestHandler> _requestsWithoutUser;
+        private LRHDict _requestsWithoutUser;
+        private const int _requestsWithoutUserCapacity = 50;
         // Random for the keys of the above Dictionary
         private Random _random;
 
@@ -125,7 +140,7 @@ namespace RuralCafe
             _globalRequestQueue = new List<LocalRequestHandler>();
             _clientRequestQueueMap = new Dictionary<int, List<LocalRequestHandler>>();
             _clientLastRequestMap = new Dictionary<int, LocalRequestHandler>();
-            _requestsWithoutUser = new Dictionary<int, LocalRequestHandler>();
+            _requestsWithoutUser = new LRHDict();
             _random = new Random();
             _newRequestEvent = new AutoResetEvent(false);
             _averageTimePerRequest = new TimeSpan(0);
@@ -428,7 +443,7 @@ namespace RuralCafe
                                 highestRequestId = requestId_i;
                             }
                         }
-                        catch (Exception e)
+                        catch (Exception)
                         {
                             // do nothing
                         }
@@ -715,7 +730,11 @@ namespace RuralCafe
             int id = _random.Next();
             lock (_requestsWithoutUser)
             {
-                _requestsWithoutUser.Add(id, handler);
+                if (_requestsWithoutUser.Count >= _requestsWithoutUserCapacity)
+                {
+                    _requestsWithoutUser.RemoveAt(0);
+                }
+                _requestsWithoutUser.Add(new KeyValuePair<int,LocalRequestHandler>(id, handler));
             }
             return id;
         }
@@ -730,13 +749,9 @@ namespace RuralCafe
         {
             lock (_requestsWithoutUser)
             {
-                if(_requestsWithoutUser.ContainsKey(id))
-                {
-                    LocalRequestHandler result = _requestsWithoutUser[id];
-                    _requestsWithoutUser.Remove(id);
-                    return result;
-                }
-                throw new Exception("this request did not exist");
+                LocalRequestHandler result = _requestsWithoutUser[id].Value;
+                _requestsWithoutUser.Remove(id);
+                return result;
             }
         }
 

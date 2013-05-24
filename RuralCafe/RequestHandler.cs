@@ -66,6 +66,10 @@ namespace RuralCafe
         /// Matches "localhost" or "127.0.0.1" followed by anything but a dot.
         /// </summary>
         private static Regex localAddressRegex = new Regex(@"(?<add1>(localhost|127\.0\.0\.1))(?<add2>[^\.])");
+        /// <summary>
+        /// The Name of the cookie for the user id.
+        /// </summary>
+        private static string cookieUserID = "uid";
 
         // timeouts
         public const int LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT = Timeout.Infinite; // in milliseconds
@@ -254,13 +258,25 @@ namespace RuralCafe
             get { return _rcRequest.CacheFileName; }
         }
 
+        /// <summary>
+        /// Gets or Sets the Value
+        /// </summary>
+        public String UserIDCookieValue
+        {
+            get
+            {
+                return _originalRequest.Cookies[cookieUserID] == null ?
+                    null : _originalRequest.Cookies[cookieUserID].Value;
+            }
+        }
+
+        #endregion
+
         /// <summary>Checks whether the request is blacklisted by the proxy.</summary>
         public bool IsBlacklisted(string uri)
         {
             return _proxy.IsBlacklisted(uri);
         }
-
-        #endregion
 
         /// <summary>
         /// Appends a dot to "localhost" or "127.0.0.1". This is done to prevent .NET from
@@ -505,7 +521,8 @@ namespace RuralCafe
         /// <returns>The length of the streamed result.</returns>
         protected long StreamTransparently()
         {
-            WebRequest request = Util.CreateWebRequest(_originalRequest);
+            HttpWebRequest request = Util.CreateWebRequest(_originalRequest);
+            Util.StreamBody(_originalRequest, request);
             WebResponse serverResponse = request.GetResponse();
             return StreamToClient(serverResponse.GetResponseStream());
         }
