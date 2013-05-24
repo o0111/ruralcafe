@@ -33,6 +33,7 @@ namespace RuralCafe
             routines.Add("/request/queue.xml", new RoutineMethod("ServeRCQueuePage",
                 new string[] { "u", "v" }, new Type[] { typeof(int),  typeof(string) }));
             routines.Add("/request/status.xml", new RoutineMethod("ServeNetworkStatus"));
+
             routines.Add("/request/remove", new RoutineMethod("RemoveRequest",
                 new string[] { "u", "i" }, new Type[] { typeof(int), typeof(string) }));
             routines.Add("/request/add", new RoutineMethod("AddRequest",

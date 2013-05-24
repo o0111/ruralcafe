@@ -122,9 +122,11 @@ namespace RuralCafe
             }
 
             // XXX: not cacheable, ignore, and log it instead of streaming for now
-            // XXX: we could pass through this stuff directly, but it would require bypassing all blacklist/filtering
-            if ((!IsGetOrHeadHeader() || !IsCacheable()) && 
-                _proxy.NetworkStatus == RCProxy.NetworkStatusCode.Online)
+            // XXX: we could pass through this stuff directly, but it would require bypassing all filtering
+            if ((!IsGetOrHeadHeader() || !IsCacheable())
+                // XXX: uncommented so POSTs will be streamed always!
+                //&& _proxy.NetworkStatus == RCProxy.NetworkStatusCode.Online
+                )
             {
                 LogDebug("streaming: " + RequestUri + " to client.");
 
