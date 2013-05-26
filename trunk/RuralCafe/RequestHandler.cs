@@ -503,7 +503,8 @@ namespace RuralCafe
             if (Util.IsValidUri(request.RawUrl.ToString()))
             {
                 // create the request object
-                _rcRequest = new RCRequest(this, Util.CreateWebRequest(request), "", refererUri);
+                _rcRequest = new RCRequest(this, Util.CreateWebRequest(request), "", refererUri,
+                Util.ReceiveBody(request));
                 _rcRequest.GenericWebRequest.Referer = refererUri;
                 return true;
             }
@@ -521,9 +522,10 @@ namespace RuralCafe
         /// <returns>The length of the streamed result.</returns>
         protected long StreamTransparently()
         {
-            HttpWebRequest request = Util.CreateWebRequest(_originalRequest);
-            Util.StreamBody(_originalRequest, request);
-            WebResponse serverResponse = request.GetResponse();
+            //Util.StreamBody(_originalRequest, _rcRequest.GenericWebRequest);
+            // Stream parameters, if we have non GET/HEAD
+            Util.SendBody(_rcRequest.GenericWebRequest, _rcRequest.Body);
+            WebResponse serverResponse = _rcRequest.GenericWebRequest.GetResponse();
             return StreamToClient(serverResponse.GetResponseStream());
         }
 
@@ -812,13 +814,13 @@ namespace RuralCafe
 
         /// <summary>
         /// Checks if the page is cacheable.
-        /// Currently, just based on the file name length.
+        /// Currently, just based on the file name length and HTTP Method.
         /// XXX: This should be changed so that even long file names can be cached.
         /// </summary>
         /// <returns>True if cacheable, false if not. </returns>
         protected bool IsCacheable()
         {
-            return Util.IsNotTooLongFileName(_rcRequest.CacheFileName);
+            return IsGetOrHeadHeader() && Util.IsNotTooLongFileName(_rcRequest.CacheFileName);
         }
 
         /// <summary>

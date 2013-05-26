@@ -466,7 +466,17 @@ namespace RuralCafe
         /// <returns>The whole Body as a string.</returns>
         public static string StreamContent(HttpWebResponse response)
         {
-            return new StreamReader(response.GetResponseStream()).ReadToEnd();
+            return ReadStreamToEnd(response.GetResponseStream());
+        }
+
+        /// <summary>
+        /// Reads in incoming stream to the end and returns the result
+        /// </summary>
+        /// <param name="inStream">The incoming stream.</param>
+        /// <returns>The content of the stream.</returns>
+        public static string ReadStreamToEnd(Stream inStream)
+        {
+            return new StreamReader(inStream).ReadToEnd();
         }
 
         /// <summary>
@@ -521,11 +531,11 @@ namespace RuralCafe
                 // FIXME ATM no Accept-Encoding due to GZIP failure
                 // We handle these after the foreach loop 
                 // (Do NOT set Host- or Proxy-Connection-header!)
-                // Range may be ignored by Servers anyway.
+                // Range may be ignored by Servers anyway, Expect will never be set by us.
                 if (key.Equals("User-Agent") || key.Equals("Accept") || key.Equals("Referer")
                      || key.Equals("Content-Type") || key.Equals("Content-Length")
                      || key.Equals("Host") || key.Equals("Proxy-Connection")
-                     || key.Equals("Range")|| key.Equals("Accept-Encoding"))
+                     || key.Equals("Range")|| key.Equals("Expect") || key.Equals("Accept-Encoding"))
                 {
                     continue;
                 }
@@ -584,9 +594,44 @@ namespace RuralCafe
             // Stream body for non HEAD/GET requests
             if (webRequest.Method != "HEAD" && webRequest.Method != "GET")
             {
-                // XXX: This is still untested!
+                // Never Expect 100 Continue!
+                webRequest.ServicePoint.Expect100Continue = false;
                 Stream(listenerRequest.InputStream, webRequest.GetRequestStream());
-                //webRequest.GetRequestStream().Close();
+                webRequest.GetRequestStream().Close();
+            }
+        }
+
+        /// <summary>
+        /// Receives the body for an incoming request.
+        /// </summary>
+        /// <param name="listenerRequest">The incoming request.</param>
+        /// <returns>The body for POST/... or null for GET/HEAD.</returns>
+        public static byte[] ReceiveBody(HttpListenerRequest listenerRequest)
+        {
+            // Stream body for non HEAD/GET requests
+            if (listenerRequest.HttpMethod != "HEAD" && listenerRequest.HttpMethod != "GET")
+            {
+                byte[] buffer = new byte[listenerRequest.ContentLength64];
+                var memoryStream = new MemoryStream(buffer);
+                listenerRequest.InputStream.CopyTo(memoryStream);
+                return memoryStream.ToArray();
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Sends the body for an outgoing request.
+        /// </summary>
+        /// <param name="webRequest">The outgoing request.</param>
+        public static void SendBody(HttpWebRequest webRequest, byte[] body)
+        {
+            // Stream body for non HEAD/GET requests
+            if (webRequest.Method != "HEAD" && webRequest.Method != "GET")
+            {
+                // Never Expect 100 Continue!
+                webRequest.ServicePoint.Expect100Continue = false;
+                webRequest.GetRequestStream().Write(body, 0, body.Length);
+                webRequest.GetRequestStream().Close();
             }
         }
 
