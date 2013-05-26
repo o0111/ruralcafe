@@ -124,7 +124,6 @@ namespace RuralCafe
             // XXX: not cacheable, ignore, and log it instead of streaming for now
             // XXX: we could pass through this stuff directly, but it would require bypassing all filtering
             if ((!IsGetOrHeadHeader() || !IsCacheable())
-                // XXX: uncommented so POSTs will be streamed always!
                 //&& _proxy.NetworkStatus == RCProxy.NetworkStatusCode.Online
                 )
             {
@@ -205,7 +204,10 @@ namespace RuralCafe
             
             if (_proxy.NetworkStatus != RCProxy.NetworkStatusCode.Online)
             {
-                // Uncached links should be redirected to trotro-user.html?t=title&a=id when the system mode is slow or offline
+                // Uncached links should be redirected to
+                // /trotro-user.html?t=title&a=id (GET/HEAD) or (because they should have been prefetched)
+                // /request/add?t=title&a=id (POST/...) (because prefetching POSTs is impossible) (XXX: Doesn't work)
+                // when the system mode is slow or offline
                 // Parse parameters to get title
                 NameValueCollection qscoll = HttpUtility.ParseQueryString(_originalRequest.Url.Query);
                 string title = qscoll.Get("trotro");
@@ -223,9 +225,13 @@ namespace RuralCafe
                 // Save the request in the "without user" queue
                 string id = "" + ((RCLocalProxy)_proxy).AddRequestWithoutUser(this);
 
-                string redirectUrl = "http://www.ruralcafe.net/trotro-user.html?t=" + title + "&a=" + id;
+                string redirectUrl = "http://www.ruralcafe.net/" +
+                    //(IsGetOrHeadHeader() ? 
+                    "trotro-user.html"
+                    //: "request/add")
+                    + "?t=" + title + "&a=" + id;
                 _clientHttpContext.Response.Redirect(redirectUrl);
-                //SendRedirect(title, id);
+                _clientHttpContext.Response.StatusCode = (int)HttpStatusCode.TemporaryRedirect;
 
                 return Status.Completed;
             }

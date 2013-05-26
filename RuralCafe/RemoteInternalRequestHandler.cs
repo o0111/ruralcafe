@@ -25,7 +25,7 @@ namespace RuralCafe
         static RemoteInternalRequestHandler()
         {
             routines.Add("/request/richness", new RoutineMethod("RichnessRequest",
-                new string[] { "u", "r" }, new Type[] { typeof(int), typeof(string) }));
+                new string[] { "r" }, new Type[] { typeof(string) }));
         }
 
         /// <summary>
@@ -41,10 +41,11 @@ namespace RuralCafe
 
         #region Proxy Control Methods
         /// <summary>
-        /// Client changes richness. TODO
+        /// Client changes richness.
         /// </summary>
-        public Response RichnessRequest(int userid, string richnessString)
+        public Response RichnessRequest(string richnessString)
         {
+            int userid = UserIDCookieValue;
             Richness richness;
             try
             {

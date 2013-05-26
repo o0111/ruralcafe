@@ -25,8 +25,9 @@ function redirectUser() {
 				var xmlPass = xmlPasswords[i].childNodes[0].nodeValue;
 				var xmlId = xmlCustomers.item(i).attributes[0].nodeValue;
 				if(xmlUser == user) {
-					logcode = 3; //user name exist
+					logcode = 3; //user name exists
 					if (xmlPass == pass){
+					logcode = 4; //correct login
 						var path = window.location.href;
 						var index = path.search("t=");
 						if (index != -1)

@@ -65,7 +65,7 @@ function addRequest(itemTitle,itemURL){
 				//item id should be returned if it is successfully created
 				//check whether item with that id is already added
 				if (itemReferer && itemReferer!=''){		
-					loadQueue('request/queue.xml?u='+userid+'&v=0');
+					loadQueue('request/queue.xml?v=0');
 					document.getElementById('main_frame').src="newrequest.html";
 					startAnimation();
 				}
@@ -75,7 +75,7 @@ function addRequest(itemTitle,itemURL){
 			}
 		}
 	}
-	mygetrequest.open("GET", "request/add?u="+userid+"&t="+itemTitle+'&a='+itemURL, true);
+	mygetrequest.open("GET", "request/add?t="+itemTitle+'&a='+itemURL, true);
 	mygetrequest.send(null);
 	return false;
 }
@@ -86,7 +86,7 @@ function removeRequest(itemId){
 	mygetrequest.onreadystatechange=function(){
 		if (mygetrequest.readyState==4){
 			if (mygetrequest.status==200){
-				loadQueue('request/queue.xml?u='+userid+'&v=0');
+				loadQueue('request/queue.xml?v=0');
 			}
 			else{
 				//alert("An error has occured removing the request");
@@ -94,7 +94,7 @@ function removeRequest(itemId){
 		}
 	}
 	var ivalue=encodeURIComponent(itemId);
-	mygetrequest.open("GET", "request/remove?u="+userid+"&i="+ivalue, true);
+	mygetrequest.open("GET", "request/remove?i="+ivalue, true);
 	mygetrequest.send(null);
 	return false;
 }
@@ -102,7 +102,7 @@ function removeRequest(itemId){
 //set the richness
 function setRichness(richness){
 	var mygetrequest=new ajaxRequest()
-	mygetrequest.open("GET", "request/richness?u="+userid+"&r="+richness, true);
+	mygetrequest.open("GET", "request/richness?r="+richness, true);
 	mygetrequest.send(null);
 	return false;
 }
@@ -199,7 +199,7 @@ function getEST(){
 						//else if downloading... est=0 
 						else if (est=='0'){ //finish downloading
 							stopCountDown(index);
-							loadQueue('request/queue.xml?u='+userid+'&v=0');
+							loadQueue('request/queue.xml?v=0');
 						}
 					}
 				}
@@ -210,7 +210,7 @@ function getEST(){
 			}
 		}
 		mygetrequests.onreadystatechange=updateEST(mygetrequests,index);
-		mygetrequests.open("GET", "request/eta?u="+userid+"&i="+itemIds[index]);
+		mygetrequests.open("GET", "request/eta?i="+itemIds[index]);
 		mygetrequests.send(null);
 	}
 }
