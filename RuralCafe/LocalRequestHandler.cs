@@ -123,8 +123,8 @@ namespace RuralCafe
 
             // XXX: not cacheable, ignore, and log it instead of streaming for now
             // XXX: we could pass through this stuff directly, but it would require bypassing all filtering
-            if ((!IsGetOrHeadHeader() || !IsCacheable())
-                //&& _proxy.NetworkStatus == RCProxy.NetworkStatusCode.Online
+            if (!IsCacheable()
+                && _proxy.NetworkStatus == RCProxy.NetworkStatusCode.Online
                 )
             {
                 LogDebug("streaming: " + RequestUri + " to client.");
@@ -135,7 +135,8 @@ namespace RuralCafe
                 return Status.Completed;
             }
 
-            if (IsCached(_rcRequest.CacheFileName))
+            // Do only use cache for HEAD/GET
+            if (IsGetOrHeadHeader() && IsCached(_rcRequest.CacheFileName))
             {
                 // Try getting the mime type from the search index
                 string contentType = GetMimeType(RequestUri);
@@ -206,7 +207,7 @@ namespace RuralCafe
             {
                 // Uncached links should be redirected to
                 // /trotro-user.html?t=title&a=id (GET/HEAD) or (because they should have been prefetched)
-                // /request/add?t=title&a=id (POST/...) (because prefetching POSTs is impossible) (XXX: Doesn't work)
+                // /request/add?t=title&a=id (POST/...) (because prefetching POSTs is impossible) (XXX: Not necessary!?)
                 // when the system mode is slow or offline
                 // Parse parameters to get title
                 NameValueCollection qscoll = HttpUtility.ParseQueryString(_originalRequest.Url.Query);
@@ -231,7 +232,7 @@ namespace RuralCafe
                     //: "request/add")
                     + "?t=" + title + "&a=" + id;
                 _clientHttpContext.Response.Redirect(redirectUrl);
-                _clientHttpContext.Response.StatusCode = (int)HttpStatusCode.TemporaryRedirect;
+                //_clientHttpContext.Response.StatusCode = (int)HttpStatusCode.TemporaryRedirect;
 
                 return Status.Completed;
             }

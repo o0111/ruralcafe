@@ -42,6 +42,8 @@ namespace RuralCafe
         /// The underlying web request.
         /// </summary>
         private HttpWebRequest _webRequest;
+        // Body for POSTs, ...
+        private byte[] _body;
 
         private HttpWebResponse _webResponse;
         private long _fileSize;
@@ -114,6 +116,11 @@ namespace RuralCafe
         {
             get { return _webResponse; }
         }
+        /// <summary>The body for POSTs,... null otherwise.</summary>
+        public byte[] Body
+        {
+            get { return _body; }
+        }
         /// <summary>The size of the file if it is cached.</summary>
         public long FileSize
         {
@@ -169,7 +176,7 @@ namespace RuralCafe
         /// <param name="requestHandler">The handler for the request.</param>
         /// <param name="request">The request.</param>
         public RCRequest(RequestHandler requestHandler, HttpWebRequest request)
-            :this(requestHandler, request, "", "")
+            :this(requestHandler, request, "", "", null)
         {
             // do nothing
         }
@@ -181,7 +188,8 @@ namespace RuralCafe
         /// <param name="request">The request.</param>
         /// <param name="anchorText">Text of the anchor tag.</param>
         /// <param name="referrerUri">URI of the referer.</param>
-        public RCRequest(RequestHandler requestHandler, HttpWebRequest request, string anchorText, string referrerUri)
+        public RCRequest(RequestHandler requestHandler, HttpWebRequest request, string anchorText,
+            string referrerUri, byte[] body)
         {
             _anchorText = anchorText;
             _refererUri = referrerUri.Trim();
@@ -190,6 +198,7 @@ namespace RuralCafe
 
             _webRequest = request;
             _webRequest.Timeout = RequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT;
+            _body = body;
 
             _fileName = UriToFilePath(_webRequest.RequestUri.ToString());
             _hashPath = GetHashPath(_fileName);
@@ -418,6 +427,8 @@ namespace RuralCafe
             try
             {
                 _requestHandler.LogDebug("downloading: " + _webRequest.RequestUri);
+                // Stream parameters, if we have non GET/HEAD
+                Util.SendBody(_webRequest, _body);
                 // get the web response for the web request
                 _webResponse = (HttpWebResponse)_webRequest.GetResponse();
                 _requestHandler.LogDebug("downloading done: " + _webRequest.RequestUri);

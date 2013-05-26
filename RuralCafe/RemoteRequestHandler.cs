@@ -129,10 +129,9 @@ namespace RuralCafe
                 string fileExtension = Util.GetFileExtension(requestUri);
                 requestUri = AddHttpPrefix(requestUri);
 
-                if (IsCacheable())
+                // Check if we can save the file
+                if (Util.IsNotTooLongFileName(_rcRequest.CacheFileName))
                 {
-                    // remove RuralCafe stuff from the request
-                    _rcRequest = new RCRequest(this, Util.CreateWebRequest(_originalRequest));
                     //_rcRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
 
                     if (RecursivelyDownloadPage(_rcRequest, richness, 0))
@@ -427,7 +426,9 @@ namespace RuralCafe
             }
                      
             // download the page
-            long bytesDownloaded = rcRequest.DownloadToCache(false);
+            // replace for non GET/HEADs
+            bool replace = !IsGetOrHeadHeader();
+            long bytesDownloaded = rcRequest.DownloadToCache(replace);
             if (bytesDownloaded < 0 )
             {
                 LogDebug("[depth = " + depth + "] error downloading: " + rcRequest.Uri);
