@@ -519,11 +519,13 @@ namespace RuralCafe
             foreach(string key in listenerRequest.Headers)
             {
                 // FIXME ATM no Accept-Encoding due to GZIP failure
-                // We handle these after the foreach loop (Do NOT set Host- or Proxy-Connection-header!)
+                // We handle these after the foreach loop 
+                // (Do NOT set Host- or Proxy-Connection-header!)
+                // Range may be ignored by Servers anyway.
                 if (key.Equals("User-Agent") || key.Equals("Accept") || key.Equals("Referer")
                      || key.Equals("Content-Type") || key.Equals("Content-Length")
                      || key.Equals("Host") || key.Equals("Proxy-Connection")
-                     || key.Equals("Accept-Encoding"))
+                     || key.Equals("Range")|| key.Equals("Accept-Encoding"))
                 {
                     continue;
                 }

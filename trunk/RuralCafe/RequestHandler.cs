@@ -259,14 +259,14 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Gets or Sets the Value
+        /// Gets the Value. -1 if cookie not set.
         /// </summary>
-        public String UserIDCookieValue
+        public int UserIDCookieValue
         {
             get
             {
                 return _originalRequest.Cookies[cookieUserID] == null ?
-                    null : _originalRequest.Cookies[cookieUserID].Value;
+                    -1 : Int32.Parse(_originalRequest.Cookies[cookieUserID].Value);
             }
         }
 

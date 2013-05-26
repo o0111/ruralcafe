@@ -31,15 +31,15 @@ namespace RuralCafe
             routines.Add("/request/result.xml", new RoutineMethod("ServeRCResultPage",
                 new string[] { "n", "p", "s" }, new Type[] { typeof(int), typeof(int), typeof(string) }));
             routines.Add("/request/queue.xml", new RoutineMethod("ServeRCQueuePage",
-                new string[] { "u", "v" }, new Type[] { typeof(int),  typeof(string) }));
+                new string[] { "v" }, new Type[] { typeof(string) }));
             routines.Add("/request/status.xml", new RoutineMethod("ServeNetworkStatus"));
 
             routines.Add("/request/remove", new RoutineMethod("RemoveRequest",
-                new string[] { "u", "i" }, new Type[] { typeof(int), typeof(string) }));
+                new string[] { "i" }, new Type[] { typeof(string) }));
             routines.Add("/request/add", new RoutineMethod("AddRequest",
-                new string[] { "u", "t", "a", "r" }, new Type[] { typeof(int), typeof(string), typeof(int), typeof(string) }));
+                new string[] { "t", "a", }, new Type[] { typeof(string), typeof(int) }));
             routines.Add("/request/eta", new RoutineMethod("ServeETARequest",
-                new string[] { "u", "i" }, new Type[] { typeof(int), typeof(string) }));
+                new string[] { "i" }, new Type[] { typeof(string) }));
             routines.Add("/request/signup", new RoutineMethod("SignupRequest",
                 new string[] { "u", "p", "i" }, new Type[] { typeof(string), typeof(string), typeof(int) }));
             routines.Add("/", new RoutineMethod("HomePage"));
@@ -131,7 +131,7 @@ namespace RuralCafe
         /// If t is set to dd-mm-yyyy or mm-yyyy, only the requests submitted during that day/month will be returned. 
         /// If v is set to 0, all requests submitted by the user should be returned.
         /// </summary>
-        public Response ServeRCQueuePage(int userId, string date)
+        public Response ServeRCQueuePage(string date)
         {
             // parse date
             bool queryOnDate = true;
@@ -168,7 +168,7 @@ namespace RuralCafe
             }
 
             // get requests for this user
-            List<LocalRequestHandler> requestHandlers = ((RCLocalProxy)_proxy).GetRequests(userId);
+            List<LocalRequestHandler> requestHandlers = ((RCLocalProxy)_proxy).GetRequests(UserIDCookieValue);
 
             string queuePageString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + "<queue>";
             int i = 1;
@@ -439,47 +439,60 @@ namespace RuralCafe
         /// <summary>
         /// Queues this request.
         /// </summary>
-        public Response AddRequest(int userId, string targetName, int id, string refererUri)
+        public Response AddRequest(string targetName, int id)
         {
+            int userId = UserIDCookieValue;
+            string redirectUrl;
+            if (userId == -1)
+            {
+                // Redirect to login.html referring to request id
+                redirectUrl = "http://www.ruralcafe.net/login.html?t=" + targetName + "&a=" + id; ;
+                _clientHttpContext.Response.Redirect(redirectUrl);
+                return new Response();
+            }
             if (targetName == null)
             {
                 targetName = "fake title";
             }
-            if (id == null)
-            {
-                throw new HttpException(HttpStatusCode.BadRequest, "malformed add request: no targetUri");
-            }
             // Get original request from Dictionary
-            LocalRequestHandler lrh = ((RCLocalProxy)_proxy).PopRequestWithoutUser(id);
+            LocalRequestHandler lrh;
+            try
+            {
+                lrh = ((RCLocalProxy)_proxy).PopRequestWithoutUser(id);
+            }
+            catch (Exception)
+            {
+                throw new HttpException(HttpStatusCode.BadRequest, 
+                    "malformed add request: ad not suppied or unknown");
+            }
             // Set RC headers
             RCSpecificRequestHeaders headers = new RCSpecificRequestHeaders(userId);
             lrh.AddRCSpecificRequestHeaders(headers);
 
-            if (refererUri == null)
-            {
-                refererUri = lrh.OriginalRequest.RawUrl.ToString();
-            }
             ((RCLocalProxy)_proxy).QueueRequest(userId, lrh);
-            return new Response(refererUri);
+            // Redirect to homepage
+            redirectUrl = "http://www.ruralcafe.net/";
+            _clientHttpContext.Response.Redirect(redirectUrl);
+            return new Response();
         }
 
         /// <summary>
         /// Removes the request from Ruralcafe's queue.
         /// </summary>
-        public Response RemoveRequest(int userId, string itemId)
+        public Response RemoveRequest(string itemId)
         {
             LocalRequestHandler matchingRequestHandler = new LocalRequestHandler(itemId);
-            ((RCLocalProxy)_proxy).DequeueRequest(userId, matchingRequestHandler);
+            ((RCLocalProxy)_proxy).DequeueRequest(UserIDCookieValue, matchingRequestHandler);
             return new Response();
         }
 
         /// <summary>
         /// Gets the eta for a request in Ruralcafe's queue.
         /// </summary>
-        public Response ServeETARequest(int userId, string itemId)
+        public Response ServeETARequest(string itemId)
         {
             // find the indexer of the matching request
-            List<LocalRequestHandler> requestHandlers = ((RCLocalProxy)_proxy).GetRequests(userId);
+            List<LocalRequestHandler> requestHandlers = ((RCLocalProxy)_proxy).GetRequests(UserIDCookieValue);
             if (requestHandlers == null)
             {
                 return new Response("0");

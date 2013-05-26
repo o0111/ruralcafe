@@ -58,7 +58,7 @@ function addRequest(itemTitle,itemURL) {
 				//item id should be returned if it is successfully created
 				//check whether item with that id is already added
 				if (itemId && itemId!='' && !document.getElementById(itemId)) {		
-					loadQueue('request/queue.xml?u='+userid+'&v=0');
+					loadQueue('request/queue.xml?v=0');
 					document.getElementById('main_frame').src = "newrequest.html";
 				}
 			}
@@ -69,7 +69,7 @@ function addRequest(itemTitle,itemURL) {
 	}
 	//var tvalue=encodeURIComponent(itemTitle);
 	//var avalue=encodeURIComponent(itemURL);
-	mygetrequest.open("GET", "request/add?u="+userid+"&t="+itemTitle+'&a='+itemURL, true);
+	mygetrequest.open("GET", "request/add?t="+itemTitle+'&a='+itemURL, true);
 	mygetrequest.send(null);
 	return false;
 }
@@ -79,7 +79,7 @@ function removeRequest(itemId) {
 	mygetrequest.onreadystatechange = function() {
 		if (mygetrequest.readyState == 4) {
 			if (mygetrequest.status == 200) {
-				loadQueue('request/queue.xml?u='+userid+'&v=0');
+				loadQueue('request/queue.xml?v=0');
 			}
 			else {
 				//alert("An error has occured removing the request");
@@ -87,7 +87,7 @@ function removeRequest(itemId) {
 		}
 	}
 	var ivalue = encodeURIComponent(itemId);
-	mygetrequest.open("GET", "request/remove?u="+userid+"&i="+ivalue, true);
+	mygetrequest.open("GET", "request/remove?i="+ivalue, true);
 	mygetrequest.send(null);
 	return false;
 }

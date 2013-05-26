@@ -660,8 +660,6 @@ namespace RuralCafe
         }
 
         #endregion
-
-
         #region Request and Response Methods
 
         /// <summary>
@@ -742,8 +740,6 @@ namespace RuralCafe
         }
 
         #endregion
-
-
         #region Remote Proxy Specific Helper Functions
 
         /// <summary>
@@ -769,7 +765,6 @@ namespace RuralCafe
             WebRequest request = WebRequest.Create(pageUri);
             // Only send a HEAD request, if no file extension
             request.Method = "HEAD";
-            // TODO configurable!?
             request.Timeout = HEAD_REQUEST_DEFAULT_TIMEOUT;
             WebResponse response;
             try
