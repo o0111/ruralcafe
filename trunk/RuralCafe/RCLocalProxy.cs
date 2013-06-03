@@ -272,7 +272,6 @@ namespace RuralCafe
                     RequestHandler requestHandler = RequestHandler.PrepareNewRequestHandler(this, context);
                     // Start own method StartRequestHandler in the thread, which also in- and decreases _activeRequests
                     Thread proxyThread = new Thread(new ParameterizedThreadStart(this.StartRequestHandler));
-                    //proxyThread.Name = String.Format("LocalRequest" + socket.RemoteEndPoint.ToString());
                     proxyThread.Start(requestHandler);
                 }
             }

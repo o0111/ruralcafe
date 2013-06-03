@@ -62,14 +62,74 @@ namespace RuralCafe
         /// </summary>
         private static string rcPage = "http://www.ruralcafe.net/";
         private static string rcPageWithoutWWW = "http://ruralcafe.net/";
-        /// <summary>
-        /// Matches "localhost" or "127.0.0.1" followed by anything but a dot.
-        /// </summary>
-        private static Regex localAddressRegex = new Regex(@"(?<add1>(localhost|127\.0\.0\.1))(?<add2>[^\.])");
+        
         /// <summary>
         /// The Name of the cookie for the user id.
         /// </summary>
         private static string cookieUserID = "uid";
+
+        #region static preparation methods
+
+        /// <summary>
+        /// Prepares a new RequestHandler. With one (local or remote/internal or not) is decided.
+        /// </summary>
+        /// <param name="proxy"></param>
+        /// <param name="context"></param>
+        /// <returns>The new request handler.</returns>
+        public static RequestHandler PrepareNewRequestHandler(RCProxy proxy, HttpListenerContext context)
+        {
+            HttpListenerRequest originalRequest = context.Request;
+            try
+            {
+                if (proxy is RCLocalProxy)
+                {
+                    if (IsRCRequest(originalRequest))
+                    {
+                        return new LocalInternalRequestHandler((RCLocalProxy)proxy, context);
+                    }
+                    else
+                    {
+                        return new LocalRequestHandler((RCLocalProxy)proxy, context);
+                    }
+                }
+                else
+                {
+                    if (IsRCRequest(originalRequest))
+                    {
+                        return new RemoteInternalRequestHandler((RCRemoteProxy)proxy, context);
+                    }
+                    else
+                    {
+                        return new RemoteRequestHandler((RCRemoteProxy)proxy, context);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                // temp handler: Internal is not needed
+                RequestHandler temp;
+                if (proxy is RCLocalProxy)
+                {
+                    temp = new LocalRequestHandler((RCLocalProxy)proxy, context);
+                }
+                else
+                {
+                    temp = new RemoteRequestHandler((RCRemoteProxy)proxy, context);
+                }
+                String errmsg = "error handling request: ";
+                if (originalRequest != null)
+                {
+                    errmsg += " " + originalRequest.RawUrl.ToString(); ;
+                }
+                errmsg += " " + e.GetType() + ": " + e.Message + "\n" + e.StackTrace;
+                temp.LogDebug(errmsg);
+                // Erroneous request has been handled
+                temp._validRequest = false;
+                return temp;
+            }
+        }
+
+        #endregion
 
         // timeouts
         public const int LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT = Timeout.Infinite; // in milliseconds
@@ -154,6 +214,12 @@ namespace RuralCafe
         public override int GetHashCode()
         {
             return RequestUri.GetHashCode();
+        }
+
+        /// <summary>Checks whether the request is blacklisted by the proxy.</summary>
+        public bool IsBlacklisted(string uri)
+        {
+            return _proxy.IsBlacklisted(uri);
         }
 
         #region Property Accessors
@@ -271,85 +337,6 @@ namespace RuralCafe
         }
 
         #endregion
-
-        /// <summary>Checks whether the request is blacklisted by the proxy.</summary>
-        public bool IsBlacklisted(string uri)
-        {
-            return _proxy.IsBlacklisted(uri);
-        }
-
-        /// <summary>
-        /// Appends a dot to "localhost" or "127.0.0.1". This is done to prevent .NET from
-        /// bypassing the remote proxy for local addresses.
-        /// 
-        /// If there is already a dot nothing is done.
-        /// </summary>
-        /// <param name="address">The address.</param>
-        /// <returns>The new address.</returns>
-        public static String AppendDotToLocalAddress(String address)
-        {
-            return localAddressRegex.Replace(address, "${add1}.${add2}");
-        }
-
-        /// <summary>
-        /// Prepares a new RequestHandler. With one (local or remote/internal or not) is decided.
-        /// </summary>
-        /// <param name="proxy"></param>
-        /// <param name="context"></param>
-        /// <returns>The new request handler.</returns>
-        public static RequestHandler PrepareNewRequestHandler(RCProxy proxy, HttpListenerContext context)
-        {
-            HttpListenerRequest originalRequest = context.Request;
-            try
-            {
-                if (proxy is RCLocalProxy)
-                {
-                    if (IsRCRequest(originalRequest))
-                    {
-                        return new LocalInternalRequestHandler((RCLocalProxy)proxy, context);
-                    }
-                    else
-                    {
-                        return new LocalRequestHandler((RCLocalProxy)proxy, context);
-                    }
-                }
-                else
-                {
-                    if (IsRCRequest(originalRequest))
-                    {
-                        return new RemoteInternalRequestHandler((RCRemoteProxy)proxy, context);
-                    }
-                    else
-                    {
-                        return new RemoteRequestHandler((RCRemoteProxy)proxy, context);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                // temp handler: Internal is not needed
-                RequestHandler temp;
-                if (proxy is RCLocalProxy)
-                {
-                    temp = new LocalRequestHandler((RCLocalProxy)proxy, context);
-                }
-                else
-                {
-                    temp = new RemoteRequestHandler((RCRemoteProxy)proxy, context);
-                }
-                String errmsg = "error handling request: ";
-                if (originalRequest != null)
-                {
-                    errmsg += " " + originalRequest.RawUrl.ToString(); ;
-                }
-                errmsg += " " + e.GetType() + ": " + e.Message + "\n" + e.StackTrace;
-                temp.LogDebug(errmsg);
-                // Erroneous request has been handled
-                temp._validRequest = false;
-                return temp;
-            }
-        }
-
         /// <summary>
         /// Main entry point for listener threads for a HttpWebRequest.
         /// </summary>

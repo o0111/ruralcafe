@@ -146,17 +146,7 @@ namespace RuralCafe
                 {
                     contentType = Util.GetContentTypeOfFile(_rcRequest.CacheFileName);
                 }
-                // peek at the file, major hackery...
-                string peekFile = System.IO.File.ReadAllText(_rcRequest.CacheFileName);
-                if (peekFile.StartsWith("HTTP/1.1 301 Moved Permanently"))
-                {
-                    // don't bother sending HTTP OK headers
-                    // FIXME this does not work that way any more...
-                }
-                else
-                {
-                    _clientHttpContext.Response.ContentType = contentType;
-                }
+                _clientHttpContext.Response.ContentType = contentType;
 
                 _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName);
                 if (_rcRequest.FileSize < 0)
