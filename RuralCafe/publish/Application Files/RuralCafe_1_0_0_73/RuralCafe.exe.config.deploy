@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<configuration>
+	<configSections>
+  <sectionGroup name="userSettings" type="System.Configuration.UserSettingsGroup, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" >
+   <section name="RuralCafe.Properties.Settings" type="System.Configuration.ClientSettingsSection, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" allowExeDefinition="MachineToLocalUser" requirePermission="false" />
+  </sectionGroup>
+ </configSections>
+ <startup/>
+ <userSettings>
+  <RuralCafe.Properties.Settings>
+   <setting name="LOCAL_PROXY_IP_ADDRESS" serializeAs="String">
+    <value>127.0.0.1</value>
+   </setting>
+   <setting name="LOCAL_PROXY_LISTEN_PORT" serializeAs="String">
+    <value>8080</value>
+   </setting>
+   <setting name="REMOTE_PROXY_IP_ADDRESS" serializeAs="String">
+    <value>127.0.0.1</value>
+   </setting>
+   <setting name="REMOTE_PROXY_LISTEN_PORT" serializeAs="String">
+    <value>8081</value>
+   </setting>
+   <setting name="EXTERNAL_PROXY_IP_ADDRESS" serializeAs="String">
+    <value />
+   </setting>
+   <setting name="EXTERNAL_PROXY_LISTEN_PORT" serializeAs="String">
+    <value>0</value>
+   </setting>
+   <setting name="EXTERNAL_PROXY_LOGIN" serializeAs="String">
+    <value />
+   </setting>
+   <setting name="EXTERNAL_PROXY_PASS" serializeAs="String">
+    <value />
+   </setting>
+   <setting name="DEFAULT_SEARCH_PAGE" serializeAs="String">
+    <value>trotro.html</value>
+   </setting>
+   <setting name="DEFAULT_QUOTA" serializeAs="String">
+    <value>2000000</value>
+   </setting>
+   <setting name="DEFAULT_DEPTH" serializeAs="String">
+    <value>1</value>
+   </setting>
+   <setting name="MAXIMUM_DOWNLOAD_SPEED" serializeAs="String">
+    <value>5000000</value>
+   </setting>
+   <setting name="INDEX_PATH" serializeAs="String">
+    <value>index-computer_studies-test</value>
+   </setting>
+   <setting name="LOCAL_CACHE_PATH" serializeAs="String">
+    <value>files-computer_studies-test</value>
+   </setting>
+   <setting name="REMOTE_CACHE_PATH" serializeAs="String">
+    <value>Cache</value>
+   </setting>
+   <setting name="WIKI_DUMP_DIR" serializeAs="String">
+    <value />
+   </setting>
+   <setting name="WIKI_DUMP_FILE" serializeAs="String">
+    <value />
+   </setting>
+   <setting name="LOCAL_MAXIMUM_ACTIVE_REQUESTS" serializeAs="String">
+    <value>50</value>
+   </setting>
+  </RuralCafe.Properties.Settings>
+ </userSettings>
+</configuration>
