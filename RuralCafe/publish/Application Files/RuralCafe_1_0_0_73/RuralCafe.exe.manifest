@@ -97,7 +97,7 @@
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
-        <dsig:DigestValue>+z/QUAFVBGfJ7kGtoQN2v8UgZss=</dsig:DigestValue>
+        <dsig:DigestValue>2YRfja/6RKFch3KWopBJdK7HJEk=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>
@@ -635,7 +635,7 @@
       <dsig:DigestValue>/2897QRudf2cjQk5Skh9EhSBuAQ=</dsig:DigestValue>
     </hash>
   </file>
-  <file name="LocalProxy\RuralCafePages\index.xml" size="2217" writeableType="applicationData">
+  <file name="LocalProxy\RuralCafePages\index.xml" size="2217">
     <hash>
       <dsig:Transforms>
         <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
@@ -797,7 +797,7 @@
       <dsig:DigestValue>3CRLq5fGkTnG7GnQ42/Nl9oK4nE=</dsig:DigestValue>
     </hash>
   </file>
-  <file name="LocalProxy\RuralCafePages\queue.xml" size="2449" writeableType="applicationData">
+  <file name="LocalProxy\RuralCafePages\queue.xml" size="2449">
     <hash>
       <dsig:Transforms>
         <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
@@ -815,7 +815,7 @@
       <dsig:DigestValue>187ngvVOT/es03r3NTQbvIjBFCg=</dsig:DigestValue>
     </hash>
   </file>
-  <file name="LocalProxy\RuralCafePages\request\est.xml" size="5" writeableType="applicationData">
+  <file name="LocalProxy\RuralCafePages\request\est.xml" size="5">
     <hash>
       <dsig:Transforms>
         <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
@@ -824,7 +824,7 @@
       <dsig:DigestValue>5BOGzEJq5oNZKu/j0ALmfjX0B+c=</dsig:DigestValue>
     </hash>
   </file>
-  <file name="LocalProxy\RuralCafePages\request\index.xml" size="809" writeableType="applicationData">
+  <file name="LocalProxy\RuralCafePages\request\index.xml" size="809">
     <hash>
       <dsig:Transforms>
         <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
@@ -833,7 +833,7 @@
       <dsig:DigestValue>3vg/2jCK2II58mT38q8yLNzHpgE=</dsig:DigestValue>
     </hash>
   </file>
-  <file name="LocalProxy\RuralCafePages\request\queue.xml" size="2611" writeableType="applicationData">
+  <file name="LocalProxy\RuralCafePages\request\queue.xml" size="2611">
     <hash>
       <dsig:Transforms>
         <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
@@ -842,7 +842,7 @@
       <dsig:DigestValue>gumcrLiwwW3+wfYRwAvixA/0HQo=</dsig:DigestValue>
     </hash>
   </file>
-  <file name="LocalProxy\RuralCafePages\request\result.xml" size="2180" writeableType="applicationData">
+  <file name="LocalProxy\RuralCafePages\request\result.xml" size="2180">
     <hash>
       <dsig:Transforms>
         <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
@@ -851,7 +851,7 @@
       <dsig:DigestValue>ZNTWlWqKpNwvE3v4OEm1cLw3eqc=</dsig:DigestValue>
     </hash>
   </file>
-  <file name="LocalProxy\RuralCafePages\request\search.xml" size="2264" writeableType="applicationData">
+  <file name="LocalProxy\RuralCafePages\request\search.xml" size="2264">
     <hash>
       <dsig:Transforms>
         <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
@@ -860,7 +860,7 @@
       <dsig:DigestValue>bqv8crlQirrmO4CX9OSHhx3mg+o=</dsig:DigestValue>
     </hash>
   </file>
-  <file name="LocalProxy\RuralCafePages\request\status.xml" size="6" writeableType="applicationData">
+  <file name="LocalProxy\RuralCafePages\request\status.xml" size="6">
     <hash>
       <dsig:Transforms>
         <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
@@ -905,7 +905,7 @@
       <dsig:DigestValue>vYi/TOhztG3YCDMXEhP4/sauStc=</dsig:DigestValue>
     </hash>
   </file>
-  <file name="LocalProxy\RuralCafePages\result.xml" size="2194" writeableType="applicationData">
+  <file name="LocalProxy\RuralCafePages\result.xml" size="2194">
     <hash>
       <dsig:Transforms>
         <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
@@ -1013,7 +1013,7 @@
       <dsig:DigestValue>8aI3RQGvxF4VYiE2PsDMPD8gl2Y=</dsig:DigestValue>
     </hash>
   </file>
-  <file name="LocalProxy\RuralCafePages\users.xml" size="764" writeableType="applicationData">
+  <file name="LocalProxy\RuralCafePages\users.xml" size="764">
     <hash>
       <dsig:Transforms>
         <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
@@ -1031,4 +1031,4 @@
       <dsig:DigestValue>IAbiffHD2vEyPq1eh9mNanbcGRg=</dsig:DigestValue>
     </hash>
   </file>
-<publisherIdentity name="CN=Fritzmobil\Satia" issuerKeyHash="a672cd4ff180ba44c535619e6085925edaf28965" /><Signature Id="StrongNameSignature" xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" /><Reference URI=""><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" /><Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" /><DigestValue>laVJNPH8JFF62zzSxbxe/i3Y9A8=</DigestValue></Reference></SignedInfo><SignatureValue>el2nU8YAZpPb9+H/V2TbbvG6vrD2UOj/qKH/BGBEUQWesoIZBRBAZUxcG/P4AbAiKTRHMgNZJb0MhhmLJ3x930yfgu8awddOOitNdcW3uIs+3xaGxvUoqxlxbYbipOs3ox8+Vq0pP271G2Twc5U9nlvxzV7lzjqCYFFAaitnJrw=</SignatureValue><KeyInfo Id="StrongNameKeyInfo"><KeyValue><RSAKeyValue><Modulus>pf9mdbHG1suJDbb0f/JiJkZf9LAHsiGw8sefZp5gFl9MEtsN4MvjB0xcHHyCyMdPBfpPGftz6pJzSf4xxldZjNi1ZUPonsrIGpBvIt2/MU5AeMO6DOBvernxIjAYobK8mhe2DLIPPUVdLTR33DatSPQkMA/oiwg5phIcFlT9988=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue><msrel:RelData xmlns:msrel="http://schemas.microsoft.com/windows/rel/2005/reldata"><r:license xmlns:r="urn:mpeg:mpeg21:2003:01-REL-R-NS" xmlns:as="http://schemas.microsoft.com/windows/pki/2005/Authenticode"><r:grant><as:ManifestInformation Hash="0ff4d82dfe5ebcc5d23cdb7a5124fcf13449a595" Description="" Url=""><as:assemblyIdentity name="RuralCafe.exe" version="1.0.0.73" publicKeyToken="e3e77b3352db199e" language="en" processorArchitecture="x86" type="win32" /></as:ManifestInformation><as:SignedBy /><as:AuthenticodePublisher><as:X509SubjectName>CN=Fritzmobil\Satia</as:X509SubjectName></as:AuthenticodePublisher></r:grant><r:issuer><Signature Id="AuthenticodeSignature" xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" /><Reference URI=""><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" /><Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" /><DigestValue>ikXBkDwgUBjXmsc2Q6zqIBq1D9k=</DigestValue></Reference></SignedInfo><SignatureValue>jSo1XF0P5FYGxZWaN67vc8FohAYNOT7xxOCOpjws/ob7jmOGqAMFfNfe65T3vCxvtHIiwVhBvPUBEdBetcoMXkvT1luPFJgeJ7r5YVv1v9GLd8QYhUpH8ywDt5fhPJEPbzncveLaq4tRHzwV0D8eFPbdVBw2R3Q/PxhnZpg2G7A=</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>pf9mdbHG1suJDbb0f/JiJkZf9LAHsiGw8sefZp5gFl9MEtsN4MvjB0xcHHyCyMdPBfpPGftz6pJzSf4xxldZjNi1ZUPonsrIGpBvIt2/MU5AeMO6DOBvernxIjAYobK8mhe2DLIPPUVdLTR33DatSPQkMA/oiwg5phIcFlT9988=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue><X509Data><X509Certificate>MIIB2TCCAUKgAwIBAgIQEmK2DGNrz5NHjLEbca1K9DANBgkqhkiG9w0BAQUFADArMSkwJwYDVQQDHiAARgByAGkAdAB6AG0AbwBiAGkAbABcAFMAYQB0AGkAYTAeFw0xMzA1MDkxOTAzNTJaFw0xNDA1MTAwMTAzNTJaMCsxKTAnBgNVBAMeIABGAHIAaQB0AHoAbQBvAGIAaQBsAFwAUwBhAHQAaQBhMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCl/2Z1scbWy4kNtvR/8mImRl/0sAeyIbDyx59mnmAWX0wS2w3gy+MHTFwcfILIx08F+k8Z+3PqknNJ/jHGV1mM2LVlQ+ieysgakG8i3b8xTkB4w7oM4G96ufEiMBihsryaF7YMsg89RV0tNHfcNq1I9CQwD+iLCDmmEhwWVP33zwIDAQABMA0GCSqGSIb3DQEBBQUAA4GBAJFhyWKX302PLWie5CiUk0sRvLxnjBjNe2V9eOKdyOwjl5+X4aQwMm1K+iDGVz8cMINi2G1PDQ0UUAEC+nvMBZVAQsF1PPFHKCSQembfdV97zREYJYRIb8zbQM/K6hYbBv7X2+rPY262W0Po/DE0+Kn07LTr4w3fI3+vy8CPxTi/</X509Certificate></X509Data></KeyInfo></Signature></r:issuer></r:license></msrel:RelData></KeyInfo></Signature></asmv1:assembly>
+<publisherIdentity name="CN=Fritzmobil\Satia" issuerKeyHash="a672cd4ff180ba44c535619e6085925edaf28965" /><Signature Id="StrongNameSignature" xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" /><Reference URI=""><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" /><Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" /><DigestValue>qbVgzPGjRHy9s6rcIrZzkxwbZ80=</DigestValue></Reference></SignedInfo><SignatureValue>PUVnnJcX1xIDBKvK47UPcHaPa1SmrtAMAzbUd3dEdEkXA09yfnLL8HJ1/q/WuEK0JMKmjvOVf3wJqznvgb63IQmK4rLe5TnoqfM8ILiG0P+Ra8W3AAzb7S1eo888PxYF1VW1Br3zhDJbdYFPl9KXo8nkGy67Co42Ds9RQRkZsII=</SignatureValue><KeyInfo Id="StrongNameKeyInfo"><KeyValue><RSAKeyValue><Modulus>pf9mdbHG1suJDbb0f/JiJkZf9LAHsiGw8sefZp5gFl9MEtsN4MvjB0xcHHyCyMdPBfpPGftz6pJzSf4xxldZjNi1ZUPonsrIGpBvIt2/MU5AeMO6DOBvernxIjAYobK8mhe2DLIPPUVdLTR33DatSPQkMA/oiwg5phIcFlT9988=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue><msrel:RelData xmlns:msrel="http://schemas.microsoft.com/windows/rel/2005/reldata"><r:license xmlns:r="urn:mpeg:mpeg21:2003:01-REL-R-NS" xmlns:as="http://schemas.microsoft.com/windows/pki/2005/Authenticode"><r:grant><as:ManifestInformation Hash="cd671b1c9373b622dcaab3bd7c44a3f1cc60b5a9" Description="" Url=""><as:assemblyIdentity name="RuralCafe.exe" version="1.0.0.73" publicKeyToken="e3e77b3352db199e" language="en" processorArchitecture="x86" type="win32" /></as:ManifestInformation><as:SignedBy /><as:AuthenticodePublisher><as:X509SubjectName>CN=Fritzmobil\Satia</as:X509SubjectName></as:AuthenticodePublisher></r:grant><r:issuer><Signature Id="AuthenticodeSignature" xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" /><Reference URI=""><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" /><Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" /><DigestValue>eCOrZUPkewyPAT+BsSv/eya6OyI=</DigestValue></Reference></SignedInfo><SignatureValue>bfytGvpEfjbWPcBKDgOzaH5dj42ALH4JBP5HInB1sXlGB/wpbdE6JIIg+UxJFMfA8IY1c6btsUZ/J/YECICWdCAUc0gXW7BmTaJCr/WTpeRZ2BZzCE7S4KXmseGXcMZCYQpMeSpWoZbCvq7vO2holMM+6pxXA+PYollaHEzqmEM=</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>pf9mdbHG1suJDbb0f/JiJkZf9LAHsiGw8sefZp5gFl9MEtsN4MvjB0xcHHyCyMdPBfpPGftz6pJzSf4xxldZjNi1ZUPonsrIGpBvIt2/MU5AeMO6DOBvernxIjAYobK8mhe2DLIPPUVdLTR33DatSPQkMA/oiwg5phIcFlT9988=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue><X509Data><X509Certificate>MIIB2TCCAUKgAwIBAgIQEmK2DGNrz5NHjLEbca1K9DANBgkqhkiG9w0BAQUFADArMSkwJwYDVQQDHiAARgByAGkAdAB6AG0AbwBiAGkAbABcAFMAYQB0AGkAYTAeFw0xMzA1MDkxOTAzNTJaFw0xNDA1MTAwMTAzNTJaMCsxKTAnBgNVBAMeIABGAHIAaQB0AHoAbQBvAGIAaQBsAFwAUwBhAHQAaQBhMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCl/2Z1scbWy4kNtvR/8mImRl/0sAeyIbDyx59mnmAWX0wS2w3gy+MHTFwcfILIx08F+k8Z+3PqknNJ/jHGV1mM2LVlQ+ieysgakG8i3b8xTkB4w7oM4G96ufEiMBihsryaF7YMsg89RV0tNHfcNq1I9CQwD+iLCDmmEhwWVP33zwIDAQABMA0GCSqGSIb3DQEBBQUAA4GBAJFhyWKX302PLWie5CiUk0sRvLxnjBjNe2V9eOKdyOwjl5+X4aQwMm1K+iDGVz8cMINi2G1PDQ0UUAEC+nvMBZVAQsF1PPFHKCSQembfdV97zREYJYRIb8zbQM/K6hYbBv7X2+rPY262W0Po/DE0+Kn07LTr4w3fI3+vy8CPxTi/</X509Certificate></X509Data></KeyInfo></Signature></r:issuer></r:license></msrel:RelData></KeyInfo></Signature></asmv1:assembly>
