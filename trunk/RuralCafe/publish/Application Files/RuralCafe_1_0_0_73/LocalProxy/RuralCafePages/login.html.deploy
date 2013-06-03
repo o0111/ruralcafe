@@ -1,0 +1,31 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<title>Trotro</title>
+		<link href="css/login.css" rel="stylesheet" type="text/css" media="all"/>
+		<script type="text/javascript" src="js/ajax.js" ></script>
+		<script type="text/javascript" src="js/login.js" ></script>
+	</head>
+
+	<body>
+		<div id="login_box">
+			<h1>
+				<a href="trotro.html"><img id="trotro_icon" src="img/icon.png" alt="trotro icon"/></a>
+			</h1>
+			<form method="post" action="trotro-user.html" onsubmit="return checkUser();">
+				<p class="login_hint">You are required to login before you can start downloading pages.</p>
+				<p>Username:<input id="username" name="username" type="text" value=""/>
+					<span id="wrong_username" class="err_message"></span>
+				</p>
+				<p>Password:<input id="password" name="password" type="password" value=""/>
+					<span id="wrong_password" class="err_message"></span>
+				</p>
+				<p> <input id="login" name="login" type="submit" value="Login"/></p>
+				<p class="err_message" id="wrong_setting"></p>
+				<p class="login_hint">Do not have a username? Please <a href="signup.html">sign up</a> here.</p>
+			</form>
+			<p class="login_hint"> <a href="trotro.html">back to previous page</a></p>
+		</div>
+	</body>
+</html>
