@@ -142,7 +142,7 @@ namespace RuralCafe
             long packageContentSize = headers.RCPackageContentSize;
             if (packageIndexSize == 0 || packageContentSize == 0)
             {
-                // This is internal error that should not happen!
+                // This is an internal error that should not happen!
                 return 0;
             }
             
@@ -192,42 +192,38 @@ namespace RuralCafe
                     requestHandler.LogDebug("problem unpacking: " + currUri);
                     return unpackedBytes;
                 }
+
+                // FIXME: a new RCRequest shouldn't be created just to know the cache file name.
+                // The cache file name logic should be moved into another class, Util e.g.
                 RCRequest rcRequest = new RCRequest(requestHandler, (HttpWebRequest)WebRequest.Create(currUri.Trim()));
+                string cacheFileName = rcRequest.CacheFileName;
 
                 unpackedBytes += currFileSize;
 
-                //requestHandler.LogDebug("unpacking: " + rcRequest.Uri + " - " + currFileSize + " bytes");
-
-                // make sure the file doesn't already exist for indexing purposes only
-                bool existed = false;
-
-                if (!Util.IsNotTooLongFileName(rcRequest.CacheFileName))
+                if (!Util.IsNotTooLongFileName(cacheFileName))
                 {
                     // We can't save the file
                     requestHandler.LogDebug("problem unpacking, filename too long for uri: " + currUri);
                     return unpackedBytes;
                 }
-
-                FileInfo ftest = new FileInfo(rcRequest.CacheFileName);
-                if (ftest.Exists)
-                {
-                    existed = true;
-                }
+                // make sure the file doesn't already exist for indexing purposes only
+                FileInfo ftest = new FileInfo(cacheFileName);
+                bool existed = ftest.Exists;
 
                 // try to delete the old version
-                if (!Util.DeleteFile(rcRequest.CacheFileName))
+                if (!Util.DeleteFile(cacheFileName))
                 {
                     return unpackedBytes;
                 }
 
                 // create directory if it doesn't exist
-                if (!Util.CreateDirectoryForFile(rcRequest.CacheFileName))
+                if (!Util.CreateDirectoryForFile(cacheFileName))
                 {
                     return unpackedBytes;
                 }
 
                 // create the file if it doesn't exist
-                FileStream currFileFS = Util.CreateFile(rcRequest.CacheFileName);
+                FileStream currFileFS = Util.CreateFile(cacheFileName);
                 if (currFileFS == null)
                 {
                     return unpackedBytes;
@@ -283,15 +279,14 @@ namespace RuralCafe
                 currFileFS.Close();
 
                 // add the file to Lucene
-                if (Util.IsParseable(rcRequest))
+                if (Util.IsParseable(cacheFileName))
                 {
-                    string document = Util.ReadFileAsString(rcRequest.CacheFileName);
-                    string title = Util.GetPageTitle(document);
-                    string content = Util.GetPageContent(document);
-
-                    //request.LogDebug("indexing: " + rcRequest._uri);
                     if (!existed)
                     {
+                        string document = Util.ReadFileAsString(cacheFileName);
+                        string title = Util.GetPageTitle(document);
+                        string content = Util.GetPageContent(document);
+                        // XXX: Why always with "Content-Type: text/html" ???
                         IndexWrapper.IndexDocument(indexPath, "Content-Type: text/html", rcRequest.Uri, title, content);
                     }
                 }

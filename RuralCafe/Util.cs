@@ -23,6 +23,8 @@ using System.IO;
 using System.Web;
 using System.Net;
 using System.Collections.Specialized;
+using System.Text.RegularExpressions;
+using System.Net.Sockets;
 
 namespace RuralCafe
 {
@@ -38,6 +40,14 @@ namespace RuralCafe
         /// The buffer size for streaming.
         /// </summary>
         private static int _streamBufferSize = 32768;
+        /// <summary>
+        /// Matches "localhost" or "127.0.0.1" followed by anything but a dot.
+        /// </summary>
+        private static Regex localAddressRegex = new Regex(@"(?<add1>(localhost|127\.0\.0\.1))(?<add2>[^\.])");
+        /// <summary>
+        /// The local IP address.
+        /// </summary>
+        private static string localIPAdress = LocalIPAddress();
 
         private static Object filesystemLock = new Object();
 
@@ -271,14 +281,16 @@ namespace RuralCafe
             return "content/unknown";
         }
 
+        // XXX: Currently only based on file ending.
+        // XXX: text text content (xml, too) should be indexable
         /// <summary>
         /// Checks if the URI is parseable by RuralCafe.
         /// </summary>
-        /// <param name="rcRequest">A RCRequest object.</param>
+        /// <param name="cacheFileName">The filename of the cached file.</param>
         /// <returns>True or false for parseable or not.</returns>
-        public static bool IsParseable(RCRequest rcRequest)
+        public static bool IsParseable(string cacheFileName)
         {
-            return GetContentTypeOfFile(rcRequest.CacheFileName).Contains("htm");
+            return GetContentTypeOfFile(cacheFileName).Contains("htm");
         }
         
         /// <summary>
@@ -518,14 +530,28 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// Replaces "localhost" or "127.0.0.1" with the local network address.
+        /// Otherwise the remote proxy would be bypassed due to a hardcoded error
+        /// in .NET framework.
+        /// </summary>
+        /// <param name="address">The address.</param>
+        /// <returns>The new address.</returns>
+        public static string UseLocalNetworkAdressForLocalAdress(string address)
+        {
+            return localAddressRegex.Replace(address, localIPAdress + "${add2}");
+        }
+
+        /// <summary>
         /// Creates an outgoing HttpWebRequest from an incoming HttpListenerRequest.
         /// </summary>
         /// <param name="listenerRequest">The HttpListenerRequest.</param>
         /// <returns>The HttpWebRequest.</returns>
         public static HttpWebRequest CreateWebRequest(HttpListenerRequest listenerRequest)
         {
-            HttpWebRequest webRequest =  (HttpWebRequest)WebRequest.Create(listenerRequest.RawUrl);
+            string url = UseLocalNetworkAdressForLocalAdress(listenerRequest.RawUrl);
+            HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url);
             webRequest.Method = listenerRequest.HttpMethod;
+
             foreach(string key in listenerRequest.Headers)
             {
                 // FIXME ATM no Accept-Encoding due to GZIP failure
@@ -645,6 +671,26 @@ namespace RuralCafe
         {
             string pathName = fileName.Substring(fileName.LastIndexOf(Path.DirectorySeparatorChar));
             return pathName.Length < 248 && fileName.Length < 260;
+        }
+
+        /// <summary>
+        /// Determines the local IP address.
+        /// </summary>
+        /// <returns>The local IP address.</returns>
+        public static string LocalIPAddress()
+        {
+            IPHostEntry host;
+            string localIP = "";
+            host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (IPAddress ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    localIP = ip.ToString();
+                    break;
+                }
+            }
+            return localIP;
         }
 
         /// <summary>
