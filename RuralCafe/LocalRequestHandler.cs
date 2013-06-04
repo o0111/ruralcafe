@@ -108,7 +108,7 @@ namespace RuralCafe
         {
             if (IsBlacklisted(RequestUri))
             {
-                LogDebug("ignoring blacklisted: " + RequestUri);
+                Logger.Debug("ignoring blacklisted: " + RequestUri);
                 SendErrorPage(HttpStatusCode.NotFound, "blacklisted: " + RequestUri);
                 return Status.Failed;
             }
@@ -127,7 +127,7 @@ namespace RuralCafe
                 && _proxy.NetworkStatus == RCProxy.NetworkStatusCode.Online
                 )
             {
-                LogDebug("streaming: " + RequestUri + " to client.");
+                Logger.Debug("streaming: " + RequestUri + " to client.");
 
                 long bytesSent = StreamTransparently();
                 _rcRequest.FileSize = bytesSent;
@@ -166,7 +166,7 @@ namespace RuralCafe
             // if online, stream to cache, then stream to client.
             if (_proxy.NetworkStatus == RCProxy.NetworkStatusCode.Online)
             {
-                LogDebug("streaming: " + _rcRequest.GenericWebRequest.RequestUri + " to cache and client.");
+                Logger.Debug("streaming: " + _rcRequest.GenericWebRequest.RequestUri + " to cache and client.");
                 _rcRequest.GenericWebRequest.Proxy = null;
                 long bytesDownloaded = _rcRequest.DownloadToCache(true);
                 try

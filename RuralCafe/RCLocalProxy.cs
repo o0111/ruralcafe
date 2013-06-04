@@ -129,9 +129,9 @@ namespace RuralCafe
         /// <param name="logsPath">Path to the proxy's logs.</param>
         /// <param name="maxRequests">Maximum active requests.</param>
         public RCLocalProxy(IPAddress listenAddress, int listenPort, string proxyPath, string indexPath,
-            string cachePath, string wikiDumpPath, string packagesPath, string logsPath, int maxRequests)
+            string cachePath, string wikiDumpPath, string packagesPath, int maxRequests)
             : base(LOCAL_PROXY_NAME, listenAddress, listenPort, proxyPath,
-            cachePath, packagesPath, logsPath)
+            cachePath, packagesPath)
         {
             _activeRequests = 0;
             _uiPagesPath = proxyPath + "RuralCafePages" + Path.DirectorySeparatorChar;
@@ -162,12 +162,13 @@ namespace RuralCafe
                 Console.WriteLine("Error initializing the local proxy wiki index.");
             }
 
+            // FIXME remove
             // load previous state
-            success = ReadLog(proxyPath + logsPath);
-            if (!success)
-            {
-                Console.WriteLine("Error reading log.");
-            }
+            //success = ReadLog(proxyPath + logsPath);
+            //if (!success)
+            //{
+            //    Console.WriteLine("Error reading log.");
+            //}
         }
 
         /// <summary>
@@ -245,7 +246,7 @@ namespace RuralCafe
         /// </summary>
         public override void StartListener()
         {
-            WriteDebug("Started Listener on " + _listenAddress + ":" + _listenPort);
+            _logger.Info("Started Listener on " + _listenAddress + ":" + _listenPort);
             try
             {
                 HttpListener listener = new HttpListener();
@@ -275,13 +276,13 @@ namespace RuralCafe
                     proxyThread.Start(requestHandler);
                 }
             }
-            catch (SocketException ex)
+            catch (SocketException e)
             {
-                WriteDebug("SocketException in StartLocalListener, errorcode: " + ex.NativeErrorCode);
+                _logger.Fatal("SocketException in StartRemoteListener, errorcode: " + e.NativeErrorCode, e);
             }
-            catch (IOException e)
+            catch (Exception e)
             {
-                WriteDebug("Exception in StartLocalListener: " + e.StackTrace + " " + e.Message);
+                _logger.Fatal("Exception in StartRemoteListener", e);
             }
         }
 
@@ -311,7 +312,7 @@ namespace RuralCafe
         /// </summary>
         public void StartDispatcher()
         {
-            WriteDebug("Started Requester");
+            _logger.Info("Started Requester");
             // go through the outstanding requests forever
             while (true)
             {
@@ -339,7 +340,7 @@ namespace RuralCafe
 
                         requestHandler.RequestStatus = RequestHandler.Status.Downloading;
 
-                        WriteDebug("dispatching to remote proxy: " + requestHandler.RequestUri);
+                        _logger.Debug("dispatching to remote proxy: " + requestHandler.RequestUri);
                         long bytesDownloaded = requestHandler.RCRequest.DownloadToCache(true);
 
                         if (bytesDownloaded > 0)
@@ -350,13 +351,13 @@ namespace RuralCafe
                             long unpackedBytes = Package.Unpack(requestHandler, headers, _indexPath);
                             if (unpackedBytes > 0)
                             {
-                                WriteDebug("unpacked: " + requestHandler.RequestUri);
+                                _logger.Debug("unpacked: " + requestHandler.RequestUri);
                                 requestHandler.RCRequest.FileSize = unpackedBytes;
                                 requestHandler.RequestStatus = RequestHandler.Status.Completed;
                             }
                             else
                             {
-                                WriteDebug("failed to unpack: " + requestHandler.RequestUri);
+                                _logger.Warn("failed to unpack: " + requestHandler.RequestUri);
                                 requestHandler.RequestStatus = RequestHandler.Status.Failed;
                             }
 
@@ -387,6 +388,7 @@ namespace RuralCafe
             }
         }
 
+        // FIXME remove!
         /// <summary>
         /// Read log from directory and add to the requests queue, update the itemId.
         /// Called upon LocalProxy initialization.
@@ -755,7 +757,6 @@ namespace RuralCafe
         }
 
         # endregion
-
         # region Timing and ETA
 
         /// <summary>
@@ -815,7 +816,6 @@ namespace RuralCafe
         }
 
         # endregion
-
         # region Unused
 
         /// <summary>

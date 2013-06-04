@@ -33,6 +33,8 @@ namespace RuralCafe
             this.button2 = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.comboBox3 = new System.Windows.Forms.ComboBox();
+            this.label21 = new System.Windows.Forms.Label();
             this.comboBox2 = new System.Windows.Forms.ComboBox();
             this.comboBox1 = new System.Windows.Forms.ComboBox();
             this.numericUpDown7 = new System.Windows.Forms.NumericUpDown();
@@ -100,13 +102,13 @@ namespace RuralCafe
             this.panel1.Controls.Add(this.groupBox1);
             this.panel1.Location = new System.Drawing.Point(13, 13);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(687, 426);
+            this.panel1.Size = new System.Drawing.Size(687, 456);
             this.panel1.TabIndex = 0;
             // 
             // button2
             // 
             this.button2.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.button2.Location = new System.Drawing.Point(595, 393);
+            this.button2.Location = new System.Drawing.Point(595, 430);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(75, 23);
             this.button2.TabIndex = 5;
@@ -116,7 +118,7 @@ namespace RuralCafe
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(514, 393);
+            this.button1.Location = new System.Drawing.Point(514, 430);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 4;
@@ -126,6 +128,8 @@ namespace RuralCafe
             // 
             // groupBox4
             // 
+            this.groupBox4.Controls.Add(this.comboBox3);
+            this.groupBox4.Controls.Add(this.label21);
             this.groupBox4.Controls.Add(this.comboBox2);
             this.groupBox4.Controls.Add(this.comboBox1);
             this.groupBox4.Controls.Add(this.numericUpDown7);
@@ -136,10 +140,30 @@ namespace RuralCafe
             this.groupBox4.Controls.Add(this.label17);
             this.groupBox4.Location = new System.Drawing.Point(4, 310);
             this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(666, 77);
+            this.groupBox4.Size = new System.Drawing.Size(666, 114);
             this.groupBox4.TabIndex = 3;
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Shared";
+            // 
+            // comboBox3
+            // 
+            this.comboBox3.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBox3.FormattingEnabled = true;
+            this.comboBox3.Location = new System.Drawing.Point(138, 71);
+            this.comboBox3.Name = "comboBox3";
+            this.comboBox3.Size = new System.Drawing.Size(184, 21);
+            this.comboBox3.TabIndex = 27;
+            this.comboBox3.SelectedIndexChanged += new System.EventHandler(this.comboBox3_SelectedIndexChanged);
+            // 
+            // label21
+            // 
+            this.label21.AutoSize = true;
+            this.label21.Location = new System.Drawing.Point(6, 74);
+            this.label21.Name = "label21";
+            this.label21.Size = new System.Drawing.Size(50, 13);
+            this.label21.TabIndex = 26;
+            this.label21.Text = "Log level";
+            this.label21.Click += new System.EventHandler(this.label21_Click);
             // 
             // comboBox2
             // 
@@ -566,7 +590,7 @@ namespace RuralCafe
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.button2;
-            this.ClientSize = new System.Drawing.Size(716, 453);
+            this.ClientSize = new System.Drawing.Size(716, 481);
             this.Controls.Add(this.panel1);
             this.Name = "SettingsForm";
             this.Text = "RuralCafe Settings";
@@ -640,5 +664,7 @@ namespace RuralCafe
         private System.Windows.Forms.NumericUpDown numericUpDown7;
         private System.Windows.Forms.ComboBox comboBox1;
         private System.Windows.Forms.ComboBox comboBox2;
+        private System.Windows.Forms.ComboBox comboBox3;
+        private System.Windows.Forms.Label label21;
     }
 }

@@ -20,14 +20,59 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using log4net;
+using log4net.Core;
+using log4net.Appender;
+using log4net.Layout;
+using log4net.Repository.Hierarchy;
+using log4net.Config;
+
+
 
 namespace RuralCafe
 {
     /// <summary>
+    /// All valid log levels for log4net.
+    /// </summary>
+    public enum LogLevel
+    {
+        ALL,
+        DEBUG,
+        INFO,
+        WARN,
+        ERROR,
+        FATAL,
+        OFF
+    }
+
+    /// <summary>
+    /// Class that configures the log4net loggers.
+    /// </summary>
+    public abstract class RCLogger
+    {
+        /// <summary>
+        /// Initializes and configures the logger(s).
+        /// </summary>
+        public static void InitLogger()
+        {
+            // Configure based on app.config
+            XmlConfigurator.Configure();
+            // Get root logger
+            Hierarchy h = (Hierarchy)LogManager.GetRepository();
+            Logger rootLogger = h.Root;
+
+            // Get property for LogLevel
+            LogLevel level = Properties.Settings.Default.LOGLEVEL;
+            // and set root logger level accordingly
+            rootLogger.Level = h.LevelMap[level.ToString()];
+        }
+    }
+
+    /// <summary>
     /// Logging facility for saving event and debug messages.
     /// Used in conjunction with a single proxy.
     /// </summary>
-    public class Logger
+    public class RCLogger2
     {
         string _proxyName;
         string _logPath;
@@ -39,7 +84,7 @@ namespace RuralCafe
         /// </summary>
         /// <param name="proxyName">Name of the calling proxy to log messages for.</param>
         /// <param name="logPath">Relative or absolute path for the logs.</param>
-        public Logger(string proxyName, string logPath)
+        public RCLogger2(string proxyName, string logPath)
         {
             _proxyName = proxyName;
 
@@ -114,10 +159,6 @@ namespace RuralCafe
             {
                 // JAY: not sure what to do here if the logging can't be done this is rather critical.
                 // XXX: do nothing
-            }
-            finally
-            {
-                s = null;
             }
         }
     }

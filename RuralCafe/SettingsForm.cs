@@ -42,13 +42,14 @@ namespace RuralCafe
             this.numericUpDown7.Value = Properties.Settings.Default.DEFAULT_QUOTA;
             this.comboBox1.DataSource = Enum.GetValues(typeof(RCProxy.NetworkStatusCode));
             this.comboBox2.DataSource = Enum.GetValues(typeof(RequestHandler.Richness));
+            this.comboBox3.DataSource = Enum.GetValues(typeof(LogLevel));
             this.comboBox1.SelectedItem = Properties.Settings.Default.NETWORK_STATUS;
             this.comboBox2.SelectedItem = Properties.Settings.Default.DEFAULT_RICHNESS;
+            this.comboBox3.SelectedItem = Properties.Settings.Default.LOGLEVEL;
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
-            // Test IP addresses!
             // Dummy for out parameter
             IPAddress ipAddressDummy;
             if (!this.textBox1.Text.Equals("") && !IPAddress.TryParse(this.textBox1.Text, out ipAddressDummy))
@@ -90,6 +91,7 @@ namespace RuralCafe
             Properties.Settings.Default.DEFAULT_QUOTA = (int)this.numericUpDown7.Value;
             Properties.Settings.Default.NETWORK_STATUS = (RCProxy.NetworkStatusCode)this.comboBox1.SelectedItem;
             Properties.Settings.Default.DEFAULT_RICHNESS = (RequestHandler.Richness)this.comboBox2.SelectedItem;
+            Properties.Settings.Default.LOGLEVEL = (LogLevel)this.comboBox3.SelectedItem;
             Properties.Settings.Default.Save();
             this.Close();
         }
@@ -97,6 +99,16 @@ namespace RuralCafe
         private void button2_Click(object sender, EventArgs e)
         {
             this.Close();
+        }
+
+        private void label21_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void comboBox3_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }
