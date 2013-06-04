@@ -152,23 +152,15 @@ namespace RuralCafe
             success = InitializeIndex(indexPath);
             if (!success)
             {
-                Console.WriteLine("Error initializing the local proxy index.");
+                _logger.Warn("Error initializing the local proxy index.");
             }
 
             // initialize the wiki index
             success = InitializeWikiIndex(wikiDumpPath);
             if (!success)
             {
-                Console.WriteLine("Error initializing the local proxy wiki index.");
+                _logger.Warn("Error initializing the local proxy wiki index.");
             }
-
-            // FIXME remove
-            // load previous state
-            //success = ReadLog(proxyPath + logsPath);
-            //if (!success)
-            //{
-            //    Console.WriteLine("Error reading log.");
-            //}
         }
 
         /// <summary>
@@ -257,10 +249,9 @@ namespace RuralCafe
                 // loop and listen for the next connection request
                 while (true)
                 {
-                    //XXX: Debug Console Print
                     if (_activeRequests >= MAXIMUM_ACTIVE_REQUESTS)
                     {
-                        Console.WriteLine("Waiting. Active Requests: " + _activeRequests);
+                        _logger.Debug("Waiting. Active Requests: " + _activeRequests);
                         while (_activeRequests >= MAXIMUM_ACTIVE_REQUESTS)
                         {
                             Thread.Sleep(100);
@@ -419,7 +410,7 @@ namespace RuralCafe
                 FileInfo currentFile = files.ElementAt(1);
 
                 FileStream fs = currentFile.OpenRead();
-                Console.WriteLine("Parsing log: " + currentFile);
+                _logger.Debug("Parsing log: " + currentFile);
                 TextReader tr = new StreamReader(fs);
 
                 uint linesParsed = 0;
@@ -429,7 +420,6 @@ namespace RuralCafe
                 while (line != null)
                 {
                     linesParsed++;
-                    //Console.WriteLine("Parsing line: " + line);
                     lineTokens = line.Split(' ');
 
                     string requestId = "";
@@ -452,7 +442,6 @@ namespace RuralCafe
                     // maximum number of tokens is 100
                     if (lineTokens.Length >= 100 || lineTokens.Length <= 5)
                     {
-                        //Console.WriteLine("Error, tokens do not fit in array, line " + linesParsed);
                         // read the next line
                         line = tr.ReadLine();
                         continue;
@@ -484,7 +473,6 @@ namespace RuralCafe
                             string itemId = hashPath.Replace(Path.DirectorySeparatorChar.ToString(), "");
 
                             // add it to the queue
-                            //Console.WriteLine("Adding to queue: " + targetUri);
                             List<string> logEntry = new List<string>();
                             logEntry.Add(requestId);
                             logEntry.Add(startTime);
@@ -509,7 +497,6 @@ namespace RuralCafe
                                 continue;
                             }
                             // remove it from the queue
-                            //Console.WriteLine("Removing from queue: " + itemId);
                             if (loggedRequestQueueMap.ContainsKey(itemId))
                             {
                                 loggedRequestQueueMap.Remove(itemId);
@@ -543,7 +530,6 @@ namespace RuralCafe
                         {
                             // parse the response
                             // check if its in the queue, if so, remove it
-                            //Console.WriteLine("Removing from queue: " + targetUri);
                             loggedRequestQueueMap[itemId].Add(status);
                         }
                     }
@@ -565,9 +551,9 @@ namespace RuralCafe
                 // update the nextId
                 _nextRequestId = highestRequestId + 1;
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                Console.WriteLine("Could not read debug logs for saved state.");
+                _logger.Warn("Could not read debug logs for saved state.", e);
                 return false;
             }
             return true;

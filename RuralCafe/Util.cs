@@ -25,6 +25,7 @@ using System.Net;
 using System.Collections.Specialized;
 using System.Text.RegularExpressions;
 using System.Net.Sockets;
+using log4net;
 
 namespace RuralCafe
 {
@@ -596,7 +597,7 @@ namespace RuralCafe
                     {
                         // XXX: remove the try-catch, when we are sure we did not forget any header field
                         // that needs "special treatment"
-                        Console.WriteLine(e.Message);
+                        LogManager.GetLogger(typeof(Util)).Error(e);
                     }
                 }
             }

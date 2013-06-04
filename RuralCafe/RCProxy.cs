@@ -108,13 +108,12 @@ namespace RuralCafe
         /// <summary>
         /// Constructor for proxy base class.
         /// </summary>
-        /// <param name="proxyName">Name of the proxy.</param>
+        /// <param name="name">Name of the proxy.</param>
         /// <param name="listenAddress">Address the proxy listens on.</param>
         /// <param name="listenPort">Port the proxy listens on.</param>
         /// <param name="proxyPath">Directory path the proxy is running in.</param>
         /// <param name="cachePath">Path to the proxy's cache</param>
         /// <param name="packageCachePath">Path to the proxy's packages</param>
-        /// <param name="logsPath">Path to the proxy's logs</param>
         protected RCProxy(string name, IPAddress listenAddress, int listenPort, 
             string proxyPath, string cachePath, string packageCachePath)
         {
@@ -132,14 +131,14 @@ namespace RuralCafe
             success = InitializeCache(cachePath);
             if (!success)
             {
-                Console.WriteLine("Error initializing the " + name + " cache.");
+                _logger.Warn("Error initializing the " + name + " cache.");
             }
 
             // initialize the packages cache
             success = InitializePackagesCache(proxyPath + packageCachePath);
             if (!success)
             {
-                Console.WriteLine("Error initializing the " + name + " packages cache.");
+                _logger.Warn("Error initializing the " + name + " packages cache.");
             }
         }
 

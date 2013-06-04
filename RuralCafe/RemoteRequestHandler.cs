@@ -751,12 +751,12 @@ namespace RuralCafe
         /// <returns>True or false for is or is not.</returns>
         bool IsATextPage(string pageUri)
         {
-            Console.WriteLine("IsATextPage?: " + pageUri);
+            Logger.Debug("IsATextPage?: " + pageUri);
             // first check if file has an extension which we know
             // If so, we look into our map, and do not have to send any request
             string fileExtension = Util.GetFileExtension(pageUri);
             string contentTypeA = Util.GetContentType(fileExtension);
-            Console.WriteLine("IsATextPage? - File Extension Mapping: " + fileExtension + "->" + contentTypeA);
+            Logger.Debug("IsATextPage? - File Extension Mapping: " + fileExtension + "->" + contentTypeA);
             if (!contentTypeA.Equals("content/unknown"))
             {
                 return (!contentTypeA.Contains("image") && !contentTypeA.Contains("audio")
@@ -774,7 +774,7 @@ namespace RuralCafe
             }
             catch (WebException e)
             {
-                Console.WriteLine("IsATextPage: " + e.Message);
+                Logger.Debug("IsATextPage: " + e.Message);
                 // probably 404
                 return false;
             }
@@ -783,7 +783,7 @@ namespace RuralCafe
             if (response != null)
             {
                 contentType = response.ContentType;
-                Console.WriteLine("IsATextPage? - HEAD request response: " + contentType);
+                Logger.Debug("IsATextPage? - HEAD request response: " + contentType);
                 return (!contentType.Contains("image") && !contentType.Contains("audio")
                     && !contentType.Contains("video"));
             }

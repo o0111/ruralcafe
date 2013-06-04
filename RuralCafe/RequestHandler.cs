@@ -922,11 +922,11 @@ namespace RuralCafe
         /// </summary>
         public void LogRequest()
         {
-            string str = _requestId + " " + _rcRequest.StartTime + " " + _clientAddress.ToString() +
+            string str = _requestId + " " + _clientAddress.ToString() +
                          " " + _rcRequest.GenericWebRequest.Method + " " + RequestUri +
                          " REFERER " + RefererUri + " " + 
                          RequestStatus + " " + _rcRequest.FileSize;
-            _proxy.Logger.Debug(str);
+            _proxy.Logger.Info(str);
         }
 
         /// <summary>
@@ -934,9 +934,9 @@ namespace RuralCafe
         /// </summary>
         public void LogResponse()
         {
-            string str = _requestId + " " + _rcRequest.FinishTime + " RSP " + RequestUri + " " + 
+            string str = _requestId +  " RSP " + RequestUri + " " + 
                         RequestStatus + " " + _rcRequest.FileSize;
-            _proxy.Logger.Debug(str);
+            _proxy.Logger.Info(str);
         }
 
         /// <summary>
@@ -944,9 +944,9 @@ namespace RuralCafe
         /// </summary>
         public void LogServerResponse()
         {
-            string str = _requestId + " " + _rcRequest.FinishTime + " RSP " + _originalRequest.RawUrl.ToString() + " " +
+            string str = _requestId + " RSP " + _originalRequest.RawUrl.ToString() + " " +
                         RequestStatus + " " + _rcRequest.FileSize;
-            _proxy.Logger.Debug(str);
+            _proxy.Logger.Info(str);
         }
 
         #endregion
