@@ -105,8 +105,7 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Logs all configuration items. This will only be printed on the console and only
-        /// if LogLevel >= INFO.
+        /// Logs all configuration items. This will only be printed if LogLevel >= INFO.
         /// </summary>
         private static void logConfiguration()
         {

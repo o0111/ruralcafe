@@ -5,6 +5,7 @@ using System.Text;
 using System.IO;
 using System.Threading;
 using System.Net;
+using log4net;
 
 namespace RuralCafe
 {
@@ -13,6 +14,8 @@ namespace RuralCafe
     /// </summary>
     class AnalysisTools
     {
+        private static ILog _logger = LogManager.GetLogger(typeof(AnalysisTools));
+
         /// <summary>
         /// Counts embedded objects and links on a page. 
         /// Currently only takes in simple log format of "google.txt".
@@ -54,7 +57,7 @@ namespace RuralCafe
                 // maximum number of tokens is 100
                 if (lineTokens.Length >= 100 || lineTokens.Length < 19)
                 {
-                    Console.WriteLine("Error, too many tokens to fit in array");
+                    _logger.Warn("too many tokens to fit in array");
                     // read the next line
                     line = tr.ReadLine();
                     continue;
@@ -70,22 +73,7 @@ namespace RuralCafe
                         continue;
                     }
 
-                    /* print to show that we're processing
-                    if (DateTime.Now.Subtract(displayDotTimer).TotalMinutes > 0)
-                    {
-                        Console.Write(".");
-                        displayDotTimer = DateTime.Now;
-                    }*/
-                    Console.WriteLine(urlRequest);
-
-                    /*
-                    // check if the query has already been processed before
-                    if (IsCached(fileName))
-                    {
-                        // skip cached files
-                        continue;
-                    }
-                    */
+                    _logger.Info(urlRequest);
 
                     // process search query one at a time
                     RemoteRequestHandler requestHandler = new RemoteRequestHandler(remoteProxy, null);
