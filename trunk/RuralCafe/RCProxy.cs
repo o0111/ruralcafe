@@ -23,6 +23,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using log4net;
 
 namespace RuralCafe
 {
@@ -52,7 +53,7 @@ namespace RuralCafe
         // proxy settings
         protected IPAddress _listenAddress;
         protected int _listenPort;
-        protected Logger _logger;
+        protected ILog _logger;
         protected string _cachePath;
         protected string _packagesCachePath;
         protected string _name;
@@ -95,6 +96,12 @@ namespace RuralCafe
             get { return _networkStatus; }
             set { _networkStatus = value; }
         }
+        /// <summary>The logger.</summary>
+        public ILog Logger 
+        {
+            get { return _logger; }
+        }
+        
 
         # endregion
 
@@ -109,7 +116,7 @@ namespace RuralCafe
         /// <param name="packageCachePath">Path to the proxy's packages</param>
         /// <param name="logsPath">Path to the proxy's logs</param>
         protected RCProxy(string name, IPAddress listenAddress, int listenPort, 
-            string proxyPath, string cachePath, string packageCachePath, string logsPath)
+            string proxyPath, string cachePath, string packageCachePath)
         {
             _name = name;
             // setup proxy listener variables
@@ -117,7 +124,7 @@ namespace RuralCafe
             _listenPort = listenPort;
 
             //create and initialize the logger
-            _logger = new Logger(name, proxyPath + logsPath);
+            _logger = LogManager.GetLogger(this.GetType());
 
             bool success = false;
 
@@ -205,35 +212,6 @@ namespace RuralCafe
         /// Abstract method for starting listener.
         /// </summary>
         public abstract void StartListener();
-
-        /// <summary>
-        /// Write message interface to the logger.
-        /// </summary>
-        /// <param name="requestId">Request ID.</param>
-        /// <param name="entry">Message string.</param>
-        public void WriteMessage(int requestId, string entry)
-        {
-            _logger.WriteMessage(requestId, entry);
-        }
-
-        /// <summary>
-        /// Write debug interface to the logger for the proxies.
-        /// </summary>
-        /// <param name="entry">Message string.</param>
-        protected void WriteDebug(string entry)
-        {
-            _logger.WriteDebug(0, entry);
-        }
-
-        /// <summary>
-        /// Write debug interface to the logger for RequestHandlers.
-        /// </summary>
-        /// <param name="requestId">Request ID.</param>
-        /// <param name="entry">Message string.</param>
-        public void WriteDebug(int requestId, string str)
-        {
-            _logger.WriteDebug(requestId, str);
-        }
 
         /// <summary>
         /// Checks to see if the proxy still has free downlink bandwidth.
@@ -335,7 +313,7 @@ namespace RuralCafe
         /// <returns>The old value.</returns>
         public int GetAndIncrementNextRequestID()
         {
-            return System.Threading.Interlocked.   Increment(ref _nextRequestId) - 1;
+            return System.Threading.Interlocked.Increment(ref _nextRequestId) - 1;
         }
     }
 }

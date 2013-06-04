@@ -62,5 +62,8 @@
     <Setting Name="LOCAL_MAXIMUM_ACTIVE_REQUESTS" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">50</Value>
     </Setting>
+    <Setting Name="LOGLEVEL" Type="RuralCafe.LogLevel" Scope="User">
+      <Value Profile="(Default)">DEBUG</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

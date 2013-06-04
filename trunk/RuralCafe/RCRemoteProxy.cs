@@ -47,9 +47,9 @@ namespace RuralCafe
         /// <param name="packagesPath">Path to the proxy's packages</param>
         /// <param name="logsPath">Path to the proxy's logs</param>
         public RCRemoteProxy(IPAddress listenAddress, int listenPort, string proxyPath, 
-            string cachePath, string packagesPath, string logsPath)
+            string cachePath, string packagesPath)
             : base(REMOTE_PROXY_NAME, listenAddress, listenPort, proxyPath, 
-            cachePath, packagesPath, logsPath)
+            cachePath, packagesPath)
         {
             _requestQueue = new List<string>();
             _userSettings = new Dictionary<int, RCUserSettings>();
@@ -61,7 +61,7 @@ namespace RuralCafe
         /// </summary>
         public override void StartListener()
         {
-            WriteDebug("Started Listener on " +
+           _logger.Info("Started Listener on " +
                 _listenAddress + ":" + _listenPort);
             try
             {
@@ -83,13 +83,13 @@ namespace RuralCafe
                     proxyThread.Start();
                 }
             }
-            catch (SocketException ex)
+            catch (SocketException e)
             {
-                WriteDebug("SocketException in StartRemoteListener, errorcode: " + ex.NativeErrorCode);
+                _logger.Fatal("SocketException in StartRemoteListener, errorcode: " + e.NativeErrorCode, e);
             }
             catch (Exception e)
             {
-                WriteDebug("Exception in StartRemoteListener: " + e.StackTrace + " " + e.Message);
+                _logger.Fatal("Exception in StartRemoteListener", e);
             }
         }
 

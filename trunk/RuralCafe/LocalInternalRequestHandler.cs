@@ -292,7 +292,7 @@ namespace RuralCafe
                 }
             }
 
-            LogDebug(filteredLuceneResults.Count + " results");
+            Logger.Debug(filteredLuceneResults.Count + " results");
 
             resultsString = resultsString + "<search total=\"" + currentItemNumber + "\">"; //laura: total should be the total number of results
             // Local Search Results

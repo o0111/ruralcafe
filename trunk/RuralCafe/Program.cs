@@ -25,6 +25,9 @@ using System.Net.Sockets;
 using System.Text;
 using System.IO;
 using System.Threading;
+using System.Configuration;
+using log4net;
+using System.Collections.Specialized;
 
 namespace RuralCafe
 {
@@ -38,11 +41,13 @@ namespace RuralCafe
         private static string REMOTE_PROXY_PATH = Directory.GetCurrentDirectory()
             + Path.DirectorySeparatorChar + "RemoteProxy" + Path.DirectorySeparatorChar;
         private static string PACKAGE_PATH = "Packages" + Path.DirectorySeparatorChar;
-        private static string LOGS_PATH = "Logs" + Path.DirectorySeparatorChar;
         private static string INDEX_PATH;
         private static string LOCAL_CACHE_PATH;
         private static string REMOTE_CACHE_PATH;
         private static string WIKI_DUMP_FILE;
+
+        // The logger
+        private static ILog _logger = LogManager.GetLogger(typeof(Program));
 
         /// <summary>
         /// The main entry point for the application.
@@ -75,24 +80,13 @@ namespace RuralCafe
             // Setting form at startup.
             SettingsForm sf = new SettingsForm();
             sf.ShowDialog();
-
             saveConfigs();
 
-            // print some console messages
-            Console.WriteLine("LOCAL_PROXY_IP_ADDRESS: " + Properties.Settings.Default.LOCAL_PROXY_IP_ADDRESS);
-            Console.WriteLine("LOCAL_PROXY_LISTEN_PORT: " + Properties.Settings.Default.LOCAL_PROXY_LISTEN_PORT);
-            Console.WriteLine("REMOTE_PROXY_IP_ADDRESS: " + Properties.Settings.Default.REMOTE_PROXY_IP_ADDRESS);
-            Console.WriteLine("REMOTE_PROXY_LISTEN_PORT: " + Properties.Settings.Default.REMOTE_PROXY_LISTEN_PORT);
-            Console.WriteLine("EXTERNAL_PROXY_IP_ADDRESS: " + Properties.Settings.Default.REMOTE_PROXY_IP_ADDRESS);
-            Console.WriteLine("EXTERNAL_PROXY_LISTEN_PORT: " + Properties.Settings.Default.EXTERNAL_PROXY_LISTEN_PORT);
-            Console.WriteLine("EXTERNAL_PROXY_LOGIN: " + Properties.Settings.Default.EXTERNAL_PROXY_LOGIN);
-            Console.WriteLine("INDEX_PATH: " + INDEX_PATH);
-            Console.WriteLine("LOCAL_CACHE_PATH: " + LOCAL_CACHE_PATH);
-            Console.WriteLine("LOCAL_PROXY_PATH: " + LOCAL_PROXY_PATH);
-            Console.WriteLine("REMOTE_CACHE_PATH: " + REMOTE_CACHE_PATH);
-            Console.WriteLine("WIKI_DUMP_FILE: " + WIKI_DUMP_FILE);
-            Console.WriteLine("NETWORK_STATUS: " + Properties.Settings.Default.NETWORK_STATUS);
-            Console.WriteLine("DEFAULT_RICHNESS: " + Properties.Settings.Default.DEFAULT_RICHNESS);
+            // Config Logger
+            RCLogger.InitLogger();
+
+            // Log configuration
+            logConfiguration();
 
             // start the local proxy
             if (Properties.Settings.Default.LOCAL_PROXY_IP_ADDRESS != null 
@@ -110,6 +104,21 @@ namespace RuralCafe
             }
         }
 
+        /// <summary>
+        /// Logs all configuration items. This will only be printed on the console and only
+        /// if LogLevel >= INFO.
+        /// </summary>
+        private static void logConfiguration()
+        {
+            foreach (SettingsPropertyValue currentProperty in Properties.Settings.Default.PropertyValues)
+            {
+                _logger.Info(currentProperty.Name + ": " + currentProperty.PropertyValue);
+            }
+        }
+
+        /// <summary>
+        /// Saves the configuration.
+        /// </summary>
         public static void saveConfigs()
         {
             // Path and stuff Configuration Settings
@@ -142,7 +151,7 @@ namespace RuralCafe
         {
             // create the proxy
             RCLocalProxy localProxy = new RCLocalProxy(IPAddress.Parse(Properties.Settings.Default.LOCAL_PROXY_IP_ADDRESS), Properties.Settings.Default.LOCAL_PROXY_LISTEN_PORT,
-                LOCAL_PROXY_PATH, INDEX_PATH, LOCAL_CACHE_PATH, WIKI_DUMP_FILE, PACKAGE_PATH, LOGS_PATH, Properties.Settings.Default.LOCAL_MAXIMUM_ACTIVE_REQUESTS);
+                LOCAL_PROXY_PATH, INDEX_PATH, LOCAL_CACHE_PATH, WIKI_DUMP_FILE, PACKAGE_PATH, Properties.Settings.Default.LOCAL_MAXIMUM_ACTIVE_REQUESTS);
 
             // set the remote proxy
             localProxy.SetRemoteProxy(IPAddress.Parse(Properties.Settings.Default.REMOTE_PROXY_IP_ADDRESS), Properties.Settings.Default.REMOTE_PROXY_LISTEN_PORT);
@@ -190,7 +199,7 @@ namespace RuralCafe
             // create the proxy
             RCRemoteProxy remoteProxy = new RCRemoteProxy(IPAddress.Parse(Properties.Settings.Default.REMOTE_PROXY_IP_ADDRESS),
                 Properties.Settings.Default.REMOTE_PROXY_LISTEN_PORT,
-                REMOTE_PROXY_PATH, REMOTE_CACHE_PATH, PACKAGE_PATH, LOGS_PATH);
+                REMOTE_PROXY_PATH, REMOTE_CACHE_PATH, PACKAGE_PATH);
 
             /*
             // XXX: buggy...

@@ -59,7 +59,7 @@ namespace RuralCafe
             RCUserSettings settings = ((RCRemoteProxy)_proxy).GetUserSettings(userid);
             // And change richness
             settings.richness = richness;
-            LogDebug("Richness of user " + userid + " was set to: " + richness);
+            Logger.Debug("Richness of user " + userid + " was set to: " + richness);
             return new Response("Richness set.");
         }
 

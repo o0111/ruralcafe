@@ -146,7 +146,7 @@ namespace RuralCafe
                 else   
                 {
                     // XXX: not handled at the moment, technically nothing should be "not cacheable" though.
-                    LogDebug("not cacheable, failed.");
+                    Logger.Warn("not cacheable, failed.");
 
                     return Status.Failed;
                 }
@@ -431,14 +431,14 @@ namespace RuralCafe
             long bytesDownloaded = rcRequest.DownloadToCache(replace);
             if (bytesDownloaded < 0 )
             {
-                LogDebug("[depth = " + depth + "] error downloading: " + rcRequest.Uri);
+                Logger.Warn("[depth = " + depth + "] error downloading: " + rcRequest.Uri);
                 return false;
             }
 
             // add to the package
             if (_package.Pack(this, rcRequest, ref _quota))
             {
-                LogDebug("[depth = " + depth + "] packed: " + rcRequest.Uri + " " + rcRequest.FileSize + " bytes, " + _quota + " left");
+                Logger.Debug("[depth = " + depth + "] packed: " + rcRequest.Uri + " " + rcRequest.FileSize + " bytes, " + _quota + " left");
             }
 
             // get the embedded content of the search result page
@@ -554,7 +554,7 @@ namespace RuralCafe
             }
             catch (Exception e)
             {
-                LogDebug("unable to download embeddedObjects: " + e.StackTrace + " " + e.Message);
+                Logger.Warn("unable to download embeddedObjects.", e);
             }
 
             return addedObjects;
@@ -608,7 +608,7 @@ namespace RuralCafe
             }
             catch (Exception e)
             {
-                LogDebug("unable to download embeddedObjects: " + e.StackTrace + " " + e.Message);
+                Logger.Warn("unable to download embeddedObjects.", e);
             }
 
             return addedObjects;
@@ -678,7 +678,7 @@ namespace RuralCafe
                 return -1;
             }
 
-            LogDebug("sending results package: " + (_package.IndexSize + _package.ContentSize) + " bytes at " + _proxy.MAXIMUM_DOWNLINK_BANDWIDTH + " bytes per second." );
+            Logger.Debug("sending results package: " + (_package.IndexSize + _package.ContentSize) + " bytes at " + _proxy.MAXIMUM_DOWNLINK_BANDWIDTH + " bytes per second.");
 
             // Add response headers
             RCSpecificResponseHeaders headers = new RCSpecificResponseHeaders(_package.IndexSize, _package.ContentSize);
@@ -728,12 +728,12 @@ namespace RuralCafe
                 _package.IndexSize = Util.GetFileSize(_packageFileName);
                 if (_package.IndexSize < 0)
                 {
-                    LogDebug("problem getting file info: " + _packageFileName);
+                    Logger.Warn("problem getting file info: " + _packageFileName);
                 }
             }
             catch (Exception e)
             {
-                LogDebug("problem creating package file: " + _packageFileName + " " + e.StackTrace + " " + e.Message);
+                Logger.Error("problem creating package file: " + _packageFileName, e);
                 return false;
             }
 

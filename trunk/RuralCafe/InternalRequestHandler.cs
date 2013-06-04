@@ -180,7 +180,7 @@ namespace RuralCafe
         /// <returns>The status.</returns>
         public override Status HandleRequest()
         {
-            LogDebug("Processing internal request: " + _originalRequest.Url);
+            Logger.Debug("Processing internal request: " + _originalRequest.Url);
 
             String path = _originalRequest.Url.LocalPath;
             RoutineMethod method = _routines.ContainsKey(path) ? _routines[path] : _defaultMethod;
@@ -190,13 +190,13 @@ namespace RuralCafe
                 MethodInfo mInfo = this.GetType().GetMethod(method.MethodName);
                 if (mInfo == null)
                 {
-                    LogDebug("Unknown method in internal handler: " + method.MethodName);
+                    Logger.Error("Unknown method in internal handler: " + method.MethodName);
                     return RequestHandler.Status.Failed;
                 }
                 Object result = mInfo.Invoke(this, GetParameters(method));
                 if (result == null || !(result is Response))
                 {
-                    LogDebug("Return type wrong: " + method.MethodName);
+                    Logger.Error("Return type wrong: " + method.MethodName);
                     SendErrorPage(HttpStatusCode.InternalServerError, "Return type wrong: " + method.MethodName);
                     return RequestHandler.Status.Failed;
                 }

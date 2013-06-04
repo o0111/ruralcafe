@@ -426,12 +426,12 @@ namespace RuralCafe
             }
             try
             {
-                _requestHandler.LogDebug("downloading: " + _webRequest.RequestUri);
+                _requestHandler.Logger.Debug("downloading: " + _webRequest.RequestUri);
                 // Stream parameters, if we have non GET/HEAD
                 Util.SendBody(_webRequest, _body);
                 // get the web response for the web request
                 _webResponse = (HttpWebResponse)_webRequest.GetResponse();
-                _requestHandler.LogDebug("downloading done: " + _webRequest.RequestUri);
+                _requestHandler.Logger.Debug("downloading done: " + _webRequest.RequestUri);
                 if (!_webResponse.ResponseUri.Equals(_webRequest.RequestUri))
                 {
                     // redirected at some point
@@ -451,7 +451,6 @@ namespace RuralCafe
                     string uri = _webResponse.ResponseUri.ToString();
                     string fileName = UriToFilePath(uri);
                     string hashPath = GetHashPath(fileName);
-                    //string itemId = _hashPath.Replace(Path.DirectorySeparatorChar.ToString(), "");
                     cacheFileName = _requestHandler.Proxy.CachePath + hashPath + fileName;
 
                     // create directory if it doesn't exist and delete the file so we can replace it
@@ -465,7 +464,6 @@ namespace RuralCafe
                     fileSize = Util.GetFileSize(cacheFileName);
                     if (fileSize > 0 && !replace)
                     {
-                        //_requestHandler.LogDebug("exists: " + cacheFileName + " " + fileSize + " bytes");
                         return fileSize;
                     }
                     else
@@ -484,19 +482,16 @@ namespace RuralCafe
 
                 }
 
-                //_requestHandler.LogDebug("downloading2: " + _webRequest.RequestUri);
                 // Read and save the response
 
                 // XXX: Use a stream reader!?
                 Stream responseStream = GenericWebResponse.GetResponseStream();
-                //_requestHandler.LogDebug("downloading done2: " + _webRequest.RequestUri);
 
                 writeFile = Util.CreateFile(cacheFileName);
                 if (writeFile == null)
                 {
                     return -1;
                 }
-                //_requestHandler.LogDebug("downloading3: " + Uri + " " + bytesDownloaded + " bytes");
                 bytesRead = responseStream.Read(readBuffer, 0, 32);
                 while (bytesRead != 0)
                 {
@@ -505,10 +500,9 @@ namespace RuralCafe
                     bytesDownloaded += bytesRead;
 
                     // Read the next part of the response
-                    //_requestHandler.LogDebug("downloading4: " + Uri + " " + bytesDownloaded + " bytes");
                     bytesRead = responseStream.Read(readBuffer, 0, 32);
                 }
-                _requestHandler.LogDebug("received: " + Uri + " " + bytesDownloaded + " bytes");
+                _requestHandler.Logger.Debug("received: " + Uri + " " + bytesDownloaded + " bytes");
             }
             catch (Exception e)
             {
@@ -516,7 +510,7 @@ namespace RuralCafe
                 // timed out
                 // incomplete, clean up the partial download
                 Util.DeleteFile(cacheFileName);
-                _requestHandler.LogDebug("failed: " + Uri + " " + e.Message);
+                _requestHandler.Logger.Debug("failed: " + Uri, e);
                 bytesDownloaded = -1; 
             }
             finally

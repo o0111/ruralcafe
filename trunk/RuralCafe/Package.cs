@@ -76,34 +76,32 @@ namespace RuralCafe
         {
             if (rcRequest.Uri.Contains(' '))
             {
-                requestHandler.LogDebug("object contains spaces: " + rcRequest.Uri);
+                requestHandler.Logger.Debug("object contains spaces: " + rcRequest.Uri);
                 return false;
             }
 
             if (_rcRequests.Contains(rcRequest))
             {
-                requestHandler.LogDebug("object exists in package: " + rcRequest.Uri);
+                requestHandler.Logger.Debug("object exists in package: " + rcRequest.Uri);
                 return false;
             }
 
             rcRequest.FileSize = Util.GetFileSize(rcRequest.CacheFileName);
             if (rcRequest.FileSize <= 0)
             {
-                //requestHandler.LogDebug("object has no content: " + rcRequest.Uri);
                 return false;
             }
 
             // quota check
             if ((quota - rcRequest.FileSize) < 0)
             {
-                requestHandler.LogDebug("object doesn't fit in quota: " + rcRequest.Uri);
+                requestHandler.Logger.Debug("object doesn't fit in quota: " + rcRequest.Uri);
                 return false;
             }
 
             _rcRequests.AddLast(rcRequest);
             quota -= rcRequest.FileSize;
 
-            //requestHandler.LogDebug("packed: " + requestHandler.RequestUri + " " + rcRequest.FileSize + " bytes - " + quota + " left");
             return true;
         }
         
@@ -121,7 +119,6 @@ namespace RuralCafe
                 // add to the package
                 if (Pack(requestHandler, request, ref quota))
                 {
-                    //requestHandler.LogDebug("packed: " + request.Uri + " " + request.FileSize + " bytes - " + quota + " left");
                     addedObjects.AddLast(request);
                 }
             }
@@ -183,13 +180,13 @@ namespace RuralCafe
                 }
                 catch (Exception e)
                 {
-                    requestHandler.LogDebug("problem unpacking: " + entry + " " + e.StackTrace + " " + e.Message);
+                    requestHandler.Logger.Warn("problem unpacking: " + entry, e);
                     return unpackedBytes;
                 }
 
                 if (!Util.IsValidUri(currUri))
                 {
-                    requestHandler.LogDebug("problem unpacking: " + currUri);
+                    requestHandler.Logger.Warn("problem unpacking (invalid uri): " + currUri);
                     return unpackedBytes;
                 }
 
@@ -203,7 +200,7 @@ namespace RuralCafe
                 if (!Util.IsNotTooLongFileName(cacheFileName))
                 {
                     // We can't save the file
-                    requestHandler.LogDebug("problem unpacking, filename too long for uri: " + currUri);
+                    requestHandler.Logger.Warn("problem unpacking, filename too long for uri: " + currUri);
                     return unpackedBytes;
                 }
                 // make sure the file doesn't already exist for indexing purposes only
@@ -271,7 +268,7 @@ namespace RuralCafe
                 if (bytesReadOfCurrFile != currFileSize)
                 {
                     // ran out of bytes for this file
-                    requestHandler.LogDebug("error, unexpected package size: " + rcRequest.CacheFileName +
+                    requestHandler.Logger.Error("unexpected package size: " + rcRequest.CacheFileName +
                         "(" + bytesReadOfCurrFile + " / " + currFileSize + ")");
                     return unpackedBytes * -1;
                 }

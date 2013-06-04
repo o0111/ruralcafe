@@ -27,6 +27,7 @@ using System.Web;
 using System.Text.RegularExpressions;
 using System.Collections.Specialized;
 using System.Reflection;
+using log4net;
 
 namespace RuralCafe
 {
@@ -121,8 +122,7 @@ namespace RuralCafe
                 {
                     errmsg += " " + originalRequest.RawUrl.ToString(); ;
                 }
-                errmsg += " " + e.GetType() + ": " + e.Message + "\n" + e.StackTrace;
-                temp.LogDebug(errmsg);
+                temp.Logger.Warn(errmsg, e);
                 // Erroneous request has been handled
                 temp._validRequest = false;
                 return temp;
@@ -323,7 +323,13 @@ namespace RuralCafe
             set { _rcRequest.CacheFileName = value; }
             get { return _rcRequest.CacheFileName; }
         }
-
+        /// <summary>
+        /// The Proxy's Logger.
+        /// </summary>
+        public ILog Logger
+        {
+            get { return _proxy.Logger; }
+        }
         /// <summary>
         /// Gets the Value. -1 if cookie not set.
         /// </summary>
@@ -374,7 +380,7 @@ namespace RuralCafe
                 {
                     // XXX: was streaming these unparsable URIs, but this is disabled for now
                     // XXX: mangled version of the one in LocalRequestHandler, duplicate, and had to move the StreamTransparently() up to this parent class
-                    LogDebug("streaming: " + _originalRequest.RawUrl.ToString() + " to client.");
+                    Logger.Debug("streaming: " + _originalRequest.RawUrl.ToString() + " to client.");
                     long bytesSent = StreamTransparently();
                     return;
                 }
@@ -386,8 +392,7 @@ namespace RuralCafe
                 {
                     errmsg += " " + _originalRequest.RawUrl.ToString(); ;
                 }
-                errmsg += " " + e.GetType() + ": " + e.Message + "\n" + e.StackTrace;
-                LogDebug(errmsg);
+                Logger.Warn(errmsg, e);
             }
             finally
             {
@@ -472,8 +477,7 @@ namespace RuralCafe
                 {
                     errmsg += " " + _originalRequest.RawUrl.ToString(); ;
                 }
-                errmsg += " " + e.GetType() + ": " + e.Message + "\n" + e.StackTrace;
-                LogDebug(errmsg); LogDebug("error handling request: " + _originalRequest.RawUrl.ToString() + " " + e.Message + e.StackTrace);
+                Logger.Warn(errmsg, e);
             }
             return false;
         }
@@ -537,13 +541,13 @@ namespace RuralCafe
                 f = new FileInfo(fileName);
                 if (!f.Exists)
                 {
-                    LogDebug("error file doesn't exist: " + fileName);
+                    Logger.Warn("file doesn't exist: " + fileName);
                     return -1;
                 }
             }
             catch (Exception e)
             {
-                LogDebug("problem getting file info: " + fileName + " " + e.Message);
+                Logger.Warn("problem getting file info: " + fileName, e);
                 return -1;
             }
 
@@ -555,7 +559,7 @@ namespace RuralCafe
             }
             catch (Exception e)
             {
-                LogDebug("problem opening file: " + fileName + " " + e.Message);
+                Logger.Warn("problem opening file: " + fileName, e);
                 return -1;
             }
             return StreamToClient(fs);
@@ -832,7 +836,7 @@ namespace RuralCafe
             }
             catch (Exception e)
             {
-                LogDebug("Error getting file info: " + e.StackTrace + " " + e.Message);
+                Logger.Warn("Error getting file info", e);
                 return false;
             }
 
@@ -886,7 +890,7 @@ namespace RuralCafe
             _clientHttpContext.Response.StatusCode = (int)status;
             _clientHttpContext.Response.ContentType = "text/plain";
             SendMessage(message);
-            LogDebug(status + " " + message);
+            Logger.Debug("sending error page: " + status + " " + message);
         }
 
         /// <summary>
@@ -906,7 +910,7 @@ namespace RuralCafe
             }
             catch (Exception e)
             {
-                LogDebug("socket closed for some reason " + e.StackTrace + " " + e.Message);
+                Logger.Error("socket closed for some reason.", e);
             }
         }
 
@@ -918,11 +922,11 @@ namespace RuralCafe
         /// </summary>
         public void LogRequest()
         {
-            string str = _rcRequest.StartTime + " " + _clientAddress.ToString() +
+            string str = _requestId + " " + _rcRequest.StartTime + " " + _clientAddress.ToString() +
                          " " + _rcRequest.GenericWebRequest.Method + " " + RequestUri +
                          " REFERER " + RefererUri + " " + 
                          RequestStatus + " " + _rcRequest.FileSize;
-            _proxy.WriteMessage(_requestId, str);
+            _proxy.Logger.Debug(str);
         }
 
         /// <summary>
@@ -930,9 +934,9 @@ namespace RuralCafe
         /// </summary>
         public void LogResponse()
         {
-            string str = _rcRequest.FinishTime + " RSP " + RequestUri + " " + 
+            string str = _requestId + " " + _rcRequest.FinishTime + " RSP " + RequestUri + " " + 
                         RequestStatus + " " + _rcRequest.FileSize;
-            _proxy.WriteMessage(_requestId, str);
+            _proxy.Logger.Debug(str);
         }
 
         /// <summary>
@@ -940,17 +944,9 @@ namespace RuralCafe
         /// </summary>
         public void LogServerResponse()
         {
-            string str = _rcRequest.FinishTime + " RSP " + _originalRequest.RawUrl.ToString() + " " +
+            string str = _requestId + " " + _rcRequest.FinishTime + " RSP " + _originalRequest.RawUrl.ToString() + " " +
                         RequestStatus + " " + _rcRequest.FileSize;
-            _proxy.WriteMessage(_requestId, str);
-        }
-
-        /// <summary>
-        /// Logs any debug messages.
-        /// </summary>
-        public void LogDebug(string str)
-        {
-            _proxy.WriteDebug(_requestId, str);
+            _proxy.Logger.Debug(str);
         }
 
         #endregion
