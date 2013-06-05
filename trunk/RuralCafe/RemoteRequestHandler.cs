@@ -441,6 +441,17 @@ namespace RuralCafe
                 Logger.Debug("[depth = " + depth + "] packed: " + rcRequest.Uri + " " + rcRequest.FileSize + " bytes, " + _quota + " left");
             }
 
+            // add a new request for the old location if it was redirected. This will then
+            // get the 301 file from the cache, so the local proxy does not need to send 
+            // another request to the remote proxy to find that out.
+            if (rcRequest.UriBeforeRedirect != null)
+            {
+                Logger.Debug("Redirected: Also packing old URI with a 301 file.");
+                RCRequest rc301 = new RCRequest(this, (HttpWebRequest)WebRequest.Create(rcRequest.UriBeforeRedirect));
+                rc301.DownloadToCache(replace);
+                _package.Pack(this, rc301, ref _quota);
+            }
+
             // get the embedded content of the search result page
             DownloadEmbeddedObjects(rcRequest, richness);
 
@@ -647,7 +658,7 @@ namespace RuralCafe
                     request.GenericWebRequest.Timeout = (int)(endTime.Subtract(currTime)).TotalMilliseconds;
 
                     // download the page
-                    long bytesDownloaded = request.DownloadToCache(false);
+                    request.DownloadToCache(false);
                 }
                 else
                 {

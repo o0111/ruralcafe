@@ -37,6 +37,8 @@ namespace RuralCafe
         private string _itemId; // hashPath without the directory seperators
         private string _cacheFileName;
 
+        private string _uriBeforeRedirect;
+
         private RequestHandler.Status _status;
         /// <summary>
         /// The underlying web request.
@@ -60,9 +62,18 @@ namespace RuralCafe
 
 
         # region Accessors
+        /// <summary> 
+        /// Iff the request has been redirected, this is the old URI.
+        /// Will be null, if the request was not made yet or there was no redirect.
+        /// </summary>
+        public string UriBeforeRedirect
+        {
+            get { return _uriBeforeRedirect; }
+        }
+        /// <summary>The requested URI OR the response uri if there is a response.</summary>
         public string Uri
         {
-            get { return _webRequest.RequestUri.ToString(); }
+            get { return _webResponse != null ? _webResponse.ResponseUri.ToString() : _webRequest.RequestUri.ToString(); }
         }
         /// <summary>The anchor Text of the requested Uri.</summary>
         public string AnchorText
@@ -401,17 +412,16 @@ namespace RuralCafe
             Byte[] readBuffer = new Byte[32];
             FileStream writeFile = null;
             long bytesDownloaded = 0;
-            string cacheFileName = _cacheFileName;
 
             // create directory if it doesn't exist and delete the file so we can replace it
-            if (!Util.CreateDirectoryForFile(cacheFileName))
+            if (!Util.CreateDirectoryForFile(_cacheFileName))
             {
                 return -1;
             }
 
             // XXX: should also check for cache expiration
             // check for 0 size file to re-download
-            long fileSize = Util.GetFileSize(cacheFileName);
+            long fileSize = Util.GetFileSize(_cacheFileName);
             if (fileSize > 0 && !replace)
             {
                 //_requestHandler.LogDebug("exists: " + cacheFileName + " " + fileSize + " bytes");
@@ -419,7 +429,7 @@ namespace RuralCafe
             }
             else
             {
-                if (!Util.DeleteFile(cacheFileName))
+                if (!Util.DeleteFile(_cacheFileName))
                 {
                     return -1;
                 }
@@ -435,13 +445,13 @@ namespace RuralCafe
                 if (!_webResponse.ResponseUri.Equals(_webRequest.RequestUri))
                 {
                     // redirected at some point
+                    _uriBeforeRedirect = _webRequest.RequestUri.ToString();
                     
                     // leave a 301 at the old cache file location
-                    string str = "HTTP/1.1" + " " + "301" + " Moved Permanently" + "\r\n" +
-                          "Location: " + _webResponse.ResponseUri.ToString() + "\r\n" +
-                          "\r\n";
+                    string str = "HTTP/1.1 301 Moved Permanently\r\n" +
+                          "Location: " + _webResponse.ResponseUri.ToString() + "\r\n";
                     
-                    using (StreamWriter sw = new StreamWriter(cacheFileName))
+                    using (StreamWriter sw = new StreamWriter(_cacheFileName))
                     {
                         sw.Write(str);
                         sw.Close();
@@ -449,37 +459,30 @@ namespace RuralCafe
 
                     // have to save to the new cache file location
                     string uri = _webResponse.ResponseUri.ToString();
-                    string fileName = UriToFilePath(uri);
-                    string hashPath = GetHashPath(fileName);
-                    cacheFileName = _requestHandler.Proxy.CachePath + hashPath + fileName;
+                    _fileName = UriToFilePath(uri);
+                    _hashPath = GetHashPath(_fileName);
+                    _cacheFileName = _requestHandler.Proxy.CachePath + _hashPath + _fileName;
 
                     // create directory if it doesn't exist and delete the file so we can replace it
-                    if (!Util.CreateDirectoryForFile(cacheFileName))
+                    if (!Util.CreateDirectoryForFile(_cacheFileName))
                     {
                         return -1;
                     }
 
                     // XXX: should also check for cache expiration
                     // check for 0 size file to re-download
-                    fileSize = Util.GetFileSize(cacheFileName);
+                    fileSize = Util.GetFileSize(_cacheFileName);
                     if (fileSize > 0 && !replace)
                     {
                         return fileSize;
                     }
                     else
                     {
-                        if (!Util.DeleteFile(cacheFileName))
+                        if (!Util.DeleteFile(_cacheFileName))
                         {
                             return -1;
                         }
                     }
-
-                    writeFile = Util.CreateFile(cacheFileName);
-                    if (writeFile == null)
-                    {
-                        return -1;
-                    }
-
                 }
 
                 // Read and save the response
@@ -487,7 +490,7 @@ namespace RuralCafe
                 // XXX: Use a stream reader!?
                 Stream responseStream = GenericWebResponse.GetResponseStream();
 
-                writeFile = Util.CreateFile(cacheFileName);
+                writeFile = Util.CreateFile(_cacheFileName);
                 if (writeFile == null)
                 {
                     return -1;
@@ -509,7 +512,7 @@ namespace RuralCafe
                 // XXX: not handled well
                 // timed out
                 // incomplete, clean up the partial download
-                Util.DeleteFile(cacheFileName);
+                Util.DeleteFile(_cacheFileName);
                 _requestHandler.Logger.Debug("failed: " + Uri, e);
                 bytesDownloaded = -1; 
             }

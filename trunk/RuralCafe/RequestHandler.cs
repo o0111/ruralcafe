@@ -63,6 +63,8 @@ namespace RuralCafe
         /// </summary>
         private static string rcPage = "http://www.ruralcafe.net/";
         private static string rcPageWithoutWWW = "http://ruralcafe.net/";
+        private static Regex redirRegex = new Regex(@"HTTP/1\.1 301 Moved PermanentlyLocation: (?<uri>\S+)");
+
         
         /// <summary>
         /// The Name of the cookie for the user id.
@@ -521,7 +523,7 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Stream the file from the cache to the client.
+        /// Stream the file from the cache to the client. Only used by local rh or local internal rh.
         /// </summary>
         /// <param name="fileName">Name of the file to stream to the client.</param>
         /// <returns>Bytes streamed from the cache to the client.</returns>
@@ -551,11 +553,23 @@ namespace RuralCafe
                 return -1;
             }
 
+            // XXX: We're reading the content so we can redirect if there is a 301 in the file.
+            // As soon as metadata will be included somehow, this won't be necessary any more.
+            // Then remove this! Reading the file twice is bad!
+            string content = Util.ReadFileAsString(fileName);
+            Match match = redirRegex.Match(content);
+            if (match.Success)
+            {
+                _clientHttpContext.Response.Redirect(match.Groups["uri"].Value);
+                SendMessage(content);
+                return content.Length;
+            }
+
+            // Stream file to client
             FileStream fs = null;
             try
             {
                 fs = f.Open(FileMode.Open, FileAccess.Read);
-
             }
             catch (Exception e)
             {
@@ -905,8 +919,6 @@ namespace RuralCafe
                 byte[] buffer = System.Text.Encoding.UTF8.GetBytes(strMessage);
                 _clientHttpContext.Response.ContentLength64 = buffer.Length;
                 _clientHttpContext.Response.OutputStream.Write(buffer, 0, buffer.Length);
-                //StreamWriter writer = new StreamWriter(_clientHttpContext.Response.OutputStream);
-                //writer.Write(strMessage);
             }
             catch (Exception e)
             {
