@@ -67,6 +67,9 @@ namespace RuralCafe
 
         #region helper methods
 
+        /// <summary>
+        /// Prepares an XML answer by setting content type and headers accordingly.
+        /// </summary>
         private void PrepareXMLRequestAnswer()
         {
             _clientHttpContext.Response.ContentType = "text/xml";
@@ -81,11 +84,93 @@ namespace RuralCafe
         /// <returns>Google search query.</returns>
         private string ConstructGoogleSearch(string searchString)
         {
-            //string searchTerms = GetRCSearchField("textfield");
-            string googleWebRequestUri = "http://www.google.com/search?hl=en&q=" +
+            return "http://www.google.com/search?hl=en&q=" +
                                         searchString.Replace(' ', '+') +
                                         "&btnG=Google+Search&aq=f&oq=";
-            return googleWebRequestUri;
+        }
+
+        /// <summary>
+        /// Extracts the result links from a google results page.
+        /// XXX: Probably broken all the time due to Google's constantly changing HTML format.
+        /// </summary>
+        /// <param name="rcRequest">Request to make.</param>
+        /// <returns>List of links.</returns>
+        public LinkedList<RCRequest> ExtractGoogleResults(RCRequest rcRequest)
+        {
+            string[] stringSeparator = new string[] { "<cite>" };
+            LinkedList<RCRequest> resultLinks = new LinkedList<RCRequest>();
+            string fileString = Util.ReadFileAsString(rcRequest.CacheFileName);
+            string[] lines = fileString.Split(stringSeparator, StringSplitOptions.RemoveEmptyEntries);
+
+            // get links
+            int pos;
+            string currLine;
+            string currUri;
+            string currTitle;
+            // stagger starting index by 1 since first split can't be a link
+            for (int i = 0; i < lines.Length - 1; i++)
+            {
+                currLine = lines[i];
+                currTitle = "";
+                // get the title of the page as well
+                if ((pos = currLine.LastIndexOf("<a href=")) >= 0)
+                {
+                    currTitle = currLine.Substring(pos);
+                    if ((pos = currTitle.IndexOf(">")) >= 0)
+                    {
+                        currTitle = currTitle.Substring(pos + 1);
+                        if ((pos = currTitle.IndexOf("</a>")) >= 0)
+                        {
+                            currTitle = currTitle.Substring(0, pos);
+                            currTitle = Util.StripTagsCharArray(currTitle);
+                            currTitle = currTitle.Trim();
+                        }
+                    }
+                }
+
+                currLine = (string)lines[i + 1];
+                // to the next " symbol
+                if ((pos = currLine.IndexOf("</cite>")) > 0)
+                {
+                    currUri = currLine.Substring(0, pos);
+
+                    if ((pos = currUri.IndexOf(" - ")) > 0)
+                    {
+                        currUri = currUri.Substring(0, pos);
+                    }
+
+                    currUri = Util.StripTagsCharArray(currUri);
+                    currUri = currUri.Trim();
+
+                    // instead of translating to absolute, prepend http:// to make webrequest constructor happy
+                    currUri = AddHttpPrefix(currUri);
+
+                    if (!Util.IsValidUri(currUri))
+                    {
+                        continue;
+                    }
+
+                    // check blacklist
+                    if (IsBlacklisted(currUri))
+                    {
+                        continue;
+                    }
+
+                    if (!currUri.Contains(".") || currTitle.Equals(""))
+                    {
+                        continue;
+                    }
+                    RCRequest currRCRequest = new RCRequest(this, (HttpWebRequest)WebRequest.Create(currUri));
+                    currRCRequest.AnchorText = currTitle;
+                    //currRCRequest.ChildNumber = i - 1;
+                    //currRCRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
+                    // TODO: Also find content snippet and add it here. RCRequest then needs a field for that.
+
+                    resultLinks.AddLast(currRCRequest);
+                }
+            }
+
+            return resultLinks;
         }
 
         #endregion
@@ -238,6 +323,8 @@ namespace RuralCafe
         /// n is the maximum number of items per page, the number of <item> allowed in this file
         /// p is the current page number, if there are multipage pages, page number starts from 1, 2, 3...,
         /// s is the search query string
+        /// 
+        /// This gets the results from the cache.
         /// </summary>
         public Response ServeRCResultPage(int numItemsPerPage, int pageNumber, string queryString)
         {
@@ -272,13 +359,13 @@ namespace RuralCafe
                     {
                         string documentUri2 = tempDocument.Get("uri");
                         string documentTitle2 = tempDocument.Get("title");
-                        if (String.Compare(documentUri, documentUri2) == 0 || String.Compare(documentTitle, documentTitle2) == 0)
+                        if (documentUri.Equals(documentUri2) || documentTitle.Equals(documentTitle2))
                         {
                             exists = true;
                             break;
                         }
                     }
-                    if (exists == false)
+                    if (!exists)
                     {
                         currentItemNumber++;
                         tempLuceneResults.Add(document);
@@ -294,7 +381,8 @@ namespace RuralCafe
 
             Logger.Debug(filteredLuceneResults.Count + " results");
 
-            resultsString = resultsString + "<search total=\"" + currentItemNumber + "\">"; //laura: total should be the total number of results
+            //laura: total should be the total number of results
+            resultsString = resultsString + "<search total=\"" + currentItemNumber + "\">";
             // Local Search Results
             for (int i = 0; i < filteredLuceneResults.Count; i++)
             {
@@ -307,8 +395,11 @@ namespace RuralCafe
 
                 // JAY: find content snippet here
                 //contentSnippet = 
-                if (uri.StartsWith("http://")) //laura: omit http://
+                //laura: omit http://
+                if (uri.StartsWith("http://"))
+                {
                     uri = uri.Substring(7);
+                }
                 resultsString = resultsString +
                                 "<item>" +
                                 "<title>" + title + "</title>" +
@@ -323,7 +414,15 @@ namespace RuralCafe
             return new Response(resultsString);
         }
 
-        //TODO: comment. Offline?
+        /// <summary>
+        /// Sends the frame page to the client.
+        /// GET request will be sent to request/search.xml?n=5&p=1&s=searchstring where
+        /// n is the maximum number of items per page, the number of <item> allowed in this file
+        /// p is the current page number, if there are multipage pages, page number starts from 1, 2, 3...,
+        /// s is the search query string
+        /// 
+        /// This gets the results from google.
+        /// </summary>
         public Response ServeRCRemoteResultPage(int numItemsPerPage, int pageNumber, string queryString)
         {
             if (_proxy.NetworkStatus == RCProxy.NetworkStatusCode.Offline)
@@ -332,7 +431,7 @@ namespace RuralCafe
             }
             // Google search
             string googleSearchString = ConstructGoogleSearch(queryString);
-            _rcRequest = new RCRequest(this, (HttpWebRequest)WebRequest.Create(googleSearchString.Trim()));
+            _rcRequest = new RCRequest(this, (HttpWebRequest)WebRequest.Create(googleSearchString));
 
             long bytesDownloaded = _rcRequest.DownloadToCache(true);
             try
