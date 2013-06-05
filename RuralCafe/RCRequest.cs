@@ -31,6 +31,7 @@ namespace RuralCafe
     public class RCRequest
     {
         private string _anchorText;
+        private string _contentSnippet;
         private string _refererUri;
         private string _fileName;
         private string _hashPath;
@@ -74,6 +75,12 @@ namespace RuralCafe
         public string Uri
         {
             get { return _webResponse != null ? _webResponse.ResponseUri.ToString() : _webRequest.RequestUri.ToString(); }
+        }
+        /// <summary>The content snippet of the link. Only used in conjuction with local/google search.</summary>
+        public string ContentSnippet
+        {
+            set { _contentSnippet = value; }
+            get { return _contentSnippet; }
         }
         /// <summary>The anchor Text of the requested Uri.</summary>
         public string AnchorText

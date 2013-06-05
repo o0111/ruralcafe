@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml;
 
 namespace RuralCafe
@@ -18,6 +19,8 @@ namespace RuralCafe
     {
         private static Dictionary<String, RoutineMethod> routines = new Dictionary<String, RoutineMethod>();
         private static RoutineMethod defaultMethod = new RoutineMethod("DefaultPage");
+        // Regex that matches two or more spaces. Useful for trimming them to one space.
+        private static Regex multipleSpacesRegex = new Regex(@"\s\s+");
 
         /// <summary>
         /// Static Constructor. Defines routines.
@@ -97,7 +100,7 @@ namespace RuralCafe
         /// <returns>List of links.</returns>
         public LinkedList<RCRequest> ExtractGoogleResults(RCRequest rcRequest)
         {
-            string[] stringSeparator = new string[] { "<cite>" };
+            string[] stringSeparator = new string[] { "</cite>" };
             LinkedList<RCRequest> resultLinks = new LinkedList<RCRequest>();
             string fileString = Util.ReadFileAsString(rcRequest.CacheFileName);
             string[] lines = fileString.Split(stringSeparator, StringSplitOptions.RemoveEmptyEntries);
@@ -105,22 +108,26 @@ namespace RuralCafe
             // get links
             int pos;
             string currLine;
-            string currUri;
-            string currTitle;
-            // stagger starting index by 1 since first split can't be a link
+            string currUri = "";
+            string currTitle = "";
+            string currSnippet = "";
+            // Omitting last split, since there is no link any more.
             for (int i = 0; i < lines.Length - 1; i++)
             {
                 currLine = lines[i];
-                currTitle = "";
-                // get the title of the page as well
+
+                // get the title of the page
                 if ((pos = currLine.LastIndexOf("<a href=")) >= 0)
                 {
                     currTitle = currLine.Substring(pos);
+                    // find start
                     if ((pos = currTitle.IndexOf(">")) >= 0)
                     {
+                        // cut start
                         currTitle = currTitle.Substring(pos + 1);
                         if ((pos = currTitle.IndexOf("</a>")) >= 0)
                         {
+                            // cut end
                             currTitle = currTitle.Substring(0, pos);
                             currTitle = Util.StripTagsCharArray(currTitle);
                             currTitle = currTitle.Trim();
@@ -128,17 +135,17 @@ namespace RuralCafe
                     }
                 }
 
-                currLine = (string)lines[i + 1];
-                // to the next " symbol
-                if ((pos = currLine.IndexOf("</cite>")) > 0)
+                // get the uri
+                string uriSplit = "<cite>";
+                if ((pos = currLine.IndexOf("<cite>")) > 0)
                 {
-                    currUri = currLine.Substring(0, pos);
-
+                    // cut start
+                    currUri = currLine.Substring(pos + uriSplit.Length);
                     if ((pos = currUri.IndexOf(" - ")) > 0)
                     {
                         currUri = currUri.Substring(0, pos);
                     }
-
+                    // no end to cut!
                     currUri = Util.StripTagsCharArray(currUri);
                     currUri = currUri.Trim();
 
@@ -160,11 +167,28 @@ namespace RuralCafe
                     {
                         continue;
                     }
+
+                    // get the content snippet (in next split)
+                    currLine = lines[i + 1];
+                    // find start
+                    string snippetSplit = "<span class=\"st\">";
+                    if ((pos = currLine.LastIndexOf(snippetSplit)) >= 0)
+                    {
+                        // cut start
+                        currSnippet = currLine.Substring(pos + snippetSplit.Length);
+                        if ((pos = currSnippet.IndexOf("</span>")) >= 0)
+                        {
+                            // cut end
+                            currSnippet = currSnippet.Substring(0, pos);
+                            currSnippet = Util.StripTagsCharArray(currSnippet);
+                            currSnippet = multipleSpacesRegex.Replace(currSnippet.Trim(), "");
+                        }
+                    }
+
+                    // Create request and save anchorText and snippet
                     RCRequest currRCRequest = new RCRequest(this, (HttpWebRequest)WebRequest.Create(currUri));
                     currRCRequest.AnchorText = currTitle;
-                    //currRCRequest.ChildNumber = i - 1;
-                    //currRCRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
-                    // TODO: Also find content snippet and add it here. RCRequest then needs a field for that.
+                    currRCRequest.ContentSnippet = currSnippet;
 
                     resultLinks.AddLast(currRCRequest);
                 }
@@ -451,10 +475,8 @@ namespace RuralCafe
                         {
                             string uri = System.Security.SecurityElement.Escape(linkObject.Uri);
                             string title = System.Security.SecurityElement.Escape(linkObject.AnchorText);
-                            //string displayUri = uri;
-                            string contentSnippet = "";
+                            string contentSnippet = System.Security.SecurityElement.Escape(linkObject.ContentSnippet);
 
-                            // XXX: find content snippet here
                             if (uri.StartsWith("http://")) //laura: omit http://
                                 uri = uri.Substring(7);
                             resultsString = resultsString +
