@@ -94,7 +94,6 @@ namespace RuralCafe
 
         /// <summary>
         /// Extracts the result links from a google results page.
-        /// XXX: Probably broken all the time due to Google's constantly changing HTML format.
         /// </summary>
         /// <param name="rcRequest">Request to make.</param>
         /// <returns>List of links.</returns>
@@ -180,8 +179,8 @@ namespace RuralCafe
                         {
                             // cut end
                             currSnippet = currSnippet.Substring(0, pos);
-                            currSnippet = Util.StripTagsCharArray(currSnippet);
-                            currSnippet = multipleSpacesRegex.Replace(currSnippet.Trim(), "");
+                            currSnippet = Util.StripTagsCharArray(currSnippet, false);
+                            currSnippet = multipleSpacesRegex.Replace(currSnippet.Trim(), " ");
                         }
                     }
 
@@ -354,8 +353,8 @@ namespace RuralCafe
         {
             string resultsString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 
-            List<Lucene.Net.Documents.Document> tempLuceneResults = new List<Lucene.Net.Documents.Document>();
-            List<Lucene.Net.Documents.Document> filteredLuceneResults = new List<Lucene.Net.Documents.Document>();
+            List<DocumentWithSnippet> tempLuceneResults = new List<DocumentWithSnippet>();
+            List<DocumentWithSnippet> filteredLuceneResults = new List<DocumentWithSnippet>();
             HitCollection wikiResults = new HitCollection();
             int currentItemNumber = 0;
             if (queryString.Trim().Length > 0)
@@ -364,11 +363,13 @@ namespace RuralCafe
                 wikiResults = Indexer.Search(queryString, RCLocalProxy.WikiIndices.Values, Indexer.MAX_SEARCH_HITS);
 
                 // Query our RuralCafe index
-                List<Lucene.Net.Documents.Document> luceneResults = IndexWrapper.Query(((RCLocalProxy)_proxy).IndexPath, queryString);
+                List<DocumentWithSnippet> luceneResults = IndexWrapper.Query(((RCLocalProxy)_proxy).IndexPath, queryString, Proxy.CachePath);
 
                 // remove duplicates
-                foreach (Lucene.Net.Documents.Document document in luceneResults)
+                foreach (DocumentWithSnippet documentWSnip in luceneResults)
                 {
+                    Lucene.Net.Documents.Document document = documentWSnip.document;
+
                     string documentUri = document.Get("uri");
                     string documentTitle = document.Get("title");
 
@@ -379,10 +380,10 @@ namespace RuralCafe
                     }
 
                     bool exists = false;
-                    foreach (Lucene.Net.Documents.Document tempDocument in tempLuceneResults)
+                    foreach (DocumentWithSnippet tempDocument in tempLuceneResults)
                     {
-                        string documentUri2 = tempDocument.Get("uri");
-                        string documentTitle2 = tempDocument.Get("title");
+                        string documentUri2 = tempDocument.document.Get("uri");
+                        string documentTitle2 = tempDocument.document.Get("title");
                         if (documentUri.Equals(documentUri2) || documentTitle.Equals(documentTitle2))
                         {
                             exists = true;
@@ -392,11 +393,11 @@ namespace RuralCafe
                     if (!exists)
                     {
                         currentItemNumber++;
-                        tempLuceneResults.Add(document);
+                        tempLuceneResults.Add(documentWSnip);
                         if ((currentItemNumber > ((pageNumber - 1) * numItemsPerPage)) &&
                             (currentItemNumber < (pageNumber * numItemsPerPage) + 1))
                         {
-                            filteredLuceneResults.Add(document);
+                            filteredLuceneResults.Add(documentWSnip);
                         }
                     }
 
@@ -405,20 +406,18 @@ namespace RuralCafe
 
             Logger.Debug(filteredLuceneResults.Count + " results");
 
-            //laura: total should be the total number of results
+            // total results
             resultsString = resultsString + "<search total=\"" + currentItemNumber + "\">";
             // Local Search Results
             for (int i = 0; i < filteredLuceneResults.Count; i++)
             {
-                Lucene.Net.Documents.Document result = filteredLuceneResults.ElementAt(i);
+                DocumentWithSnippet result = filteredLuceneResults.ElementAt(i);
 
-                string uri = System.Security.SecurityElement.Escape(result.Get("uri")); // escape xml string
-                string title = System.Security.SecurityElement.Escape(result.Get("title")); //escape xml string
-                string displayUri = uri;
-                string contentSnippet = "";
+                // escape xml strings
+                string uri = System.Security.SecurityElement.Escape(result.document.Get("uri"));
+                string title = System.Security.SecurityElement.Escape(result.document.Get("title"));
+                string contentSnippet = System.Security.SecurityElement.Escape(result.contentSnippet);
 
-                // JAY: find content snippet here
-                //contentSnippet = 
                 //laura: omit http://
                 if (uri.StartsWith("http://"))
                 {
@@ -584,7 +583,7 @@ namespace RuralCafe
             catch (Exception)
             {
                 throw new HttpException(HttpStatusCode.BadRequest, 
-                    "malformed add request: ad not suppied or unknown");
+                    "malformed add request: id not supplied or unknown");
             }
             // Set RC headers
             RCSpecificRequestHeaders headers = new RCSpecificRequestHeaders(userId);

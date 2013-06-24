@@ -489,7 +489,6 @@ namespace RuralCafe
         /// </summary>
         /// <param name="request">The HTTP request.</param>
         /// <param name="refererUri">The referrer.</param>
-        /// <param name="recvString">The whole received string.</param>
         /// <returns></returns>
         protected bool CreateRequest(HttpListenerRequest request, string refererUri)
         {

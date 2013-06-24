@@ -256,6 +256,18 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// Gets the path of a filename from an URI. Relative to the cache path.
+        /// </summary>
+        /// <param name="uri">The URI.</param>
+        /// <returns>Retalive cache file name.</returns>
+        public static string GetRelativeCacheFileName(string uri)
+        {
+            string fileName = UriToFilePath(uri);
+            string hashPath = GetHashPath(fileName);
+            return hashPath + fileName;
+        }
+
+        /// <summary>
         /// Actually hashes the file name to a file path.
         /// </summary>
         /// <param name="fileName">File name to hash.</param>
