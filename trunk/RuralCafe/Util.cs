@@ -436,22 +436,50 @@ namespace RuralCafe
         /// <returns>String containing the stripped text.</returns>
         public static string StripTagsCharArray(string source)
         {
+            return StripTagsCharArray(source, true);
+        }
+
+        /// <summary>
+        /// Strips a string of all HTML tags, except bold tags, if wished.
+        /// </summary>
+        /// <param name="source">Page content.</param>
+        /// <param name="stripBoldTags">If true, bold tags are stripped, too.</param>
+        /// <returns>String containing the stripped text.</returns>
+        public static string StripTagsCharArray(string source, bool stripBoldTags)
+        {
             char[] array = new char[source.Length];
             int arrayIndex = 0;
             bool inside = false;
+            bool boldTag = false;
 
             for (int i = 0; i < source.Length; i++)
             {
                 char let = source[i];
                 if (let == '<')
                 {
-                    inside = true;
-                    continue;
+                    if(stripBoldTags || (!(source.Length >= i + 3 && source.Substring(i, 3).Equals("<b>"))
+                        && !(source.Length >= i + 4 && source.Substring(i, 4).Equals("</b>"))))
+                    {
+                        inside = true;
+                        continue;
+                    }
+                    else if (!stripBoldTags)
+                    {
+                        // if we are not stripping bold tags we must remember we are inside one
+                        boldTag = true;
+                    }
                 }
                 if (let == '>')
                 {
                     inside = false;
-                    continue;
+                    if (boldTag)
+                    {
+                        boldTag = false;
+                    }
+                    else
+                    {
+                        continue;
+                    }
                 }
                 if (!inside)
                 {

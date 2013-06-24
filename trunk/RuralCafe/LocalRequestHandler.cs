@@ -138,14 +138,9 @@ namespace RuralCafe
             // Do only use cache for HEAD/GET
             if (IsGetOrHeadHeader() && IsCached(_rcRequest.CacheFileName))
             {
-                // Try getting the mime type from the search index
-                string contentType = GetMimeType(RequestUri);
-                
                 // try getting the content type from the file extension
-                if (contentType.Equals("text/unknown"))
-                {
-                    contentType = Util.GetContentTypeOfFile(_rcRequest.CacheFileName);
-                }
+                string contentType = Util.GetContentTypeOfFile(_rcRequest.CacheFileName);
+                
                 _clientHttpContext.Response.ContentType = contentType;
 
                 _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName);
@@ -228,45 +223,6 @@ namespace RuralCafe
             }
             return Status.Failed;
         }
-
-        /// <summary>
-        /// Helper to get the mime type from the URI
-        /// </summary>
-        /// <param name="url"></param>
-        /// <returns></returns>
-        string GetMimeType(string uri)
-        {
-            List<Lucene.Net.Documents.Document> filteredResults = new List<Lucene.Net.Documents.Document>();
-
-            string queryString = uri;
-            if (queryString.Trim().Length > 0)
-            {
-                List<Lucene.Net.Documents.Document> results = IndexWrapper.Query(((RCLocalProxy)_proxy).IndexPath, queryString);
-
-                string headerToken = "Content-Type:";
-                // remove duplicates
-                foreach (Lucene.Net.Documents.Document document in results)
-                {
-                    string documentUri = document.Get("uri");
-                    if (documentUri.Equals(uri)) {
-                        string headers = document.Get("headers");
-                        // extract mime type
-                        int i = headers.IndexOf(headerToken);
-                        if (i < 0)
-                            continue;
-                        string chunk = headers.Substring(i + headerToken.Length);
-                        int i2 = chunk.IndexOf("\r\n");
-                        if (i2 < 0)
-                            continue;
-                        string mimeType = chunk.Substring(0, i2).Trim();
-                        return mimeType;
-                    }
-                }
-            }
-            return "text/unknown";
-        }
-
-
 
         /// <summary>
         /// Helper method to get the ETA from the proxy this handler belongs to.
