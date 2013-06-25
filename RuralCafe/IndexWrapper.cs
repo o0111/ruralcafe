@@ -111,8 +111,11 @@ namespace RuralCafe
         /// <param name="indexPath">Path to the Lucene index.</param>
         /// <param name="queryString">String to query the index for.</param>
         /// <param name="cachePath">The path to the local cache.</param>
+        /// <param name="page">Which page is being requested.</param>
+        /// <param name="pageSize">How many items are on one page and should be returned.</param>
         /// <returns>A List of Documents.</returns>
-        public static List<DocumentWithSnippet> Query(string indexPath, string queryString, string cachePath)
+        public static List<DocumentWithSnippet> Query(string indexPath, string queryString, string cachePath,
+            int page, int pageSize)
         {
             List<DocumentWithSnippet> results = new List<DocumentWithSnippet>();
 
@@ -125,17 +128,18 @@ namespace RuralCafe
             // the search function
             string searchQuery = "(" + QueryParser.Escape(queryString) + ")";
             Query query = parser.Parse(searchQuery);
-            TopDocs topDocs = searcher.Search(query, 1000);
+            // Request all results up to the page we actually need (this is quick)
+            TopDocs topDocs = searcher.Search(query, page * pageSize);
             ScoreDoc[] hits = topDocs.scoreDocs;
 
-            for (int i = 0; i < hits.Length; i++)
+            // Only loop through the hits that should be on the page
+            for (int i = (page - 1) * pageSize; i < hits.Length; i++)
             {
                 int docId = hits[i].doc;
                 Document doc = searcher.Doc(docId);
                 DocumentWithSnippet docWSnip = new DocumentWithSnippet(doc);
 
-                // XXX: read the whole file from the cache to find the content snippet.
-                // If we decide to save the whole content in lucene, we have to change this.
+                // Read the whole file from the cache to find the content snippet.
                 string filepath = RCRequest.GetRelativeCacheFileName(doc.Get("uri"));
                 string documentContent = Util.ReadFileAsString(cachePath + filepath);
                 // Find (and highlight) content snippets
@@ -146,18 +150,21 @@ namespace RuralCafe
                 TokenStream stream = analyzer.TokenStream("content", new StringReader(documentContent));
 
                 // TODO somehow find GOOD fragments
-                int startIndex = documentContent.IndexOf("<body>");
-                if (startIndex == -1)
-                {
-                    // If we do not find "<body>", we take the whole text.
-                    startIndex = 0;
-                }
+                // Remove unusable stuff.
+                // documentContent = Util.RemoveTagsUnusableForSnippets(documentContent);
                 
                 // Get 1 fragment
-                string[] fragments = highlighter.GetBestFragments(stream, documentContent.Substring(startIndex), 1);
-                if(fragments.Length > 0)
+                try
                 {
-                    docWSnip.contentSnippet = Util.StripTagsCharArray(fragments[0], false);
+                    string[] fragments = highlighter.GetBestFragments(stream, documentContent, 1);
+                    if (fragments.Length > 0)
+                    {
+                        docWSnip.contentSnippet = Util.StripTagsCharArray(fragments[0], false);
+                    }
+                }
+                catch (Exception)
+                {
+                    // Do nothing
                 }
                 
 
