@@ -21,6 +21,8 @@ namespace RuralCafe
         private static RoutineMethod defaultMethod = new RoutineMethod("DefaultPage");
         // Regex that matches two or more spaces. Useful for trimming them to one space.
         private static Regex multipleSpacesRegex = new Regex(@"\s\s+");
+        // Regex that matches the number of search results in a google results page.
+        private static Regex googleResultsNumRegex = new Regex("<div id=\"resultStats\">(Page \\d+ of a|A)bout (?<num>[\\d,]+) results");
 
         /// <summary>
         /// Static Constructor. Defines routines.
@@ -30,7 +32,7 @@ namespace RuralCafe
             routines.Add("/request/index.xml", new RoutineMethod("ServeRCIndexPage",
                 new string[] { "n", "c", "s" }, new Type[] { typeof(int), typeof(int), typeof(string) }));
             routines.Add("/request/search.xml", new RoutineMethod("ServeRCRemoteResultPage",
-                new string[] { "n", "p", "s" }, new Type[] { typeof(int), typeof(int), typeof(string) }));
+                new string[] { "p", "s" }, new Type[] { typeof(int), typeof(string) }));
             routines.Add("/request/result.xml", new RoutineMethod("ServeRCResultPage",
                 new string[] { "n", "p", "s" }, new Type[] { typeof(int), typeof(int), typeof(string) }));
             routines.Add("/request/queue.xml", new RoutineMethod("ServeRCQueuePage",
@@ -84,25 +86,52 @@ namespace RuralCafe
         /// <summary>
         /// Translates a RuralCafe search to a Google one.
         /// </summary>
+        /// <param name="searchString">The search string</param>
+        /// <param name="pagenumber">The page number</param>
         /// <returns>Google search query.</returns>
-        private string ConstructGoogleSearch(string searchString)
+        private string ConstructGoogleSearch(string searchString, int pagenumber)
         {
-            return "http://www.google.com/search?hl=en&q=" +
+            string result = "http://www.google.com/search?hl=en&q=" +
                                         searchString.Replace(' ', '+') +
                                         "&btnG=Google+Search&aq=f&oq=";
+            if (pagenumber > 1)
+            {
+                result += "&start=" + ((pagenumber - 1) * 10);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Gets the (approximate) number of google search results.
+        /// </summary>
+        /// <param name="googleResultsPage">The google results page.</param>
+        /// <returns>The number of search results.</returns>
+        private int GetGoogleResultsNumber(string googleResultsPage)
+        {
+            Match match = googleResultsNumRegex.Match(googleResultsPage);
+            string numString = match.Groups["num"].Value;
+            numString = numString.Replace(",", "");
+            try
+            {
+                return Int32.Parse(numString);
+            }
+            catch (FormatException)
+            {
+                // We have at least one page, this is ugly.
+                return 10;
+            }
         }
 
         /// <summary>
         /// Extracts the result links from a google results page.
         /// </summary>
-        /// <param name="rcRequest">Request to make.</param>
+        /// <param name="googleResultPage">The Google results page.</param>
         /// <returns>List of links.</returns>
-        public LinkedList<RCRequest> ExtractGoogleResults(RCRequest rcRequest)
+        private LinkedList<RCRequest> ExtractGoogleResults(string googleResultPage)
         {
             string[] stringSeparator = new string[] { "</cite>" };
             LinkedList<RCRequest> resultLinks = new LinkedList<RCRequest>();
-            string fileString = Util.ReadFileAsString(rcRequest.CacheFileName);
-            string[] lines = fileString.Split(stringSeparator, StringSplitOptions.RemoveEmptyEntries);
+            string[] lines = googleResultPage.Split(stringSeparator, StringSplitOptions.RemoveEmptyEntries);
 
             // get links
             int pos;
@@ -353,17 +382,16 @@ namespace RuralCafe
         {
             string resultsString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 
-            List<DocumentWithSnippet> tempLuceneResults = new List<DocumentWithSnippet>();
             List<DocumentWithSnippet> filteredLuceneResults = new List<DocumentWithSnippet>();
             HitCollection wikiResults = new HitCollection();
-            int currentItemNumber = 0;
             if (queryString.Trim().Length > 0)
             {
                 // Query the Wiki index
                 wikiResults = Indexer.Search(queryString, RCLocalProxy.WikiIndices.Values, Indexer.MAX_SEARCH_HITS);
 
                 // Query our RuralCafe index
-                List<DocumentWithSnippet> luceneResults = IndexWrapper.Query(((RCLocalProxy)_proxy).IndexPath, queryString, Proxy.CachePath);
+                List<DocumentWithSnippet> luceneResults = IndexWrapper.Query(((RCLocalProxy)_proxy).IndexPath, queryString, Proxy.CachePath,
+                    pageNumber, numItemsPerPage);
 
                 // remove duplicates
                 foreach (DocumentWithSnippet documentWSnip in luceneResults)
@@ -380,7 +408,7 @@ namespace RuralCafe
                     }
 
                     bool exists = false;
-                    foreach (DocumentWithSnippet tempDocument in tempLuceneResults)
+                    foreach (DocumentWithSnippet tempDocument in filteredLuceneResults)
                     {
                         string documentUri2 = tempDocument.document.Get("uri");
                         string documentTitle2 = tempDocument.document.Get("title");
@@ -392,13 +420,7 @@ namespace RuralCafe
                     }
                     if (!exists)
                     {
-                        currentItemNumber++;
-                        tempLuceneResults.Add(documentWSnip);
-                        if ((currentItemNumber > ((pageNumber - 1) * numItemsPerPage)) &&
-                            (currentItemNumber < (pageNumber * numItemsPerPage) + 1))
-                        {
-                            filteredLuceneResults.Add(documentWSnip);
-                        }
+                        filteredLuceneResults.Add(documentWSnip);
                     }
 
                 }
@@ -406,8 +428,12 @@ namespace RuralCafe
 
             Logger.Debug(filteredLuceneResults.Count + " results");
 
-            // total results
-            resultsString = resultsString + "<search total=\"" + currentItemNumber + "\">";
+            // If we have the maximum number of results back from Lucene, we suppose
+            // there is another page. Otherwise we know this is the last page.
+            int numResults = filteredLuceneResults.Count == numItemsPerPage ?
+                (pageNumber + 1) * numItemsPerPage :
+                (pageNumber - 1) * numItemsPerPage + filteredLuceneResults.Count;
+            resultsString = resultsString + "<search total=\"" + numResults + "\">";
             // Local Search Results
             for (int i = 0; i < filteredLuceneResults.Count; i++)
             {
@@ -423,15 +449,14 @@ namespace RuralCafe
                 {
                     uri = uri.Substring(7);
                 }
-                resultsString = resultsString +
-                                "<item>" +
+                resultsString += "<item>" +
                                 "<title>" + title + "</title>" +
                                 "<url>" + uri + "</url>" +
                                 "<snippet>" + contentSnippet + "</snippet>" +
                                 "</item>";
             }
 
-            resultsString = resultsString + "</search>";
+            resultsString += "</search>";
 
             PrepareXMLRequestAnswer();
             return new Response(resultsString);
@@ -439,55 +464,50 @@ namespace RuralCafe
 
         /// <summary>
         /// Sends the frame page to the client.
-        /// GET request will be sent to request/search.xml?n=5&p=1&s=searchstring where
-        /// n is the maximum number of items per page, the number of <item> allowed in this file
+        /// GET request will be sent to request/search.xml?p=1&s=searchstring where
         /// p is the current page number, if there are multipage pages, page number starts from 1, 2, 3...,
         /// s is the search query string
         /// 
-        /// This gets the results from google.
+        /// This gets the results from google, always the same amount of results google gets, usually 10.
         /// </summary>
-        public Response ServeRCRemoteResultPage(int numItemsPerPage, int pageNumber, string queryString)
+        public Response ServeRCRemoteResultPage(int pageNumber, string queryString)
         {
             if (_proxy.NetworkStatus == RCProxy.NetworkStatusCode.Offline)
             {
                 return new Response();
             }
             // Google search
-            string googleSearchString = ConstructGoogleSearch(queryString);
+            string googleSearchString = ConstructGoogleSearch(queryString, pageNumber);
             _rcRequest = new RCRequest(this, (HttpWebRequest)WebRequest.Create(googleSearchString));
+            // Download result page
+            string resultPage = _rcRequest.DownloadAsString();
 
-            long bytesDownloaded = _rcRequest.DownloadToCache(true);
             try
             {
-                FileInfo f = new FileInfo(_rcRequest.CacheFileName);
-                if (bytesDownloaded > -1 && f.Exists)
+                if (resultPage != null)
                 {
-                    LinkedList<RCRequest> resultLinkUris = ExtractGoogleResults(_rcRequest);
+                    LinkedList<RCRequest> resultLinkUris = ExtractGoogleResults(resultPage);
+                    int numResults = GetGoogleResultsNumber(resultPage);
                     string resultsString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
-                    resultsString = resultsString + "<search total=\"" + resultLinkUris.Count.ToString() + "\">";
-                    int currentItemNumber = 0;
+                    resultsString = resultsString + "<search total=\"" + numResults + "\">";
                     foreach (RCRequest linkObject in resultLinkUris)
                     {
-                        currentItemNumber++;
-                        if ((currentItemNumber > ((pageNumber - 1) * numItemsPerPage)) &&
-                            (currentItemNumber < (pageNumber * numItemsPerPage) + 1))
-                        {
-                            string uri = System.Security.SecurityElement.Escape(linkObject.Uri);
-                            string title = System.Security.SecurityElement.Escape(linkObject.AnchorText);
-                            string contentSnippet = System.Security.SecurityElement.Escape(linkObject.ContentSnippet);
+                        string uri = System.Security.SecurityElement.Escape(linkObject.Uri);
+                        string title = System.Security.SecurityElement.Escape(linkObject.AnchorText);
+                        string contentSnippet = System.Security.SecurityElement.Escape(linkObject.ContentSnippet);
 
-                            if (uri.StartsWith("http://")) //laura: omit http://
-                                uri = uri.Substring(7);
-                            resultsString = resultsString +
-                                            "<item>" +
-                                            "<title>" + title + "</title>" +
-                                            "<url>" + uri + "</url>" +
-                                            "<snippet>" + contentSnippet + "</snippet>" +
-                                            "</item>";
+                        if (uri.StartsWith("http://"))
+                        {
+                            uri = uri.Substring(7);
                         }
+                        resultsString += "<item>" +
+                                        "<title>" + title + "</title>" +
+                                        "<url>" + uri + "</url>" +
+                                        "<snippet>" + contentSnippet + "</snippet>" +
+                                        "</item>";
                     }
 
-                    resultsString = resultsString + "</search>";
+                    resultsString += "</search>";
 
                     PrepareXMLRequestAnswer();
                     return new Response(resultsString);

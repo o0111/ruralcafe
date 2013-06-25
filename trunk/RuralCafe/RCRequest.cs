@@ -30,6 +30,11 @@ namespace RuralCafe
 {
     public class RCRequest
     {
+        // Regex's for safe URI replacements
+        private static Regex unsafeChars1 = new Regex(@"[^a-z0-9\\\-\.]");
+        private static Regex unsafeChars2 = new Regex(@"[^a-z0-9/\-\.]");
+
+
         private string _anchorText;
         private string _contentSnippet;
         private string _refererUri;
@@ -395,17 +400,21 @@ namespace RuralCafe
 
             // replace any 'double spaces' with singles
             if (safe.IndexOf("--") > -1)
+            {
                 while (safe.IndexOf("--") > -1)
+                {
                     safe = safe.Replace("--", "-");
+                }
+            }
 
             // trim out illegal characters
-            if (Path.DirectorySeparatorChar.ToString() == "\\")
+            if (Path.DirectorySeparatorChar == '\\')
             {
-                safe = Regex.Replace(safe, "[^a-z0-9\\\\\\-\\.]", "");
+                safe = unsafeChars1.Replace(safe, "");
             }
             else
             {
-                safe = Regex.Replace(safe, "[^a-z0-9/\\-\\.]", "");
+                safe = unsafeChars2.Replace(safe, "");
             }
 
             // trim the length
@@ -418,6 +427,31 @@ namespace RuralCafe
             safe = safe.TrimEnd(replace);
 
             return safe;
+        }
+
+        /// <summary>
+        /// Downloads a request and returns the result as a string.
+        /// </summary>
+        /// <returns>The requested webpage or <code>null</code> if it failed.</returns>
+        public string DownloadAsString()
+        {
+            _requestHandler.Logger.Debug("downloading as string: " + _webRequest.RequestUri);
+            // Stream parameters, if we have non GET/HEAD
+            Util.SendBody(_webRequest, _body);
+            try
+            {
+                // get the web response for the web request
+                _webResponse = (HttpWebResponse)_webRequest.GetResponse();
+                _requestHandler.Logger.Debug("downloading done: " + _webRequest.RequestUri);
+                // Get response stream
+                Stream responseStream = GenericWebResponse.GetResponseStream();
+                return Util.ReadStreamToEnd(responseStream);
+            }
+            catch (Exception e)
+            {
+                _requestHandler.Logger.Debug("failed: " + Uri, e);
+                return null;
+            }
         }
 
         /// <summary>

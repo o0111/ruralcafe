@@ -46,6 +46,17 @@ namespace RuralCafe
         /// </summary>
         private static Regex localAddressRegex = new Regex(@"(?<add1>(localhost|127\.0\.0\.1))(?<add2>[^\.])");
         /// <summary>
+        /// Regex for html tags
+        /// </summary>
+        private static Regex htmlTagRegex = new Regex(@"<[^<]+?>", RegexOptions.IgnoreCase);
+        /// <summary>
+        /// Regex for any html tags and their content, that are not usable for content snippets.
+        /// </summary>
+        /// // FIXME only the first (head) is matched
+        private static Regex snippetUnusableTagsregex = new Regex(@"(<head.+?(>.+?</head>|/>)|
+                                        <script.+?(>.+?</script>|/>)|
+                                        <meta.+?(>.+?</meta>|/>))", RegexOptions.IgnoreCase);
+        /// <summary>
         /// The local IP address.
         /// </summary>
         private static string localIPAdress = LocalIPAddress();
@@ -447,47 +458,42 @@ namespace RuralCafe
         /// <returns>String containing the stripped text.</returns>
         public static string StripTagsCharArray(string source, bool stripBoldTags)
         {
-            char[] array = new char[source.Length];
-            int arrayIndex = 0;
-            bool inside = false;
-            bool boldTag = false;
-
-            for (int i = 0; i < source.Length; i++)
+            if (stripBoldTags)
             {
-                char let = source[i];
-                if (let == '<')
-                {
-                    if(stripBoldTags || (!(source.Length >= i + 3 && source.Substring(i, 3).Equals("<b>"))
-                        && !(source.Length >= i + 4 && source.Substring(i, 4).Equals("</b>"))))
-                    {
-                        inside = true;
-                        continue;
-                    }
-                    else if (!stripBoldTags)
-                    {
-                        // if we are not stripping bold tags we must remember we are inside one
-                        boldTag = true;
-                    }
-                }
-                if (let == '>')
-                {
-                    inside = false;
-                    if (boldTag)
-                    {
-                        boldTag = false;
-                    }
-                    else
-                    {
-                        continue;
-                    }
-                }
-                if (!inside)
-                {
-                    array[arrayIndex] = let;
-                    arrayIndex++;
-                }
+                return htmlTagRegex.Replace(source, "");
             }
-            return new string(array, 0, arrayIndex);
+            else
+            {
+                string result = htmlTagRegex.Replace(source, delegate(Match match)
+                {
+                    string matchedString = match.ToString();
+                    return matchedString.Equals("<b>") || matchedString.Equals("</b>") ?
+                        matchedString : "";
+                });
+
+                // XXX: sometimes there is "<" or ">" between "<b>" and "</b>". Then the closing bold tag
+                // is not recognized. This may also be an error of the Lucene highlighter or its usage.
+                return result;
+            }
+        }
+
+        /// <summary>
+        /// Replaces all specified HTML tags and their content.
+        /// </summary>
+        /// <param name="input">The input string.</param>
+        /// <param name="tag">The HTML tag to remove</param>
+        /// <returns>The input string without the specified HTML tags and their content.</returns>
+        public static string RemoveHTMLTagAndContent(string input, string tag)
+        {
+            return Regex.Replace(input, @"<" + tag + ".+?(>.+?</" + tag + ">|/>)", "");
+        }
+
+        public static string RemoveTagsUnusableForSnippets(string input)
+        {
+            // FIXME
+            //return snippetUnusableTagsregex.Replace(input, "").Replace(input, "").Replace(input, "");
+            return Regex.Replace(Regex.Replace(Regex.Replace(input, @"<meta.+?(>.+?</meta>|/>)", ""),
+                @"<script.+?(>.+?</script>|/>)", ""), @"<head.+?(>.+?</head>|/>)", "");
         }
 
         /// <summary>

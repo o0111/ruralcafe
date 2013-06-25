@@ -12,10 +12,10 @@ function loadLiveResult() {
 	if (window.location.pathname) {
 		var path = window.location.href;
 		searchString = path.slice(path.search('s=')+2);
-		//changfe here now no p is passed
+		//change here now no p is passed
 		pageNuml = parseInt(path.slice(path.search('p=')+2,path.search('&'))) || 1;
 		if (searchString != "")
-			showResultl('request/search.xml?n='+noil+'&p='+pageNuml+'&s='+searchString);
+			showResultl('request/search.xml?p='+pageNuml+'&s='+searchString);
 	}
 	else
 		alert("Your browser does not support javascript");
