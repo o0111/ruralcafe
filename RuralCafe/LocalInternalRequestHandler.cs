@@ -1,4 +1,6 @@
 ﻿using BzReader;
+using RuralCafe.Lucenenet;
+using RuralCafe.Util;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -157,7 +159,7 @@ namespace RuralCafe
                         {
                             // cut end
                             currTitle = currTitle.Substring(0, pos);
-                            currTitle = Util.StripTagsCharArray(currTitle);
+                            currTitle = Utils.StripTagsCharArray(currTitle);
                             currTitle = currTitle.Trim();
                         }
                     }
@@ -174,13 +176,13 @@ namespace RuralCafe
                         currUri = currUri.Substring(0, pos);
                     }
                     // no end to cut!
-                    currUri = Util.StripTagsCharArray(currUri);
+                    currUri = Utils.StripTagsCharArray(currUri);
                     currUri = currUri.Trim();
 
                     // instead of translating to absolute, prepend http:// to make webrequest constructor happy
                     currUri = AddHttpPrefix(currUri);
 
-                    if (!Util.IsValidUri(currUri))
+                    if (!Utils.IsValidUri(currUri))
                     {
                         continue;
                     }
@@ -208,7 +210,7 @@ namespace RuralCafe
                         {
                             // cut end
                             currSnippet = currSnippet.Substring(0, pos);
-                            currSnippet = Util.StripTagsCharArray(currSnippet, false);
+                            currSnippet = Utils.StripTagsCharArray(currSnippet, false);
                             currSnippet = multipleSpacesRegex.Replace(currSnippet.Trim(), " ");
                         }
                     }
@@ -237,7 +239,7 @@ namespace RuralCafe
             string fileName = _originalRequest.Url.LocalPath.Substring(1);
             fileName = fileName.Replace('/', Path.DirectorySeparatorChar);
             fileName = ((RCLocalProxy)_proxy).UIPagesPath + fileName;
-            string contentType = Util.GetContentTypeOfFile(fileName);
+            string contentType = Utils.GetContentTypeOfFile(fileName);
 
             _clientHttpContext.Response.ContentType = contentType;
             return new Response(fileName, true);
@@ -381,68 +383,42 @@ namespace RuralCafe
         public Response ServeRCResultPage(int numItemsPerPage, int pageNumber, string queryString)
         {
             string resultsString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
-
-            List<DocumentWithSnippet> filteredLuceneResults = new List<DocumentWithSnippet>();
-            HitCollection wikiResults = new HitCollection();
-            if (queryString.Trim().Length > 0)
+            if (queryString.Trim().Length == 0)
             {
-                // Query the Wiki index
-                wikiResults = Indexer.Search(queryString, RCLocalProxy.WikiIndices.Values, Indexer.MAX_SEARCH_HITS);
-
-                // Query our RuralCafe index
-                List<DocumentWithSnippet> luceneResults = IndexWrapper.Query(((RCLocalProxy)_proxy).IndexPath, queryString, Proxy.CachePath,
-                    pageNumber, numItemsPerPage);
-
-                // remove duplicates
-                foreach (DocumentWithSnippet documentWSnip in luceneResults)
-                {
-                    Lucene.Net.Documents.Document document = documentWSnip.document;
-
-                    string documentUri = document.Get("uri");
-                    string documentTitle = document.Get("title");
-
-                    // ignore blacklisted domains
-                    if (IsBlacklisted(documentUri))
-                    {
-                        continue;
-                    }
-
-                    bool exists = false;
-                    foreach (DocumentWithSnippet tempDocument in filteredLuceneResults)
-                    {
-                        string documentUri2 = tempDocument.document.Get("uri");
-                        string documentTitle2 = tempDocument.document.Get("title");
-                        if (documentUri.Equals(documentUri2) || documentTitle.Equals(documentTitle2))
-                        {
-                            exists = true;
-                            break;
-                        }
-                    }
-                    if (!exists)
-                    {
-                        filteredLuceneResults.Add(documentWSnip);
-                    }
-
-                }
+                return new Response(resultsString + "<search total=\"0\"></search>");
             }
+            
+            // Query the Wiki index
+            HitCollection wikiResults = Indexer.Search(queryString, RCLocalProxy.WikiIndices.Values, Indexer.MAX_SEARCH_HITS);
+            // Query our RuralCafe index
+            LuceneSearchResults luceneResults = IndexWrapper.Query(((RCLocalProxy)_proxy).IndexPath, 
+                queryString, Proxy.CachePath, pageNumber, numItemsPerPage);
 
-            Logger.Debug(filteredLuceneResults.Count + " results");
-
-            // If we have the maximum number of results back from Lucene, we suppose
-            // there is another page. Otherwise we know this is the last page.
-            int numResults = filteredLuceneResults.Count == numItemsPerPage ?
-                (pageNumber + 1) * numItemsPerPage :
-                (pageNumber - 1) * numItemsPerPage + filteredLuceneResults.Count;
-            resultsString = resultsString + "<search total=\"" + numResults + "\">";
-            // Local Search Results
-            for (int i = 0; i < filteredLuceneResults.Count; i++)
+            // remove blacklisted
+            for (int i = 0; i < luceneResults.Documents.Count; i++ )
             {
-                DocumentWithSnippet result = filteredLuceneResults.ElementAt(i);
+                // ignore blacklisted domains
+                if (IsBlacklisted(luceneResults.Documents[i].Get("uri")))
+                {
+                    luceneResults.RemoveDocument(i);
+                    // We will have to look at the same index again.
+                    i--;
+                }
+
+            }
+            Logger.Debug(luceneResults.NumResults + " results");
+
+            resultsString = resultsString + "<search total=\"" + luceneResults.NumResults + "\">";
+            // Local Search Results
+            for (int i = 0; i < luceneResults.Documents.Count; i++)
+            {
+                Lucene.Net.Documents.Document document = luceneResults.Documents[i];
+                string contentSnippet = luceneResults.ContentSnippets[i];
 
                 // escape xml strings
-                string uri = System.Security.SecurityElement.Escape(result.document.Get("uri"));
-                string title = System.Security.SecurityElement.Escape(result.document.Get("title"));
-                string contentSnippet = System.Security.SecurityElement.Escape(result.contentSnippet);
+                string uri = System.Security.SecurityElement.Escape(document.Get("uri"));
+                string title = System.Security.SecurityElement.Escape(document.Get("title"));
+                contentSnippet = System.Security.SecurityElement.Escape(contentSnippet);
 
                 //laura: omit http://
                 if (uri.StartsWith("http://"))
@@ -472,9 +448,10 @@ namespace RuralCafe
         /// </summary>
         public Response ServeRCRemoteResultPage(int pageNumber, string queryString)
         {
-            if (_proxy.NetworkStatus == RCProxy.NetworkStatusCode.Offline)
+            string resultsString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+            if (queryString.Trim().Length == 0 || _proxy.NetworkStatus == RCProxy.NetworkStatusCode.Offline)
             {
-                return new Response();
+                return new Response(resultsString + "<search total=\"0\"></search>");
             }
             // Google search
             string googleSearchString = ConstructGoogleSearch(queryString, pageNumber);
@@ -488,7 +465,6 @@ namespace RuralCafe
                 {
                     LinkedList<RCRequest> resultLinkUris = ExtractGoogleResults(resultPage);
                     int numResults = GetGoogleResultsNumber(resultPage);
-                    string resultsString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
                     resultsString = resultsString + "<search total=\"" + numResults + "\">";
                     foreach (RCRequest linkObject in resultLinkUris)
                     {

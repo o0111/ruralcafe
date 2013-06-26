@@ -3,18 +3,27 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace RuralCafe
+namespace RuralCafe.Util
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
 
-    public class HtmlParser
+    /// <summary>
+    /// Util fields and methods for HTML handling.
+    /// </summary>
+    public class HtmlUtils
     {
+        /// <summary>
+        /// HTML attributes that represent links.
+        /// </summary>
         public static string[,] LinkTagAttributes = new string[,] {
                   {"a",        "href"}
         };
+        /// <summary>
+        /// HTML attributes that represent embedded objects.
+        /// </summary>
         public static string[,] EmbeddedObjectTagAttributes = new string[,] {
                   //{"base",        "href"},           // 2.0
                   //{"form",        "action"},         // 2.0g

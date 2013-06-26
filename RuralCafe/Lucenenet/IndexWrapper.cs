@@ -28,30 +28,26 @@ using Lucene.Net.Search;
 using Lucene.Net.QueryParsers;
 using System.Net;
 using Lucene.Net.Highlight;
+using RuralCafe.Util;
 
-namespace RuralCafe
+namespace RuralCafe.Lucenenet
 {
-    /// <summary>
-    /// Simple data class that combines a lucene index document with a content snippet for the current query.
-    /// </summary>
-    public class DocumentWithSnippet
-    {
-        public Document document;
-        public String contentSnippet;
-
-        public DocumentWithSnippet(Document document)
-        {
-            this.document = document;
-            this.contentSnippet = "";
-        }
-    }
-
     /// <summary>
     /// Interacts with Lucene.Net to manage the cache index.
     /// Compatible with Lucene.Net version 2.9.1
     /// </summary>
     public class IndexWrapper
     {
+        /// <summary>
+        /// The maximum number of results.
+        /// </summary>
+        private const int LUCENE_MAX_RESULTS = 1000;
+
+        /// <summary>
+        /// Ensure that the index exists.
+        /// </summary>
+        /// <param name="indexPath">The index path.</param>
+        /// <returns>True XXX: this is nonsense</returns>
         public static bool EnsureIndexExists(string indexPath)
         {
             if (!Directory.Exists(indexPath))
@@ -69,7 +65,7 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Deletes a document from our cacheindexer.
+        /// Deletes a document from our cache indexer.
         /// To be used for cache coherence/maintainence.
         /// Unused. Untested.
         /// </summary>
@@ -114,10 +110,10 @@ namespace RuralCafe
         /// <param name="page">Which page is being requested.</param>
         /// <param name="pageSize">How many items are on one page and should be returned.</param>
         /// <returns>A List of Documents.</returns>
-        public static List<DocumentWithSnippet> Query(string indexPath, string queryString, string cachePath,
+        public static LuceneSearchResults Query(string indexPath, string queryString, string cachePath,
             int page, int pageSize)
         {
-            List<DocumentWithSnippet> results = new List<DocumentWithSnippet>();
+            LuceneSearchResults results = new LuceneSearchResults();
 
             Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(indexPath));
             IndexReader reader = IndexReader.Open(directory, true);
@@ -129,46 +125,46 @@ namespace RuralCafe
             string searchQuery = "(" + QueryParser.Escape(queryString) + ")";
             Query query = parser.Parse(searchQuery);
             // Request all results up to the page we actually need (this is quick)
-            TopDocs topDocs = searcher.Search(query, page * pageSize);
+            TopDocs topDocs = searcher.Search(query, LUCENE_MAX_RESULTS);
             ScoreDoc[] hits = topDocs.scoreDocs;
+            // Save num results
+            results.NumResults = hits.Length;
 
             // Only loop through the hits that should be on the page
-            for (int i = (page - 1) * pageSize; i < hits.Length; i++)
+            for (int i = (page - 1) * pageSize; i < Math.Min(hits.Length, page * pageSize); i++)
             {
                 int docId = hits[i].doc;
                 Document doc = searcher.Doc(docId);
-                DocumentWithSnippet docWSnip = new DocumentWithSnippet(doc);
 
                 // Read the whole file from the cache to find the content snippet.
                 string filepath = RCRequest.GetRelativeCacheFileName(doc.Get("uri"));
-                string documentContent = Util.ReadFileAsString(cachePath + filepath);
+                string documentContent = Utils.ReadFileAsString(cachePath + filepath);
+
+                // Remove unusable stuff.
+                documentContent = Utils.RemoveHead(documentContent);
+                documentContent = Utils.ExtractText(documentContent);
+
                 // Find (and highlight) content snippets
                 QueryScorer scorer = new QueryScorer(query);
                 SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<b>", "</b>");
                 Highlighter highlighter = new Highlighter(formatter, scorer);
-                highlighter.SetTextFragmenter(new SimpleFragmenter(200));
+                highlighter.SetTextFragmenter(new SentenceFragmenter());
                 TokenStream stream = analyzer.TokenStream("content", new StringReader(documentContent));
 
-                // TODO somehow find GOOD fragments
-                // Remove unusable stuff.
-                // documentContent = Util.RemoveTagsUnusableForSnippets(documentContent);
-                
                 // Get 1 fragment
+                string contentSnippet = "";
                 try
                 {
                     string[] fragments = highlighter.GetBestFragments(stream, documentContent, 1);
                     if (fragments.Length > 0)
                     {
-                        docWSnip.contentSnippet = Util.StripTagsCharArray(fragments[0], false);
+                        contentSnippet = Utils.StripTagsCharArray(fragments[0], false);
                     }
                 }
                 catch (Exception)
                 {
-                    // Do nothing
                 }
-                
-
-                results.Add(docWSnip);
+                results.AddDocument(doc, contentSnippet);
             }
             
             searcher.Close();

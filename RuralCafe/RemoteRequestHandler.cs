@@ -24,6 +24,7 @@ using System.Net.Sockets;
 using System.IO;
 using System.Threading;
 using HtmlAgilityPack;
+using RuralCafe.Util;
 
 namespace RuralCafe
 {
@@ -126,11 +127,11 @@ namespace RuralCafe
 
             if (requestUri.Trim().Length > 0)
             {
-                string fileExtension = Util.GetFileExtension(requestUri);
+                string fileExtension = Utils.GetFileExtension(requestUri);
                 requestUri = AddHttpPrefix(requestUri);
 
                 // Check if we can save the file
-                if (Util.IsNotTooLongFileName(_rcRequest.CacheFileName))
+                if (Utils.IsNotTooLongFileName(_rcRequest.CacheFileName))
                 {
                     //_rcRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
 
@@ -715,11 +716,11 @@ namespace RuralCafe
             _package.ContentSize = 0;
             try
             {
-                if (!Util.CreateDirectoryForFile(_packageFileName))
+                if (!Utils.CreateDirectoryForFile(_packageFileName))
                 {
                     return false;
                 }
-                if (!Util.DeleteFile(_packageFileName))
+                if (!Utils.DeleteFile(_packageFileName))
                 {
                     return false;
                 }
@@ -736,7 +737,7 @@ namespace RuralCafe
                 tw.Close();
 
                 // calculate the index size
-                _package.IndexSize = Util.GetFileSize(_packageFileName);
+                _package.IndexSize = Utils.GetFileSize(_packageFileName);
                 if (_package.IndexSize < 0)
                 {
                     Logger.Warn("problem getting file info: " + _packageFileName);
@@ -765,8 +766,8 @@ namespace RuralCafe
             Logger.Debug("IsATextPage?: " + pageUri);
             // first check if file has an extension which we know
             // If so, we look into our map, and do not have to send any request
-            string fileExtension = Util.GetFileExtension(pageUri);
-            string contentTypeA = Util.GetContentType(fileExtension);
+            string fileExtension = Utils.GetFileExtension(pageUri);
+            string contentTypeA = Utils.GetContentType(fileExtension);
             Logger.Debug("IsATextPage? - File Extension Mapping: " + fileExtension + "->" + contentTypeA);
             if (!contentTypeA.Equals("content/unknown"))
             {
@@ -809,7 +810,7 @@ namespace RuralCafe
         /// </summary>
         LinkedList<RCRequest> ExtractEmbeddedObjects(RCRequest rcRequest)
         {
-            return ExtractReferences(rcRequest, HtmlParser.EmbeddedObjectTagAttributes);
+            return ExtractReferences(rcRequest, HtmlUtils.EmbeddedObjectTagAttributes);
         }
 
         /// <summary>
@@ -819,7 +820,7 @@ namespace RuralCafe
         /// </summary>
         LinkedList<RCRequest> ExtractLinks(RCRequest rcRequest)
         {
-            return ExtractReferences(rcRequest, HtmlParser.LinkTagAttributes);
+            return ExtractReferences(rcRequest, HtmlUtils.LinkTagAttributes);
         }
 
         /// <summary>
@@ -832,7 +833,7 @@ namespace RuralCafe
         {
             LinkedList<RCRequest> extractedReferences = new LinkedList<RCRequest>();
 
-            string fileString = Util.ReadFileAsString(rcRequest.CacheFileName).ToLower();
+            string fileString = Utils.ReadFileAsString(rcRequest.CacheFileName).ToLower();
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(fileString);
             Uri baseUri = new Uri(rcRequest.Uri);
@@ -861,7 +862,7 @@ namespace RuralCafe
                         continue;
                     }
                      
-                    if (!Util.IsValidUri(currUri))
+                    if (!Utils.IsValidUri(currUri))
                     {
                         continue;
                     }

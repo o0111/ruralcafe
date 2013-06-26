@@ -28,6 +28,7 @@ using System.Threading;
 using System.Configuration;
 using log4net;
 using System.Collections.Specialized;
+using RuralCafe.Util;
 
 namespace RuralCafe
 {
@@ -75,7 +76,7 @@ namespace RuralCafe
             Console.SetWindowPosition(0, 0);
 
             // fill extension map
-            Util.FillExtMap();
+            Utils.FillExtMap();
 
             // Setting form at startup.
             SettingsForm sf = new SettingsForm();

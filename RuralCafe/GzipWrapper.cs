@@ -22,6 +22,7 @@ using System.Text;
 using System.IO;
 using System.IO.Compression;
 using log4net;
+using RuralCafe.Util;
 
 namespace RuralCafe
 {
@@ -129,11 +130,11 @@ namespace RuralCafe
             //string archive = reader.ReadToEnd();
 
             // create directory if it doesn't exist
-            if (!Util.CreateDirectoryForFile(outputFile))
+            if (!Utils.CreateDirectoryForFile(outputFile))
             {
                 return false;
             }
-            FileStream outputFileFs = Util.CreateFile(outputFile);
+            FileStream outputFileFs = Utils.CreateFile(outputFile);
             if (outputFileFs == null)
             {
                 return false;

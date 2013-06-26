@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RuralCafe.Util;
+using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
@@ -278,7 +279,7 @@ namespace RuralCafe
         {
             string contentType = originalResponse.ContentType;
             // XXX: additional headers lost ATM
-            string message = Util.StreamContent(originalResponse);
+            string message = Utils.StreamContent(originalResponse);
             return new Response(message);
         }
     }

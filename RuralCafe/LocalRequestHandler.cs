@@ -30,6 +30,7 @@ using Lucene.Net.Search;
 using System.Collections.Specialized;
 using BzReader;
 using System.Xml;
+using RuralCafe.Util;
 
 namespace RuralCafe
 {
@@ -139,7 +140,7 @@ namespace RuralCafe
             if (IsGetOrHeadHeader() && IsCached(_rcRequest.CacheFileName))
             {
                 // try getting the content type from the file extension
-                string contentType = Util.GetContentTypeOfFile(_rcRequest.CacheFileName);
+                string contentType = Utils.GetContentTypeOfFile(_rcRequest.CacheFileName);
                 
                 _clientHttpContext.Response.ContentType = contentType;
 

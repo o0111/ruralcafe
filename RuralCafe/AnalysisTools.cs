@@ -6,6 +6,7 @@ using System.IO;
 using System.Threading;
 using System.Net;
 using log4net;
+using RuralCafe.Util;
 
 namespace RuralCafe
 {
@@ -28,7 +29,7 @@ namespace RuralCafe
             Console.SetWindowPosition(0, 0);
 
             // fill extension map
-            Util.FillExtMap();
+            Utils.FillExtMap();
 
             // load Configuration Settings
             Program.saveConfigs();
@@ -77,7 +78,7 @@ namespace RuralCafe
 
                     // process search query one at a time
                     RemoteRequestHandler requestHandler = new RemoteRequestHandler(remoteProxy, null);
-                    if (Util.IsValidUri(urlRequest))
+                    if (Utils.IsValidUri(urlRequest))
                     {
                         requestHandler.RCRequest = new RCRequest(requestHandler, (HttpWebRequest) WebRequest.Create(urlRequest.Trim()));
                         requestHandler.RCRequest.SetProxyAndTimeout(remoteProxy.GatewayProxy, RemoteRequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT);

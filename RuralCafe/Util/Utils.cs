@@ -26,16 +26,19 @@ using System.Collections.Specialized;
 using System.Text.RegularExpressions;
 using System.Net.Sockets;
 using log4net;
+using HtmlAgilityPack;
 
-namespace RuralCafe
+namespace RuralCafe.Util
 {
     /// <summary>
     /// A set of utility functions for manipulating files and directories, 
     /// getting file extensions and mime types, and page contents.
     /// </summary>
-    class Util
+    public class Utils
     {
-        // map from file extension to HTTP MIME type
+        /// <summary>
+        /// Map from file extension to HTTP MIME type
+        /// </summary>
         private static Dictionary<string, string> _extMap = new Dictionary<string, string>();
         /// <summary>
         /// The buffer size for streaming.
@@ -50,17 +53,12 @@ namespace RuralCafe
         /// </summary>
         private static Regex htmlTagRegex = new Regex(@"<[^<]+?>", RegexOptions.IgnoreCase);
         /// <summary>
-        /// Regex for any html tags and their content, that are not usable for content snippets.
-        /// </summary>
-        /// // FIXME only the first (head) is matched
-        private static Regex snippetUnusableTagsregex = new Regex(@"(<head.+?(>.+?</head>|/>)|
-                                        <script.+?(>.+?</script>|/>)|
-                                        <meta.+?(>.+?</meta>|/>))", RegexOptions.IgnoreCase);
-        /// <summary>
         /// The local IP address.
         /// </summary>
         private static string localIPAdress = LocalIPAddress();
-
+        /// <summary>
+        /// A Lock object on the file system.
+        /// </summary>
         private static Object filesystemLock = new Object();
 
         /// <summary>
@@ -98,11 +96,6 @@ namespace RuralCafe
             }
 
             return true;
-        }
-
-        public static string ReplaceXML(string somestring)
-        {
-            return somestring;
         }
 
         /// <summary>
@@ -254,13 +247,6 @@ namespace RuralCafe
         {
             string fileExtension = GetFileExtensionFromFileName(fileName);
 
-            /*
-            if (fileExtension.StartsWith(".asp") || fileExtension.StartsWith(".php"))
-            {
-                return "text/html";
-            }
-            */
-
             if (!fileExtension.Equals(""))
             {
                 return GetContentType(fileExtension);
@@ -294,7 +280,7 @@ namespace RuralCafe
         }
 
         // XXX: Currently only based on file ending.
-        // XXX: text text content (xml, too) should be indexable
+        // XXX: text content (xml, too) should be indexable
         /// <summary>
         /// Checks if the URI is parseable by RuralCafe.
         /// </summary>
@@ -488,12 +474,52 @@ namespace RuralCafe
             return Regex.Replace(input, @"<" + tag + ".+?(>.+?</" + tag + ">|/>)", "");
         }
 
-        public static string RemoveTagsUnusableForSnippets(string input)
+        /// <summary>
+        /// Removes the Head of a HTML string, if there is any.
+        /// </summary>
+        /// <param name="input">An HMTL string.</param>
+        /// <returns>The same string, with anything before the body removed.</returns>
+        public static string RemoveHead(string input)
         {
-            // FIXME
-            //return snippetUnusableTagsregex.Replace(input, "").Replace(input, "").Replace(input, "");
-            return Regex.Replace(Regex.Replace(Regex.Replace(input, @"<meta.+?(>.+?</meta>|/>)", ""),
-                @"<script.+?(>.+?</script>|/>)", ""), @"<head.+?(>.+?</head>|/>)", "");
+            // Remove everything before <body>, if there is a body.
+            int index = input.IndexOf("<body>");
+            return index != -1 ? input.Substring(index) : input;
+        }
+
+        /// <summary>
+        /// Extracts Text from HTML pages.
+        /// Source: http://stackoverflow.com/questions/2113651/how-to-extract-text-from-resonably-sane-html (Modified)
+        /// </summary>
+        /// <param name="html">The HTML text.</param>
+        /// <returns>The plain text.</returns>
+        public static string ExtractText(string html)
+        {
+            if (html == null)
+            {
+                throw new ArgumentNullException("html");
+            }
+
+            HtmlDocument doc = new HtmlDocument();
+            doc.LoadHtml(html);
+            List<string> chunks = new List<string>();
+
+            // Tags that should be removed
+            string[] badTags = new string[] { "script", "meta", "style" };
+
+            foreach (HtmlNode item in doc.DocumentNode.DescendantsAndSelf())
+            {
+                if (item.NodeType == HtmlNodeType.Text)
+                {
+                    if(item.ParentNode != null && !badTags.Contains(item.ParentNode.Name))
+                    {
+                        if (item.InnerText.Trim() != "")
+                        {
+                            chunks.Add(item.InnerText.Trim());
+                        }
+                    }
+                }
+            }
+            return String.Join(" ", chunks);
         }
 
         /// <summary>
@@ -631,7 +657,7 @@ namespace RuralCafe
                     {
                         // XXX: remove the try-catch, when we are sure we did not forget any header field
                         // that needs "special treatment"
-                        LogManager.GetLogger(typeof(Util)).Error(e);
+                        LogManager.GetLogger(typeof(Utils)).Error(e);
                     }
                 }
             }
