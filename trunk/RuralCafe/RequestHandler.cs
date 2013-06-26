@@ -28,6 +28,7 @@ using System.Text.RegularExpressions;
 using System.Collections.Specialized;
 using System.Reflection;
 using log4net;
+using RuralCafe.Util;
 
 namespace RuralCafe
 {
@@ -492,11 +493,11 @@ namespace RuralCafe
         /// <returns></returns>
         protected bool CreateRequest(HttpListenerRequest request, string refererUri)
         {
-            if (Util.IsValidUri(request.RawUrl.ToString()))
+            if (Utils.IsValidUri(request.RawUrl.ToString()))
             {
                 // create the request object
-                _rcRequest = new RCRequest(this, Util.CreateWebRequest(request), "", refererUri,
-                Util.ReceiveBody(request));
+                _rcRequest = new RCRequest(this, Utils.CreateWebRequest(request), "", refererUri,
+                Utils.ReceiveBody(request));
                 _rcRequest.GenericWebRequest.Referer = refererUri;
                 return true;
             }
@@ -516,7 +517,7 @@ namespace RuralCafe
         {
             //Util.StreamBody(_originalRequest, _rcRequest.GenericWebRequest);
             // Stream parameters, if we have non GET/HEAD
-            Util.SendBody(_rcRequest.GenericWebRequest, _rcRequest.Body);
+            Utils.SendBody(_rcRequest.GenericWebRequest, _rcRequest.Body);
             WebResponse serverResponse = _rcRequest.GenericWebRequest.GetResponse();
             return StreamToClient(serverResponse.GetResponseStream());
         }
@@ -555,7 +556,7 @@ namespace RuralCafe
             // XXX: We're reading the content so we can redirect if there is a 301 in the file.
             // As soon as metadata will be included somehow, this won't be necessary any more.
             // Then remove this! Reading the file twice is bad!
-            string content = Util.ReadFileAsString(fileName);
+            string content = Utils.ReadFileAsString(fileName);
             Match match = redirRegex.Match(content);
             if (match.Success)
             {
@@ -588,7 +589,7 @@ namespace RuralCafe
             Stream output = _clientHttpContext.Response.OutputStream;
             try
             {
-                return Util.Stream(ms, output);
+                return Utils.Stream(ms, output);
             }
             catch (Exception e)
             {
@@ -741,7 +742,7 @@ namespace RuralCafe
         /// <returns>True if cacheable, false if not. </returns>
         protected bool IsCacheable()
         {
-            return IsGetOrHeadHeader() && Util.IsNotTooLongFileName(_rcRequest.CacheFileName);
+            return IsGetOrHeadHeader() && Utils.IsNotTooLongFileName(_rcRequest.CacheFileName);
         }
 
         /// <summary>

@@ -25,6 +25,7 @@ using System.Threading;
 using System.Web;
 using System.Collections.Specialized;
 using System.Text.RegularExpressions;
+using RuralCafe.Util;
 
 namespace RuralCafe
 {
@@ -437,7 +438,7 @@ namespace RuralCafe
         {
             _requestHandler.Logger.Debug("downloading as string: " + _webRequest.RequestUri);
             // Stream parameters, if we have non GET/HEAD
-            Util.SendBody(_webRequest, _body);
+            Utils.SendBody(_webRequest, _body);
             try
             {
                 // get the web response for the web request
@@ -445,7 +446,7 @@ namespace RuralCafe
                 _requestHandler.Logger.Debug("downloading done: " + _webRequest.RequestUri);
                 // Get response stream
                 Stream responseStream = GenericWebResponse.GetResponseStream();
-                return Util.ReadStreamToEnd(responseStream);
+                return Utils.ReadStreamToEnd(responseStream);
             }
             catch (Exception e)
             {
@@ -467,14 +468,14 @@ namespace RuralCafe
             long bytesDownloaded = 0;
 
             // create directory if it doesn't exist and delete the file so we can replace it
-            if (!Util.CreateDirectoryForFile(_cacheFileName))
+            if (!Utils.CreateDirectoryForFile(_cacheFileName))
             {
                 return -1;
             }
 
             // XXX: should also check for cache expiration
             // check for 0 size file to re-download
-            long fileSize = Util.GetFileSize(_cacheFileName);
+            long fileSize = Utils.GetFileSize(_cacheFileName);
             if (fileSize > 0 && !replace)
             {
                 //_requestHandler.LogDebug("exists: " + cacheFileName + " " + fileSize + " bytes");
@@ -482,7 +483,7 @@ namespace RuralCafe
             }
             else
             {
-                if (!Util.DeleteFile(_cacheFileName))
+                if (!Utils.DeleteFile(_cacheFileName))
                 {
                     return -1;
                 }
@@ -491,7 +492,7 @@ namespace RuralCafe
             {
                 _requestHandler.Logger.Debug("downloading: " + _webRequest.RequestUri);
                 // Stream parameters, if we have non GET/HEAD
-                Util.SendBody(_webRequest, _body);
+                Utils.SendBody(_webRequest, _body);
                 // get the web response for the web request
                 _webResponse = (HttpWebResponse)_webRequest.GetResponse();
                 _requestHandler.Logger.Debug("downloading done: " + _webRequest.RequestUri);
@@ -517,21 +518,21 @@ namespace RuralCafe
                     _cacheFileName = _requestHandler.Proxy.CachePath + _hashPath + _fileName;
 
                     // create directory if it doesn't exist and delete the file so we can replace it
-                    if (!Util.CreateDirectoryForFile(_cacheFileName))
+                    if (!Utils.CreateDirectoryForFile(_cacheFileName))
                     {
                         return -1;
                     }
 
                     // XXX: should also check for cache expiration
                     // check for 0 size file to re-download
-                    fileSize = Util.GetFileSize(_cacheFileName);
+                    fileSize = Utils.GetFileSize(_cacheFileName);
                     if (fileSize > 0 && !replace)
                     {
                         return fileSize;
                     }
                     else
                     {
-                        if (!Util.DeleteFile(_cacheFileName))
+                        if (!Utils.DeleteFile(_cacheFileName))
                         {
                             return -1;
                         }
@@ -543,7 +544,7 @@ namespace RuralCafe
                 // XXX: Use a stream reader!?
                 Stream responseStream = GenericWebResponse.GetResponseStream();
 
-                writeFile = Util.CreateFile(_cacheFileName);
+                writeFile = Utils.CreateFile(_cacheFileName);
                 if (writeFile == null)
                 {
                     return -1;
@@ -565,7 +566,7 @@ namespace RuralCafe
                 // XXX: not handled well
                 // timed out
                 // incomplete, clean up the partial download
-                Util.DeleteFile(_cacheFileName);
+                Utils.DeleteFile(_cacheFileName);
                 _requestHandler.Logger.Debug("failed: " + Uri, e);
                 bytesDownloaded = -1; 
             }

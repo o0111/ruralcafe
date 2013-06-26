@@ -22,6 +22,8 @@ using System.Text;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
+using RuralCafe.Lucenenet;
+using RuralCafe.Util;
 
 namespace RuralCafe
 {
@@ -86,7 +88,7 @@ namespace RuralCafe
                 return false;
             }
 
-            rcRequest.FileSize = Util.GetFileSize(rcRequest.CacheFileName);
+            rcRequest.FileSize = Utils.GetFileSize(rcRequest.CacheFileName);
             if (rcRequest.FileSize <= 0)
             {
                 return false;
@@ -184,7 +186,7 @@ namespace RuralCafe
                     return unpackedBytes;
                 }
 
-                if (!Util.IsValidUri(currUri))
+                if (!Utils.IsValidUri(currUri))
                 {
                     requestHandler.Logger.Warn("problem unpacking (invalid uri): " + currUri);
                     return unpackedBytes;
@@ -197,7 +199,7 @@ namespace RuralCafe
 
                 unpackedBytes += currFileSize;
 
-                if (!Util.IsNotTooLongFileName(cacheFileName))
+                if (!Utils.IsNotTooLongFileName(cacheFileName))
                 {
                     // We can't save the file
                     requestHandler.Logger.Warn("problem unpacking, filename too long for uri: " + currUri);
@@ -208,19 +210,19 @@ namespace RuralCafe
                 bool existed = ftest.Exists;
 
                 // try to delete the old version
-                if (!Util.DeleteFile(cacheFileName))
+                if (!Utils.DeleteFile(cacheFileName))
                 {
                     return unpackedBytes;
                 }
 
                 // create directory if it doesn't exist
-                if (!Util.CreateDirectoryForFile(cacheFileName))
+                if (!Utils.CreateDirectoryForFile(cacheFileName))
                 {
                     return unpackedBytes;
                 }
 
                 // create the file if it doesn't exist
-                FileStream currFileFS = Util.CreateFile(cacheFileName);
+                FileStream currFileFS = Utils.CreateFile(cacheFileName);
                 if (currFileFS == null)
                 {
                     return unpackedBytes;
@@ -276,13 +278,13 @@ namespace RuralCafe
                 currFileFS.Close();
 
                 // add the file to Lucene
-                if (Util.IsParseable(cacheFileName))
+                if (Utils.IsParseable(cacheFileName))
                 {
                     if (!existed)
                     {
-                        string document = Util.ReadFileAsString(cacheFileName);
-                        string title = Util.GetPageTitle(document);
-                        string content = Util.GetPageContent(document);
+                        string document = Utils.ReadFileAsString(cacheFileName);
+                        string title = Utils.GetPageTitle(document);
+                        string content = Utils.GetPageContent(document);
                         // XXX: Why always with "Content-Type: text/html" ???
                         IndexWrapper.IndexDocument(indexPath, "Content-Type: text/html", rcRequest.Uri, title, content);
                     }

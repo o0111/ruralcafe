@@ -27,6 +27,7 @@ using BzReader;
 using System.Collections.Specialized;
 using System.Web;
 using System.Collections.ObjectModel;
+using RuralCafe.Lucenenet;
 
 namespace RuralCafe
 {
