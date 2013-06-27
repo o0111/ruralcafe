@@ -5,16 +5,23 @@ using System.Text;
 
 namespace RuralCafe.Util
 {
+    using HtmlAgilityPack;
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
+    using System.Text.RegularExpressions;
 
     /// <summary>
     /// Util fields and methods for HTML handling.
     /// </summary>
     public class HtmlUtils
     {
+        /// <summary>
+        /// Regex for html tags
+        /// </summary>
+        private static readonly Regex htmlTagRegex = new Regex(@"<[^<]+?>", RegexOptions.IgnoreCase);
+
         /// <summary>
         /// HTML attributes that represent links.
         /// </summary>
@@ -106,5 +113,102 @@ namespace RuralCafe.Util
                   {"wml",         "xmlns"}          // 2.0
         };
 
+        /// <summary>
+        /// Gets the title from a page.
+        /// </summary>
+        /// <param name="pageContent">Page content.</param>
+        /// <returns>String containing the page title.</returns>
+        public static string GetPageTitle(string pageContent)
+        {
+            HtmlDocument doc = new HtmlDocument();
+            doc.LoadHtml(pageContent);
+            HtmlNode titleNode = doc.DocumentNode.SelectSingleNode("//head/title");
+            return titleNode != null ? titleNode.InnerText : "";
+        }
+
+        /// <summary>
+        /// Strips a string of all HTML tags.
+        /// </summary>
+        /// <param name="source">Page content.</param>
+        /// <returns>String containing the stripped text.</returns>
+        public static string StripTagsCharArray(string source)
+        {
+            return StripTagsCharArray(source, true);
+        }
+
+        /// <summary>
+        /// Strips a string of all HTML tags, except bold tags, if wished.
+        /// </summary>
+        /// <param name="source">Page content.</param>
+        /// <param name="stripBoldTags">If true, bold tags are stripped, too.</param>
+        /// <returns>String containing the stripped text.</returns>
+        public static string StripTagsCharArray(string source, bool stripBoldTags)
+        {
+            if (stripBoldTags)
+            {
+                return htmlTagRegex.Replace(source, "");
+            }
+            else
+            {
+                string result = htmlTagRegex.Replace(source, delegate(Match match)
+                {
+                    string matchedString = match.ToString();
+                    return matchedString.Equals("<b>") || matchedString.Equals("</b>") ?
+                        matchedString : "";
+                });
+
+                // XXX: sometimes there is "<" or ">" between "<b>" and "</b>". Then the closing bold tag
+                // is not recognized. This may also be an error of the Lucene highlighter or its usage.
+                return result;
+            }
+        }
+
+        /// <summary>
+        /// Removes the Head of a HTML string, if there is any.
+        /// </summary>
+        /// <param name="input">An HMTL string.</param>
+        /// <returns>The same string, with anything before the body removed.</returns>
+        public static string RemoveHead(string input)
+        {
+            // Remove everything before <body>, if there is a body.
+            int index = input.IndexOf("<body>");
+            return index != -1 ? input.Substring(index) : input;
+        }
+
+        /// <summary>
+        /// Extracts Text from HTML pages.
+        /// Source: http://stackoverflow.com/questions/2113651/how-to-extract-text-from-resonably-sane-html (Modified)
+        /// </summary>
+        /// <param name="html">The HTML text.</param>
+        /// <returns>The plain text.</returns>
+        public static string ExtractText(string html)
+        {
+            if (html == null)
+            {
+                throw new ArgumentNullException("html");
+            }
+
+            HtmlDocument doc = new HtmlDocument();
+            doc.LoadHtml(html);
+            List<string> chunks = new List<string>();
+
+            // Tags that should be removed
+            string[] badTags = new string[] { "script", "meta", "style" };
+
+            foreach (HtmlNode item in doc.DocumentNode.DescendantsAndSelf())
+            {
+                if (item.NodeType == HtmlNodeType.Text)
+                {
+                    if (item.ParentNode != null && !badTags.Contains(item.ParentNode.Name))
+                    {
+                        if (item.InnerText.Trim() != "")
+                        {
+                            chunks.Add(item.InnerText.Trim());
+                        }
+                    }
+                }
+            }
+            return String.Join(" ", chunks);
+        }
     }
 }

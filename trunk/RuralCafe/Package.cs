@@ -73,7 +73,7 @@ namespace RuralCafe
         /// <param name="requestHandler">Calling handler for this method.</param>
         /// <param name="rcRequest">RCRequest to add.</param>
         /// <param name="quota">Quota limit.</param>
-        /// <returns>Error message.</returns>
+        /// <returns>True iff the request has been packed successfully.</returns>
         public bool Pack(RemoteRequestHandler requestHandler, RCRequest rcRequest, ref long quota)
         {
             if (rcRequest.Uri.Contains(' '))
@@ -110,8 +110,10 @@ namespace RuralCafe
         /// <summary>
         /// Adds all the requests to the package.
         /// </summary>
-        /// <param name="requests"></param>
-        /// <returns></returns>
+        /// <param name="requestHandler">The request Handler</param>
+        /// <param name="requests">The requests to add.</param>
+        /// <param name="quota">The remaining quota.</param>
+        /// <returns>The added requests.</returns>
         public LinkedList<RCRequest> Pack(RemoteRequestHandler requestHandler, LinkedList<RCRequest> requests, ref long quota)
         {
             LinkedList<RCRequest> addedObjects = new LinkedList<RCRequest>();
@@ -186,7 +188,7 @@ namespace RuralCafe
                     return unpackedBytes;
                 }
 
-                if (!Utils.IsValidUri(currUri))
+                if (!HttpUtils.IsValidUri(currUri))
                 {
                     requestHandler.Logger.Warn("problem unpacking (invalid uri): " + currUri);
                     return unpackedBytes;
@@ -283,8 +285,9 @@ namespace RuralCafe
                     if (!existed)
                     {
                         string document = Utils.ReadFileAsString(cacheFileName);
-                        string title = Utils.GetPageTitle(document);
-                        string content = Utils.GetPageContent(document);
+                        string title = HtmlUtils.GetPageTitle(document);
+                        // Use whole file, so we can also find results with tags, etc.
+                        string content = document;
                         // XXX: Why always with "Content-Type: text/html" ???
                         IndexWrapper.IndexDocument(indexPath, "Content-Type: text/html", rcRequest.Uri, title, content);
                     }

@@ -32,7 +32,7 @@ namespace RuralCafe
         /// Constructor for a local internal proxy's request handler.
         /// </summary>
         /// <param name="proxy">Proxy this request handler belongs to.</param>
-        /// <param name="socket">Client socket.</param>
+        /// <param name="context">Client context.</param>
         public RemoteInternalRequestHandler(RCRemoteProxy proxy, HttpListenerContext context)
             : base(proxy, context, routines, defaultMethod)
         {

@@ -38,9 +38,12 @@ namespace RuralCafe
     /// </summary>
     public abstract class RequestHandler
     {
-        // response status
-        // XXX: kind of ugly since this is being used by both the Generic/Local/RemoteRequest and RCRequests
-        // TODO: downloading && offline -> waiting (new status) ???
+        /// <summary>
+        /// The status for a request.
+        /// 
+        /// XXX: kind of ugly since this is being used by both the Generic/Local/RemoteRequest and RCRequests
+        /// TODO: downloading && offline -> waiting (new status) ???
+        /// </summary>
         public enum Status
         {
             Failed = -1,
@@ -62,15 +65,14 @@ namespace RuralCafe
         /// <summary>
         /// The name of our homepage.
         /// </summary>
-        private static string rcPage = "http://www.ruralcafe.net/";
-        private static string rcPageWithoutWWW = "http://ruralcafe.net/";
-        private static Regex redirRegex = new Regex(@"HTTP/1\.1 301 Moved PermanentlyLocation: (?<uri>\S+)");
+        private const string rcPage = "http://www.ruralcafe.net/";
+        private const string rcPageWithoutWWW = "http://ruralcafe.net/";
+        private static readonly Regex redirRegex = new Regex(@"HTTP/1\.1 301 Moved PermanentlyLocation: (?<uri>\S+)");
 
-        
         /// <summary>
         /// The Name of the cookie for the user id.
         /// </summary>
-        private static string cookieUserID = "uid";
+        private const string cookieUserID = "uid";
 
         #region static preparation methods
 
@@ -155,7 +157,8 @@ namespace RuralCafe
         // the actual request object variables
         protected HttpListenerRequest _originalRequest;
         protected RCRequest _rcRequest;
-        protected int _requestTimeout; // timeout in milliseconds
+        // timeout in milliseconds
+        protected int _requestTimeout;
 
         // filename for the package
         protected string _packageFileName;
@@ -171,7 +174,7 @@ namespace RuralCafe
         /// Constructor for the request.
         /// </summary>
         /// <param name="proxy">Proxy that this request belongs to.</param>
-        /// <param name="socket">Socket on which the request came in on.</param>
+        /// <param name="context">Client context.</param>
         protected RequestHandler(RCProxy proxy, HttpListenerContext context)
         {
             _proxy = proxy;
@@ -493,11 +496,11 @@ namespace RuralCafe
         /// <returns></returns>
         protected bool CreateRequest(HttpListenerRequest request, string refererUri)
         {
-            if (Utils.IsValidUri(request.RawUrl.ToString()))
+            if (HttpUtils.IsValidUri(request.RawUrl.ToString()))
             {
                 // create the request object
-                _rcRequest = new RCRequest(this, Utils.CreateWebRequest(request), "", refererUri,
-                Utils.ReceiveBody(request));
+                _rcRequest = new RCRequest(this, HttpUtils.CreateWebRequest(request), "", refererUri,
+                HttpUtils.ReceiveBody(request));
                 _rcRequest.GenericWebRequest.Referer = refererUri;
                 return true;
             }
@@ -517,7 +520,7 @@ namespace RuralCafe
         {
             //Util.StreamBody(_originalRequest, _rcRequest.GenericWebRequest);
             // Stream parameters, if we have non GET/HEAD
-            Utils.SendBody(_rcRequest.GenericWebRequest, _rcRequest.Body);
+            HttpUtils.SendBody(_rcRequest.GenericWebRequest, _rcRequest.Body);
             WebResponse serverResponse = _rcRequest.GenericWebRequest.GetResponse();
             return StreamToClient(serverResponse.GetResponseStream());
         }

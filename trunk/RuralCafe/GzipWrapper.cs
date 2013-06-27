@@ -28,7 +28,7 @@ namespace RuralCafe
 {
     public class GZipWrapper
     {
-        private static ILog _logger = LogManager.GetLogger(typeof(GZipWrapper));
+        private static readonly ILog _logger = LogManager.GetLogger(typeof(GZipWrapper));
 
         /// <summary>
         /// Compresses a set of files into a single memorystream.

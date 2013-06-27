@@ -279,7 +279,7 @@ namespace RuralCafe
         {
             string contentType = originalResponse.ContentType;
             // XXX: additional headers lost ATM
-            string message = Utils.StreamContent(originalResponse);
+            string message = HttpUtils.StreamContent(originalResponse);
             return new Response(message);
         }
     }

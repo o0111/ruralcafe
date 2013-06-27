@@ -10,7 +10,9 @@ namespace RuralCafe
     /// </summary>
     public class RCUserSettings
     {
-        // The richness
+        /// <summary>
+        /// The richness.
+        /// </summary>
         public RequestHandler.Richness richness;
     }
 }

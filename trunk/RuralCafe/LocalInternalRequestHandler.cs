@@ -159,7 +159,7 @@ namespace RuralCafe
                         {
                             // cut end
                             currTitle = currTitle.Substring(0, pos);
-                            currTitle = Utils.StripTagsCharArray(currTitle);
+                            currTitle = HtmlUtils.StripTagsCharArray(currTitle);
                             currTitle = currTitle.Trim();
                         }
                     }
@@ -176,13 +176,13 @@ namespace RuralCafe
                         currUri = currUri.Substring(0, pos);
                     }
                     // no end to cut!
-                    currUri = Utils.StripTagsCharArray(currUri);
+                    currUri = HtmlUtils.StripTagsCharArray(currUri);
                     currUri = currUri.Trim();
 
                     // instead of translating to absolute, prepend http:// to make webrequest constructor happy
                     currUri = AddHttpPrefix(currUri);
 
-                    if (!Utils.IsValidUri(currUri))
+                    if (!HttpUtils.IsValidUri(currUri))
                     {
                         continue;
                     }
@@ -210,7 +210,7 @@ namespace RuralCafe
                         {
                             // cut end
                             currSnippet = currSnippet.Substring(0, pos);
-                            currSnippet = Utils.StripTagsCharArray(currSnippet, false);
+                            currSnippet = HtmlUtils.StripTagsCharArray(currSnippet, false);
                             currSnippet = multipleSpacesRegex.Replace(currSnippet.Trim(), " ");
                         }
                     }

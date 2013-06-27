@@ -45,7 +45,6 @@ namespace RuralCafe
         /// <param name="proxyPath">Path to the proxy's executable.</param>
         /// <param name="cachePath">Path to the proxy's cache.</param>
         /// <param name="packagesPath">Path to the proxy's packages</param>
-        /// <param name="logsPath">Path to the proxy's logs</param>
         public RCRemoteProxy(IPAddress listenAddress, int listenPort, string proxyPath, 
             string cachePath, string packagesPath)
             : base(REMOTE_PROXY_NAME, listenAddress, listenPort, proxyPath, 
@@ -110,7 +109,6 @@ namespace RuralCafe
                 return _userSettings[userID];
             }
         }
-
         # region Unused
 
         // requests from the local proxy

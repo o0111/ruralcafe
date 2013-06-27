@@ -21,6 +21,7 @@ namespace RuralCafe
         public RCSpecificRequestHeaders() { }
 
         /// <summary>
+        /// Constructor with user id.
         /// </summary>
         /// <param name="userID">The user id.</param>
         public RCSpecificRequestHeaders(int userID)
@@ -49,6 +50,7 @@ namespace RuralCafe
         public RCSpecificResponseHeaders() { }
 
         /// <summary>
+        /// Constructor with packhe index and content size.
         /// </summary>
         /// <param name="packageIndexSize">The size of the response package index.</param>
         /// <param name="packageContentSize">The size of the response package content.</param>

@@ -37,7 +37,15 @@ namespace RuralCafe
     /// </summary>
     public class LRHDict : KeyedCollection<int, KeyValuePair<int,LocalRequestHandler>>
     {
+        /// <summary>
+        /// Create a new Local Request Handler Dictionary.
+        /// </summary>
         public LRHDict() : base() { }
+        /// <summary>
+        /// Gets the key for an item.
+        /// </summary>
+        /// <param name="item">An dictionary item.</param>
+        /// <returns>The key.</returns>
         protected override int GetKeyForItem(KeyValuePair<int, LocalRequestHandler> item)
         {
             return item.Key;
@@ -49,13 +57,15 @@ namespace RuralCafe
     /// </summary>
     public class RCLocalProxy : RCProxy
     {
+        // Constants
+        private const int REQUESTS_WITHOUT_USER_CAPACITY = 50;
+
         // RuralCafe pages path
         private string _uiPagesPath;
         private string _rcSearchPage;
         private string _indexPath;
         private string _wikiDumpPath;
         private int _activeRequests;
-        private int MAXIMUM_ACTIVE_REQUESTS;
 
         // remoteProxy
         private WebProxy _remoteProxy;
@@ -68,7 +78,6 @@ namespace RuralCafe
         private Dictionary<int, LocalRequestHandler> _clientLastRequestMap;
         // dictionary of requests without a user. They await to be "added" via trotro by a specific user
         private LRHDict _requestsWithoutUser;
-        private const int _requestsWithoutUserCapacity = 50;
         // Random for the keys of the above Dictionary
         private Random _random;
 
@@ -80,7 +89,6 @@ namespace RuralCafe
 
         // wiki indices (currently only wikipedia)
         private static Dictionary<string, Indexer> _wikiIndices = new Dictionary<string, Indexer>();
-
 
         #region Property accessors
 
@@ -126,11 +134,9 @@ namespace RuralCafe
         /// <param name="indexPath">Path to the proxy's index.</param>
         /// <param name="cachePath">Path to the proxy's cache.</param>
         /// <param name="wikiDumpPath">Path to the wiki dump file.</param>
-        /// <param name="packagePath">Path to the downloaded packages.</param>
-        /// <param name="logsPath">Path to the proxy's logs.</param>
-        /// <param name="maxRequests">Maximum active requests.</param>
+        /// <param name="packagesPath">Path to the downloaded packages.</param>
         public RCLocalProxy(IPAddress listenAddress, int listenPort, string proxyPath, string indexPath,
-            string cachePath, string wikiDumpPath, string packagesPath, int maxRequests)
+            string cachePath, string wikiDumpPath, string packagesPath)
             : base(LOCAL_PROXY_NAME, listenAddress, listenPort, proxyPath,
             cachePath, packagesPath)
         {
@@ -145,7 +151,6 @@ namespace RuralCafe
             _random = new Random();
             _newRequestEvent = new AutoResetEvent(false);
             _averageTimePerRequest = new TimeSpan(0);
-            MAXIMUM_ACTIVE_REQUESTS = maxRequests;
 
             bool success = false;
 
@@ -250,10 +255,10 @@ namespace RuralCafe
                 // loop and listen for the next connection request
                 while (true)
                 {
-                    if (_activeRequests >= MAXIMUM_ACTIVE_REQUESTS)
+                    if (_activeRequests >= Properties.Settings.Default.LOCAL_MAXIMUM_ACTIVE_REQUESTS)
                     {
                         _logger.Debug("Waiting. Active Requests: " + _activeRequests);
-                        while (_activeRequests >= MAXIMUM_ACTIVE_REQUESTS)
+                        while (_activeRequests >= Properties.Settings.Default.LOCAL_MAXIMUM_ACTIVE_REQUESTS)
                         {
                             Thread.Sleep(100);
                         }
@@ -718,7 +723,7 @@ namespace RuralCafe
             int id = _random.Next();
             lock (_requestsWithoutUser)
             {
-                if (_requestsWithoutUser.Count >= _requestsWithoutUserCapacity)
+                if (_requestsWithoutUser.Count >= REQUESTS_WITHOUT_USER_CAPACITY)
                 {
                     _requestsWithoutUser.RemoveAt(0);
                 }

@@ -34,9 +34,9 @@ namespace RuralCafe
     /// </summary>
     public class RemoteRequestHandler : RequestHandler
     {
-        public static int DEFAULT_QUOTA;
-        public static int DEFAULT_MAX_DEPTH;
-        public static Richness DEFAULT_RICHNESS;
+        /// <summary>
+        /// The Default low watermark.
+        /// </summary>
         public static int DEFAULT_LOW_WATERMARK;
 
         //private static int _nextId = 1;
@@ -66,13 +66,13 @@ namespace RuralCafe
         /// Constructor for a remote proxy's request handler.
         /// </summary>
         /// <param name="proxy">Proxy this request handler belongs to.</param>
-        /// <param name="socket">Client socket.</param>
+        /// <param name="context">Client context.</param>
         public RemoteRequestHandler(RCRemoteProxy proxy, HttpListenerContext context)
             : base(proxy, context)
         {
             _requestTimeout = REMOTE_REQUEST_PACKAGE_DEFAULT_TIMEOUT;
 
-            _quota = DEFAULT_QUOTA;
+            _quota = Properties.Settings.Default.DEFAULT_QUOTA;
             _package = new Package();
         }
         /// <summary>Destructor.</summary>
@@ -98,7 +98,7 @@ namespace RuralCafe
             if (richness == null || richness == 0)
             {
                 // Use default when nothing is set.
-                richness = DEFAULT_RICHNESS;
+                richness = Properties.Settings.Default.DEFAULT_RICHNESS;
             }
 
             // XXX: static quota for now
@@ -409,7 +409,7 @@ namespace RuralCafe
                 return false;
             }
 
-            if (depth == DEFAULT_MAX_DEPTH)
+            if (depth == Properties.Settings.Default.DEFAULT_DEPTH)
             {
                 return false;
             }
@@ -861,8 +861,8 @@ namespace RuralCafe
                     {
                         continue;
                     }
-                     
-                    if (!Utils.IsValidUri(currUri))
+
+                    if (!HttpUtils.IsValidUri(currUri))
                     {
                         continue;
                     }
