@@ -29,11 +29,14 @@ using RuralCafe.Util;
 
 namespace RuralCafe
 {
+    /// <summary>
+    /// A Rural Cafe request.
+    /// </summary>
     public class RCRequest
     {
         // Regex's for safe URI replacements
-        private static Regex unsafeChars1 = new Regex(@"[^a-z0-9\\\-\.]");
-        private static Regex unsafeChars2 = new Regex(@"[^a-z0-9/\-\.]");
+        private static readonly Regex unsafeChars1 = new Regex(@"[^a-z0-9\\\-\.]");
+        private static readonly Regex unsafeChars2 = new Regex(@"[^a-z0-9/\-\.]");
 
 
         private string _anchorText;
@@ -41,7 +44,8 @@ namespace RuralCafe
         private string _refererUri;
         private string _fileName;
         private string _hashPath;
-        private string _itemId; // hashPath without the directory seperators
+        // hashPath without the directory seperators
+        private string _itemId;
         private string _cacheFileName;
 
         private string _uriBeforeRedirect;
@@ -58,7 +62,6 @@ namespace RuralCafe
         private long _fileSize;
 
         private RequestHandler _requestHandler;
-        private Dictionary<string, string> _searchFields;
 
         private DateTime _startTime;
         private DateTime _finishTime;
@@ -186,7 +189,6 @@ namespace RuralCafe
         /// <summary>
         /// DUMMY Constructor for a RuralCafe Request matching
         /// </summary>
-        /// <param name="requestHandler">The handler for the request.</param>
         /// <param name="itemId">requestId.</param>
         public RCRequest(string itemId)
         {
@@ -212,6 +214,7 @@ namespace RuralCafe
         /// <param name="request">The request.</param>
         /// <param name="anchorText">Text of the anchor tag.</param>
         /// <param name="referrerUri">URI of the referer.</param>
+        /// <param name="body">The body for POSTs, ...</param>
         public RCRequest(RequestHandler requestHandler, HttpWebRequest request, string anchorText,
             string referrerUri, byte[] body)
         {
@@ -438,7 +441,7 @@ namespace RuralCafe
         {
             _requestHandler.Logger.Debug("downloading as string: " + _webRequest.RequestUri);
             // Stream parameters, if we have non GET/HEAD
-            Utils.SendBody(_webRequest, _body);
+            HttpUtils.SendBody(_webRequest, _body);
             try
             {
                 // get the web response for the web request
@@ -492,7 +495,7 @@ namespace RuralCafe
             {
                 _requestHandler.Logger.Debug("downloading: " + _webRequest.RequestUri);
                 // Stream parameters, if we have non GET/HEAD
-                Utils.SendBody(_webRequest, _body);
+                HttpUtils.SendBody(_webRequest, _body);
                 // get the web response for the web request
                 _webResponse = (HttpWebResponse)_webRequest.GetResponse();
                 _requestHandler.Logger.Debug("downloading done: " + _webRequest.RequestUri);

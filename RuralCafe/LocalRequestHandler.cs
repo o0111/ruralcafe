@@ -39,10 +39,6 @@ namespace RuralCafe
     /// </summary>
     public class LocalRequestHandler : RequestHandler
     {
-        public static int DEFAULT_QUOTA;
-        public static int DEFAULT_DEPTH;
-        public static Richness DEFAULT_RICHNESS;
-
         /// <summary>
         /// Constructor for a local proxy's request handler.
         /// </summary>
@@ -76,11 +72,6 @@ namespace RuralCafe
         public LocalRequestHandler(string itemId)
         {
             _rcRequest = new RCRequest(itemId);
-        }
-        /// <summary>Destructor.</summary>
-        ~LocalRequestHandler()
-        {
-            // cleanup stuff
         }
 
         /// <summary>

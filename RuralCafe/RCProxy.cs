@@ -32,6 +32,9 @@ namespace RuralCafe
     /// </summary>
     public abstract class RCProxy
     {
+        /// <summary>
+        /// Enum for the network status.
+        /// </summary>
         public enum NetworkStatusCode
         {
             Online = 0,
@@ -39,21 +42,32 @@ namespace RuralCafe
             Offline = 2
         };
 
-        // default names for the local and remote proxies
+        /// <summary>
+        /// Default local proxy name.
+        /// </summary>
         public const string LOCAL_PROXY_NAME = "Local Proxy";
+        /// <summary>
+        /// Default remote proxy name
+        /// </summary>
         public const string REMOTE_PROXY_NAME = "Remote Proxy";
-
-        // max speed in bytes per second
+        /// <summary>
+        /// Constant for unlimited bandwidth.
+        /// </summary>
         public const int UNLIMITED_BANDWIDTH = -1;
+        /// <summary>
+        /// Maximum bandwidth. At first unlimited.
+        /// </summary>
         public int MAXIMUM_DOWNLINK_BANDWIDTH = UNLIMITED_BANDWIDTH;
 
-        // gatewayProxy
+        /// <summary>
+        /// The gatewayProxy
+        /// </summary>
         protected WebProxy _gatewayProxy;
 
         // proxy settings
         protected IPAddress _listenAddress;
         protected int _listenPort;
-        protected ILog _logger;
+        protected readonly ILog _logger;
         protected string _cachePath;
         protected string _packagesCachePath;
         protected string _name;
@@ -67,10 +81,14 @@ namespace RuralCafe
         private static DateTime _bwStartTime = DateTime.Now;
         private static int _bwDataSent = 0;
 
-        // blacklist
+        /// <summary>
+        /// Blacklist.
+        /// </summary>
         protected List<string> _blacklistedDomains = new List<string>();
 
-        // next item Id
+        /// <summary>
+        /// The id of the next request.
+        /// </summary>
         protected int _nextRequestId = 1;
 
         # region Property Accessors

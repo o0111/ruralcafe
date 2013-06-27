@@ -155,6 +155,7 @@
     <Compile Include="LocalRequestHandler.cs" />
     <Compile Include="RCRequest.cs" />
     <Compile Include="Settings.cs" />
+    <Compile Include="Util\HttpUtils.cs" />
     <Compile Include="Util\Utils.cs" />
     <None Include="LocalProxy\RuralCafePages\css\_notes\default.css.mno" />
     <None Include="LocalProxy\RuralCafePages\css\_notes\index.css.mno" />

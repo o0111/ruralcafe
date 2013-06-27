@@ -15,7 +15,7 @@ namespace RuralCafe
     /// </summary>
     class AnalysisTools
     {
-        private static ILog _logger = LogManager.GetLogger(typeof(AnalysisTools));
+        private static readonly ILog _logger = LogManager.GetLogger(typeof(AnalysisTools));
 
         /// <summary>
         /// Counts embedded objects and links on a page. 
@@ -27,9 +27,6 @@ namespace RuralCafe
             Console.WindowWidth = Console.LargestWindowWidth;
             Console.WindowHeight = Console.LargestWindowHeight;
             Console.SetWindowPosition(0, 0);
-
-            // fill extension map
-            Utils.FillExtMap();
 
             // load Configuration Settings
             Program.saveConfigs();
@@ -78,7 +75,7 @@ namespace RuralCafe
 
                     // process search query one at a time
                     RemoteRequestHandler requestHandler = new RemoteRequestHandler(remoteProxy, null);
-                    if (Utils.IsValidUri(urlRequest))
+                    if (HttpUtils.IsValidUri(urlRequest))
                     {
                         requestHandler.RCRequest = new RCRequest(requestHandler, (HttpWebRequest) WebRequest.Create(urlRequest.Trim()));
                         requestHandler.RCRequest.SetProxyAndTimeout(remoteProxy.GatewayProxy, RemoteRequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT);

@@ -34,21 +34,24 @@ namespace RuralCafe
 {
     static class Program
     {
-        private static int DEFAULT_LOW_WATERMARK;
+        /// <summary>
+        /// If this is x, and the quota is q, the DEFAULT_LOW_WATERMARK will be q/x.
+        /// </summary>
+        private const int LOW_WATERMARK_DIVIDOR_QUOTA = 20;
 
         // Path Settings
-        private static string LOCAL_PROXY_PATH = Directory.GetCurrentDirectory()
+        private static readonly string LOCAL_PROXY_PATH = Directory.GetCurrentDirectory()
             + Path.DirectorySeparatorChar + "LocalProxy" + Path.DirectorySeparatorChar;
-        private static string REMOTE_PROXY_PATH = Directory.GetCurrentDirectory()
+        private static readonly string REMOTE_PROXY_PATH = Directory.GetCurrentDirectory()
             + Path.DirectorySeparatorChar + "RemoteProxy" + Path.DirectorySeparatorChar;
-        private static string PACKAGE_PATH = "Packages" + Path.DirectorySeparatorChar;
+        private static readonly string PACKAGE_PATH = "Packages" + Path.DirectorySeparatorChar;
         private static string INDEX_PATH;
         private static string LOCAL_CACHE_PATH;
         private static string REMOTE_CACHE_PATH;
         private static string WIKI_DUMP_FILE;
 
         // The logger
-        private static ILog _logger = LogManager.GetLogger(typeof(Program));
+        private static readonly ILog _logger = LogManager.GetLogger(typeof(Program));
 
         /// <summary>
         /// The main entry point for the application.
@@ -74,9 +77,6 @@ namespace RuralCafe
             Console.WindowWidth = Console.LargestWindowWidth - 10;
             Console.WindowHeight = Console.LargestWindowHeight - 10;
             Console.SetWindowPosition(0, 0);
-
-            // fill extension map
-            Utils.FillExtMap();
 
             // Setting form at startup.
             SettingsForm sf = new SettingsForm();
@@ -140,8 +140,6 @@ namespace RuralCafe
 
             WIKI_DUMP_FILE = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + Properties.Settings.Default.WIKI_DUMP_DIR
                 + Path.DirectorySeparatorChar + Properties.Settings.Default.WIKI_DUMP_FILE;
-
-            DEFAULT_LOW_WATERMARK = Properties.Settings.Default.DEFAULT_QUOTA / 20;
         }
 
         /// <summary>
@@ -151,7 +149,7 @@ namespace RuralCafe
         {
             // create the proxy
             RCLocalProxy localProxy = new RCLocalProxy(IPAddress.Parse(Properties.Settings.Default.LOCAL_PROXY_IP_ADDRESS), Properties.Settings.Default.LOCAL_PROXY_LISTEN_PORT,
-                LOCAL_PROXY_PATH, INDEX_PATH, LOCAL_CACHE_PATH, WIKI_DUMP_FILE, PACKAGE_PATH, Properties.Settings.Default.LOCAL_MAXIMUM_ACTIVE_REQUESTS);
+                LOCAL_PROXY_PATH, INDEX_PATH, LOCAL_CACHE_PATH, WIKI_DUMP_FILE, PACKAGE_PATH);
 
             // set the remote proxy
             localProxy.SetRemoteProxy(IPAddress.Parse(Properties.Settings.Default.REMOTE_PROXY_IP_ADDRESS), Properties.Settings.Default.REMOTE_PROXY_LISTEN_PORT);
@@ -171,11 +169,6 @@ namespace RuralCafe
 
             // load the blacklisted domains
             localProxy.LoadBlacklist("blacklist.txt");
-
-            // set the default depth for all requests
-            LocalRequestHandler.DEFAULT_QUOTA = Properties.Settings.Default.DEFAULT_QUOTA;
-            LocalRequestHandler.DEFAULT_DEPTH = Properties.Settings.Default.DEFAULT_DEPTH;
-            LocalRequestHandler.DEFAULT_RICHNESS = Properties.Settings.Default.DEFAULT_RICHNESS;
 
             // start local listener thread
             Thread localListenerThread = new Thread(new ThreadStart(localProxy.StartListener));
@@ -218,11 +211,8 @@ namespace RuralCafe
             // load the blacklisted domains
             remoteProxy.LoadBlacklist("blacklist.txt");
 
-            // set the default quota, depth, watermark for each request
-            RemoteRequestHandler.DEFAULT_QUOTA = Properties.Settings.Default.DEFAULT_QUOTA;
-            RemoteRequestHandler.DEFAULT_MAX_DEPTH = Properties.Settings.Default.DEFAULT_DEPTH;
-            RemoteRequestHandler.DEFAULT_RICHNESS = Properties.Settings.Default.DEFAULT_RICHNESS;
-            RemoteRequestHandler.DEFAULT_LOW_WATERMARK = DEFAULT_LOW_WATERMARK;
+            // set the default low watermark for each request
+            RemoteRequestHandler.DEFAULT_LOW_WATERMARK = Properties.Settings.Default.DEFAULT_QUOTA / LOW_WATERMARK_DIVIDOR_QUOTA;
 
             // start remote listener thread
             Thread remoteListenerThread = new Thread(new ThreadStart(remoteProxy.StartListener));

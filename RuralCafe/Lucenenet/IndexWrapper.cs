@@ -141,8 +141,8 @@ namespace RuralCafe.Lucenenet
                 string documentContent = Utils.ReadFileAsString(cachePath + filepath);
 
                 // Remove unusable stuff.
-                documentContent = Utils.RemoveHead(documentContent);
-                documentContent = Utils.ExtractText(documentContent);
+                documentContent = HtmlUtils.RemoveHead(documentContent);
+                documentContent = HtmlUtils.ExtractText(documentContent);
 
                 // Find (and highlight) content snippets
                 QueryScorer scorer = new QueryScorer(query);
@@ -158,7 +158,12 @@ namespace RuralCafe.Lucenenet
                     string[] fragments = highlighter.GetBestFragments(stream, documentContent, 1);
                     if (fragments.Length > 0)
                     {
-                        contentSnippet = Utils.StripTagsCharArray(fragments[0], false);
+                        contentSnippet = HtmlUtils.StripTagsCharArray(fragments[0], false);
+                        // If the content snippet does end in mid of a sentence, let's append "..."
+                        if(!new char[]{'.','!','?'}.Contains(contentSnippet[contentSnippet.Length - 1]))
+                        {
+                            contentSnippet += "...";
+                        }
                     }
                 }
                 catch (Exception)
