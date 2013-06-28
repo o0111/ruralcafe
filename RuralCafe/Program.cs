@@ -29,6 +29,8 @@ using System.Configuration;
 using log4net;
 using System.Collections.Specialized;
 using RuralCafe.Util;
+using System.Runtime.InteropServices;
+using Microsoft.Win32;
 
 namespace RuralCafe
 {
@@ -66,7 +68,51 @@ namespace RuralCafe
 
             // for analyzing search result pages
             //AnalysisTools.CountEmbeddedObjects();
+
+            // Register our handler as event handler when the console exits
+            // Like this we can do cleanup stuff before closing
+            handler = new ConsoleEventDelegate(ConsoleEventCallback);
+            SetConsoleCtrlHandler(handler, true);
         }
+
+        #region Console shutdown delegate stuff
+        /// <summary>
+        /// Our cleanup method. It just calls another delegate (shutDownDelegates),
+        /// where anybody can add his method.
+        /// </summary>
+        /// <param name="eventType">The console event type.</param>
+        /// <returns>false.</returns>
+        static bool ConsoleEventCallback(int eventType)
+        {
+            shutDownDelegates();
+            return false;
+        }
+        // Keeps it from getting garbage collected
+        static ConsoleEventDelegate handler;
+        private delegate bool ConsoleEventDelegate(int eventType);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool SetConsoleCtrlHandler(ConsoleEventDelegate callback, bool add);
+
+        /// <summary>
+        /// A delegate with no parameters or return value used for cleaning up.
+        /// </summary>
+        public delegate void ShutDownDelegate();
+        /// <summary>
+        /// All cleanup delegates are gathered here.
+        /// </summary>
+        private static ShutDownDelegate shutDownDelegates;
+        /// <summary>
+        /// Adds a shutdown delegate to be executed when the console is about to close.
+        /// </summary>
+        /// <param name="d">The delegate</param>
+        public static void AddShutDownDelegate(ShutDownDelegate d)
+        {
+            // Add delegate to our shutdown delegates
+            shutDownDelegates += d;
+            // Also add to system shutdown/user logoff delegates
+            SystemEvents.SessionEnding += (a, b) => d();
+        }
+        #endregion
 
         /// <summary>
         /// Starts RuralCafe

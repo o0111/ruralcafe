@@ -205,5 +205,19 @@ namespace RuralCafe.Util
             }
             return localIP;
         }
+
+        /// <summary>
+        /// Adds "http://" to the given URI, if it does not start with it already.
+        /// </summary>
+        /// <param name="uri">The current URI.</param>
+        /// <returns>The new URI.</returns>
+        public static String AddHttpPrefix(String uri)
+        {
+            if (!uri.StartsWith("http://"))
+            {
+                return "http://" + uri;
+            }
+            return uri;
+        }
     }
 }

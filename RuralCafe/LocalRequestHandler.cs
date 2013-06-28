@@ -31,6 +31,7 @@ using System.Collections.Specialized;
 using BzReader;
 using System.Xml;
 using RuralCafe.Util;
+using Newtonsoft.Json;
 
 namespace RuralCafe
 {
@@ -42,8 +43,7 @@ namespace RuralCafe
         /// <summary>
         /// Constructor for a local proxy's request handler.
         /// </summary>
-        /// <param name="proxy">Proxy this request handler belongs to.</param>
-        /// <param name="socket">Client socket.</param>
+        /// <pparam name="internalHandler">The internal handler to copy fields from.</pparam>
         public LocalRequestHandler(LocalInternalRequestHandler internalHandler)
             : base(internalHandler.Proxy, internalHandler.Context)
         {
@@ -58,7 +58,7 @@ namespace RuralCafe
         /// Constructor for a local proxy's request handler.
         /// </summary>
         /// <param name="proxy">Proxy this request handler belongs to.</param>
-        /// <param name="socket">Client socket.</param>
+        /// <param name="context">Client context.</param>
         public LocalRequestHandler(RCLocalProxy proxy, HttpListenerContext context)
             : base(proxy, context)
         {
@@ -69,27 +69,10 @@ namespace RuralCafe
         /// DUMMY used for request matching.
         /// XXX: Not the cleanest implementation need to instantiate a whole object just to match
         /// </summary> 
+        /// <param name="itemId">The item id of the request handler.</param>
         public LocalRequestHandler(string itemId)
         {
             _rcRequest = new RCRequest(itemId);
-        }
-
-        /// <summary>
-        /// Override Equals() for handler matching.
-        /// Just calls the base class.
-        /// </summary>
-        public override bool Equals(object obj)
-        {
-            return base.Equals(obj);
-        }
-
-        /// <summary>
-        /// Overriding GetHashCode() from base object.
-        /// Just use the hash code of the RequestUri.
-        /// </summary>        
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
         }
 
         /// <summary>

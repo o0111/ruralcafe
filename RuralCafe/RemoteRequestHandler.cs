@@ -75,11 +75,6 @@ namespace RuralCafe
             _quota = Properties.Settings.Default.DEFAULT_QUOTA;
             _package = new Package();
         }
-        /// <summary>Destructor.</summary>
-        ~RemoteRequestHandler()
-        {
-            // cleanup stuff
-        }
 
         /// <summary>
         /// Main logic of RuralCafe RPRequestHandler.
@@ -94,8 +89,9 @@ namespace RuralCafe
             RCSpecificRequestHeaders rcHeaders = GetRCSpecificRequestHeaders();
 
             // Get current richness!
-            Richness richness = ((RCRemoteProxy)_proxy).GetUserSettings(rcHeaders.RCUserID).richness;
-            if (richness == null || richness == 0)
+            Richness richness = ((RCRemoteProxy)_proxy).
+                GetUserSettings(Context.Request.RemoteEndPoint, rcHeaders.RCUserID).richness;
+            if (richness == 0)
             {
                 // Use default when nothing is set.
                 richness = Properties.Settings.Default.DEFAULT_RICHNESS;
@@ -128,7 +124,7 @@ namespace RuralCafe
             if (requestUri.Trim().Length > 0)
             {
                 string fileExtension = Utils.GetFileExtension(requestUri);
-                requestUri = AddHttpPrefix(requestUri);
+                requestUri = HttpUtils.AddHttpPrefix(requestUri);
 
                 // Check if we can save the file
                 if (Utils.IsNotTooLongFileName(_rcRequest.CacheFileName))
@@ -159,6 +155,9 @@ namespace RuralCafe
 
             return Status.Failed;
         }
+
+        #region benchmarking (unused)
+
         /*
         public void SaveBenchmarkTimes()
         {
@@ -178,8 +177,6 @@ namespace RuralCafe
             tw.Close();
         }
         */
-
-        #region Search Algorithms
 
         /*
         // benchmarking stuff
@@ -278,122 +275,8 @@ namespace RuralCafe
             }
         }*/
 
-        /*
-        // XXX: obsolete (currently not in use)
-        /// <summary>
-        /// Prefetch a search page in breadth first search order.
-        /// </summary>
-        /// <param name="richness">Richness of the prefetch.</param>
-        /// <param name="depth">Depth to prefetch.</param>
-        /// <returns>Status.</returns>
-        private bool PrefetchBFS(string richness, int depth)
-        {
-            // benchmarking
-            //downloadPagesStart = DateTime.Now;
-
-            LogDebug("Running BFS");
-
-            // reconstruct _rcRequest
-            string pageUri = _rcRequest.TranslateRCSearchToGoogle();
-            if (!Util.IsValidUri(pageUri))
-            {
-                return false;
-            }
-            _rcRequest = new RCRequest(this, pageUri);
-            //_rcRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
-
-            // download the file
-            long bytesDownloaded = _rcRequest.DownloadToCache();
-            if (bytesDownloaded < 0)
-            {
-                LogDebug("Error downloading: " + _rcRequest.Uri);
-                return false;
-            }
-
-            // add to the package
-            //if (
-            _package.Pack(this, _rcRequest, ref _quota);//)
-            //{
-            //    LogDebug("packed: " + RequestUri + " " + _rcRequest.FileSize + " bytes, " + _quota + " left");
-            //}
-
-            // check quota
-            if (_quota < DEFAULT_LOW_WATERMARK)
-            {
-                // benchmarking
-                //downloadPagesEnd = DateTime.Now;
-
-                return true;
-            }
-
-            // setup the initial frontier
-            LinkedList<RCRequest> currentBFSFrontier = ExtractGoogleResults(_rcRequest);
-            LinkedList<RCRequest> nextBFSFrontier = new LinkedList<RCRequest>();
-
-            // run BFS
-            while (depth < DEFAULT_MAX_DEPTH)
-            {
-                // download objects in parallel
-                currentBFSFrontier = DownloadObjectsInParallel(_rcRequest, currentBFSFrontier);
-
-                // download embedded objects for each downloaded object
-                foreach (RCRequest currObject in currentBFSFrontier)
-                {
-                    // download embedded objects
-                    DownloadEmbeddedObjects(currObject, richness);
-                }
-
-                if (_quota < DEFAULT_LOW_WATERMARK)
-                {
-                    // quota met
-                    break;
-                }
-
-                // get the next frontier from the current ones
-                nextBFSFrontier = GetNewBFSFrontier(currentBFSFrontier);
-                currentBFSFrontier = nextBFSFrontier;
-                depth++;
-            }
-
-            return true;
-            //downloadPagesEnd = DateTime.Now;
-        }
-
-        /// <summary>
-        /// Gets the next BFS frontier from the current frontier.
-        /// </summary>
-        /// <param name="currentBFSFrontier">Current BFS frontier.</param>
-        /// <returns>Next BFS frontier as a LinkedList.</returns>
-        private LinkedList<RCRequest> GetNewBFSFrontier(LinkedList<RCRequest> currentBFSFrontier)
-        {
-            LinkedList<RCRequest> nextBFSFrontier = new LinkedList<RCRequest>();
-            LinkedList<RCRequest> extractedLinks;
-
-            // go through the current frontier and collect the links
-            foreach (RCRequest rcRequest in currentBFSFrontier)
-            {
-                // get all the links
-                extractedLinks = ExtractLinks(rcRequest);
-
-                // add to the frontier if we haven't seen it recently
-                foreach (RCRequest extractedLink in extractedLinks)
-                {
-                    // ignore blacklisted domains
-                    if (IsBlacklisted(extractedLink.Uri))
-                    {
-                        continue;
-                    }
-
-                    if (!currentBFSFrontier.Contains(extractedLink) &&
-                        !nextBFSFrontier.Contains(extractedLink))
-                    {
-                        nextBFSFrontier.AddLast(extractedLink);
-                    }
-                }
-
-            }
-            return nextBFSFrontier;
-        }*/
+        #endregion
+        #region Search Algorithms
 
         /// <summary>
         /// Recursively downloads a page and its embedded objects, and its outlinks.

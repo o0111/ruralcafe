@@ -33,9 +33,9 @@ namespace RuralCafe
     public class RCRemoteProxy : RCProxy
     {
         /// <summary>
-        /// user id -> user settings.
+        /// local proxy IP:Port -> (user id -> user settings)
         /// </summary>
-        private Dictionary<int, RCUserSettings> _userSettings;
+        private Dictionary<IPEndPoint, Dictionary<int, RCUserSettings>> _userSettings;
 
         /// <summary>
         /// Constructor for remote proxy.
@@ -51,7 +51,7 @@ namespace RuralCafe
             cachePath, packagesPath)
         {
             _requestQueue = new List<string>();
-            _userSettings = new Dictionary<int, RCUserSettings>();
+            _userSettings = new Dictionary<IPEndPoint, Dictionary<int, RCUserSettings>>();
         }
 
         /// <summary>
@@ -96,20 +96,27 @@ namespace RuralCafe
         /// Gets the setting of the user with the given id. Creates a new settings object
         /// if there wasn't one before.
         /// </summary>
+        /// <param name="localProxyIP">The local proxy's IP address and port.</param>
         /// <param name="userID">The users id.</param>
-        /// <returns>The users settings.</returns>
-        public RCUserSettings GetUserSettings(int userID)
+        /// <returns>The user's settings.</returns>
+        public RCUserSettings GetUserSettings(IPEndPoint localProxyIP, int userID)
         {
             lock (_userSettings)
             {
-                if (!_userSettings.ContainsKey(userID))
+                // Add Dictionary for the IP, if not yet there
+                if(!_userSettings.ContainsKey(localProxyIP))
                 {
-                    _userSettings[userID] = new RCUserSettings();
+                    _userSettings[localProxyIP] = new Dictionary<int, RCUserSettings>();
                 }
-                return _userSettings[userID];
+                // Add empty settings for the user, if settings not yet there
+                if (!_userSettings[localProxyIP].ContainsKey(userID))
+                {
+                    _userSettings[localProxyIP][userID] = new RCUserSettings();
+                }
+                return _userSettings[localProxyIP][userID];
             }
         }
-        # region Unused
+        # region Queue (Unused)
 
         // requests from the local proxy
         public List<string> _requestQueue;

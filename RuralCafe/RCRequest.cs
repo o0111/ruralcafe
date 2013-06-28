@@ -26,48 +26,66 @@ using System.Web;
 using System.Collections.Specialized;
 using System.Text.RegularExpressions;
 using RuralCafe.Util;
+using Newtonsoft.Json;
 
 namespace RuralCafe
 {
     /// <summary>
     /// A Rural Cafe request.
     /// </summary>
+    [JsonObject(MemberSerialization.OptIn)]
     public class RCRequest
     {
         // Regex's for safe URI replacements
         private static readonly Regex unsafeChars1 = new Regex(@"[^a-z0-9\\\-\.]");
         private static readonly Regex unsafeChars2 = new Regex(@"[^a-z0-9/\-\.]");
 
-
+        [JsonProperty]
         private string _anchorText;
+        [JsonProperty]
         private string _contentSnippet;
+        [JsonProperty]
         private string _refererUri;
+        [JsonProperty]
         private string _fileName;
+        [JsonProperty]
         private string _hashPath;
         // hashPath without the directory seperators
+        [JsonProperty]
         private string _itemId;
+        [JsonProperty]
         private string _cacheFileName;
 
+        [JsonProperty]
         private string _uriBeforeRedirect;
 
+        [JsonProperty]
         private RequestHandler.Status _status;
         /// <summary>
         /// The underlying web request.
         /// </summary>
+        [JsonProperty]
         private HttpWebRequest _webRequest;
         // Body for POSTs, ...
+        [JsonProperty]
         private byte[] _body;
 
+        [JsonProperty]
         private HttpWebResponse _webResponse;
+        [JsonProperty]
         private long _fileSize;
 
         private RequestHandler _requestHandler;
 
+        [JsonProperty]
         private DateTime _startTime;
+        [JsonProperty]
         private DateTime _finishTime;
 
         // threading support
+        [JsonProperty]
         private ManualResetEvent[] _resetEvents;
+        [JsonProperty]
         private int _childNumber;
 
 
@@ -118,7 +136,6 @@ namespace RuralCafe
         /// <summary>The itemId of the object.</summary>
         public string ItemId
         {
-            //set { _itemId = value; }
             get { return _itemId; }
         }
         /// <summary>The file name of the object if it is cached.</summary>
@@ -252,16 +269,18 @@ namespace RuralCafe
         /// <summary>Override object equality for request matching.</summary>
         public override bool Equals(object obj)
         {
-            if (Uri.Equals(((RCRequest)obj).Uri))
+            if (!(obj is RCRequest))
             {
-                return true;
+                return false;
             }
-            return false;
+            RCRequest other = (RCRequest)obj;
+            return this.Uri.Equals(other.Uri) && this._webRequest.Method.Equals(other._webRequest.Method)
+                && this.Body == other.Body;
         }
         /// <summary>Override object hash code for request matching.</summary>
         public override int GetHashCode()
         {
-            return Uri.GetHashCode();
+            return Uri.GetHashCode() * _webRequest.Method.GetHashCode() * Body.GetHashCode();
         }
 
         /// <summary>

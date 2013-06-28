@@ -68,6 +68,7 @@ namespace RuralCafe
         protected IPAddress _listenAddress;
         protected int _listenPort;
         protected readonly ILog _logger;
+        protected string _proxyPath;
         protected string _cachePath;
         protected string _packagesCachePath;
         protected string _name;
@@ -139,6 +140,7 @@ namespace RuralCafe
             // setup proxy listener variables
             _listenAddress = listenAddress;
             _listenPort = listenPort;
+            _proxyPath = proxyPath;
 
             //create and initialize the logger
             _logger = LogManager.GetLogger(this.GetType());
