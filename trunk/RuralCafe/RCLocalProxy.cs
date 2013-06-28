@@ -28,11 +28,15 @@ using System.Collections.Specialized;
 using System.Web;
 using System.Collections.ObjectModel;
 using RuralCafe.Lucenenet;
+using Newtonsoft.Json;
+using RuralCafe.Util;
+using System.Windows.Forms;
+using Microsoft.Win32;
 
 namespace RuralCafe
 {
     /// <summary>
-    /// Used for the requests without user. Like this we have both list and
+    /// Used for the requests from users and requests without user. Like this we have both list and
     /// dictionary functionality. Both is required.
     /// </summary>
     public class LRHDict : KeyedCollection<int, KeyValuePair<int,LocalRequestHandler>>
@@ -59,6 +63,8 @@ namespace RuralCafe
     {
         // Constants
         private const int REQUESTS_WITHOUT_USER_CAPACITY = 50;
+        private const string QUEUE_DIRNAME = "Queue";
+        private const string GLOBAL_QUEUE_FILENAME = "GlobalQueue.json";
 
         // RuralCafe pages path
         private string _uiPagesPath;
@@ -74,8 +80,6 @@ namespace RuralCafe
         private List<LocalRequestHandler> _globalRequestQueue;
         // dictionary of linked lists of requests made by each client
         private Dictionary<int, List<LocalRequestHandler>> _clientRequestQueueMap;
-        // dictionary of last requested page by each client
-        private Dictionary<int, LocalRequestHandler> _clientLastRequestMap;
         // dictionary of requests without a user. They await to be "added" via trotro by a specific user
         private LRHDict _requestsWithoutUser;
         // Random for the keys of the above Dictionary
@@ -146,7 +150,6 @@ namespace RuralCafe
             _wikiDumpPath = wikiDumpPath;
             _globalRequestQueue = new List<LocalRequestHandler>();
             _clientRequestQueueMap = new Dictionary<int, List<LocalRequestHandler>>();
-            _clientLastRequestMap = new Dictionary<int, LocalRequestHandler>();
             _requestsWithoutUser = new LRHDict();
             _random = new Random();
             _newRequestEvent = new AutoResetEvent(false);
@@ -167,6 +170,9 @@ namespace RuralCafe
             {
                 _logger.Warn("Error initializing the local proxy wiki index.");
             }
+
+            // Tell the programm to serialize the queue before shutdown
+            Program.AddShutDownDelegate(SerializeQueue);
         }
 
         /// <summary>
@@ -189,7 +195,7 @@ namespace RuralCafe
         /// <summary>
         /// Initializes the index.
         /// </summary>
-        /// <param name="path">Path to the index.</param>
+        /// <param name="indexPath">Path to the index.</param>
         /// <returns>True or false for success or not.</returns>
         private bool InitializeIndex(string indexPath)
         {
@@ -293,7 +299,7 @@ namespace RuralCafe
         {
             if (!(requestHandler is RequestHandler))
             {
-                throw new ArgumentException("localRequestHandler must be of type LocalRequestHandler");
+                throw new ArgumentException("requestHandler must be of type RequestHandler");
             }
             // Increment number of active requests
             System.Threading.Interlocked.Increment(ref _activeRequests);
@@ -313,7 +319,6 @@ namespace RuralCafe
             // go through the outstanding requests forever
             while (true)
             {
-                // XXX: Why only when slow!?
                 if (NetworkStatus == NetworkStatusCode.Slow)
                 {
                     LocalRequestHandler requestHandler = PopGlobalRequest();
@@ -570,8 +575,8 @@ namespace RuralCafe
         /// <summary>
         /// Adds the request to the global queue and client's queue.
         /// </summary>
-        /// <param name="userId">The IP address of the client.</param>
-        /// <param name="requestHandler">The request to queue.</param>
+        /// <param name="userId">The user's id.</param>
+        /// <param name="requestHandler">The request handler to queue.</param>
         public void QueueRequest(int userId, LocalRequestHandler requestHandler)
         {
             // if the request is already completed (due to HandleLogRequest) then don't add to global queue
@@ -674,12 +679,27 @@ namespace RuralCafe
             }
         }
 
+
+        // FIXME do this right!
+        private int lastServedClientIndex = 0;
         /// <summary>
         /// Returns the first global request and removes it from the queue.
         /// </summary>
         /// <returns>Returns the first global request in the queue or null if no request exists.</returns>
         public LocalRequestHandler PopGlobalRequest()
         {
+            // new implementation (test)
+            lock (_clientRequestQueueMap)
+            {
+                for (int i = lastServedClientIndex + 1; i != lastServedClientIndex; i++)
+                   // i == _clientRequestQueueMap.Count - 1)
+                {
+
+                }
+                List<LocalRequestHandler> clientList = _clientRequestQueueMap[lastServedClientIndex];
+            }
+
+            // old implementation
             LocalRequestHandler requestHandler = null;
 
             // lock to make sure nothing is added or removed
@@ -698,11 +718,11 @@ namespace RuralCafe
         /// Gets the request queue for a particular client.
         /// </summary>
         /// <param name="userId">The IP address of the client.</param>
-        /// <returns>A list of the requests that belong to a client or null if they does not exist.</returns>
+        /// <returns>A list of the requests that belong to a client or null if they do not exist.</returns>
         public List<LocalRequestHandler> GetRequests(int userId)
         {
             List<LocalRequestHandler> requestHandlers = null;
-            lock (_clientLastRequestMap)
+            lock (_clientRequestQueueMap)
             {
                 if (_clientRequestQueueMap.ContainsKey(userId))
                 {
@@ -736,7 +756,7 @@ namespace RuralCafe
         /// Gets and removes the RequestHandler associated with the given URI. If the URI is no key
         /// in the Dictionary, an Exception is thrown.
         /// </summary>
-        /// <param name="uri">The uri.</param>
+        /// <param name="id">The id.</param>
         /// <returns>The LocalRequestHandler.</returns>
         public LocalRequestHandler PopRequestWithoutUser(int id)
         {
@@ -749,6 +769,30 @@ namespace RuralCafe
         }
 
         # endregion
+        #region Queue (de)serialization
+
+        /// <summary>
+        /// Serializes the queue(s). Called, when the proxy is being closed.
+        /// TODO
+        /// </summary>
+        public void SerializeQueue()
+        {
+            string output = JsonConvert.SerializeObject(_globalRequestQueue, Formatting.Indented);
+            _logger.Info("Saving queue, JSON:\n" + output);
+            string filename = _proxyPath + QUEUE_DIRNAME + Path.DirectorySeparatorChar + GLOBAL_QUEUE_FILENAME;
+
+            Utils.CreateDirectoryForFile(filename);
+            FileStream stream = Utils.CreateFile(filename);
+            if (stream != null)
+            {
+                StreamWriter writer = new StreamWriter(stream);
+                writer.Write(output);
+                writer.Close();
+            }
+            Thread.Sleep(500);
+        }
+
+        #endregion
         # region Timing and ETA
 
         /// <summary>
@@ -814,7 +858,7 @@ namespace RuralCafe
         /// Gets the number of outstanding requests for a client.
         /// Unused at the moment.
         /// </summary>
-        /// <param name="clientAddress">The IP address of the client.</param>
+        /// <param name="userId">The user's id.</param>
         /// <returns>The number of outstanding requests for the client.</returns>
         public int NumQueuedRequests(int userId)
         {

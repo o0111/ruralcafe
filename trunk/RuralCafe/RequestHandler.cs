@@ -29,6 +29,7 @@ using System.Collections.Specialized;
 using System.Reflection;
 using log4net;
 using RuralCafe.Util;
+using Newtonsoft.Json;
 
 namespace RuralCafe
 {
@@ -36,6 +37,7 @@ namespace RuralCafe
     /// Abstract class for local and remote request classes.
     /// Each instance of RequestHandler has at least one RCRequest object associated with it.
     /// </summary>
+    [JsonObject(MemberSerialization.OptIn)]
     public abstract class RequestHandler
     {
         /// <summary>
@@ -143,8 +145,10 @@ namespace RuralCafe
         public const int HEAD_REQUEST_DEFAULT_TIMEOUT = 1000; // in milliseconds
         
         // ID
+        [JsonProperty]
         protected int _requestId;
         // number of outstanding requests for this object
+        [JsonProperty]
         protected int _outstandingRequests;
 
         // proxy this request belongs to
@@ -152,18 +156,21 @@ namespace RuralCafe
 
         // client info
         protected HttpListenerContext _clientHttpContext;
-        protected IPAddress _clientAddress;
 
         // the actual request object variables
         protected HttpListenerRequest _originalRequest;
+        [JsonProperty]
         protected RCRequest _rcRequest;
         // timeout in milliseconds
+        [JsonProperty]
         protected int _requestTimeout;
 
         // filename for the package
+        [JsonProperty]
         protected string _packageFileName;
 
         // If request is valid
+        [JsonProperty]
         private bool _validRequest = true;
 
         // benchmarking unused
@@ -181,10 +188,6 @@ namespace RuralCafe
             _clientHttpContext = context;
             _originalRequest = context.Request;
             _requestId = _proxy.GetAndIncrementNextRequestID();
-            if (context != null)
-            {
-                _clientAddress = ((IPEndPoint)(context.Request.RemoteEndPoint)).Address;
-            }
         }
         /// <summary>
         /// DUMMY used for request matching.
@@ -196,30 +199,26 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Destructor for the request.
-        /// </summary>
-        ~RequestHandler()
-        {
-            // cleanup stuff
-        }
-
-        /// <summary>
         /// Overriding Equals() from base object.
         /// Instead of testing for equality of reference,
-        /// just check if the request URIs are equal
+        /// just check if the request cache file names are equal.
         /// </summary>        
         public override bool Equals(object obj)
         {
-            return (ItemId.Equals(((RequestHandler)obj).ItemId));
+            if (!(obj is RequestHandler))
+            {
+                return false;
+            }
+            return ItemId.Equals(((RequestHandler)obj).ItemId);
         }
         
         /// <summary>
         /// Overriding GetHashCode() from base object.
-        /// Just use the hash code of the RequestUri.
+        /// Just use the hash code of the ItemId.
         /// </summary>        
         public override int GetHashCode()
         {
-            return RequestUri.GetHashCode();
+            return ItemId.GetHashCode();
         }
 
         /// <summary>Checks whether the request is blacklisted by the proxy.</summary>
@@ -416,6 +415,7 @@ namespace RuralCafe
         /// <summary>
         /// Creates and handles the logged request
         /// logEntry format: (requestId, startTime, clientAddress, requestedUri, refererUri, [status])
+        /// TODO remove
         /// </summary>
         public bool HandleLogRequest(List<string> logEntry)
         {
@@ -445,7 +445,6 @@ namespace RuralCafe
                     // from log book-keeping
                     _requestId = requestId;
                     _rcRequest.StartTime = startTime;
-                    _clientAddress = clientAddress;
                     if (requestStatus == Status.Completed)
                     {
                         // Completed requests should not be added to the GLOBAL queue
@@ -801,20 +800,6 @@ namespace RuralCafe
         #region HTTP Helper Functions
 
         /// <summary>
-        /// Adds "http://" to the given URI, if it does not start with it already.
-        /// </summary>
-        /// <param name="uri">The current URI.</param>
-        /// <returns>The new URI.</returns>
-        public static String AddHttpPrefix(String uri)
-        {
-            if (!uri.StartsWith("http://"))
-            {
-                return "http://" + uri;
-            }
-            return uri;
-        }
-
-        /// <summary>
         ///  Write an error response to the client.
         /// </summary>
         /// <param name="status">Error status.</param>
@@ -854,7 +839,7 @@ namespace RuralCafe
         /// </summary>
         public void LogRequest()
         {
-            string str = _requestId + " " + _clientAddress.ToString() +
+            string str = _requestId + " " + Context.Request.RemoteEndPoint.Address +
                          " " + _rcRequest.GenericWebRequest.Method + " " + RequestUri +
                          " REFERER " + RefererUri + " " + 
                          RequestStatus + " " + _rcRequest.FileSize;

@@ -180,7 +180,7 @@ namespace RuralCafe
                     currUri = currUri.Trim();
 
                     // instead of translating to absolute, prepend http:// to make webrequest constructor happy
-                    currUri = AddHttpPrefix(currUri);
+                    currUri = HttpUtils.AddHttpPrefix(currUri);
 
                     if (!HttpUtils.IsValidUri(currUri))
                     {
