@@ -135,16 +135,21 @@ namespace RuralCafe
             // Log configuration
             logConfiguration();
 
+            bool localProxyStarted = false;
             // start the local proxy
             if (Properties.Settings.Default.LOCAL_PROXY_IP_ADDRESS != null 
                 && !Properties.Settings.Default.LOCAL_PROXY_IP_ADDRESS.Equals(""))
             {
+                localProxyStarted = true;
                 StartLocalProxy();
             }
 
             // start the remote proxy only if we're not starting the local proxy
             // or both proxies are running on the same box
-            if (Properties.Settings.Default.REMOTE_PROXY_IP_ADDRESS != null
+            if ((!localProxyStarted || 
+                Properties.Settings.Default.LOCAL_PROXY_IP_ADDRESS.Equals(
+                Properties.Settings.Default.REMOTE_PROXY_IP_ADDRESS)) &&
+                Properties.Settings.Default.REMOTE_PROXY_IP_ADDRESS != null
                 && !Properties.Settings.Default.REMOTE_PROXY_IP_ADDRESS.Equals(""))
             {
                 StartRemoteProxy();
@@ -204,9 +209,10 @@ namespace RuralCafe
             // XXX: it would be a chain of 2 proxies anyway and needs tunneling support
             if (Properties.Settings.Default.REMOTE_PROXY_IP_ADDRESS != Properties.Settings.Default.LOCAL_PROXY_IP_ADDRESS)
             {
+                // FIXME Either we must require a gateway to be set in this case or check if one is given...
                 // set the gateway proxy info and login for the local proxy
-                localProxy.SetGatewayProxy(IPAddress.Parse(Properties.Settings.Default.EXTERNAL_PROXY_IP_ADDRESS), Properties.Settings.Default.EXTERNAL_PROXY_LISTEN_PORT,
-                                           Properties.Settings.Default.EXTERNAL_PROXY_LOGIN, Properties.Settings.Default.EXTERNAL_PROXY_PASS);
+                //localProxy.SetGatewayProxy(IPAddress.Parse(Properties.Settings.Default.EXTERNAL_PROXY_IP_ADDRESS), Properties.Settings.Default.EXTERNAL_PROXY_LISTEN_PORT,
+                //                           Properties.Settings.Default.EXTERNAL_PROXY_LOGIN, Properties.Settings.Default.EXTERNAL_PROXY_PASS);
             }
 
             // set the RC search page

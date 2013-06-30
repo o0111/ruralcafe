@@ -55,10 +55,10 @@ namespace RuralCafe
         // remoteProxy
         private WebProxy _remoteProxy;
 
+        // big queue for lining up requests to remote proxy
+        private List<LocalRequestHandler> _globalRequestQueue;
         // dictionary of lists of requests made by each client
-        private IntKeyedCollection<List<LocalRequestHandler>> _clientRequestQueueMap;
-        // The index of the client served last.
-        private int _lastServedClientIndex = 0;
+        private Dictionary<int, List<LocalRequestHandler>> _clientRequestQueueMap;
         // dictionary of requests without a user. They await to be "added" via trotro by a specific user
         private IntKeyedCollection<LocalRequestHandler> _requestsWithoutUser;
         // Random for the keys of the above Dictionary
@@ -127,7 +127,8 @@ namespace RuralCafe
             _uiPagesPath = proxyPath + "RuralCafePages" + Path.DirectorySeparatorChar;
             _indexPath = indexPath;
             _wikiDumpPath = wikiDumpPath;
-            _clientRequestQueueMap = new IntKeyedCollection<List<LocalRequestHandler>>();
+            _globalRequestQueue = new List<LocalRequestHandler>();
+            _clientRequestQueueMap = new Dictionary<int, List<LocalRequestHandler>>();
             _requestsWithoutUser = new IntKeyedCollection<LocalRequestHandler>();
             _random = new Random();
             _newRequestEvent = new AutoResetEvent(false);
@@ -551,26 +552,66 @@ namespace RuralCafe
         # region Request Queues Interface
 
         /// <summary>
-        /// Adds the request to the client's queue.
+        /// Adds the request to the global queue and client's queue and wakes up the dispatcher.
         /// </summary>
         /// <param name="userId">The user's id.</param>
         /// <param name="requestHandler">The request handler to queue.</param>
         public void QueueRequest(int userId, LocalRequestHandler requestHandler)
         {
+            requestHandler = QueueRequestGlobalQueue(requestHandler);
+            QueueRequestUserQueue(userId, requestHandler);
+
+            // Notify that a new request has been added. The Dispatcher will wake up if it was waiting.
+            _newRequestEvent.Set();
+        }
+
+        /// <summary>
+        /// Adds the request handler to the global queue.
+        /// </summary>
+        /// <param name="requestHandler">The request handler to queue.</param>
+        /// <returns>The request handler in the queue.
+        /// Either the parameter or an already exiting equivalent RH in the queue.</returns>
+        private LocalRequestHandler QueueRequestGlobalQueue(LocalRequestHandler requestHandler)
+        {
+            // add the request to the global queue
+            lock (_globalRequestQueue)
+            {
+                if (_globalRequestQueue.Contains(requestHandler))
+                {
+                    // grab the existing handler instead of the new one
+                    int existingRequestIndex = _globalRequestQueue.IndexOf(requestHandler);
+                    requestHandler = _globalRequestQueue[existingRequestIndex];
+                }
+                else
+                {
+                    // queue new request
+                    _globalRequestQueue.Add(requestHandler);
+                }
+                return requestHandler;
+            }
+        }
+
+        /// <summary>
+        /// Adds the request handler to the user's queue.
+        /// </summary>
+        /// <param name="userId">The user's id.</param>
+        /// <param name="requestHandler">The request handler to queue.</param>
+        private void QueueRequestUserQueue(int userId, LocalRequestHandler requestHandler)
+        {
             List<LocalRequestHandler> requestHandlers = null;
             // add client queue, if it does not exist yet
             lock (_clientRequestQueueMap)
             {
-                if (_clientRequestQueueMap.Contains(userId))
+                if (_clientRequestQueueMap.ContainsKey(userId))
                 {
                     // get the queue of client requests
-                    requestHandlers = _clientRequestQueueMap[userId].Value;
+                    requestHandlers = _clientRequestQueueMap[userId];
                 }
                 else
                 {
                     // create the queue of client requests
                     requestHandlers = new List<LocalRequestHandler>();
-                    _clientRequestQueueMap.Add(new KeyValuePair<int, List<LocalRequestHandler>>(userId, requestHandlers));
+                    _clientRequestQueueMap.Add(userId, requestHandlers);
                 }
             }
 
@@ -581,28 +622,66 @@ namespace RuralCafe
                 if (requestHandlers.Contains(requestHandler))
                 {
                     requestHandlers.Remove(requestHandler);
-                    requestHandler.OutstandingRequests = requestHandler.OutstandingRequests - 1;
+                    requestHandler.OutstandingRequests--;
                 }
                 requestHandlers.Add(requestHandler);
                 requestHandler.OutstandingRequests++;
             }
-            
-            // Notify that a new request has been added. The Dispatcher will wake up if it was waiting.
-            _newRequestEvent.Set();
         }
 
         /// <summary>
         /// Removes a single request from the queues.
         /// </summary>
         /// <param name="userId">The userId of the client.</param>
-        /// <param name="requestHandler">The request to dequeue.</param>
+        /// <param name="requestHandler">The request handler to dequeue.</param>
         public void DequeueRequest(int userId, LocalRequestHandler requestHandler)
+        {
+            DequeueRequestGlobalQueue(requestHandler);
+            DequeueRequestUserQueue(userId, requestHandler);
+        }
+
+        /// <summary>
+        /// Removes a single request from global queue.
+        /// </summary>
+        /// <param name="requestHandler">The request handler to dequeue.</param>
+        private void DequeueRequestGlobalQueue(LocalRequestHandler requestHandler)
+        {
+            // remove the request from the global queue
+            lock (_globalRequestQueue)
+            {
+                if (_globalRequestQueue.Contains(requestHandler))
+                {
+                    int existingRequestIndex = _globalRequestQueue.IndexOf(requestHandler);
+                    requestHandler = _globalRequestQueue[existingRequestIndex];
+
+                    // XXX: I don't get this...
+                    // check to see if this URI is requested more than once
+                    // if so, just decrement count
+                    // if not, remove it
+                    if (requestHandler.OutstandingRequests == 1)
+                    {
+                        _globalRequestQueue.Remove(requestHandler);
+                    }
+                    else
+                    {
+                        //requestHandler.OutstandingRequests = requestHandler.OutstandingRequests - 1;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Removes a single request from user queue.
+        /// </summary>
+        /// <param name="userId">The userId of the client.</param>
+        /// <param name="requestHandler">The request handler to dequeue.</param>
+        private void DequeueRequestUserQueue(int userId, LocalRequestHandler requestHandler)
         {
             // remove the request from the client's queue
             // don't need to lock the _clientRequestQueueMap for reading
-            if (_clientRequestQueueMap.Contains(userId))
+            if (_clientRequestQueueMap.ContainsKey(userId))
             {
-                List<LocalRequestHandler> requestHandlers = _clientRequestQueueMap[userId].Value;
+                List<LocalRequestHandler> requestHandlers = _clientRequestQueueMap[userId];
                 lock (requestHandlers)
                 {
                     if (requestHandlers.Contains(requestHandler))
@@ -615,74 +694,81 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Returns the first RequestHandler in the list, whose request in not satisfied yet.
-        /// This means his status is "Pending".
-        /// </summary>
-        /// <param name="clientList">A list of RequestHandlers.</param>
-        /// <returns>The first unsatisfied RequestHandler or null if all requests are satisfied.</returns>
-        private LocalRequestHandler GetFirstUnsatisfiedRequestHandler(List<LocalRequestHandler> clientList)
-        {
-            foreach(LocalRequestHandler lrh in clientList)
-            {
-                if (lrh.RequestStatus == RequestHandler.Status.Pending)
-                {
-                    // Unsatisfied
-                    return lrh;
-                }
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// Returns the first unsatisfied request by the next user.
+        /// Returns (and removes) the first global request in the queue or null if no request exists.
         /// </summary>
         /// <returns>The first unsatisfied request by the next user or null if no request exists.</returns>
         public LocalRequestHandler PopGlobalRequest()
         {
-            lock (_clientRequestQueueMap)
+            LocalRequestHandler requestHandler = null;
+
+            // lock to make sure nothing is added or removed
+            lock (_globalRequestQueue)
             {
-                if (_clientRequestQueueMap.Count == 0)
+                if (_globalRequestQueue.Count > 0)
                 {
-                    // If there are no clients, there is no next request.
-                    return null;
+                    requestHandler = _globalRequestQueue[0];
+                    _globalRequestQueue.RemoveAt(0);
                 }
-                // Loop through all clients, starting after the last served one.
-                int index = (_lastServedClientIndex == _clientRequestQueueMap.Count - 1 ?
-                    0 : _lastServedClientIndex + 1);
-                int initialIndex = index;
-                do
-                {
-                    List<LocalRequestHandler> clientList = _clientRequestQueueMap.ElementAt(index).Value;
-                    LocalRequestHandler firstUnsatisfiedRequestHandler = GetFirstUnsatisfiedRequestHandler(clientList);
-                    if (firstUnsatisfiedRequestHandler == null)
-                    {
-                        // All requests of this client have been satisfied
-                        // Increment index or set to 0 if we're at the end.
-                        index = (index == _clientRequestQueueMap.Count - 1 ? 0 : index + 1);
-                        continue;
-                    }
-                    // This client will now be served
-                    _lastServedClientIndex = index;
-                    return firstUnsatisfiedRequestHandler;
-                } while(index != initialIndex);
             }
-            // There is no unsatisfied request.
-            return null;
+            return requestHandler;
+        }
+
+        /// <summary>
+        /// Recreates the global queue from the client queues. Requests are ordered chronologically.
+        /// </summary>
+        private void FillGlobalQueueFromClientQueues()
+        {
+            lock (_globalRequestQueue)
+            {
+                // Empty glocal Request queue first
+                _globalRequestQueue.Clear();
+                foreach (List<LocalRequestHandler> requestHandlers in _clientRequestQueueMap.Values)
+                {
+                    lock (requestHandlers)
+                    {
+                        for (int i = 0; i < requestHandlers.Count; i++)
+                        {
+                            LocalRequestHandler requestHandler = requestHandlers[i];
+                            // Only add requests not finished (or failed).
+                            if (requestHandler.RequestStatus == RequestHandler.Status.Downloading ||
+                                requestHandler.RequestStatus == RequestHandler.Status.Pending)
+                            {
+                                int index = _globalRequestQueue.IndexOf(requestHandler);
+                                // if it already exists..
+                                if (index != -1)
+                                {
+                                    // ..replace in user queue
+                                    requestHandlers[i]= _globalRequestQueue[index];
+                                }
+                                else
+                                {
+                                    // queue new request
+                                    _globalRequestQueue.Add(requestHandler);
+                                }
+                            }
+                        }
+                    }
+                }
+                // Sort the queue chronologically.
+                _globalRequestQueue.Sort((x, y) => 
+                    x.CreationTime > y.CreationTime ? 1 : 
+                    (x.CreationTime == y.CreationTime ? 0 : -1));
+            }
         }
 
         /// <summary>
         /// Gets the request queue for a particular client.
         /// </summary>
-        /// <param name="userId">The IP address of the client.</param>
+        /// <param name="userId">The id of the user.</param>
         /// <returns>A list of the requests that belong to a client or null if they do not exist.</returns>
         public List<LocalRequestHandler> GetRequests(int userId)
         {
             List<LocalRequestHandler> requestHandlers = null;
             lock (_clientRequestQueueMap)
             {
-                if (_clientRequestQueueMap.Contains(userId))
+                if (_clientRequestQueueMap.ContainsKey(userId))
                 {
-                    requestHandlers = _clientRequestQueueMap[userId].Value;
+                    requestHandlers = _clientRequestQueueMap[userId];
                 }
             }
             return requestHandlers;
@@ -691,7 +777,6 @@ namespace RuralCafe
         /// <summary>
         /// Adds a request, where the user is unknown yet, to the Dictionary
         /// </summary>
-        /// <param name="uri">The key.</param>
         /// <param name="handler">The value.</param>
         /// <returns>The id of the request.</returns>
         public int AddRequestWithoutUser(LocalRequestHandler handler)
@@ -745,7 +830,8 @@ namespace RuralCafe
                 writer.Write(output);
                 writer.Close();
             }
-            Thread.Sleep(500);
+
+            FillGlobalQueueFromClientQueues();
         }
 
         #endregion
@@ -783,9 +869,7 @@ namespace RuralCafe
         {
             // set the predicate object
             _predicateObj = requestHandler;
-            // FIXME we don't habe global queue any more, do this with lastServedIndex and client queue
-            //int requestPosition = _globalRequestQueue.FindIndex(SameRCRequestPredicate);
-            int requestPosition = 0;
+            int requestPosition = _globalRequestQueue.FindIndex(SameRCRequestPredicate);
             // +2 since -1 if the item doesn't exist (which means its being serviced now)
             return (int)((requestPosition + 2) * _averageTimePerRequest.TotalSeconds);
         }
@@ -823,10 +907,10 @@ namespace RuralCafe
             int count = 0;
             lock (_clientRequestQueueMap)
             {
-                if (_clientRequestQueueMap.Contains(userId))
+                if (_clientRequestQueueMap.ContainsKey(userId))
                 {
                     // don't bother locking client requests since it can't be deleted while holding the previous lock
-                    List<LocalRequestHandler> requestHandlers = _clientRequestQueueMap[userId].Value;
+                    List<LocalRequestHandler> requestHandlers = _clientRequestQueueMap[userId];
                     count = requestHandlers.Count;
                 }
             }
@@ -844,10 +928,10 @@ namespace RuralCafe
             int count = 0;
             lock (_clientRequestQueueMap)
             {
-                if (_clientRequestQueueMap.Contains(userId))
+                if (_clientRequestQueueMap.ContainsKey(userId))
                 {
                     // don't bother locking client requests since it can't be deleted while holding the previous lock
-                    List<LocalRequestHandler> requestHandlers = _clientRequestQueueMap[userId].Value;
+                    List<LocalRequestHandler> requestHandlers = _clientRequestQueueMap[userId];
                     foreach (LocalRequestHandler requestHandler in requestHandlers)
                     {
                         if (requestHandler.RequestStatus == RequestHandler.Status.Completed ||
