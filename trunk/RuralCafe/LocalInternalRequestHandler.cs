@@ -108,14 +108,14 @@ namespace RuralCafe
         /// </summary>
         /// <param name="googleResultsPage">The google results page.</param>
         /// <returns>The number of search results.</returns>
-        private int GetGoogleResultsNumber(string googleResultsPage)
+        private long GetGoogleResultsNumber(string googleResultsPage)
         {
             Match match = googleResultsNumRegex.Match(googleResultsPage);
             string numString = match.Groups["num"].Value;
             numString = numString.Replace(",", "");
             try
             {
-                return Int32.Parse(numString);
+                return Int64.Parse(numString);
             }
             catch (FormatException)
             {
@@ -464,7 +464,7 @@ namespace RuralCafe
                 if (resultPage != null)
                 {
                     LinkedList<RCRequest> resultLinkUris = ExtractGoogleResults(resultPage);
-                    int numResults = GetGoogleResultsNumber(resultPage);
+                    long numResults = GetGoogleResultsNumber(resultPage);
                     resultsString = resultsString + "<search total=\"" + numResults + "\">";
                     foreach (RCRequest linkObject in resultLinkUris)
                     {

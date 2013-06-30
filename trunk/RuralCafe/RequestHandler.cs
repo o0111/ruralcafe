@@ -81,8 +81,8 @@ namespace RuralCafe
         /// <summary>
         /// Prepares a new RequestHandler. With one (local or remote/internal or not) is decided.
         /// </summary>
-        /// <param name="proxy"></param>
-        /// <param name="context"></param>
+        /// <param name="proxy">The proxy.</param>
+        /// <param name="context">The client's context.</param>
         /// <returns>The new request handler.</returns>
         public static RequestHandler PrepareNewRequestHandler(RCProxy proxy, HttpListenerContext context)
         {
@@ -173,6 +173,10 @@ namespace RuralCafe
         [JsonProperty]
         private bool _validRequest = true;
 
+        // Time of creation in ticks since system start
+        [JsonProperty]
+        private long _creationTime;
+
         // benchmarking unused
         //protected DateTime requestReceived;
         //protected DateTime requestCompleted;
@@ -188,6 +192,7 @@ namespace RuralCafe
             _clientHttpContext = context;
             _originalRequest = context.Request;
             _requestId = _proxy.GetAndIncrementNextRequestID();
+            _creationTime = Environment.TickCount;
         }
         /// <summary>
         /// DUMMY used for request matching.
@@ -327,6 +332,11 @@ namespace RuralCafe
         {
             set { _rcRequest.CacheFileName = value; }
             get { return _rcRequest.CacheFileName; }
+        }
+        /// <summary>The time of creation.</summary>
+        public long CreationTime
+        {
+            get { return _creationTime; }
         }
         /// <summary>
         /// The Proxy's Logger.
