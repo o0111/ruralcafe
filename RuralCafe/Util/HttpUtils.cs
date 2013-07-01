@@ -1,6 +1,7 @@
 ﻿using log4net;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -34,8 +35,29 @@ namespace RuralCafe.Util
             string url = UseLocalNetworkAdressForLocalAdress(listenerRequest.RawUrl);
             HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url);
             webRequest.Method = listenerRequest.HttpMethod;
+            // Integrate Headers
+            IntegrateHeadersIntoWebRequest(webRequest, listenerRequest.Headers);
+            // Copy headers where C# offers properties or methods (except Host!)
+            if (listenerRequest.AcceptTypes != null)
+            {
+                webRequest.Accept = String.Join(",", listenerRequest.AcceptTypes);
+            }
+            webRequest.UserAgent = listenerRequest.UserAgent;
+            webRequest.ContentLength = listenerRequest.ContentLength64;
+            webRequest.ContentType = listenerRequest.ContentType;
+            webRequest.Referer = listenerRequest.UrlReferrer == null ? null : listenerRequest.UrlReferrer.ToString();
 
-            foreach (string key in listenerRequest.Headers)
+            return webRequest;
+        }
+
+        /// <summary>
+        /// Integrates headers into a HttpWebRequest.
+        /// </summary>
+        /// <param name="webRequest">The web request.</param>
+        /// <param name="headers">The headers.</param>
+        public static void IntegrateHeadersIntoWebRequest(HttpWebRequest webRequest, NameValueCollection headers)
+        {
+            foreach (string key in headers)
             {
                 // FIXME ATM no Accept-Encoding due to GZIP failure
                 // We handle these after the foreach loop 
@@ -48,7 +70,7 @@ namespace RuralCafe.Util
                 {
                     continue;
                 }
-                foreach (string value in listenerRequest.Headers.GetValues(key))
+                foreach (string value in headers.GetValues(key))
                 {
                     // Headers that need special treatment
                     if (key.Equals("If-Modified-Since"))
@@ -82,17 +104,6 @@ namespace RuralCafe.Util
                     }
                 }
             }
-            // Copy headers where C# offers properties or methods (except Host!)
-            if (listenerRequest.AcceptTypes != null)
-            {
-                webRequest.Accept = String.Join(",", listenerRequest.AcceptTypes);
-            }
-            webRequest.UserAgent = listenerRequest.UserAgent;
-            webRequest.ContentLength = listenerRequest.ContentLength64;
-            webRequest.ContentType = listenerRequest.ContentType;
-            webRequest.Referer = listenerRequest.UrlReferrer == null ? null : listenerRequest.UrlReferrer.ToString();
-
-            return webRequest;
         }
 
         /// <summary>
@@ -137,7 +148,7 @@ namespace RuralCafe.Util
         public static void SendBody(HttpWebRequest webRequest, byte[] body)
         {
             // Stream body for non HEAD/GET requests
-            if (webRequest.Method != "HEAD" && webRequest.Method != "GET")
+            if (webRequest.Method != "HEAD" && webRequest.Method != "GET" && body != null)
             {
                 // Never Expect 100 Continue!
                 webRequest.ServicePoint.Expect100Continue = false;

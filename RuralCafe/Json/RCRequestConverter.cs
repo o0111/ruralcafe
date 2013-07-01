@@ -1,6 +1,8 @@
 ﻿using Newtonsoft.Json.Linq;
+using RuralCafe.Util;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -31,9 +33,11 @@ namespace RuralCafe.Json
         /// <returns>A RCRequest.</returns>
         protected override RCRequest Create(Type objectType, JObject jObject)
         {
-            string url = jObject.GetValue("_webRequest")["_OriginUri"].ToString();
+            string url = jObject.GetValue("_webRequest")["RequestUri"].ToString();
             HttpWebRequest webRequest =  (HttpWebRequest)WebRequest.Create(url);
-            // TODO restore metadata!
+            // Restore the metadata from json
+            ModifyWebRequest(webRequest, jObject.GetValue("_webRequest"));
+            // Get RCRequest fields for the constructor
             string refererUri = jObject.GetValue("_refererUri").ToString();
             byte[] body = jObject.GetValue("_body").ToObject<byte[]>();
 
@@ -42,6 +46,26 @@ namespace RuralCafe.Json
             jObject.Remove("_webRequest");
 
             return new RCRequest(_lrh, webRequest, "", refererUri, body);
+        }
+
+        /// <summary>
+        /// Modifies a web request by integrating metadata (headers, HTTP method, etc.)
+        /// </summary>
+        /// <param name="request">The web request.</param>
+        /// <param name="jsonToken">The JSON token representing the web Request.</param>
+        private void ModifyWebRequest(HttpWebRequest request, JToken jsonToken)
+        {
+            NameValueCollection headers = Utils.DictionaryToNVC(
+                jsonToken["Headers"].ToObject<Dictionary<string, string[]>>());
+            // Integrate headers
+            HttpUtils.IntegrateHeadersIntoWebRequest(request, headers);
+            // Set other fields
+            request.Method = jsonToken["Method"].ToObject<string>();
+            request.Accept = jsonToken["Accept"].ToObject<string>();
+            request.UserAgent = jsonToken["UserAgent"].ToObject<string>();
+            request.ContentLength = jsonToken["ContentLength"].ToObject<int>();
+            request.ContentType = jsonToken["ContentType"].ToObject<string>();
+            request.Referer = jsonToken["Referer"].ToObject<string>();
         }
     }
 }
