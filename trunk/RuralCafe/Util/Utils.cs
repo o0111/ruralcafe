@@ -421,5 +421,36 @@ namespace RuralCafe.Util
             return bytesWritten;
         }
         #endregion
+        #region Other utils
+
+        /// <summary>
+        /// Converts a NameValueCollection into a Dictionary.
+        /// </summary>
+        /// <param name="source">The NameValueCollection.</param>
+        /// <returns>The Dictionary.</returns>
+        public static Dictionary<string, string[]> NVCToDictionary(NameValueCollection source)
+        {
+            return source.AllKeys.ToDictionary(k => k, k => source.GetValues(k));
+        }
+
+        /// <summary>
+        /// Converts a Dictionary into a NameValueCollection.
+        /// </summary>
+        /// <param name="source">The Dictionary.</param>
+        /// <returns>The NameValueCollection.</returns>
+        public static NameValueCollection DictionaryToNVC(Dictionary<string, string[]> source)
+        {
+            NameValueCollection nameValueCollection = new NameValueCollection();
+            foreach (KeyValuePair<string, string[]> kvp in source)
+            {
+                foreach (string value in kvp.Value)
+                {
+                    nameValueCollection.Add(kvp.Key, value);
+                }
+            }
+            return nameValueCollection;
+        }
+
+        #endregion
     }
 }

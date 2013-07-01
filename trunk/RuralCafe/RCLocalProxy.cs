@@ -311,6 +311,8 @@ namespace RuralCafe
                             // skip requests in global queue that are not pending, probably requeued from log
                             continue;
                         }
+                        // Save start time
+                        requestHandler.StartTime = DateTime.Now;
                         if (_gatewayProxy != null)
                         {
                             requestHandler.RCRequest.SetProxyAndTimeout(_gatewayProxy, System.Threading.Timeout.Infinite);
@@ -643,15 +645,17 @@ namespace RuralCafe
         public void SerializeQueue()
         {
             string filename = _proxyPath + QUEUE_DIRNAME + Path.DirectorySeparatorChar + QUEUES_FILENAME;
-            string output = JsonConvert.SerializeObject(_clientRequestQueueMap, Formatting.Indented);
-
             Utils.CreateDirectoryForFile(filename);
-            FileStream stream = Utils.CreateFile(filename);
-            if (stream != null)
+
+            JsonSerializer serializer = new JsonSerializer();
+            serializer.Formatting = Formatting.Indented;
+            serializer.Converters.Add(new NameValueCollectionConverter());
+            serializer.Converters.Add(new HttpWebRequestConverter());
+
+            using (StreamWriter sw = new StreamWriter(filename))
+            using (JsonWriter writer = new JsonTextWriter(sw))
             {
-                StreamWriter writer = new StreamWriter(stream);
-                writer.Write(output);
-                writer.Close();
+                serializer.Serialize(writer, _clientRequestQueueMap);
             }
             _logger.Info("Serialized queues.");
         }

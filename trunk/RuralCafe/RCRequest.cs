@@ -76,9 +76,7 @@ namespace RuralCafe
 
         private RequestHandler _requestHandler;
 
-        [JsonProperty]
         private DateTime _startTime;
-        [JsonProperty]
         private DateTime _finishTime;
 
         // threading support

@@ -291,6 +291,7 @@ namespace RuralCafe
         /// <summary>Time this request started.</summary>
         public DateTime StartTime
         {
+            set { _rcRequest.StartTime = value; }
             get { return _rcRequest.StartTime; }
         }
         /// <summary>Time this request finished.</summary>
