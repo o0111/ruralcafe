@@ -61,6 +61,12 @@ namespace RuralCafe.Lucenenet
                 IndexWriter writer = new IndexWriter(directory, new StandardAnalyzer(Lucene.Net.Util.Version.LUCENE_CURRENT), true);
                 writer.Close();
             }
+            // Remove an old lock file that may not have been deleted on system shutdown
+            FileInfo lockFile = new FileInfo(indexPath + "write.lock");
+            if (lockFile.Exists)
+            {
+                lockFile.Delete();
+            }
             return true;
         }
 

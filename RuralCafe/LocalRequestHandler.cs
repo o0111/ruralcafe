@@ -47,7 +47,6 @@ namespace RuralCafe
         public LocalRequestHandler(LocalInternalRequestHandler internalHandler)
             : base(internalHandler.Proxy, internalHandler.Context)
         {
-            _requestId = _proxy.GetAndIncrementNextRequestID();
             _requestTimeout = LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT;
             // Copy fields from internalHandler
             _outstandingRequests = internalHandler.OutstandingRequests;
@@ -62,7 +61,16 @@ namespace RuralCafe
         public LocalRequestHandler(RCLocalProxy proxy, HttpListenerContext context)
             : base(proxy, context)
         {
-            _requestId = _proxy.GetAndIncrementNextRequestID();
+            _requestTimeout = LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT;
+        }
+
+        /// <summary>
+        /// Constructor used, when http context is not available any more. E.g. queue deserialization.
+        /// </summary>
+        /// <param name="proxy">Proxy this request handler belongs to.</param>
+        public LocalRequestHandler(RCLocalProxy proxy)
+            : base(proxy)
+        {
             _requestTimeout = LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT;
         }
         /// <summary>
@@ -74,6 +82,11 @@ namespace RuralCafe
         {
             _rcRequest = new RCRequest(itemId);
         }
+
+        /// <summary>
+        /// Default constructor for JSON.
+        /// </summary>
+        public LocalRequestHandler() { }
 
         /// <summary>
         /// Main logic of RuralCafe LPRequestHandler.
