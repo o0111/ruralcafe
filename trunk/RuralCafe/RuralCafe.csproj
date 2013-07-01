@@ -101,6 +101,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AnalysisTools.cs" />
+    <Compile Include="Json\JsonCreationConverter.cs" />
+    <Compile Include="Json\LocalRequestHandlerConverter.cs" />
+    <Compile Include="Json\RCRequestConverter.cs" />
     <Compile Include="Lucenenet\LuceneSearchResults.cs" />
     <Compile Include="RCSpecificHeaders.cs" />
     <Compile Include="RCUserSettings.cs" />

@@ -67,8 +67,8 @@ namespace RuralCafe
         /// <summary>
         /// The name of our homepage.
         /// </summary>
-        private const string rcPage = "http://www.ruralcafe.net/";
-        private const string rcPageWithoutWWW = "http://ruralcafe.net/";
+        public const string RC_PAGE = "http://www.ruralcafe.net/";
+        public const string RC_PAGE_WITHOUT_WWW = "http://ruralcafe.net/";
         private static readonly Regex redirRegex = new Regex(@"HTTP/1\.1 301 Moved PermanentlyLocation: (?<uri>\S+)");
 
         /// <summary>
@@ -186,14 +186,23 @@ namespace RuralCafe
         /// </summary>
         /// <param name="proxy">Proxy that this request belongs to.</param>
         /// <param name="context">Client context.</param>
-        protected RequestHandler(RCProxy proxy, HttpListenerContext context)
+        protected RequestHandler(RCProxy proxy, HttpListenerContext context) : this(proxy)
         {
-            _proxy = proxy;
             _clientHttpContext = context;
             _originalRequest = context.Request;
+        }
+
+        /// <summary>
+        /// Constructor used, when http context is not available any more. E.g. queue deserialization.
+        /// </summary>
+        /// <param name="proxy">Proxy that this request belongs to.</param>
+        protected RequestHandler(RCProxy proxy)
+        {
+            _proxy = proxy;
             _requestId = _proxy.GetAndIncrementNextRequestID();
             _creationTime = Environment.TickCount;
         }
+
         /// <summary>
         /// DUMMY used for request matching.
         /// XXX: Not the cleanest implementation need to instantiate a whole object just to match
@@ -423,81 +432,6 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Creates and handles the logged request
-        /// logEntry format: (requestId, startTime, clientAddress, requestedUri, refererUri, [status])
-        /// TODO remove
-        /// </summary>
-        public bool HandleLogRequest(List<string> logEntry)
-        {
-            if (!(logEntry.Count >= 5))
-            {
-                return false;
-            }
-
-            try
-            {
-                int requestId = Int32.Parse(logEntry[0]);
-                DateTime startTime = DateTime.Parse(logEntry[1]);
-                IPAddress clientAddress = IPAddress.Parse(logEntry[2]);
-                // FIXME no idea here!
-                //_originalRequest = (HttpWebRequest) WebRequest.Create(logEntry[3]);
-                string refererUri = logEntry[4];
-                Status requestStatus = Status.Pending;
-                if (logEntry.Count == 6)
-                {
-                    // Adapted to read the text of the status instead of the number.
-                    // Therefore old logs won't work anymore.
-                    requestStatus = (Status) Enum.Parse(typeof(Status),logEntry[5]);
-                }
-
-                if (CreateRequest(_originalRequest, refererUri))
-                {
-                    // from log book-keeping
-                    _requestId = requestId;
-                    _rcRequest.StartTime = startTime;
-                    if (requestStatus == Status.Completed)
-                    {
-                        // Completed requests should not be added to the GLOBAL queue
-                        _rcRequest.RequestStatus = requestStatus;
-                    }
-                    
-                    _packageFileName = _proxy.PackagesPath + _rcRequest.HashPath + _rcRequest.FileName + ".gzip";
-
-                    // XXX: need to avoid duplicate request/response logging when redirecting e.g. after an add
-                    // handle the request
-                    if (IsRCRequest())
-                    {
-                        HandleRequest();
-                    }
-                    else
-                    {
-                        LogRequest();
-                        HandleRequest();
-
-                        LogResponse();
-                        if (requestStatus == Status.Completed)
-                        {
-                            // Completed requests should have a fake response in the log to indicate they're completed
-                            LogServerResponse();
-                        }
-                    }
-                }
-                return true;
-            }
-            catch (Exception e)
-            {
-                // do nothing
-                String errmsg = "error handling request: ";
-                if (_originalRequest != null)
-                {
-                    errmsg += " " + _originalRequest.RawUrl.ToString(); ;
-                }
-                Logger.Warn(errmsg, e);
-            }
-            return false;
-        }
-
-        /// <summary>
         /// Creates RCRequest object for the request.
         /// </summary>
         /// <param name="request">The HTTP request.</param>
@@ -510,7 +444,6 @@ namespace RuralCafe
                 // create the request object
                 _rcRequest = new RCRequest(this, HttpUtils.CreateWebRequest(request), "", refererUri,
                 HttpUtils.ReceiveBody(request));
-                _rcRequest.GenericWebRequest.Referer = refererUri;
                 return true;
             }
             return false;
@@ -733,7 +666,7 @@ namespace RuralCafe
         /// <returns>If it is or not.</returns>
         protected static bool IsRCRequest(string uri)
         {
-            return uri.StartsWith(rcPage) || uri.StartsWith(rcPageWithoutWWW);
+            return uri.StartsWith(RC_PAGE) || uri.StartsWith(RC_PAGE_WITHOUT_WWW);
         }
 
         /// <summary>
@@ -862,16 +795,6 @@ namespace RuralCafe
         public void LogResponse()
         {
             string str = _requestId +  " RSP " + RequestUri + " " + 
-                        RequestStatus + " " + _rcRequest.FileSize;
-            _proxy.Logger.Info(str);
-        }
-
-        /// <summary>
-        /// Log our response to the client.
-        /// </summary>
-        public void LogServerResponse()
-        {
-            string str = _requestId + " RSP " + _originalRequest.RawUrl.ToString() + " " +
                         RequestStatus + " " + _rcRequest.FileSize;
             _proxy.Logger.Info(str);
         }

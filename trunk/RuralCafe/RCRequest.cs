@@ -70,7 +70,6 @@ namespace RuralCafe
         [JsonProperty]
         private byte[] _body;
 
-        [JsonProperty]
         private HttpWebResponse _webResponse;
         [JsonProperty]
         private long _fileSize;
@@ -83,11 +82,8 @@ namespace RuralCafe
         private DateTime _finishTime;
 
         // threading support
-        [JsonProperty]
         private ManualResetEvent[] _resetEvents;
-        [JsonProperty]
         private int _childNumber;
-
 
         # region Accessors
         /// <summary> 
@@ -214,6 +210,11 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// FIXME remove those!
+        /// </summary>
+        public RCRequest() { }
+
+        /// <summary>
         /// Constructor for a RuralCafe Request.
         /// </summary>
         /// <param name="requestHandler">The handler for the request.</param>
@@ -242,6 +243,7 @@ namespace RuralCafe
 
             _webRequest = request;
             _webRequest.Timeout = RequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT;
+            _webRequest.Referer = _refererUri;
             _body = body;
 
             _fileName = UriToFilePath(_webRequest.RequestUri.ToString());

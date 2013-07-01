@@ -32,6 +32,7 @@ using Newtonsoft.Json;
 using RuralCafe.Util;
 using System.Windows.Forms;
 using Microsoft.Win32;
+using RuralCafe.Json;
 
 namespace RuralCafe
 {
@@ -43,7 +44,7 @@ namespace RuralCafe
         // Constants
         private const int REQUESTS_WITHOUT_USER_CAPACITY = 50;
         private const string QUEUE_DIRNAME = "Queue";
-        private const string GLOBAL_QUEUE_FILENAME = "GlobalQueue.json";
+        private const string QUEUES_FILENAME = "Queues.json";
 
         // RuralCafe pages path
         private string _uiPagesPath;
@@ -150,6 +151,8 @@ namespace RuralCafe
                 _logger.Warn("Error initializing the local proxy wiki index.");
             }
 
+            // Deserialize the queue
+            DeserializeQueue();
             // Tell the programm to serialize the queue before shutdown
             Program.AddShutDownDelegate(SerializeQueue);
         }
@@ -221,7 +224,7 @@ namespace RuralCafe
         /// <param name="searchPage">Search page filename.</param>
         public void SetRCSearchPage(string searchPage)
         {
-            _rcSearchPage = "http://www.ruralcafe.net/" + searchPage;
+            _rcSearchPage = RequestHandler.RC_PAGE + searchPage;
         }
 
         /// <summary>
@@ -353,7 +356,7 @@ namespace RuralCafe
                         requestHandler.FinishTime = DateTime.Now;
                         UpdateTimePerRequest(requestHandler.StartTime, requestHandler.FinishTime);
 
-                        requestHandler.LogServerResponse();
+                        requestHandler.LogResponse();
                     }
                     else
                     {
@@ -367,186 +370,6 @@ namespace RuralCafe
                     _newRequestEvent.WaitOne();
                 }
             }
-        }
-
-        // FIXME remove!
-        /// <summary>
-        /// Read log from directory and add to the requests queue, update the itemId.
-        /// Called upon LocalProxy initialization.
-        /// </summary>
-        /// <param name="logPath">Relative or absolute path for the logs.</param>
-        private bool ReadLog(string logPath)
-        {
-            int highestRequestId = 1;
-            Dictionary<string, List<string>> loggedRequestQueueMap = new Dictionary<string, List<string>>();
-
-            string debugFile = DateTime.Now.ToString("s") + "-debug.log";
-            debugFile = debugFile.Replace(':', '.');
-
-            try
-            {
-                if (!Directory.Exists(logPath))
-                {
-                    return false;
-                }
-
-                DirectoryInfo directory = new DirectoryInfo(logPath);
-                var files = directory.GetFiles("*messages.log").OrderByDescending(f => f.LastWriteTime);
-                int numFiles = files.Count();
-                if (numFiles == 1)
-                {
-                    return true;
-                }
-                FileInfo currentFile = files.ElementAt(1);
-
-                FileStream fs = currentFile.OpenRead();
-                _logger.Debug("Parsing log: " + currentFile);
-                TextReader tr = new StreamReader(fs);
-
-                uint linesParsed = 0;
-                string line = tr.ReadLine();
-                string[] lineTokens;
-
-                while (line != null)
-                {
-                    linesParsed++;
-                    lineTokens = line.Split(' ');
-
-                    string requestId = "";
-                    if (lineTokens.Length > 0)
-                    {
-                        try
-                        {
-                            requestId = lineTokens[0];
-                            int requestId_i = Int32.Parse(requestId);
-                            if (requestId_i > highestRequestId)
-                            {
-                                highestRequestId = requestId_i;
-                            }
-                        }
-                        catch (Exception)
-                        {
-                            // do nothing
-                        }
-                    }
-                    // maximum number of tokens is 100
-                    if (lineTokens.Length >= 100 || lineTokens.Length <= 5)
-                    {
-                        // read the next line
-                        line = tr.ReadLine();
-                        continue;
-                    }
-
-                    if (lineTokens.Length >= 9)
-                    {
-                        // make sure that its actually a search query
-                        string clientAddress = lineTokens[4];
-                        string httpCommand = lineTokens[5];
-                        string requestUriString = lineTokens[6];
-                        Uri requestUri = new Uri(requestUriString);
-                        string refererUri = lineTokens[8];
-                        string startTime = lineTokens[1] + " " + lineTokens[2] + " " + lineTokens[3];
-
-                        if ((httpCommand == "GET") && requestUri.AbsolutePath.StartsWith("http://www.ruralcafe.net/request/add"))
-                        {
-                            // Parse parameters
-                            NameValueCollection qscoll = HttpUtility.ParseQueryString(requestUri.Query);
-                            string targetUri = qscoll.Get("a");
-                            if (targetUri == null)
-                            {
-                                // error
-                                line = tr.ReadLine();
-                                continue;
-                            }
-                            string fileName = RCRequest.UriToFilePath(targetUri);
-                            string hashPath = RCRequest.GetHashPath(fileName);
-                            string itemId = hashPath.Replace(Path.DirectorySeparatorChar.ToString(), "");
-
-                            // add it to the queue
-                            List<string> logEntry = new List<string>();
-                            logEntry.Add(requestId);
-                            logEntry.Add(startTime);
-                            logEntry.Add(clientAddress);
-                            logEntry.Add(requestUriString);
-                            logEntry.Add(refererUri);
-                            if (!loggedRequestQueueMap.ContainsKey(itemId))
-                            {
-                                loggedRequestQueueMap.Add(itemId, logEntry);
-                            }
-                        }
-
-                        if ((httpCommand == "GET") && requestUri.AbsolutePath.StartsWith("http://www.ruralcafe.net/request/remove"))
-                        {
-                            // Parse parameters
-                            NameValueCollection qscoll = HttpUtility.ParseQueryString(requestUri.Query);
-                            string itemId = qscoll.Get("i");
-                            if (itemId == null)
-                            {
-                                // error
-                                line = tr.ReadLine();
-                                continue;
-                            }
-                            // remove it from the queue
-                            if (loggedRequestQueueMap.ContainsKey(itemId))
-                            {
-                                loggedRequestQueueMap.Remove(itemId);
-                            }
-                        }
-                    }
-                    else if (lineTokens.Length >= 7)
-                    {
-                        requestId = lineTokens[0];
-                        string httpCommand = lineTokens[4]; 
-                        string requestUriString = lineTokens[6];
-                        Uri requestUri = new Uri(requestUriString);
-                        string status = lineTokens[6];
-
-                        // Parse parameters
-                        NameValueCollection qscoll = HttpUtility.ParseQueryString(requestUri.Query);
-                        string targetUri = qscoll.Get("a");
-                        if (targetUri == null)
-                        {
-                            // error
-                            line = tr.ReadLine();
-                            continue;
-                        }
-                        string fileName = RCRequest.UriToFilePath(targetUri);
-                        string hashPath = RCRequest.GetHashPath(fileName);
-                        string itemId = hashPath.Replace(Path.DirectorySeparatorChar.ToString(), "");
-
-                        if ((httpCommand == "RSP") &&
-                            loggedRequestQueueMap.ContainsKey(itemId) &&
-                            (RequestHandler.Status) Enum.Parse(typeof(RequestHandler.Status), status) != RequestHandler.Status.Pending)
-                        {
-                            // parse the response
-                            // check if its in the queue, if so, remove it
-                            loggedRequestQueueMap[itemId].Add(status);
-                        }
-                    }
-
-                    // read the next line
-                    line = tr.ReadLine();
-                }
-
-                tr.Close();
-
-
-                // load the queued requests into the request queue
-                foreach (string currentRequestId in loggedRequestQueueMap.Keys)
-                {
-                    LocalRequestHandler requestHandler = new LocalRequestHandler(this, null);
-                    requestHandler.HandleLogRequest(loggedRequestQueueMap[currentRequestId]);
-                }
-
-                // update the nextId
-                _nextRequestId = highestRequestId + 1;
-            }
-            catch (Exception e)
-            {
-                _logger.Warn("Could not read debug logs for saved state.", e);
-                return false;
-            }
-            return true;
         }
 
         # region Request Queues Interface
@@ -742,6 +565,8 @@ namespace RuralCafe
                                 }
                                 else
                                 {
+                                    // Set status to pending (if it was being downloaded while the shutdown)
+                                    requestHandler.RequestStatus = RequestHandler.Status.Pending;
                                     // queue new request
                                     _globalRequestQueue.Add(requestHandler);
                                 }
@@ -814,13 +639,11 @@ namespace RuralCafe
 
         /// <summary>
         /// Serializes the queue(s). Called, when the proxy is being closed.
-        /// TODO
         /// </summary>
         public void SerializeQueue()
         {
+            string filename = _proxyPath + QUEUE_DIRNAME + Path.DirectorySeparatorChar + QUEUES_FILENAME;
             string output = JsonConvert.SerializeObject(_clientRequestQueueMap, Formatting.Indented);
-            _logger.Info("Saving queue, JSON:\n" + output);
-            string filename = _proxyPath + QUEUE_DIRNAME + Path.DirectorySeparatorChar + GLOBAL_QUEUE_FILENAME;
 
             Utils.CreateDirectoryForFile(filename);
             FileStream stream = Utils.CreateFile(filename);
@@ -830,8 +653,38 @@ namespace RuralCafe
                 writer.Write(output);
                 writer.Close();
             }
+            _logger.Info("Serialized queues.");
+        }
 
-            FillGlobalQueueFromClientQueues();
+        /// <summary>
+        /// Deserializes the queues. Called when the program starts.
+        /// </summary>
+        public void DeserializeQueue()
+        {
+            string filename = _proxyPath + QUEUE_DIRNAME + Path.DirectorySeparatorChar + QUEUES_FILENAME;
+
+            string fileContent = Utils.ReadFileAsString(filename);
+            if (fileContent == "")
+            {
+                _logger.Info("No queue to deserialize.");
+                // The file does not exist, we do not have to do anything.
+                return;
+            }
+            // Deserialize
+            try
+            {
+                _clientRequestQueueMap = JsonConvert.
+                    DeserializeObject<Dictionary<int, List<LocalRequestHandler>>>(fileContent, 
+                    new LocalRequestHandlerConverter(this));
+                // Restore the global Queue
+                FillGlobalQueueFromClientQueues();
+                _logger.Info("Deserialized and restored queues.");
+            }
+            catch (Exception e)
+            {
+                _logger.Error("Queue deserialization failed: ", e);
+            }
+            
         }
 
         #endregion

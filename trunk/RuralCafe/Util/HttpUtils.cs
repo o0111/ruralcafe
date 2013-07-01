@@ -77,14 +77,16 @@ namespace RuralCafe.Util
                     }
                     catch (Exception e)
                     {
-                        // XXX: remove the try-catch, when we are sure we did not forget any header field
-                        // that needs "special treatment"
+                        // This should ideally not happen!
                         LogManager.GetLogger(typeof(HttpUtils)).Error(e);
                     }
                 }
             }
             // Copy headers where C# offers properties or methods (except Host!)
-            webRequest.Accept = String.Join(",", listenerRequest.AcceptTypes);
+            if (listenerRequest.AcceptTypes != null)
+            {
+                webRequest.Accept = String.Join(",", listenerRequest.AcceptTypes);
+            }
             webRequest.UserAgent = listenerRequest.UserAgent;
             webRequest.ContentLength = listenerRequest.ContentLength64;
             webRequest.ContentType = listenerRequest.ContentType;
