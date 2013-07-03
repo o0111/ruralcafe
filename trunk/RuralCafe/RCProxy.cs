@@ -24,12 +24,17 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using log4net;
+using RuralCafe.Util;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Reflection;
 
 namespace RuralCafe
 {
     /// <summary>
     /// An abstract proxy class for implementing the local and remote proxies.
     /// </summary>
+    [JsonObject(MemberSerialization.OptIn)]
     public abstract class RCProxy
     {
         /// <summary>
@@ -58,6 +63,14 @@ namespace RuralCafe
         /// Maximum bandwidth. At first unlimited.
         /// </summary>
         public int MAXIMUM_DOWNLINK_BANDWIDTH = UNLIMITED_BANDWIDTH;
+        /// <summary>
+        /// The name of the directory where the current state is saved.
+        /// </summary>
+        public const string STATE_DIRNAME = "State";
+        /// <summary>
+        /// The name of the directory where the current state is saved.
+        /// </summary>
+        public const string STATE_FILENAME = "State.json";
 
         /// <summary>
         /// The gatewayProxy
@@ -90,7 +103,8 @@ namespace RuralCafe
         /// <summary>
         /// The id of the next request.
         /// </summary>
-        protected int _nextRequestId = 1;
+        [JsonProperty]
+        protected long _nextRequestId = 1;
 
         # region Property Accessors
 
@@ -160,6 +174,11 @@ namespace RuralCafe
             {
                 _logger.Warn("Error initializing the " + name + " packages cache.");
             }
+
+            // Restore old state
+            LoadState();
+            // Tell the programm to serialize state before shutdown
+            Program.AddShutDownDelegate(SaveState);
         }
 
         /// <summary>
@@ -330,9 +349,70 @@ namespace RuralCafe
         /// Increments the value of next request ID by one and returns the old value.
         /// </summary>
         /// <returns>The old value.</returns>
-        public int GetAndIncrementNextRequestID()
+        public long GetAndIncrementNextRequestID()
         {
             return System.Threading.Interlocked.Increment(ref _nextRequestId) - 1;
         }
+
+        #region State (de)serialization
+
+        /// <summary>
+        /// Serializes the state. Called, when the proxy is being closed.
+        /// </summary>
+        public void SaveState()
+        {
+            string filename = _proxyPath + STATE_DIRNAME + Path.DirectorySeparatorChar + STATE_FILENAME;
+            Utils.CreateDirectoryForFile(filename);
+
+            JsonSerializer serializer = new JsonSerializer();
+            using (StreamWriter sw = new StreamWriter(filename))
+            using (JsonWriter writer = new JsonTextWriter(sw))
+            {
+                // All fiels marked with [JsonProperty] will be serialized
+                serializer.Serialize(writer, this);
+            }
+            _logger.Info("Serialized state.");
+        }
+
+        /// <summary>
+        /// Deserializes the state. Called when the program starts.
+        /// </summary>
+        public void LoadState()
+        {
+            string filename = _proxyPath + STATE_DIRNAME + Path.DirectorySeparatorChar + STATE_FILENAME;
+
+            string fileContent = Utils.ReadFileAsString(filename);
+            if (fileContent == "")
+            {
+                _logger.Info("No state to deserialize.");
+                // The file does not exist, we do not have to do anything.
+                return;
+            }
+            // Deserialize
+            try
+            {
+                JToken root = JObject.Parse(fileContent);
+                foreach(JToken field in root.Children())
+                {
+                    string varName = (field as JProperty).Name;
+                    
+                    // Find accoridng field.
+                    FieldInfo fi = this.GetType().GetField(varName, BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (fi != null)
+                    {
+                        // and set value
+                        object value = field.First.ToObject(fi.FieldType, new JsonSerializer());
+                        fi.SetValue(this, value);
+                    }
+                }
+                _logger.Info("Restored state.");
+            }
+            catch (Exception e)
+            {
+                _logger.Error("State deserialization failed: ", e);
+            }
+
+        }
+        #endregion
     }
 }
