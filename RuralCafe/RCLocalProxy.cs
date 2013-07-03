@@ -43,7 +43,6 @@ namespace RuralCafe
     {
         // Constants
         private const int REQUESTS_WITHOUT_USER_CAPACITY = 50;
-        private const string QUEUE_DIRNAME = "Queue";
         private const string QUEUES_FILENAME = "Queues.json";
 
         // RuralCafe pages path
@@ -392,6 +391,7 @@ namespace RuralCafe
         /// <param name="requestHandler">The request handler to queue.</param>
         public void QueueRequest(int userId, LocalRequestHandler requestHandler)
         {
+            // Order is important!
             requestHandler = QueueRequestGlobalQueue(requestHandler);
             QueueRequestUserQueue(userId, requestHandler);
 
@@ -452,14 +452,13 @@ namespace RuralCafe
             // add the request to the client's queue
             lock (requestHandlers)
             {
-                // add or replace
-                if (requestHandlers.Contains(requestHandler))
+                if (!requestHandlers.Contains(requestHandler))
                 {
-                    requestHandlers.Remove(requestHandler);
-                    requestHandler.OutstandingRequests--;
+                    // Just add, if its not already contained.
+                    requestHandlers.Add(requestHandler);
+                    requestHandler.OutstandingRequests++;
                 }
-                requestHandlers.Add(requestHandler);
-                requestHandler.OutstandingRequests++;
+                
             }
         }
 
@@ -470,6 +469,7 @@ namespace RuralCafe
         /// <param name="requestHandler">The request handler to dequeue.</param>
         public void DequeueRequest(int userId, LocalRequestHandler requestHandler)
         {
+            // Order is important!
             DequeueRequestGlobalQueue(requestHandler);
             DequeueRequestUserQueue(userId, requestHandler);
         }
@@ -488,17 +488,11 @@ namespace RuralCafe
                     int existingRequestIndex = _globalRequestQueue.IndexOf(requestHandler);
                     requestHandler = _globalRequestQueue[existingRequestIndex];
 
-                    // XXX: I don't get this...
                     // check to see if this URI is requested more than once
-                    // if so, just decrement count
                     // if not, remove it
                     if (requestHandler.OutstandingRequests == 1)
                     {
                         _globalRequestQueue.Remove(requestHandler);
-                    }
-                    else
-                    {
-                        //requestHandler.OutstandingRequests = requestHandler.OutstandingRequests - 1;
                     }
                 }
             }
@@ -520,7 +514,7 @@ namespace RuralCafe
                 {
                     if (requestHandlers.Contains(requestHandler))
                     {
-                        requestHandler.OutstandingRequests = requestHandler.OutstandingRequests - 1;
+                        requestHandler.OutstandingRequests--;
                         requestHandlers.Remove(requestHandler);
                     }
                 }
@@ -652,11 +646,10 @@ namespace RuralCafe
         /// </summary>
         public void SerializeQueue()
         {
-            string filename = _proxyPath + QUEUE_DIRNAME + Path.DirectorySeparatorChar + QUEUES_FILENAME;
+            string filename = _proxyPath + STATE_DIRNAME + Path.DirectorySeparatorChar + QUEUES_FILENAME;
             Utils.CreateDirectoryForFile(filename);
 
             JsonSerializer serializer = new JsonSerializer();
-            serializer.Formatting = Formatting.Indented;
             serializer.Converters.Add(new NameValueCollectionConverter());
             serializer.Converters.Add(new HttpWebRequestConverter());
 
@@ -673,7 +666,7 @@ namespace RuralCafe
         /// </summary>
         public void DeserializeQueue()
         {
-            string filename = _proxyPath + QUEUE_DIRNAME + Path.DirectorySeparatorChar + QUEUES_FILENAME;
+            string filename = _proxyPath + STATE_DIRNAME + Path.DirectorySeparatorChar + QUEUES_FILENAME;
 
             string fileContent = Utils.ReadFileAsString(filename);
             if (fileContent == "")

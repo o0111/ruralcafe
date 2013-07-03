@@ -146,7 +146,7 @@ namespace RuralCafe
         
         // ID
         [JsonProperty]
-        protected int _requestId;
+        protected long _requestId;
         // number of outstanding requests for this object
         [JsonProperty]
         protected int _outstandingRequests;
@@ -242,12 +242,6 @@ namespace RuralCafe
         }
 
         #region Property Accessors
-
-        /// <summary>Request ID</summary>
-        public int RequestId
-        {
-            get { return _requestId; }
-        }
         /// <summary>Unique Item ID</summary>
         public string ItemId
         {
@@ -783,7 +777,7 @@ namespace RuralCafe
         /// </summary>
         public void LogRequest()
         {
-            string str = _requestId + " " + Context.Request.RemoteEndPoint.Address +
+            string str = "ID" + _requestId + " " + Context.Request.RemoteEndPoint.Address +
                          " " + _rcRequest.GenericWebRequest.Method + " " + RequestUri +
                          " REFERER " + RefererUri + " " + 
                          RequestStatus + " " + _rcRequest.FileSize;
@@ -795,7 +789,7 @@ namespace RuralCafe
         /// </summary>
         public void LogResponse()
         {
-            string str = _requestId +  " RSP " + RequestUri + " " + 
+            string str = "ID" + _requestId + " RSP " + RequestUri + " " + 
                         RequestStatus + " " + _rcRequest.FileSize;
             _proxy.Logger.Info(str);
         }
