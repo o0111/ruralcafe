@@ -303,12 +303,16 @@ namespace RuralCafe
             {
                 if (NetworkStatus == NetworkStatusCode.Slow)
                 {
-                    LocalRequestHandler requestHandler = PopGlobalRequest();
+                    LocalRequestHandler requestHandler = GetFirstGlobalRequest();
                     if (requestHandler != null)
                     {
                         if (requestHandler.RequestStatus != RequestHandler.Status.Pending)
                         {
                             // skip requests in global queue that are not pending, probably requeued from log
+                            lock (_globalRequestQueue)
+                            {
+                                _globalRequestQueue.RemoveAt(0);
+                            }
                             continue;
                         }
                         // Save start time
@@ -359,6 +363,11 @@ namespace RuralCafe
                         UpdateTimePerRequest(requestHandler.StartTime, requestHandler.FinishTime);
 
                         requestHandler.LogResponse();
+                        // Remove from queue, as request is finished
+                        lock (_globalRequestQueue)
+                        {
+                            _globalRequestQueue.RemoveAt(0);
+                        }
                     }
                     else
                     {
@@ -519,10 +528,10 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Returns (and removes) the first global request in the queue or null if no request exists.
+        /// Returns the first global request in the queue or null if no request exists.
         /// </summary>
         /// <returns>The first unsatisfied request by the next user or null if no request exists.</returns>
-        public LocalRequestHandler PopGlobalRequest()
+        public LocalRequestHandler GetFirstGlobalRequest()
         {
             LocalRequestHandler requestHandler = null;
 
@@ -532,7 +541,6 @@ namespace RuralCafe
                 if (_globalRequestQueue.Count > 0)
                 {
                     requestHandler = _globalRequestQueue[0];
-                    _globalRequestQueue.RemoveAt(0);
                 }
             }
             return requestHandler;
@@ -713,41 +721,38 @@ namespace RuralCafe
             }
         }
 
-        // predicate object for ETA calculations
-        private LocalRequestHandler _predicateObj = null;
-
         /// <summary>
         /// Returns the number of seconds until request is expected to be satisfied.
-        /// Calculates the ETA by looking at the average satisfied time and the position of this request.
+        /// Calculates the ETA by looking at the average satisfied time, the current running time of
+        /// tfirst request and the position of this request.
         /// </summary>
         /// <param name="requestHandler">The request for which we want the ETA.</param>
         /// <returns>ETA in seconds.</returns>
         public int ETA(LocalRequestHandler requestHandler)
         {
-            // set the predicate object
-            _predicateObj = requestHandler;
-            int requestPosition = _globalRequestQueue.FindIndex(SameRCRequestPredicate);
-            // +2 since -1 if the item doesn't exist (which means its being serviced now)
-            return (int)((requestPosition + 2) * _averageTimePerRequest.TotalSeconds);
-        }
+            int requestPosition = _globalRequestQueue.IndexOf(requestHandler);
 
-        /// <summary>
-        /// Predicate method for findindex in ETA.
-        /// </summary>
-        /// <param name="requestHandler">The other request object's handler.</param>
-        /// <returns>True or false for match or no match.</returns>
-        private bool SameRCRequestPredicate(LocalRequestHandler requestHandler)
-        {
-            if (_predicateObj == null || requestHandler == null)
+            if (requestPosition == -1)
             {
-                return false;
+                // The request might have been finished ms ago. Otherwise sth. is wrong.
+                return 0;
             }
 
-            if (_predicateObj.RequestUri == requestHandler.RequestUri)
+            // Determine the time the first request is already running
+            double secondsFirstRequestRunning = _averageTimePerRequest.TotalSeconds;
+            LocalRequestHandler firstHandler = _globalRequestQueue[0];
+            if(firstHandler != null)
             {
-                return true;
+                secondsFirstRequestRunning = (DateTime.Now - firstHandler.StartTime).TotalSeconds;
             }
-            return false;
+            if (secondsFirstRequestRunning > _averageTimePerRequest.TotalSeconds)
+            {
+                // This means, by avg. the first request should be ready, but it isn't
+                secondsFirstRequestRunning = _averageTimePerRequest.TotalSeconds;
+            }
+
+            // Calculate remaining time
+            return (int)(((requestPosition + 1) * _averageTimePerRequest.TotalSeconds) - secondsFirstRequestRunning);
         }
 
         # endregion
