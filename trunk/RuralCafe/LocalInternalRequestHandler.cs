@@ -619,11 +619,6 @@ namespace RuralCafe
             {
                 return new Response("0");
             }
-
-            if (requestHandlers[requestIndex].RequestStatus == RequestHandler.Status.Pending)
-            {
-                return new Response("-1");
-            }
             return new Response(requestHandlers[requestIndex].PrintableETA());
         }
 

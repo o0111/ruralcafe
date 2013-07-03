@@ -218,15 +218,17 @@ namespace RuralCafe
         /// <returns>ETA as a printable string.</returns>
         public string PrintableETA()
         {
-            int eta = ((RCLocalProxy)_proxy).ETA(this);
-            string etaString = "";
             if ((this.RequestStatus == Status.Completed) ||
                 (this.RequestStatus == Status.Failed))
             {
-                etaString = "0";
+                return "0";
             }
-            else if (eta < 60)
+
+            string etaString;
+            int eta = ((RCLocalProxy)_proxy).ETA(this);
+            if (eta < 60)
             {
+                // This includes negative ETA (by avg. the request should be ready, but it isn't)
                 etaString = "< 1 min";
             }
             else
@@ -235,14 +237,7 @@ namespace RuralCafe
                 eta = eta / 60;
                 if (eta < 60)
                 {
-                    if (eta == 1)
-                    {
-                        etaString = "1 min";
-                    }
-                    else
-                    {
-                        etaString = eta.ToString() + " min";
-                    }
+                    etaString = eta.ToString() + " min";
                 }
                 else
                 {
@@ -258,7 +253,6 @@ namespace RuralCafe
                     }
                 }
             }
-            //LogDebug("eta sent: " + etaString);
             return etaString;
         }
 
