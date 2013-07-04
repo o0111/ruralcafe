@@ -12,7 +12,8 @@ function loadResult() {
 	if (window.location.pathname) {
 		var path = window.location.href;
 		searchString=path.slice(path.search('s=')+2);
-		//changfe here now no p is passed
+		//change here now no p is passed
+		pageNum = parseInt(path.slice(path.search('p=')+2,path.search('&'))) || 1;
 		if (searchString != "")
 			showResult('request/result.xml?n='+noi+'&p='+pageNum+'&s='+searchString);
 	}

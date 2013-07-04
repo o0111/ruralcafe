@@ -41,4 +41,11 @@ function addLoadEvent(func) {
 function greetingMsg() {
 	document.getElementById('internet_signin').innerHTML = "Hi, "+get_cookie('uname')+'<br /><a href="logout.html">Sign out</a>';
 }
-	
+
+// Define helper methods
+// startsWith for strings
+if (typeof String.prototype.startsWith != 'function') {
+  String.prototype.startsWith = function (str){
+    return this.slice(0, str.length) == str;
+  };
+}

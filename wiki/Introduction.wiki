@@ -1,8 +1,6 @@
 #labels Featured,Phase-Implementation,Phase-Deploy
 RuralCafe is a platform for web search and browsing over extremely slow or intermittent networks.
 
-<img src="http://ruralcafe.googlecode.com/files/v2_multitasking.jpg" width="400" alt="screenshot"/>
-
 RuralCafe improves web search and browsing this by providing an expanded search query interface which allows a user to specify additional query terms to maximize the utility of the results returned by a search query. Given knowledge of the limited available network resources, RuralCafe performs optimizations to prefetch pages to best satisfy a search query based on a user.s search preferences. In addition, RuralCafe does not require modifications to the web browser, and can provide single round search results tailored to various types of networks and economic constraints.
 
 RuralCafe consists of two main components the local proxy and remote proxy. Each proxy is responsible for a different set of web optimizations. The local proxy is meant to be deployed at the local area network gateway to perform caching, enable local search, and manage client requests. The remote proxy resides on a separate machine on the other end of the slow network link, and is presumably well-connected to the Internet. The remote proxy coordinates with the local proxy by accepting requests, and attempts to prefetch useful pages and filter unwanted content on behalf of the local proxy. Together, the two proxies coordinate across the slow link to maximize its overall effectiveness.
@@ -16,7 +14,7 @@ RuralCafe is designed to be deployable in three basic configurations depending o
 The first is the configuration described above with both a local proxy on the LAN gateway machine and a remote proxy on a well-connected machine. RuralCafe's optimizations are fully available in this configuration and details may be found in the technical paper here.
 Having access to the LAN gateway and a remote machine is not always possible. In the case where no remote machine is available, the remote proxy may be deployed on the same machine as the local proxy at the gateway. In this case, filtering is no longer beneficial, but the benefits of prefetching would still be intact.
 If access to even a LAN gateway is not available (i.e. in the case of a user with a single machine) RuralCafe may be installed completely on one client machine. With this setup RuralCafe is still able to manage requests and perform prefetching and local search, but the quality may be reduced to the the lack of aggregate browsing statistics and a shared cache.
-Each of the machines where the RuralCafe software will be running requires Windows XP or above, and .NET Framework 3.5 installed. Optionally, Visual Studio 2008+ is required for debugging and modifying the source code.
+Each of the machines where the RuralCafe software will be running requires Windows XP or above, and .NET Framework 3.5 installed. Optionally, Visual Studio 2012+ is required for debugging and modifying the source code.
 
 = Installation =
 
@@ -27,16 +25,19 @@ Install .NET 3.5.
  * RuralCafe can also be configured via two text files, but they need to be synchronized. Some values do not appear in the first file.
    * RuralCafe/app.config
    * RuralCafe/Properties/Settings.settings
- * To manually add an user account, edit the users.xml file in RuralCafe/bin/Debug/LocalProxy/RuralCafePages. Users can be added in the format of: 
+ * If you are a developer, use Visual Studio to build the code. You can than use <pre>RuralCafe/bin/Debug</pre> to further configure RuralCafe. If you are not a developer, you can also just install RuralCafe and do not need Visual Studio. For this, execute <pre>RuralCafe/publish/setup.exe</pre> to install the latest published version of RuralCafe, which does not have to be the most recent version.
+ * To manually add an user account, edit the users.xml file in <pre>RuralCafe/bin/Debug/LocalProxy/RuralCafePages</pre>. Users can be added in the format of: 
     <pre><customer custid="userid"></pre>
         <pre><user>username</user></pre>
         <pre><pwd>password</pwd></pre>
     <pre></customer></pre>
- * To manually add topics to the index page, edit the index.xml file in RuralCafe/bin/Debug/LocalProxy/RuralCafePages.
- * After the configuration is completed start RuralCafe by executing "RuralCafe/bin/Debug/RuralCafe.exe".
+	You can also add users via our user interface, which has a registration page.
+ * To manually add topics to the index page, edit the index.xml file in <pre>RuralCafe/bin/Debug/LocalProxy/RuralCafePages</pre>
+ * After the configuration is completed start RuralCafe by executing <pre>RuralCafe/bin/Debug/RuralCafe.exe</pre>, or select Start (Debug) in Visual Studio. If you have installed RuralCafe with the setup.exe, just run the shortcut in your start menu.
+ * You might need to run Visual Studio, setup.exe and RuralCafe itself "as administrator", if the rights to use the ports are missing otherwise.
+ * If you are running the local proxy and the remote proxy on different machines, you might need to disable or configure your firewall to accept in/outcoming requests on that port for RuralCafe and/or VisualStudio.
 
-To interact with RuralCafe, the browser must be configured to use RuralCafe as the proxy using the IP address and port of the local proxy set in the configuration (below). These settings can be found in the connection settings of any modern browser (IE, Firefox, Chrome). Also, the browser's homepage set to "http://www.ruralcafe.net/".
-Note that for deployments where RuralCafe is running the local and remote components on seperate machines, steps 1-3 must be followed for the remote proxy machine as well.
+To interact with RuralCafe, the browser must be configured to use RuralCafe as the proxy using the IP address and port of the local proxy set in the configuration (below). These settings can be found in the connection settings of any modern browser (IE, Firefox, Chrome). Also, set the browser's homepage to http://www.ruralcafe.net/
 
 = Configuration =
 
@@ -80,6 +81,12 @@ Finally, if a local copy of Wikipedia is available, the WIKI_DUMP_FILE may be se
 = Wikipedia Indexing =
 
 Prior to being able to search through a wikipedia image dump from wikipedia.org, the image dump must be first indexed. To do this, run bzReader and enter the correct information for the location of the image dump.
+
+= Publishing =
+
+To publish the most recent version of RuralCafe, you need Visual Studio. Right click on RuralCafe in the Solution Explorer on the right and choose "Properties". Navigate to "Publish". Scroll down and enter the current revision under "Publish Version". Click "Publish Now". You might need to delete a folder, when an error appears. Don't forget to add the newly generated folder <pre>RuralCafe/publish/ApplicationFiles/RuralCafe_1_0_0_RR</pre> (RR is the current revision) to version control and probably delete the old one.
+
+Whenever you add a new file you want to be copied to the output directory (you usually want this for TroTro pages, otherwise the UI might not work for the published version), you must configure Visual Studio to do so. For this left click the file in the Solution Explorer and in the properties below choose "Copy if newer" for "Copy to output directory". Sadly you cannot do this for whole folders.
 
 = Bugs =
 
