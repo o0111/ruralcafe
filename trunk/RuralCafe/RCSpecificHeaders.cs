@@ -16,6 +16,11 @@ namespace RuralCafe
         public int RCUserID;
 
         /// <summary>
+        /// If we're streaming transparantly. False by default.
+        /// </summary>
+        public bool IsStreamingTransparently = false;
+
+        /// <summary>
         /// Default Constructor.
         /// </summary>
         public RCSpecificRequestHeaders() { }
@@ -28,6 +33,15 @@ namespace RuralCafe
         {
             RCUserID = userID;
         }
+        /// <summary>
+        /// Constructor with stream transparantly
+        /// </summary>
+        /// <param name="streamTransparently">If we're streaming transparently.</param>
+        public RCSpecificRequestHeaders(bool streamTransparently)
+        {
+            IsStreamingTransparently = streamTransparently;
+        }
+
     }
 
     /// <summary>

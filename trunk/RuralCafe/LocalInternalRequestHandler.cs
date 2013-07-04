@@ -587,7 +587,7 @@ namespace RuralCafe
 
             ((RCLocalProxy)_proxy).QueueRequest(userId, lrh);
             // Redirect to homepage
-            redirectUrl = "http://www.ruralcafe.net/";
+            redirectUrl = RC_PAGE;
             _clientHttpContext.Response.Redirect(redirectUrl);
             return new Response();
         }
@@ -597,8 +597,7 @@ namespace RuralCafe
         /// </summary>
         public Response RemoveRequest(string itemId)
         {
-            LocalRequestHandler matchingRequestHandler = new LocalRequestHandler(itemId);
-            ((RCLocalProxy)_proxy).DequeueRequest(UserIDCookieValue, matchingRequestHandler);
+            ((RCLocalProxy)_proxy).DequeueRequest(UserIDCookieValue, itemId);
             return new Response();
         }
 
@@ -613,13 +612,14 @@ namespace RuralCafe
             {
                 return new Response("0");
             }
-            LocalRequestHandler matchingRequestHandler = new LocalRequestHandler(itemId);
-            int requestIndex = requestHandlers.IndexOf(matchingRequestHandler);
-            if (requestIndex < 0)
+            // This gets the requestHandler with the same ID, if there is one
+            LocalRequestHandler requestHandler =
+                        requestHandlers.Where(rh => rh.ItemId == itemId).FirstOrDefault();
+            if (requestHandler == null)
             {
                 return new Response("0");
             }
-            return new Response(requestHandlers[requestIndex].PrintableETA());
+            return new Response(requestHandler.PrintableETA());
         }
 
         #endregion

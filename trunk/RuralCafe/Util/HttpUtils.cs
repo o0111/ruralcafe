@@ -46,6 +46,10 @@ namespace RuralCafe.Util
             webRequest.ContentLength = listenerRequest.ContentLength64;
             webRequest.ContentType = listenerRequest.ContentType;
             webRequest.Referer = listenerRequest.UrlReferrer == null ? null : listenerRequest.UrlReferrer.ToString();
+            // Always accept gzip or deflate encoding!
+            // (the remote proxy will ignore this, but it can be useful for actual websites)
+            // With this setting the response will be decompressed automatically.
+            webRequest.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
 
             return webRequest;
         }
@@ -59,10 +63,9 @@ namespace RuralCafe.Util
         {
             foreach (string key in headers)
             {
-                // FIXME ATM no Accept-Encoding due to GZIP failure
-                // We handle these after the foreach loop 
                 // (Do NOT set Host- or Proxy-Connection-header!)
                 // Range may be ignored by Servers anyway, Expect will never be set by us.
+                // Accept-Encoding can be set manually, but we're ignoring it here
                 if (key.Equals("User-Agent") || key.Equals("Accept") || key.Equals("Referer")
                      || key.Equals("Content-Type") || key.Equals("Content-Length")
                      || key.Equals("Host") || key.Equals("Proxy-Connection")

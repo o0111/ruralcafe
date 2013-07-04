@@ -208,11 +208,6 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// FIXME remove those!
-        /// </summary>
-        public RCRequest() { }
-
-        /// <summary>
         /// Constructor for a RuralCafe Request.
         /// </summary>
         /// <param name="requestHandler">The handler for the request.</param>
@@ -560,8 +555,6 @@ namespace RuralCafe
                         }
                     }
                 }
-
-                // Read and save the response
 
                 // XXX: Use a stream reader!?
                 Stream responseStream = GenericWebResponse.GetResponseStream();

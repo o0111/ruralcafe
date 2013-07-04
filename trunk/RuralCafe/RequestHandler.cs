@@ -43,8 +43,7 @@ namespace RuralCafe
         /// <summary>
         /// The status for a request.
         /// 
-        /// XXX: kind of ugly since this is being used by both the Generic/Local/RemoteRequest and RCRequests
-        /// TODO: downloading && offline -> waiting (new status) ???
+        /// TODO: downloading and offline: waiting (new status) ???
         /// </summary>
         public enum Status
         {
@@ -68,6 +67,9 @@ namespace RuralCafe
         /// The name of our homepage.
         /// </summary>
         public const string RC_PAGE = "http://www.ruralcafe.net/";
+        /// <summary>
+        /// The name of our homepage without preceding www.
+        /// </summary>
         public const string RC_PAGE_WITHOUT_WWW = "http://ruralcafe.net/";
         private static readonly Regex redirRegex = new Regex(@"HTTP/1\.1 301 Moved PermanentlyLocation: (?<uri>\S+)");
 
@@ -204,13 +206,9 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// DUMMY used for request matching.
-        /// XXX: Not the cleanest implementation need to instantiate a whole object just to match
-        /// </summary> 
-        public RequestHandler()
-        {
-            _outstandingRequests = 1;
-        }
+        /// Default constructor for JSON.
+        /// </summary>
+        public RequestHandler() { }
 
         /// <summary>
         /// Overriding Equals() from base object.
@@ -397,11 +395,8 @@ namespace RuralCafe
                 }
                 else
                 {
-                    // XXX: was streaming these unparsable URIs, but this is disabled for now
-                    // XXX: mangled version of the one in LocalRequestHandler, duplicate, and had to move the StreamTransparently() up to this parent class
-                    Logger.Debug("streaming: " + _originalRequest.RawUrl.ToString() + " to client.");
-                    long bytesSent = StreamTransparently();
-                    return;
+                    // Invalid URIs are ignored.
+                    Logger.Debug("URI invalid: " + _originalRequest.RawUrl.ToString());
                 }
             }
             catch (Exception e)
@@ -418,7 +413,14 @@ namespace RuralCafe
                 // disconnect and close the socket
                 if (_clientHttpContext != null)
                 {
-                    _clientHttpContext.Response.Close();
+                    try
+                    {
+                        _clientHttpContext.Response.Close();
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Warn("Could not close the response context: ", e);
+                    }
                     
                 }
                 // XXX: _rcRequest.FinishTime = DateTime.Now;
@@ -431,7 +433,7 @@ namespace RuralCafe
         /// </summary>
         /// <param name="request">The HTTP request.</param>
         /// <param name="refererUri">The referrer.</param>
-        /// <returns></returns>
+        /// <returns><code>True</code>, iff the URI is valid and a request has been created.</returns>
         protected bool CreateRequest(HttpListenerRequest request, string refererUri)
         {
             if (HttpUtils.IsValidUri(request.RawUrl.ToString()))
@@ -448,6 +450,25 @@ namespace RuralCafe
         public abstract Status HandleRequest();
 
 
+        #region streaming
+        /// <summary>
+        /// If the request is cacheable, it is streamed to cache and then to client.
+        /// If not it is streamed to the client directly.
+        /// </summary>
+        /// <returns>The status of the request.</returns>
+        protected Status SelectStreamingMethodAndStream()
+        {
+            if (IsCacheable())
+            {
+                // Stream to cache and client
+                return StreamToCacheAndClient();
+            }
+            // Otherwise just stream to the client.
+            long bytesSent = StreamTransparently();
+            _rcRequest.FileSize = bytesSent;
+            return Status.Completed;
+        }
+
         /// <summary>
         /// Stream the request to the server and the response back to the client transparently.
         /// XXX: does not have gateway support or tunnel to remote proxy support
@@ -455,7 +476,7 @@ namespace RuralCafe
         /// <returns>The length of the streamed result.</returns>
         protected long StreamTransparently()
         {
-            //Util.StreamBody(_originalRequest, _rcRequest.GenericWebRequest);
+            Logger.Debug("streaming: " + RequestUri + " to client.");
             // Stream parameters, if we have non GET/HEAD
             HttpUtils.SendBody(_rcRequest.GenericWebRequest, _rcRequest.Body);
             WebResponse serverResponse = _rcRequest.GenericWebRequest.GetResponse();
@@ -463,7 +484,7 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Stream the file from the cache to the client. Only used by local rh or local internal rh.
+        /// Stream the file from the cache to the client.
         /// </summary>
         /// <param name="fileName">Name of the file to stream to the client.</param>
         /// <returns>Bytes streamed from the cache to the client.</returns>
@@ -534,7 +555,8 @@ namespace RuralCafe
             catch (Exception e)
             {
                 // XXX: don't think this is the way to handle such an error.
-                SendErrorPage(HttpStatusCode.InternalServerError, "problem streaming the package from disk to client: " + e.StackTrace + " " + e.Message);
+                SendErrorPage(HttpStatusCode.InternalServerError, 
+                    "problem streaming the package from disk to client: " + e.StackTrace + " " + e.Message);
             }
             finally
             {
@@ -546,6 +568,42 @@ namespace RuralCafe
             return -1;
         }
 
+        /// <summary>
+        /// Streams a request first to the cache and then from the cache back to the client.
+        /// 
+        /// XXX: response time could be improved here if it downloads and streams to the client at the same time
+        /// basically, somehow merge the DownloadtoCache() and StreamfromcachetoClient() methods into this method.
+        /// </summary>
+        /// <returns>The Status of the request.</returns>
+        protected Status StreamToCacheAndClient()
+        {
+            Logger.Debug("streaming: " + _rcRequest.GenericWebRequest.RequestUri + " to cache and client.");
+            long bytesDownloaded = _rcRequest.DownloadToCache(true);
+            try
+            {
+                FileInfo f = new FileInfo(_rcRequest.CacheFileName);
+                if (bytesDownloaded > -1 && f.Exists)
+                {
+                    _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName);
+                    if (_rcRequest.FileSize < 0)
+                    {
+                        return Status.Failed;
+                    }
+                    return Status.Completed;
+                }
+                else
+                {
+                    return Status.Failed;
+                }
+            }
+            catch
+            {
+                // do nothing
+            }
+            return Status.Failed;
+        }
+
+        #endregion
         #region RC Headers
 
         /// <summary>

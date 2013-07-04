@@ -88,6 +88,13 @@ namespace RuralCafe
             // Get RC headers
             RCSpecificRequestHeaders rcHeaders = GetRCSpecificRequestHeaders();
 
+            if (rcHeaders.IsStreamingTransparently)
+            {
+                // We're streaming transparantly:
+                // No prefetching, no packaging.
+                return SelectStreamingMethodAndStream();
+            }
+
             // Get current richness!
             Richness richness = ((RCRemoteProxy)_proxy).
                 GetUserSettings(Context.Request.RemoteEndPoint, rcHeaders.RCUserID).richness;
