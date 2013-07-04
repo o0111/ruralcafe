@@ -466,28 +466,28 @@ namespace RuralCafe
         /// Removes a single request from the queues.
         /// </summary>
         /// <param name="userId">The userId of the client.</param>
-        /// <param name="requestHandler">The request handler to dequeue.</param>
-        public void DequeueRequest(int userId, LocalRequestHandler requestHandler)
+        /// <param name="requestHandlerItemId">The item id of the request handlers to dequeue.</param>
+        public void DequeueRequest(int userId, string requestHandlerItemId)
         {
             // Order is important!
-            DequeueRequestGlobalQueue(requestHandler);
-            DequeueRequestUserQueue(userId, requestHandler);
+            DequeueRequestGlobalQueue(requestHandlerItemId);
+            DequeueRequestUserQueue(userId, requestHandlerItemId);
         }
 
         /// <summary>
         /// Removes a single request from global queue.
         /// </summary>
-        /// <param name="requestHandler">The request handler to dequeue.</param>
-        private void DequeueRequestGlobalQueue(LocalRequestHandler requestHandler)
+        /// <param name="requestHandlerItemId">The item id of the request handlers to dequeue.</param>
+        private void DequeueRequestGlobalQueue(string requestHandlerItemId)
         {
             // remove the request from the global queue
             lock (_globalRequestQueue)
             {
-                if (_globalRequestQueue.Contains(requestHandler))
+                // This gets the requestHandler with the same ID, if there is one
+                LocalRequestHandler requestHandler = 
+                    _globalRequestQueue.Where(rh => rh.ItemId == requestHandlerItemId).FirstOrDefault();
+                if (requestHandler != null)
                 {
-                    int existingRequestIndex = _globalRequestQueue.IndexOf(requestHandler);
-                    requestHandler = _globalRequestQueue[existingRequestIndex];
-
                     // check to see if this URI is requested more than once
                     // if not, remove it
                     if (requestHandler.OutstandingRequests == 1)
@@ -502,8 +502,8 @@ namespace RuralCafe
         /// Removes a single request from user queue.
         /// </summary>
         /// <param name="userId">The userId of the client.</param>
-        /// <param name="requestHandler">The request handler to dequeue.</param>
-        private void DequeueRequestUserQueue(int userId, LocalRequestHandler requestHandler)
+        /// <param name="requestHandlerItemId">The item id of the request handlers to dequeue.</param>
+        private void DequeueRequestUserQueue(int userId, string requestHandlerItemId)
         {
             // remove the request from the client's queue
             // don't need to lock the _clientRequestQueueMap for reading
@@ -512,7 +512,10 @@ namespace RuralCafe
                 List<LocalRequestHandler> requestHandlers = _clientRequestQueueMap[userId];
                 lock (requestHandlers)
                 {
-                    if (requestHandlers.Contains(requestHandler))
+                    // This gets the requestHandler with the same ID, if there is one
+                    LocalRequestHandler requestHandler =
+                        requestHandlers.Where(rh => rh.ItemId == requestHandlerItemId).FirstOrDefault();
+                    if (requestHandler != null)
                     {
                         requestHandler.OutstandingRequests--;
                         requestHandlers.Remove(requestHandler);

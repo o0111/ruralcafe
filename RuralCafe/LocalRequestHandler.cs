@@ -73,15 +73,6 @@ namespace RuralCafe
         {
             _requestTimeout = LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT;
         }
-        /// <summary>
-        /// DUMMY used for request matching.
-        /// XXX: Not the cleanest implementation need to instantiate a whole object just to match
-        /// </summary> 
-        /// <param name="itemId">The item id of the request handler.</param>
-        public LocalRequestHandler(string itemId)
-        {
-            _rcRequest = new RCRequest(itemId);
-        }
 
         /// <summary>
         /// Default constructor for JSON.
@@ -109,20 +100,6 @@ namespace RuralCafe
                 return ServeWikiURI();
             }
 
-            // XXX: not cacheable, ignore, and log it instead of streaming for now
-            // XXX: we could pass through this stuff directly, but it would require bypassing all filtering
-            if (!IsCacheable()
-                && _proxy.NetworkStatus == RCProxy.NetworkStatusCode.Online
-                )
-            {
-                Logger.Debug("streaming: " + RequestUri + " to client.");
-
-                long bytesSent = StreamTransparently();
-                _rcRequest.FileSize = bytesSent;
-
-                return Status.Completed;
-            }
-
             // Do only use cache for HEAD/GET
             if (IsGetOrHeadHeader() && IsCached(_rcRequest.CacheFileName))
             {
@@ -143,37 +120,13 @@ namespace RuralCafe
             // XXX: behaving like a synchronous proxy
             // XXX: this is fine if we're online, fine if we're offline since it'll fail.. but doesn't degrade gradually
 
-            // XXX: response time could be improved here if it downloads and streams to the client at the same time
-            // XXX: basically, merge the DownloadtoCache() and StreamfromcachetoClient() methods into a new third method.
             // cacheable but not cached, cache it, then send to client if there is no remote proxy
             // if online, stream to cache, then stream to client.
             if (_proxy.NetworkStatus == RCProxy.NetworkStatusCode.Online)
             {
-                Logger.Debug("streaming: " + _rcRequest.GenericWebRequest.RequestUri + " to cache and client.");
-                _rcRequest.GenericWebRequest.Proxy = null;
-                long bytesDownloaded = _rcRequest.DownloadToCache(true);
-                try
-                {
-                    FileInfo f = new FileInfo(_rcRequest.CacheFileName);
-                    if (bytesDownloaded > -1 && f.Exists)
-                    {
-                        _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName);
-                        if (_rcRequest.FileSize < 0)
-                        {
-                            return Status.Failed;
-                        }
-                        return Status.Completed;
-                    }
-                    else
-                    {
-                        return Status.Failed;
-                    }
-                }
-                catch
-                {
-                    // do nothing
-                }
-                return Status.Failed;
+                // We're streaming through the remote proxy.
+                SetStreamToRemoteProxy();
+                return SelectStreamingMethodAndStream();
             }
             
             if (_proxy.NetworkStatus != RCProxy.NetworkStatusCode.Online)
@@ -210,6 +163,18 @@ namespace RuralCafe
                 return Status.Completed;
             }
             return Status.Failed;
+        }
+
+        /// <summary>
+        /// Configures the request handler to stream the request trough the remote proxy.
+        /// </summary>
+        /// <returns>The length of the streamed result.</returns>
+        private void SetStreamToRemoteProxy()
+        {
+            // Set Remote Proxy as Proxy
+            RCRequest.SetProxyAndTimeout(((RCLocalProxy)_proxy).RemoteProxy, System.Threading.Timeout.Infinite);
+            // Set flag to indicate we're streaming
+            AddRCSpecificRequestHeaders(new RCSpecificRequestHeaders(true));
         }
 
         /// <summary>
@@ -334,7 +299,6 @@ namespace RuralCafe
                     // This sets Location header and status code!
                     _clientHttpContext.Response.Redirect(urea.RedirectTarget);
                 }
-                //SendWikiHeader("HTTP/1.1", sendBuf.Length, redirectUrl, _clientHttpContext);
                 SendMessage(urea.Response);
             }
             catch (Exception)
