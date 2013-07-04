@@ -139,7 +139,7 @@ function showXML(searchString){
 	}
 }
 
-//perpare the html code for an item with given index
+//prepare the html code for an item with given index
 function itemHTML(index){
 	var itemId=results.item(index).attributes[0].nodeValue;
 	var itemTitle=results[index].getElementsByTagName('title')[0].firstChild.nodeValue;
@@ -184,29 +184,33 @@ function getEST(){
 		var mygetrequests=new ajaxRequest();
 		var updateEST=function(request, index){
 			return function(){
-			if (request.readyState==4){
-				if (request.status==200){
-					var est=request.responseText;
-					if (est && est!=''){
-						//pending.... est=-1
-						if (est!='0' && est!='-1'){
-							var statusspan=document.getElementById('status_'+itemIds[index]);
-							if (statusspan){
-								statusspan.innerHTML='<img src="img/downloading.gif" /> '+est.replace(/</g,'&lt;').replace(/>/g,'&gt;');
-								statusspan.className="status Downloading";
+				if (request.readyState==4){
+					if (request.status==200){
+						var est=request.responseText;
+						if (est && est!=''){
+							// Still downloading or pending
+							if (est!='0' && est!='-1'){
+								var statusspan=document.getElementById('status_'+itemIds[index]);
+								if (statusspan){
+									if(statusspan.innerHTML.startsWith('Downloading')) {
+										statusspan.innerHTML = 'Downloading<br><img src="img/downloading.gif" /> ';
+									} else {
+										statusspan.innerHTML = 'Pending<br>';
+									}
+									statusspan.innerHTML  += est.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+								}
+							}
+							//Finished
+							else if (est=='0'){ //finish downloading
+								stopCountDown(index);
+								loadQueue('request/queue.xml?v=0');
 							}
 						}
-						//else if downloading... est=0 
-						else if (est=='0'){ //finish downloading
-							stopCountDown(index);
-							loadQueue('request/queue.xml?v=0');
-						}
+					}
+					else {
+						stopCountDown(index);
 					}
 				}
-				else {
-					stopCountDown(index);
-				}
-			}
 			}
 		}
 		mygetrequests.onreadystatechange=updateEST(mygetrequests,index);
