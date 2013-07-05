@@ -29,7 +29,7 @@ namespace RuralCafe
             Console.SetWindowPosition(0, 0);
 
             // load Configuration Settings
-            Program.saveConfigs();
+            Program.SaveConfigs();
 
             // start the local proxy
             //StartLocalProxy();
