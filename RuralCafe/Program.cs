@@ -127,13 +127,13 @@ namespace RuralCafe
             // Setting form at startup.
             SettingsForm sf = new SettingsForm();
             sf.ShowDialog();
-            saveConfigs();
+            SaveConfigs();
 
             // Config Logger
             RCLogger.InitLogger();
 
             // Log configuration
-            logConfiguration();
+            LogConfiguration();
 
             bool localProxyStarted = false;
             // start the local proxy
@@ -159,7 +159,7 @@ namespace RuralCafe
         /// <summary>
         /// Logs all configuration items. This will only be printed if LogLevel >= INFO.
         /// </summary>
-        private static void logConfiguration()
+        private static void LogConfiguration()
         {
             foreach (SettingsPropertyValue currentProperty in Properties.Settings.Default.PropertyValues)
             {
@@ -170,7 +170,7 @@ namespace RuralCafe
         /// <summary>
         /// Saves the configuration.
         /// </summary>
-        public static void saveConfigs()
+        public static void SaveConfigs()
         {
             // Path and stuff Configuration Settings
             INDEX_PATH = Properties.Settings.Default.INDEX_PATH + Path.DirectorySeparatorChar;
@@ -188,9 +188,12 @@ namespace RuralCafe
             {
                 REMOTE_CACHE_PATH = REMOTE_PROXY_PATH + REMOTE_CACHE_PATH;
             }
-
-            WIKI_DUMP_FILE = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + Properties.Settings.Default.WIKI_DUMP_DIR
+            WIKI_DUMP_FILE =  Properties.Settings.Default.WIKI_DUMP_DIR
                 + Path.DirectorySeparatorChar + Properties.Settings.Default.WIKI_DUMP_FILE;
+            if(!WIKI_DUMP_FILE.Contains(":\\"))
+            {
+                WIKI_DUMP_FILE = LOCAL_PROXY_PATH + WIKI_DUMP_FILE;
+            }
         }
 
         /// <summary>
