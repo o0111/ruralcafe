@@ -34,7 +34,7 @@ namespace RuralCafe.Util
     /// A set of utility functions for manipulating files and directories, 
     /// getting file extensions and mime types, and page contents.
     /// </summary>
-    public class Utils
+    public static class Utils
     {
         /// <summary>
         /// Map from file extension to HTTP MIME type
@@ -353,19 +353,16 @@ namespace RuralCafe.Util
                 }
 
                 // open the file stream
-                FileStream fs = f.Open(FileMode.Open, FileAccess.Read);
-
-                // loop and get the bytes we need if we couldn't get it in one go
-                StreamReader r = new StreamReader(fs);
-                string t;
-                while ((t = r.ReadLine()) != null)
+                using (FileStream fs = f.Open(FileMode.Open, FileAccess.Read))
+                using (StreamReader r = new StreamReader(fs))
                 {
-                    // append to the string
-                    str += t;
+                    string t;
+                    while ((t = r.ReadLine()) != null)
+                    {
+                        // append to the string
+                        str += t;
+                    }
                 }
-
-                r.Close();
-                fs.Close();
             }
             catch (Exception)
             {

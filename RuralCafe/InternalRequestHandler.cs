@@ -66,6 +66,7 @@ namespace RuralCafe
         /// <summary>
         /// A HTTP Error.
         /// </summary>
+        [Serializable]
         protected class HttpException : Exception
         {
             HttpStatusCode _status;

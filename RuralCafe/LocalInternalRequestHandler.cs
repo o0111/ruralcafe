@@ -64,7 +64,7 @@ namespace RuralCafe
         /// Constructor for a local internal proxy's request handler.
         /// </summary>
         /// <param name="proxy">Proxy this request handler belongs to.</param>
-        /// <param name="socket">Client socket.</param>
+        /// <param name="context">Client context.</param>
         public LocalInternalRequestHandler(RCLocalProxy proxy, HttpListenerContext context)
             : base(proxy, context, routines, defaultMethod)
         {
@@ -382,6 +382,10 @@ namespace RuralCafe
         /// </summary>
         public Response ServeRCResultPage(int numItemsPerPage, int pageNumber, string queryString)
         {
+            // Log search term metric.
+            // We do this only in the cache search, since the online search is disabled when offline
+            Logger.Metric(UserIDCookieValue, "Search term: " + queryString);
+
             string resultsString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
             if (queryString.Trim().Length == 0)
             {

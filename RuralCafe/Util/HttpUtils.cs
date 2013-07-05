@@ -14,7 +14,7 @@ namespace RuralCafe.Util
     /// <summary>
     /// Util methods for anything connected to HTTP: creating requests, checking URIs, Reading or Sending Request Bodies...
     /// </summary>
-    public class HttpUtils
+    public static class HttpUtils
     {
         /// <summary>
         /// Matches "localhost" or "127.0.0.1" followed by anything but a dot.

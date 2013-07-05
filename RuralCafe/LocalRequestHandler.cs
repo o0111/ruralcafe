@@ -97,12 +97,16 @@ namespace RuralCafe
             // XXX: Otherwise we can stream/fetch it from the cache
             if (IsInWikiCache())
             {
+                // Log query metric
+                Logger.QueryMetric(true, RefererUri, RequestUri);
                 return ServeWikiURI();
             }
 
             // Do only use cache for HEAD/GET
             if (IsGetOrHeadHeader() && IsCached(_rcRequest.CacheFileName))
             {
+                // Log query metric
+                Logger.QueryMetric(true, RefererUri, RequestUri);
                 // try getting the content type from the file extension
                 string contentType = Utils.GetContentTypeOfFile(_rcRequest.CacheFileName);
                 
@@ -124,6 +128,8 @@ namespace RuralCafe
             // if online, stream to cache, then stream to client.
             if (_proxy.NetworkStatus == RCProxy.NetworkStatusCode.Online)
             {
+                // Log query metric
+                Logger.QueryMetric(false, RefererUri, RequestUri);
                 // We're streaming through the remote proxy.
                 SetStreamToRemoteProxy();
                 return SelectStreamingMethodAndStream();
@@ -131,6 +137,8 @@ namespace RuralCafe
             
             if (_proxy.NetworkStatus != RCProxy.NetworkStatusCode.Online)
             {
+                // Log query metric
+                Logger.QueryMetric(false, RefererUri, RequestUri);
                 // Uncached links should be redirected to
                 // /trotro-user.html?t=title&a=id (GET/HEAD) or (because they should have been prefetched)
                 // /request/add?t=title&a=id (POST/...) (because prefetching POSTs is impossible) (XXX: Not necessary!?)
