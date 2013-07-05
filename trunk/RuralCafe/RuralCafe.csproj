@@ -119,6 +119,7 @@
     <Compile Include="SettingsForm.Designer.cs">
       <DependentUpon>SettingsForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Util\ExtensionMethods.cs" />
     <Compile Include="Util\HtmlUtils.cs" />
     <Compile Include="RCLogger.cs">
       <SubType>Code</SubType>

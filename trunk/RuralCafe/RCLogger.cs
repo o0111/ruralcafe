@@ -48,7 +48,7 @@ namespace RuralCafe
     /// <summary>
     /// Class that configures the log4net loggers.
     /// </summary>
-    public abstract class RCLogger
+    public static class RCLogger
     {
         /// <summary>
         /// Initializes and configures the logger(s).

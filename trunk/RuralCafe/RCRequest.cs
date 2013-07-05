@@ -525,7 +525,6 @@ namespace RuralCafe
                     using (StreamWriter sw = new StreamWriter(_cacheFileName))
                     {
                         sw.Write(str);
-                        sw.Close();
                     }
 
                     // have to save to the new cache file location

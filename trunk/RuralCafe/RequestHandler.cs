@@ -839,7 +839,7 @@ namespace RuralCafe
                          " " + _rcRequest.GenericWebRequest.Method + " " + RequestUri +
                          " REFERER " + RefererUri + " " + 
                          RequestStatus + " " + _rcRequest.FileSize;
-            _proxy.Logger.Info(str);
+            Logger.Info(str);
         }
 
         /// <summary>
@@ -849,7 +849,7 @@ namespace RuralCafe
         {
             string str = "ID" + _requestId + " RSP " + RequestUri + " " + 
                         RequestStatus + " " + _rcRequest.FileSize;
-            _proxy.Logger.Info(str);
+            Logger.Info(str);
         }
 
         #endregion

@@ -34,7 +34,7 @@ using Microsoft.Win32;
 
 namespace RuralCafe
 {
-    static class Program
+    public static class Program
     {
         /// <summary>
         /// If this is x, and the quota is q, the DEFAULT_LOW_WATERMARK will be q/x.

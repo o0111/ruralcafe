@@ -15,7 +15,7 @@ namespace RuralCafe.Util
     /// <summary>
     /// Util fields and methods for HTML handling.
     /// </summary>
-    public class HtmlUtils
+    public static class HtmlUtils
     {
         /// <summary>
         /// Regex for html tags
