@@ -33,6 +33,7 @@ using RuralCafe.Util;
 using System.Windows.Forms;
 using Microsoft.Win32;
 using RuralCafe.Json;
+using RuralCafe.Wiki;
 
 namespace RuralCafe
 {
@@ -70,8 +71,8 @@ namespace RuralCafe
         // state for maintaining the time for request/responses for measuring the ETA
         private TimeSpan _averageTimePerRequest;
 
-        // wiki indices (currently only wikipedia)
-        private static Dictionary<string, Indexer> _wikiIndices = new Dictionary<string, Indexer>();
+        // the wiki wrapper
+        private WikiWrapper _wikiWrapper;
 
         #region Property accessors
 
@@ -100,10 +101,9 @@ namespace RuralCafe
         {
             get { return _remoteProxy; }
         }
-        /// <summary>The indices for wiki dumps.</summary>
-        public static Dictionary<string, Indexer> WikiIndices
+        public WikiWrapper WikiWrapper
         {
-            get { return _wikiIndices; }
+            get { return _wikiWrapper; }
         }
 
         #endregion
@@ -134,17 +134,18 @@ namespace RuralCafe
             _newRequestEvent = new AutoResetEvent(false);
             _averageTimePerRequest = new TimeSpan(0);
 
-            bool success = false;
+            _wikiWrapper = new WikiWrapper(wikiDumpPath);
 
+            bool success = false;
             // initialize the index
-            success = InitializeIndex(indexPath);
+            success = IndexWrapper.EnsureIndexExists(indexPath);
             if (!success)
             {
                 _logger.Warn("Error initializing the local proxy index.");
             }
 
             // initialize the wiki index
-            success = InitializeWikiIndex(wikiDumpPath);
+            success = _wikiWrapper.InitializeWikiIndex();
             if (!success)
             {
                 _logger.Warn("Error initializing the local proxy wiki index.");
@@ -171,50 +172,6 @@ namespace RuralCafe
             {
                 _remoteProxy = new WebProxy(proxyAddress.ToString(), proxyPort);
             }
-        }
-
-        /// <summary>
-        /// Initializes the index.
-        /// </summary>
-        /// <param name="indexPath">Path to the index.</param>
-        /// <returns>True or false for success or not.</returns>
-        private bool InitializeIndex(string indexPath)
-        {
-            return IndexWrapper.EnsureIndexExists(indexPath);
-        }
-
-        /// <summary>
-        /// Initialize the wiki index.
-        /// </summary>
-        /// <param name="dumpFile">The name of the wiki dump file.</param>
-        /// <returns>True or false for success or not.</returns>
-        private bool InitializeWikiIndex(string dumpFile)
-        {
-            // check if the file exists
-            if (!File.Exists(dumpFile))
-            {
-                return false;
-            }
-
-            // check if the index exists
-            Indexer ixr = new Indexer(dumpFile);
-            if (!ixr.IndexExists)
-            {
-                return false;
-            }
-
-            // load the index
-            _wikiIndices.Add(dumpFile.ToLowerInvariant(), ixr);
-
-            return true;
-        }
-
-        /// <summary>
-        /// Checks to see if this proxy even has any Wiki indices
-        /// </summary>
-        public bool HasWikiIndices()
-        {
-            return (_wikiIndices.Count > 0);
         }
 
         /// <summary>

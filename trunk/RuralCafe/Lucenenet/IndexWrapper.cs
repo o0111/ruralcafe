@@ -36,7 +36,7 @@ namespace RuralCafe.Lucenenet
     /// Interacts with Lucene.Net to manage the cache index.
     /// Compatible with Lucene.Net version 2.9.1
     /// </summary>
-    public class IndexWrapper
+    public static class IndexWrapper
     {
         /// <summary>
         /// The maximum number of results.

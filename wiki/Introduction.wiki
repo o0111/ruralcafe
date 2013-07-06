@@ -68,19 +68,23 @@ The following settings are for setting RuralCafe behaviors. The DEFAULT_SEARCH_P
  * DEFAULT_DEPTH=1
  * MAXIMUM_DOWNLOAD_SPEED=5000000
 
-The INDEX and cache path configuration settings are to let RuralCafe know where to store the caches and indices used by the proxies for local caching and search. In the case of a completely disconnected RuralCafe information portal, these settings must be changed to point to existing sources (i.e. the output from a focused crawler). Relative paths (to RuralCafe.exe) are acceptable.
+The INDEX and cache path configuration settings are to let RuralCafe know where to store the caches and indices used by the proxies for local caching and search. In the case of a completely disconnected RuralCafe information portal, these settings must be changed to point to existing sources (i.e. the output from a focused crawler). Relative paths (to LocalProxy or RemoteProxy) are acceptable.
 
  * INDEX_PATH=c:\cygwin\home\jchen\index-mathematics\
  * LOCAL_CACHE_PATH=c:\cygwin\home\jchen\files-mathematics\
  * REMOTE_CACHE_PATH=Cache\
 
-Finally, if a local copy of Wikipedia is available, the WIKI_DUMP_FILE may be set to point to it. Note that to be able to search through this wikipedia image, it must first be indexed by bzReader (below). Otherwise, the copy of Wikipedia may be accessed via direct URL requests, but not found during search requests.
+Finally, if a local copy of Wikipedia is available, the WIKI_DUMP_DIRECTORY and WIKI_DUMP_FILE may be set to point to it. Relative paths to LocalProxy are OK. Note that to be able to use this wikipedia image, it must first be indexed by BzReader (below).
 
- * WIKI_DUMP_FILE=d:\wikipedia\enwiki-20090520-pages-articles.xml.bz2
+ * WIKI_DUMP_DIRECTORY=d:\wikipedia\
+ * WIKI_DUMP_FILE=enwiki-20090520-pages-articles.xml.bz2
 
 = Wikipedia Indexing =
 
-Prior to being able to search through a wikipedia image dump from wikipedia.org, the image dump must be first indexed. To do this, run bzReader and enter the correct information for the location of the image dump.
+You can download wikipedia dumps here: http://en.wikipedia.org/wiki/Wikipedia:Database_download#English-language_Wikipedia
+I recommend, if you have a good Internet connection, using the most recent torrent, as this will be way faster than downloaing it from Wikipedia directly.
+
+Prior to being able to use a wikipedia image dump from wikipedia.org, the image dump must be first indexed. To do this, install BzReader using the "BzReader.v1.0.13.msi" in the repository in the BzReader folder. Start BzReader and open the downloaded dump. The indexing can take several hours.
 
 = Publishing =
 
