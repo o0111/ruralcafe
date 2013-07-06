@@ -393,7 +393,8 @@ namespace RuralCafe
             }
             
             // Query the Wiki index
-            HitCollection wikiResults = Indexer.Search(queryString, RCLocalProxy.WikiIndices.Values, Indexer.MAX_SEARCH_HITS);
+            HitCollection wikiResults = Indexer.Search(queryString, 
+                ((RCLocalProxy)_proxy).WikiWrapper.WikiIndices.Values, Indexer.MAX_SEARCH_HITS);
             // Query our RuralCafe index
             LuceneSearchResults luceneResults = IndexWrapper.Query(((RCLocalProxy)_proxy).IndexPath, 
                 queryString, Proxy.CachePath, pageNumber, numItemsPerPage);

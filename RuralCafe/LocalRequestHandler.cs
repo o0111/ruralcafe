@@ -92,14 +92,17 @@ namespace RuralCafe
                 return Status.Failed;
             }
 
-            // XXX: this function will return true if the domain is wikipedia even if the file isn't in the archive
-            // XXX: ideally, this would return true or false and then if the wiki page is properly served it returns
-            // XXX: Otherwise we can stream/fetch it from the cache
-            if (IsInWikiCache())
+            // Try to get content from the wiki, if available.
+            string redir;
+            string wikiContent = ((RCLocalProxy)_proxy).WikiWrapper.GetWikiContentIfAvailable(RequestUri, out redir);
+            if (wikiContent != null)
             {
-                // Log query metric
-                Logger.QueryMetric(true, RefererUri, RequestUri);
-                return ServeWikiURI();
+                if (!redir.Equals(""))
+                {
+                    _clientHttpContext.Response.Redirect(redir);
+                }
+                SendMessage(wikiContent);
+                return Status.Completed;
             }
 
             // Do only use cache for HEAD/GET
@@ -228,104 +231,5 @@ namespace RuralCafe
             }
             return etaString;
         }
-
-        #region Serve Wikipedia Page Methods
-
-        /// <summary>
-        /// Checks if the request is in the wikipedia cache.
-        /// </summary>
-        /// <returns>True or false if the request is in the wiki cache or not.</returns>
-        private bool IsInWikiCache()
-        {
-            if (!((RCLocalProxy)_proxy).HasWikiIndices())
-            {
-                return false;
-            }
-            if (RequestUri.StartsWith("http://en.wikipedia.org/wiki/"))
-            {
-                // images aren't currently cached, just return no
-                if (RequestUri.StartsWith("http://en.wikipedia.org/wiki/File:"))
-                {
-                    return false;
-                }
-
-                if (((RCLocalProxy)_proxy).WikiDumpPath.Equals(""))
-                {
-                    return false;
-                }
-
-                // XXX: need to check whether the request is actually in the cache
-                return true;
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Gets called to render a URI.
-        /// </summary>
-        /// <param name="e">Request parameters.</param>
-        private void ServeWikiURLRenderPage(UrlRequestedEventArgs e)
-        {
-            PageInfo page = null;
-
-            if (page == null ||
-                !e.Url.Equals(page.Name, StringComparison.InvariantCultureIgnoreCase))
-            {
-                HitCollection hits = Indexer.Search(e.Url, RCLocalProxy.WikiIndices.Values, 1);
-
-                page = null;
-
-                if (hits.Count > 0)
-                {
-                    page = hits[0];
-                }
-            }
-
-            if (page != null)
-            {
-                e.Response = page.GetFormattedContent();
-                e.RedirectTarget = page.RedirectToTopic;
-                e.Redirect = !String.IsNullOrEmpty(e.RedirectTarget);
-            }
-        }
-
-        /// <summary>
-        /// Serves a Wikipedia page using the Wiki renderer.
-        /// </summary>
-        /// <returns>Status of the handler.</returns>
-        private Status ServeWikiURI()
-        {
-            try
-            {
-                Uri uri = new Uri(RequestUri);
-                // XXX: not sure if we need to Decode again
-                UrlRequestedEventArgs urea = new UrlRequestedEventArgs(HttpUtility.UrlDecode(uri.AbsolutePath.Substring(6)));
-
-                ServeWikiURLRenderPage(urea);
-                if (urea.Redirect)
-                {
-                    // This sets Location header and status code!
-                    _clientHttpContext.Response.Redirect(urea.RedirectTarget);
-                }
-                SendMessage(urea.Response);
-            }
-            catch (Exception)
-            {
-                return Status.Failed;
-            }
-            return Status.Completed;
-        }
-
-        /// <summary>
-        /// Generates the URL for the given request term.
-        /// </summary>
-        /// <param name="term">The request term to generate the URL for.</param>
-        /// <returns>The URL.</returns>
-        public string GenerateUrl(string term)
-        {
-            return String.Format("http://en.wikipedia.org/wiki/{0}", HttpUtility.UrlEncode(term));
-        }
-
-        # endregion
     }
 }
