@@ -41,6 +41,8 @@ namespace RuralCafe
                 new string[] { "v" }, new Type[] { typeof(string) }));
             routines.Add("/request/status.xml", new RoutineMethod("ServeNetworkStatus"));
 
+            routines.Add("/request/visit", new RoutineMethod("VisitRequest",
+                new string[] { "c", "u" }, new Type[] { typeof(bool), typeof(string) }));
             routines.Add("/request/remove", new RoutineMethod("RemoveRequest",
                 new string[] { "i" }, new Type[] { typeof(string) }));
             routines.Add("/request/add", new RoutineMethod("AddRequest",
@@ -301,10 +303,6 @@ namespace RuralCafe
                     queryDate = new DateTime(year, month, day);
                 }
             }
-            else
-            {
-                // malformed date
-            }
 
             // get requests for this user
             List<LocalRequestHandler> requestHandlers = ((RCLocalProxy)_proxy).GetRequests(UserIDCookieValue);
@@ -323,10 +321,16 @@ namespace RuralCafe
                     Uri tempUri = new Uri(linkTarget);
                     linkAnchorText = tempUri.Segments.Last();
                     if (linkAnchorText == "/")
+                    {
                         if (tempUri.Segments.Length > 1)
+                        {
                             linkAnchorText = tempUri.Segments[tempUri.Segments.Length - 2];
+                        }
                         else
+                        {
                             linkAnchorText = tempUri.Host;
+                        }
+                    }
 
                     string statusString = "";
                     DateTime requestDate = requestHandler.StartTime;
@@ -336,7 +340,6 @@ namespace RuralCafe
                         (requestDate.Month == queryDate.Month)) &&
                         ((queryOnDay && (requestDate.Day == queryDate.Day)) || !queryOnDay))
                     {
-
                         statusString = System.Security.SecurityElement.Escape(requestHandler.RequestStatus.ToString());
 
                         // build the actual element
@@ -382,9 +385,12 @@ namespace RuralCafe
         /// </summary>
         public Response ServeRCResultPage(int numItemsPerPage, int pageNumber, string queryString)
         {
-            // Log search term metric.
-            // We do this only in the cache search, since the online search is disabled when offline
-            Logger.Metric(UserIDCookieValue, "Search term: " + queryString);
+            if (pageNumber == 1)
+            {
+                // Log search term metric, but only for first-page-requests
+                // We do this only in the cache search, since the online search is disabled when offline
+                Logger.Metric(UserIDCookieValue, "Search term: " + queryString);
+            }
 
             string resultsString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
             if (queryString.Trim().Length == 0)
@@ -392,10 +398,27 @@ namespace RuralCafe
                 return new Response(resultsString + "<search total=\"0\"></search>");
             }
 
-            // In case we have odd numItemsPerPage
-            // We ceil for Lucene and floor for BzReader
-            int[] resultAmounts = { (int)((numItemsPerPage / 2) + 0.5), (int)(numItemsPerPage / 2) };
-            int[] offsets = { (pageNumber - 1) * resultAmounts[0], (pageNumber - 1) * resultAmounts[1] };
+
+            int[] resultAmounts = new int[2];
+            int[] offsets = new int[2];
+            if (((RCLocalProxy)_proxy).WikiWrapper.HasWikiIndices())
+            {
+                // We must include search results from both lucene and BzReader
+                // In case we have odd numItemsPerPage
+                // We ceil for Lucene and floor for BzReader
+                resultAmounts[0] = (int)((numItemsPerPage / 2) + 0.5);
+                resultAmounts[1] = (int)(numItemsPerPage / 2);
+                offsets[0] = (pageNumber - 1) * resultAmounts[0];
+                offsets[1] = (pageNumber - 1) * resultAmounts[1];
+            }
+            else
+            {
+                // We only need lucene search results.
+                resultAmounts[0] = numItemsPerPage;
+                resultAmounts[1] = 0;
+                offsets[0] = (pageNumber - 1) * resultAmounts[0];
+                offsets[1] = 0;
+            }
            
             // Query our RuralCafe index
             SearchResults luceneResults = IndexWrapper.Query(((RCLocalProxy)_proxy).IndexPath, 
@@ -444,11 +467,11 @@ namespace RuralCafe
                 string title = System.Security.SecurityElement.Escape(result.Title);
                 string contentSnippet = System.Security.SecurityElement.Escape(result.ContentSnippet);
 
-                //laura: omit http://
                 if (uri.StartsWith("http://"))
                 {
                     uri = uri.Substring(7);
                 }
+
                 resultsString += "<item>" +
                                 "<title>" + title + "</title>" +
                                 "<url>" + uri + "</url>" +
@@ -496,6 +519,7 @@ namespace RuralCafe
                         {
                             uri = uri.Substring(7);
                         }
+
                         resultsString += "<item>" +
                                         "<title>" + title + "</title>" +
                                         "<url>" + uri + "</url>" +
@@ -618,6 +642,21 @@ namespace RuralCafe
         public Response RemoveRequest(string itemId)
         {
             ((RCLocalProxy)_proxy).DequeueRequest(UserIDCookieValue, itemId);
+            return new Response();
+        }
+
+        /// <summary>
+        /// Redirects to the given Uri and logs the users visit to the page.
+        /// </summary>
+        /// <param name="cached">Whether we expet this page to be cached.</param>
+        /// <param name="uri">The URI to visit.</param>
+        /// <returns></returns>
+        public Response VisitRequest(bool cached, string uri)
+        {
+            // Log query metric
+            Logger.QueryMetric(UserIDCookieValue, cached, RefererUri, uri);
+            // Redirect
+            _clientHttpContext.Response.Redirect(HttpUtils.AddHttpPrefix(uri));
             return new Response();
         }
 
