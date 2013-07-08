@@ -2,12 +2,15 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace RuralCafe.Util
 {
@@ -16,14 +19,17 @@ namespace RuralCafe.Util
     /// </summary>
     public static class HttpUtils
     {
+        //Constants
+        private const string HTTP = "http://";
         /// <summary>
         /// Matches "localhost" or "127.0.0.1" followed by anything but a dot.
         /// </summary>
         private static readonly Regex localAddressRegex = new Regex(@"(?<add1>(localhost|127\.0\.0\.1))(?<add2>[^\.])");
+
         /// <summary>
         /// The local IP address.
         /// </summary>
-        private static readonly string localIPAdress = LocalIPAddress();
+        private static readonly IPAddress localIPAdress = LocalIPAddress();
 
         /// <summary>
         /// Creates an outgoing HttpWebRequest from an incoming HttpListenerRequest.
@@ -205,21 +211,80 @@ namespace RuralCafe.Util
         /// <summary>
         /// Determines the local IP address.
         /// </summary>
-        /// <returns>The local IP address.</returns>
-        private static string LocalIPAddress()
+        /// <returns>The local IP address (or null).</returns>
+        private static IPAddress LocalIPAddress()
         {
             IPHostEntry host;
-            string localIP = "";
+            IPAddress localIP = null;
             host = Dns.GetHostEntry(Dns.GetHostName());
             foreach (IPAddress ip in host.AddressList)
             {
                 if (ip.AddressFamily == AddressFamily.InterNetwork)
                 {
-                    localIP = ip.ToString();
+                    localIP = ip;
                     break;
                 }
             }
             return localIP;
+        }
+
+        /// <summary>
+        /// Determines the network speed. FIXME this gets current network speed, not max possible network speed.
+        /// 
+        /// try http://stackoverflow.com/questions/16498558/internet-speed-and-bandwidth-usage
+        /// 
+        /// Source: http://stackoverflow.com/questions/13600604/how-to-get-accurate-download-upload-speed-in-c-net
+        /// </summary>
+        /// <returns></returns>
+        public static void DetermineNetworkSpeed()
+        {
+            IPAddress localAddr = localIPAdress;
+
+            NetworkInterface[] nics = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces();
+            NetworkInterface nic = null;
+            foreach (NetworkInterface n in nics)
+            {
+                IPInterfaceProperties ipProps = n.GetIPProperties();
+                // check if localAddr is in ipProps.UnicastAddresses
+                foreach (UnicastIPAddressInformation unicastAddr in ipProps.UnicastAddresses)
+                {
+                    if (unicastAddr.Address.Equals(localAddr))
+                    {
+                        nic = n;
+                        break;
+                    }
+                }
+            }
+
+            if (nic == null)
+            {
+                // TODO
+                return;
+            }
+            var reads = Enumerable.Empty<double>();
+            Stopwatch sw = new Stopwatch();
+            long lastBr = nic.GetIPv4Statistics().BytesReceived;
+            for (int i = 0; i < 1000; i++)
+            {
+
+                sw.Restart();
+                Thread.Sleep(100);
+                double elapsed = sw.Elapsed.TotalSeconds;
+                long br = nic.GetIPv4Statistics().BytesReceived;
+
+                double local = (br - lastBr) / elapsed;
+                lastBr = br;
+
+                // Keep last 20, ~2 seconds
+                reads = new[] { local }.Concat(reads).Take(20);
+
+                if (i % 10 == 0)
+                { // ~1 second
+                    double bSec = reads.Sum() / reads.Count();
+                    double kbs = (bSec * 8) / 1024;
+                    Console.WriteLine("Kb/s ~ " + kbs);
+                }
+            }
         }
 
         /// <summary>
@@ -229,9 +294,23 @@ namespace RuralCafe.Util
         /// <returns>The new URI.</returns>
         public static String AddHttpPrefix(String uri)
         {
-            if (!uri.StartsWith("http://"))
+            if (!uri.StartsWith(HTTP))
             {
-                return "http://" + uri;
+                return HTTP + uri;
+            }
+            return uri;
+        }
+
+        /// <summary>
+        /// Removes "http://" from the given URI, if it does start with it.
+        /// </summary>
+        /// <param name="uri">The current URI.</param>
+        /// <returns>The new URI.</returns>
+        public static String RemoveHttpPrefix(String uri)
+        {
+            if (uri.StartsWith(HTTP))
+            {
+                return uri.Substring(HTTP.Length);
             }
             return uri;
         }

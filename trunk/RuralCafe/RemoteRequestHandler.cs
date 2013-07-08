@@ -76,6 +76,12 @@ namespace RuralCafe
             _package = new Package();
         }
 
+        /// <summary>The proxy that this request belongs to.</summary>
+        public RCRemoteProxy Proxy
+        {
+            get { return (RCRemoteProxy)_proxy; }
+        }
+
         /// <summary>
         /// Main logic of RuralCafe RPRequestHandler.
         /// Called by Go() in the base RequestHandler class.
@@ -96,7 +102,7 @@ namespace RuralCafe
             }
 
             // Get current richness!
-            Richness richness = ((RCRemoteProxy)_proxy).
+            Richness richness = Proxy.
                 GetUserSettings(Context.Request.RemoteEndPoint, rcHeaders.RCUserID).richness;
             if (richness == 0)
             {

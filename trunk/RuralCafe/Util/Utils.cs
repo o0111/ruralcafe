@@ -27,6 +27,9 @@ using System.Text.RegularExpressions;
 using System.Net.Sockets;
 using log4net;
 using HtmlAgilityPack;
+using System.Net.NetworkInformation;
+using System.Threading;
+using System.Diagnostics;
 
 namespace RuralCafe.Util
 {

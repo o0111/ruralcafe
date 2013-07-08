@@ -252,9 +252,8 @@ namespace RuralCafe
             set { _outstandingRequests = value; }
             get { return _outstandingRequests; }
         }
-
-        /// <summary>The proxy that this request belongs to.</summary>
-        public RCProxy Proxy
+        /// <summary>The proxy that this request belongs to, abtract base class.</summary>
+        public RCProxy GenericProxy
         {
             get { return _proxy; }
         }

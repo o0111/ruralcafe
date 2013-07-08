@@ -40,7 +40,7 @@ namespace RuralCafe
             this.numericUpDown5.Value = Properties.Settings.Default.MAXIMUM_DOWNLOAD_SPEED;
             this.numericUpDown6.Value = Properties.Settings.Default.DEFAULT_DEPTH;
             this.numericUpDown7.Value = Properties.Settings.Default.DEFAULT_QUOTA;
-            this.comboBox1.DataSource = Enum.GetValues(typeof(RCProxy.NetworkStatusCode));
+            this.comboBox1.DataSource = Enum.GetValues(typeof(RCLocalProxy.NetworkStatusCode));
             this.comboBox2.DataSource = Enum.GetValues(typeof(RequestHandler.Richness));
             this.comboBox3.DataSource = Enum.GetValues(typeof(LogLevel));
             this.comboBox1.SelectedItem = Properties.Settings.Default.NETWORK_STATUS;
@@ -89,7 +89,7 @@ namespace RuralCafe
             Properties.Settings.Default.MAXIMUM_DOWNLOAD_SPEED = (int)this.numericUpDown5.Value;
             Properties.Settings.Default.DEFAULT_DEPTH = (int)this.numericUpDown6.Value;
             Properties.Settings.Default.DEFAULT_QUOTA = (int)this.numericUpDown7.Value;
-            Properties.Settings.Default.NETWORK_STATUS = (RCProxy.NetworkStatusCode)this.comboBox1.SelectedItem;
+            Properties.Settings.Default.NETWORK_STATUS = (RCLocalProxy.NetworkStatusCode)this.comboBox1.SelectedItem;
             Properties.Settings.Default.DEFAULT_RICHNESS = (RequestHandler.Richness)this.comboBox2.SelectedItem;
             Properties.Settings.Default.LOGLEVEL = (LogLevel)this.comboBox3.SelectedItem;
             Properties.Settings.Default.Save();

@@ -74,9 +74,9 @@ namespace RuralCafe.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Slow")]
-        public global::RuralCafe.RCProxy.NetworkStatusCode NETWORK_STATUS {
+        public global::RuralCafe.RCLocalProxy.NetworkStatusCode NETWORK_STATUS {
             get {
-                return ((global::RuralCafe.RCProxy.NetworkStatusCode)(this["NETWORK_STATUS"]));
+                return ((global::RuralCafe.RCLocalProxy.NetworkStatusCode)(this["NETWORK_STATUS"]));
             }
             set {
                 this["NETWORK_STATUS"] = value;

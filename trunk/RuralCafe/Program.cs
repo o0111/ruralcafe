@@ -34,6 +34,9 @@ using Microsoft.Win32;
 
 namespace RuralCafe
 {
+    /// <summary>
+    /// The entry point static class for Rural Cafe.
+    /// </summary>
     public static class Program
     {
         /// <summary>
@@ -135,6 +138,9 @@ namespace RuralCafe
             // Log configuration
             LogConfiguration();
 
+            // Log current network speed
+            // HttpUtils.DetermineNetworkSpeed();
+
             bool localProxyStarted = false;
             // start the local proxy
             if (Properties.Settings.Default.LOCAL_PROXY_IP_ADDRESS != null 
@@ -202,11 +208,13 @@ namespace RuralCafe
         public static RCLocalProxy StartLocalProxy()
         {
             // create the proxy
-            RCLocalProxy localProxy = new RCLocalProxy(IPAddress.Parse(Properties.Settings.Default.LOCAL_PROXY_IP_ADDRESS), Properties.Settings.Default.LOCAL_PROXY_LISTEN_PORT,
-                LOCAL_PROXY_PATH, INDEX_PATH, LOCAL_CACHE_PATH, WIKI_DUMP_FILE, PACKAGE_PATH);
+            RCLocalProxy localProxy = new RCLocalProxy(IPAddress.Parse(Properties.Settings.Default.LOCAL_PROXY_IP_ADDRESS),
+                Properties.Settings.Default.LOCAL_PROXY_LISTEN_PORT, LOCAL_PROXY_PATH, INDEX_PATH, LOCAL_CACHE_PATH,
+                WIKI_DUMP_FILE, PACKAGE_PATH);
 
             // set the remote proxy
-            localProxy.SetRemoteProxy(IPAddress.Parse(Properties.Settings.Default.REMOTE_PROXY_IP_ADDRESS), Properties.Settings.Default.REMOTE_PROXY_LISTEN_PORT);
+            localProxy.SetRemoteProxy(IPAddress.Parse(Properties.Settings.Default.REMOTE_PROXY_IP_ADDRESS), 
+                Properties.Settings.Default.REMOTE_PROXY_LISTEN_PORT);
 
             // XXX: currently this doesn't work if the remote proxy must be reached through a firewall/gateway.
             // XXX: it would be a chain of 2 proxies anyway and needs tunneling support
@@ -220,6 +228,7 @@ namespace RuralCafe
 
             // set the RC search page
             localProxy.SetRCSearchPage(Properties.Settings.Default.DEFAULT_SEARCH_PAGE);
+            // Set network status
             localProxy.NetworkStatus = Properties.Settings.Default.NETWORK_STATUS;
 
             // load the blacklisted domains
@@ -261,7 +270,6 @@ namespace RuralCafe
 
             // set the maximum downlink speed to the local proxy
             remoteProxy.MAXIMUM_DOWNLINK_BANDWIDTH = Properties.Settings.Default.MAXIMUM_DOWNLOAD_SPEED;
-            remoteProxy.NetworkStatus = Properties.Settings.Default.NETWORK_STATUS;
 
             // load the blacklisted domains
             remoteProxy.LoadBlacklist("blacklist.txt");
