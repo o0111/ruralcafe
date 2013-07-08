@@ -35,20 +35,23 @@ namespace RuralCafe.Util
         }
 
         /// <summary>
-        /// Logs a user query.
+        /// Logs a query.
         /// </summary>
         /// <param name="logger">The logger.</param>
+        /// <param name="userId">The user id</param>
         /// <param name="isCached">Whether the result is in the cache.</param>
         /// <param name="referer">The referer</param>
         /// <param name="uri">The requested uri.</param>
-        public static void QueryMetric(this ILog logger, bool isCached, string referer, string uri)
+        public static void QueryMetric(this ILog logger, int userId, bool isCached, string referer, string uri)
         {
             string refererCategorization;
-            if (referer.StartsWith(RequestHandler.RC_PAGE + "result-cached.html"))
+            if (referer.StartsWith(RequestHandler.RC_PAGE + "result")
+                || referer.StartsWith(RequestHandler.RC_PAGE_WITHOUT_WWW + "result"))
             {
                 refererCategorization = "Search result clicked, ";
             }
-            else if (referer.StartsWith(RequestHandler.RC_PAGE + "trotro-user.html"))
+            else if (referer.StartsWith(RequestHandler.RC_PAGE + "trotro-user.html")
+                || referer.StartsWith(RequestHandler.RC_PAGE_WITHOUT_WWW + "trotro-user.html"))
             {
                 refererCategorization = "Queue item clicked, ";
             }
@@ -60,7 +63,7 @@ namespace RuralCafe.Util
                 return;
             }
 
-            logger.Metric(refererCategorization
+            logger.Metric(userId, refererCategorization
                 + (isCached ? "result cached, " : "result not cached, ") + "URI: " + uri);
         }
     }
