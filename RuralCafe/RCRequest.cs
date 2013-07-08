@@ -242,7 +242,7 @@ namespace RuralCafe
             _fileName = UriToFilePath(_webRequest.RequestUri.ToString());
             _hashPath = GetHashPath(_fileName);
             _itemId = _hashPath.Replace(Path.DirectorySeparatorChar.ToString(), "");
-            _cacheFileName = requestHandler.Proxy.CachePath + _hashPath + _fileName;
+            _cacheFileName = requestHandler.GenericProxy.CachePath + _hashPath + _fileName;
             _fileSize = 0;
 
             _requestHandler = requestHandler;
@@ -378,11 +378,8 @@ namespace RuralCafe
                 }
             }
 
-            // trim http header junk
-            if (uri.StartsWith("http://"))
-            {
-                uri = uri.Substring(7);
-            }
+            // trim http
+            uri = HttpUtils.RemoveHttpPrefix(uri);
 
             if (uri.IndexOf("/") == -1)
             {
@@ -531,7 +528,7 @@ namespace RuralCafe
                     string uri = _webResponse.ResponseUri.ToString();
                     _fileName = UriToFilePath(uri);
                     _hashPath = GetHashPath(_fileName);
-                    _cacheFileName = _requestHandler.Proxy.CachePath + _hashPath + _fileName;
+                    _cacheFileName = _requestHandler.GenericProxy.CachePath + _hashPath + _fileName;
 
                     // create directory if it doesn't exist and delete the file so we can replace it
                     if (!Utils.CreateDirectoryForFile(_cacheFileName))

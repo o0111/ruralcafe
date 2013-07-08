@@ -38,16 +38,6 @@ namespace RuralCafe
     public abstract class RCProxy
     {
         /// <summary>
-        /// Enum for the network status.
-        /// </summary>
-        public enum NetworkStatusCode
-        {
-            Online = 0,
-            Slow = 1,
-            Offline = 2
-        };
-
-        /// <summary>
         /// Default local proxy name.
         /// </summary>
         public const string LOCAL_PROXY_NAME = "Local Proxy";
@@ -86,9 +76,6 @@ namespace RuralCafe
         protected string _packagesCachePath;
         protected string _name;
 
-        // online or offline
-        protected NetworkStatusCode _networkStatus;
-
         // bandwidth measurement
         // lock object
         private static Object _downlinkBWLockObject = new Object();
@@ -123,19 +110,11 @@ namespace RuralCafe
         {
             get { return _gatewayProxy; }
         }
-        /// <summary>Path to the proxy's packages.</summary>
-        public NetworkStatusCode NetworkStatus
-        {
-            get { return _networkStatus; }
-            set { _networkStatus = value; }
-        }
         /// <summary>The logger.</summary>
         public ILog Logger 
         {
             get { return _logger; }
         }
-        
-
         # endregion
 
         /// <summary>
@@ -329,10 +308,7 @@ namespace RuralCafe
             }
 
             // trim the "http://"
-            if (requestUri.StartsWith("http://"))
-            {
-                requestUri = requestUri.Substring("http://".Length);
-            }
+            requestUri = HttpUtils.RemoveHttpPrefix(requestUri);
 
             // check against all domains in the blacklist
             foreach (string domain in _blacklistedDomains)

@@ -39,6 +39,12 @@ namespace RuralCafe
             _requestTimeout = LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT;
         }
 
+        /// <summary>The proxy that this request belongs to.</summary>
+        public RCRemoteProxy Proxy
+        {
+            get { return (RCRemoteProxy)_proxy; }
+        }
+
         #region Proxy Control Methods
         /// <summary>
         /// Client changes richness.
@@ -56,7 +62,7 @@ namespace RuralCafe
                 throw new HttpException(HttpStatusCode.BadRequest, "unknown richness setting: " + richnessString);
             }
             // Get the user settings
-            RCUserSettings settings = ((RCRemoteProxy)_proxy).GetUserSettings(Context.Request.RemoteEndPoint, userid);
+            RCUserSettings settings = Proxy.GetUserSettings(Context.Request.RemoteEndPoint, userid);
             // and change richness
             settings.richness = richness;
             Logger.Debug("Richness of user " + userid + " from Local Proxy " + 

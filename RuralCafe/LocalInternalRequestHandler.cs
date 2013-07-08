@@ -71,7 +71,13 @@ namespace RuralCafe
             : base(proxy, context, routines, defaultMethod)
         {
             _requestTimeout = LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT;
-            UIPagesPath = ((RCLocalProxy)_proxy).UIPagesPath;
+            UIPagesPath = Proxy.UIPagesPath;
+        }
+
+        /// <summary>The proxy that this request belongs to.</summary>
+        public RCLocalProxy Proxy
+        {
+            get { return (RCLocalProxy)_proxy; }
         }
 
         #region helper methods
@@ -240,7 +246,7 @@ namespace RuralCafe
             // FIXME why "result-", not "result-offline"?
             string fileName = _originalRequest.Url.LocalPath.Substring(1);
             fileName = fileName.Replace('/', Path.DirectorySeparatorChar);
-            fileName = ((RCLocalProxy)_proxy).UIPagesPath + fileName;
+            fileName = Proxy.UIPagesPath + fileName;
             string contentType = Utils.GetContentTypeOfFile(fileName);
 
             _clientHttpContext.Response.ContentType = contentType;
@@ -305,7 +311,7 @@ namespace RuralCafe
             }
 
             // get requests for this user
-            List<LocalRequestHandler> requestHandlers = ((RCLocalProxy)_proxy).GetRequests(UserIDCookieValue);
+            List<LocalRequestHandler> requestHandlers = Proxy.GetRequests(UserIDCookieValue);
 
             string queuePageString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + "<queue>";
             int i = 1;
@@ -363,7 +369,7 @@ namespace RuralCafe
         /// <summary>Serves the RuralCafe search page.</summary>
         public Response HomePage()
         {
-            string pageUri = ((RCLocalProxy)_proxy).RCSearchPage;
+            string pageUri = Proxy.RCSearchPage;
             string fileName = pageUri;
             int offset = pageUri.LastIndexOf('/');
             if (offset >= 0 && offset < (pageUri.Length - 1))
@@ -401,7 +407,7 @@ namespace RuralCafe
 
             int[] resultAmounts = new int[2];
             int[] offsets = new int[2];
-            if (((RCLocalProxy)_proxy).WikiWrapper.HasWikiIndices())
+            if (Proxy.WikiWrapper.HasWikiIndices())
             {
                 // We must include search results from both lucene and BzReader
                 // In case we have odd numItemsPerPage
@@ -421,10 +427,10 @@ namespace RuralCafe
             }
            
             // Query our RuralCafe index
-            SearchResults luceneResults = IndexWrapper.Query(((RCLocalProxy)_proxy).IndexPath, 
+            SearchResults luceneResults = IndexWrapper.Query(Proxy.IndexPath, 
                 queryString, Proxy.CachePath, offsets[0], resultAmounts[0]);
             // Query the Wiki index
-            SearchResults wikiResults = ((RCLocalProxy)_proxy).WikiWrapper.
+            SearchResults wikiResults = Proxy.WikiWrapper.
                 Query(queryString, offsets[1], resultAmounts[1]);
 
             // remove blacklisted lucene results
@@ -467,10 +473,7 @@ namespace RuralCafe
                 string title = System.Security.SecurityElement.Escape(result.Title);
                 string contentSnippet = System.Security.SecurityElement.Escape(result.ContentSnippet);
 
-                if (uri.StartsWith("http://"))
-                {
-                    uri = uri.Substring(7);
-                }
+                uri = HttpUtils.RemoveHttpPrefix(uri);
 
                 resultsString += "<item>" +
                                 "<title>" + title + "</title>" +
@@ -492,7 +495,7 @@ namespace RuralCafe
         public Response ServeRCRemoteResultPage(int pageNumber, string queryString)
         {
             string resultsString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
-            if (queryString.Trim().Length == 0 || _proxy.NetworkStatus == RCProxy.NetworkStatusCode.Offline)
+            if (queryString.Trim().Length == 0 || Proxy.NetworkStatus == RCLocalProxy.NetworkStatusCode.Offline)
             {
                 return new Response(resultsString + "<search total=\"0\"></search>");
             }
@@ -515,10 +518,7 @@ namespace RuralCafe
                         string title = System.Security.SecurityElement.Escape(linkObject.AnchorText);
                         string contentSnippet = System.Security.SecurityElement.Escape(linkObject.ContentSnippet);
 
-                        if (uri.StartsWith("http://"))
-                        {
-                            uri = uri.Substring(7);
-                        }
+                        uri = HttpUtils.RemoveHttpPrefix(uri);
 
                         resultsString += "<item>" +
                                         "<title>" + title + "</title>" +
@@ -552,11 +552,11 @@ namespace RuralCafe
         public Response ServeNetworkStatus()
         {
             string status;
-            if (_proxy.NetworkStatus == RCProxy.NetworkStatusCode.Offline)
+            if (Proxy.NetworkStatus == RCLocalProxy.NetworkStatusCode.Offline)
             {
                 status = "offline";
             }
-            else if (_proxy.NetworkStatus == RCProxy.NetworkStatusCode.Slow)
+            else if (Proxy.NetworkStatus == RCLocalProxy.NetworkStatusCode.Slow)
             {
                 status = "cached";
             }
@@ -569,9 +569,10 @@ namespace RuralCafe
 
         /// <summary>
         /// Client signs up for a new account. Preconditions have already been checked in JS.
-        /// 
-        /// TODO Logging
         /// </summary>
+        /// <param name="username">The username.</param>
+        /// <param name="pw">The password</param>
+        /// <param name="custid">The new id of the user.</param>
         public Response SignupRequest(String username, String pw, int custid)
         {
             // Append zeros
@@ -590,6 +591,8 @@ namespace RuralCafe
             custsNode.LastChild.SelectSingleNode("pwd").InnerText = pw;
             //Save
             doc.Save(filename);
+            // Log
+            Logger.Info("A new user signed up with id " + custid + ": " + username);
             return new Response("Signup successful.");
         }
 
@@ -618,7 +621,7 @@ namespace RuralCafe
             LocalRequestHandler lrh;
             try
             {
-                lrh = ((RCLocalProxy)_proxy).PopRequestWithoutUser(id);
+                lrh = Proxy.PopRequestWithoutUser(id);
             }
             catch (Exception)
             {
@@ -629,7 +632,7 @@ namespace RuralCafe
             RCSpecificRequestHeaders headers = new RCSpecificRequestHeaders(userId);
             lrh.AddRCSpecificRequestHeaders(headers);
 
-            ((RCLocalProxy)_proxy).QueueRequest(userId, lrh);
+            Proxy.QueueRequest(userId, lrh);
             // Redirect to homepage
             redirectUrl = RC_PAGE;
             _clientHttpContext.Response.Redirect(redirectUrl);
@@ -641,7 +644,7 @@ namespace RuralCafe
         /// </summary>
         public Response RemoveRequest(string itemId)
         {
-            ((RCLocalProxy)_proxy).DequeueRequest(UserIDCookieValue, itemId);
+            Proxy.DequeueRequest(UserIDCookieValue, itemId);
             return new Response();
         }
 
@@ -666,14 +669,14 @@ namespace RuralCafe
         public Response ServeETARequest(string itemId)
         {
             // find the indexer of the matching request
-            List<LocalRequestHandler> requestHandlers = ((RCLocalProxy)_proxy).GetRequests(UserIDCookieValue);
+            List<LocalRequestHandler> requestHandlers = Proxy.GetRequests(UserIDCookieValue);
             if (requestHandlers == null)
             {
                 return new Response("0");
             }
             // This gets the requestHandler with the same ID, if there is one
             LocalRequestHandler requestHandler =
-                        requestHandlers.Where(rh => rh.ItemId == itemId).FirstOrDefault();
+                        requestHandlers.FirstOrDefault(rh => rh.ItemId == itemId);
             if (requestHandler == null)
             {
                 return new Response("0");
@@ -693,7 +696,7 @@ namespace RuralCafe
         public Response DelegateToRemoteProxy()
         {
             // Set Proxy for the request
-            _rcRequest.SetProxyAndTimeout(((RCLocalProxy)_proxy).RemoteProxy, System.Threading.Timeout.Infinite);
+            _rcRequest.SetProxyAndTimeout(Proxy.RemoteProxy, System.Threading.Timeout.Infinite);
             HttpWebResponse response = (HttpWebResponse)_rcRequest.GenericWebRequest.GetResponse();
             return createResponse(response);
         }

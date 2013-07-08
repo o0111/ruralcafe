@@ -79,6 +79,12 @@ namespace RuralCafe
         /// </summary>
         public LocalRequestHandler() { }
 
+        /// <summary>The proxy that this request belongs to.</summary>
+        public RCLocalProxy Proxy
+        {
+            get { return (RCLocalProxy)_proxy; }
+        }
+
         /// <summary>
         /// Main logic of RuralCafe LPRequestHandler.
         /// Called by Go() in the base RequestHandler class.
@@ -94,7 +100,7 @@ namespace RuralCafe
 
             // Try to get content from the wiki, if available.
             string redir;
-            string wikiContent = ((RCLocalProxy)_proxy).WikiWrapper.GetWikiContentIfAvailable(RequestUri, out redir);
+            string wikiContent = Proxy.WikiWrapper.GetWikiContentIfAvailable(RequestUri, out redir);
             if (wikiContent != null)
             {
                 if (!redir.Equals(""))
@@ -127,14 +133,14 @@ namespace RuralCafe
 
             // cacheable but not cached, cache it, then send to client if there is no remote proxy
             // if online, stream to cache, then stream to client.
-            if (_proxy.NetworkStatus == RCProxy.NetworkStatusCode.Online)
+            if (Proxy.NetworkStatus == RCLocalProxy.NetworkStatusCode.Online)
             {
                 // We're streaming through the remote proxy.
                 SetStreamToRemoteProxy();
                 return SelectStreamingMethodAndStream();
             }
             
-            if (_proxy.NetworkStatus != RCProxy.NetworkStatusCode.Online)
+            if (Proxy.NetworkStatus != RCLocalProxy.NetworkStatusCode.Online)
             {
                 // Uncached links should be redirected to
                 // /trotro-user.html?t=title&a=id (GET/HEAD) or (because they should have been prefetched)
@@ -155,7 +161,7 @@ namespace RuralCafe
                 }
 
                 // Save the request in the "without user" queue
-                string id = "" + ((RCLocalProxy)_proxy).AddRequestWithoutUser(this);
+                string id = "" + Proxy.AddRequestWithoutUser(this);
 
                 string redirectUrl = "http://www.ruralcafe.net/" +
                     //(IsGetOrHeadHeader() ? 
@@ -177,7 +183,7 @@ namespace RuralCafe
         private void SetStreamToRemoteProxy()
         {
             // Set Remote Proxy as Proxy
-            RCRequest.SetProxyAndTimeout(((RCLocalProxy)_proxy).RemoteProxy, System.Threading.Timeout.Infinite);
+            RCRequest.SetProxyAndTimeout(Proxy.RemoteProxy, System.Threading.Timeout.Infinite);
             // Set flag to indicate we're streaming
             AddRCSpecificRequestHeaders(new RCSpecificRequestHeaders(true));
         }
@@ -195,7 +201,7 @@ namespace RuralCafe
             }
 
             string etaString;
-            int eta = ((RCLocalProxy)_proxy).ETA(this);
+            int eta = Proxy.ETA(this);
             if (eta < 60)
             {
                 // This includes negative ETA (by avg. the request should be ready, but it isn't)

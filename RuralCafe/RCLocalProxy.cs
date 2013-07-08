@@ -42,6 +42,16 @@ namespace RuralCafe
     /// </summary>
     public class RCLocalProxy : RCProxy
     {
+        /// <summary>
+        /// Enum for the network status.
+        /// </summary>
+        public enum NetworkStatusCode
+        {
+            Online = 0,
+            Slow = 1,
+            Offline = 2
+        };
+
         // Constants
         private const int REQUESTS_WITHOUT_USER_CAPACITY = 50;
         private const string QUEUES_FILENAME = "Queues.json";
@@ -55,6 +65,9 @@ namespace RuralCafe
 
         // remoteProxy
         private WebProxy _remoteProxy;
+
+        // Network status
+        private NetworkStatusCode _networkStatus;
 
         // big queue for lining up requests to remote proxy
         private List<LocalRequestHandler> _globalRequestQueue;
@@ -101,11 +114,17 @@ namespace RuralCafe
         {
             get { return _remoteProxy; }
         }
+        /// <summary>The wiki wrapper.</summary>
         public WikiWrapper WikiWrapper
         {
             get { return _wikiWrapper; }
         }
-
+        /// <summary>The network status.</summary>
+        public NetworkStatusCode NetworkStatus
+        {
+            get { return _networkStatus; }
+            set { _networkStatus = value; }
+        }
         #endregion
 
         /// <summary>
@@ -441,8 +460,8 @@ namespace RuralCafe
             lock (_globalRequestQueue)
             {
                 // This gets the requestHandler with the same ID, if there is one
-                LocalRequestHandler requestHandler = 
-                    _globalRequestQueue.Where(rh => rh.ItemId == requestHandlerItemId).FirstOrDefault();
+                LocalRequestHandler requestHandler =
+                    _globalRequestQueue.FirstOrDefault(rh => rh.ItemId == requestHandlerItemId);
                 if (requestHandler != null)
                 {
                     // check to see if this URI is requested more than once
@@ -471,7 +490,7 @@ namespace RuralCafe
                 {
                     // This gets the requestHandler with the same ID, if there is one
                     LocalRequestHandler requestHandler =
-                        requestHandlers.Where(rh => rh.ItemId == requestHandlerItemId).FirstOrDefault();
+                        requestHandlers.FirstOrDefault(rh => rh.ItemId == requestHandlerItemId);
                     if (requestHandler != null)
                     {
                         requestHandler.OutstandingRequests--;
