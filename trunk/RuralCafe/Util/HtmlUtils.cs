@@ -21,6 +21,10 @@ namespace RuralCafe.Util
         /// Regex for html tags
         /// </summary>
         private static readonly Regex htmlTagRegex = new Regex(@"<[^<]+?>", RegexOptions.IgnoreCase);
+        /// <summary>
+        /// Tags that usually do not contain content text.
+        /// </summary>
+        private static string[] noContentTextHtmlTags = new string[] { "script", "meta", "style" };
 
         /// <summary>
         /// HTML attributes that represent links.
@@ -192,14 +196,11 @@ namespace RuralCafe.Util
             doc.LoadHtml(html);
             List<string> chunks = new List<string>();
 
-            // Tags that should be removed
-            string[] badTags = new string[] { "script", "meta", "style" };
-
             foreach (HtmlNode item in doc.DocumentNode.DescendantsAndSelf())
             {
                 if (item.NodeType == HtmlNodeType.Text)
                 {
-                    if (item.ParentNode != null && !badTags.Contains(item.ParentNode.Name))
+                    if (item.ParentNode != null && !noContentTextHtmlTags.Contains(item.ParentNode.Name))
                     {
                         if (item.InnerText.Trim() != "")
                         {

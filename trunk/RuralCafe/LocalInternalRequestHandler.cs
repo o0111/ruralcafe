@@ -391,19 +391,24 @@ namespace RuralCafe
             {
                 return new Response(resultsString + "<search total=\"0\"></search>");
             }
-            
-            // Query the Wiki index
-            HitCollection wikiResults = Indexer.Search(queryString, 
-                ((RCLocalProxy)_proxy).WikiWrapper.WikiIndices.Values, Indexer.MAX_SEARCH_HITS);
-            // Query our RuralCafe index
-            LuceneSearchResults luceneResults = IndexWrapper.Query(((RCLocalProxy)_proxy).IndexPath, 
-                queryString, Proxy.CachePath, pageNumber, numItemsPerPage);
 
-            // remove blacklisted
-            for (int i = 0; i < luceneResults.Documents.Count; i++ )
+            // In case we have odd numItemsPerPage
+            // We ceil for Lucene and floor for BzReader
+            int[] resultAmounts = { (int)((numItemsPerPage / 2) + 0.5), (int)(numItemsPerPage / 2) };
+            int[] offsets = { (pageNumber - 1) * resultAmounts[0], (pageNumber - 1) * resultAmounts[1] };
+           
+            // Query our RuralCafe index
+            SearchResults luceneResults = IndexWrapper.Query(((RCLocalProxy)_proxy).IndexPath, 
+                queryString, Proxy.CachePath, offsets[0], resultAmounts[0]);
+            // Query the Wiki index
+            SearchResults wikiResults = ((RCLocalProxy)_proxy).WikiWrapper.
+                Query(queryString, offsets[1], resultAmounts[1]);
+
+            // remove blacklisted lucene results
+            for (int i = 0; i < luceneResults.Results.Count; i++ )
             {
                 // ignore blacklisted domains
-                if (IsBlacklisted(luceneResults.Documents[i].Get("uri")))
+                if (IsBlacklisted(luceneResults.Results[i].URI))
                 {
                     luceneResults.RemoveDocument(i);
                     // We will have to look at the same index again.
@@ -411,19 +416,33 @@ namespace RuralCafe
                 }
 
             }
-            Logger.Debug(luceneResults.NumResults + " results");
+            // Log result num
+            int numResults = luceneResults.NumResults + wikiResults.NumResults;
+            Logger.Debug(numResults +  " results");
 
-            resultsString = resultsString + "<search total=\"" + luceneResults.NumResults + "\">";
-            // Local Search Results
-            for (int i = 0; i < luceneResults.Documents.Count; i++)
+            resultsString = resultsString + "<search total=\"" + numResults + "\">";
+            resultsString += GetSearchResultsXMLString(luceneResults);
+            resultsString += GetSearchResultsXMLString(wikiResults);
+            resultsString += "</search>";
+
+            PrepareXMLRequestAnswer();
+            return new Response(resultsString);
+        }
+
+        /// <summary>
+        /// Gets the XML string for search results.
+        /// </summary>
+        /// <param name="results">The search results.</param>
+        /// <returns>The XML string.</returns>
+        private string GetSearchResultsXMLString(SearchResults results)
+        {
+            string resultsString = "";
+            foreach (SearchResult result in results.Results)
             {
-                Lucene.Net.Documents.Document document = luceneResults.Documents[i];
-                string contentSnippet = luceneResults.ContentSnippets[i];
-
                 // escape xml strings
-                string uri = System.Security.SecurityElement.Escape(document.Get("uri"));
-                string title = System.Security.SecurityElement.Escape(document.Get("title"));
-                contentSnippet = System.Security.SecurityElement.Escape(contentSnippet);
+                string uri = System.Security.SecurityElement.Escape(result.URI);
+                string title = System.Security.SecurityElement.Escape(result.Title);
+                string contentSnippet = System.Security.SecurityElement.Escape(result.ContentSnippet);
 
                 //laura: omit http://
                 if (uri.StartsWith("http://"))
@@ -436,11 +455,7 @@ namespace RuralCafe
                                 "<snippet>" + contentSnippet + "</snippet>" +
                                 "</item>";
             }
-
-            resultsString += "</search>";
-
-            PrepareXMLRequestAnswer();
-            return new Response(resultsString);
+            return resultsString;
         }
 
         /// <summary>
