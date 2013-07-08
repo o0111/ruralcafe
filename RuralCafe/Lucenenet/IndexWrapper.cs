@@ -113,13 +113,13 @@ namespace RuralCafe.Lucenenet
         /// <param name="indexPath">Path to the Lucene index.</param>
         /// <param name="queryString">String to query the index for.</param>
         /// <param name="cachePath">The path to the local cache.</param>
-        /// <param name="page">Which page is being requested.</param>
-        /// <param name="pageSize">How many items are on one page and should be returned.</param>
-        /// <returns>A List of Documents.</returns>
-        public static LuceneSearchResults Query(string indexPath, string queryString, string cachePath,
-            int page, int pageSize)
+        /// <param name="offset">The offset for the first result to return.</param>
+        /// <param name="resultAmount">The max munber of results to return for the current page.</param>
+        /// <returns>A list of search results.</returns>
+        public static SearchResults Query(string indexPath, string queryString, string cachePath,
+            int offset, int resultAmount)
         {
-            LuceneSearchResults results = new LuceneSearchResults();
+            SearchResults results = new SearchResults();
 
             Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(indexPath));
             IndexReader reader = IndexReader.Open(directory, true);
@@ -137,7 +137,7 @@ namespace RuralCafe.Lucenenet
             results.NumResults = hits.Length;
 
             // Only loop through the hits that should be on the page
-            for (int i = (page - 1) * pageSize; i < Math.Min(hits.Length, page * pageSize); i++)
+            for (int i = offset; i< hits.Length && i < offset + resultAmount; i++)
             {
                 int docId = hits[i].doc;
                 Document doc = searcher.Doc(docId);
@@ -175,7 +175,7 @@ namespace RuralCafe.Lucenenet
                 catch (Exception)
                 {
                 }
-                results.AddDocument(doc, contentSnippet);
+                results.AddLuceneDocument(doc, contentSnippet);
             }
             
             searcher.Close();

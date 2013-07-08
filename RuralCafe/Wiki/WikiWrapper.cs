@@ -1,4 +1,9 @@
 ﻿using BzReader;
+using Lucene.Net.Analysis;
+using Lucene.Net.Documents;
+using Lucene.Net.Highlight;
+using RuralCafe.Lucenenet;
+using RuralCafe.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,6 +20,12 @@ namespace RuralCafe.Wiki
     {
         // Constants
         private const string EN_WIKI_URI = "http://en.wikipedia.org/wiki/";
+        // Max number of results to handle that we can't search case sensitive
+        private const int FIND_PAGE_MAX_RESULTS = 5;
+        /// <summary>
+        /// The maximum number of results.
+        /// </summary>
+        private const int WIKI_MAX_RESULTS = 100;
 
         /// <summary>
         /// The path to the wiki dump file.
@@ -143,7 +154,7 @@ namespace RuralCafe.Wiki
                 ServeWikiURLRenderPage(urea);
                 if (urea.Redirect)
                 {
-                    redirectTarget = urea.RedirectTarget;
+                    redirectTarget = EN_WIKI_URI + urea.RedirectTarget;
                 }
                 return urea.Response;
             }
@@ -160,7 +171,9 @@ namespace RuralCafe.Wiki
         private void ServeWikiURLRenderPage(UrlRequestedEventArgs e)
         {
             PageInfo page = null;
-            HitCollection hits = Indexer.Search(e.Url, _wikiIndices.Values, 1);
+            // We cannot make BzReader search case sensitive, so we will look
+            // an the first N results
+            HitCollection hits = Indexer.Search(e.Url, _wikiIndices.Values, FIND_PAGE_MAX_RESULTS);
             foreach (PageInfo pi in hits)
             {
                 if (pi.Name.Equals(e.Url.Replace('_',' ')))
@@ -176,6 +189,30 @@ namespace RuralCafe.Wiki
                 e.RedirectTarget = page.RedirectToTopic;
                 e.Redirect = !String.IsNullOrEmpty(e.RedirectTarget);
             }
+        }
+
+        /// <summary>
+        /// Queries the wiki index for a list of results.
+        /// </summary>
+        /// <param name="queryString">String to query the index for.</param>
+        /// <param name="offset">The offset for the first result to return.</param>
+        /// <param name="resultAmount">The max munber of results to return for the current page.</param>
+        /// <returns>A list of search results.</returns>
+        public SearchResults Query(string queryString, int offset, int resultAmount)
+        {
+            SearchResults results = new SearchResults();
+            // TODO
+            HitCollection wikiResults = Indexer.Search(queryString,
+                WikiIndices.Values, WIKI_MAX_RESULTS);
+            // Save results num
+            results.NumResults = wikiResults.Count;
+            // Add documents with respect to offset and amount
+            for (int i = offset; i < wikiResults.Count && i < offset + resultAmount; i++)
+            {
+                results.AddBzReaderDocument(wikiResults[i], EN_WIKI_URI);
+            }
+            
+            return results;
         }
     }
 }
