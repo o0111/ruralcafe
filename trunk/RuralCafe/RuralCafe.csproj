@@ -101,6 +101,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AnalysisTools.cs" />
+    <Compile Include="CacheManager.cs" />
     <Compile Include="Json\HttpWebRequestConverter.cs" />
     <Compile Include="Json\JsonCreationConverter.cs" />
     <Compile Include="Json\LocalRequestHandlerConverter.cs" />

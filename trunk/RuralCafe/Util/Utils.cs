@@ -76,13 +76,13 @@ namespace RuralCafe.Util
             SetSuffix(".png", "image/png");
             SetSuffix(".htm", "text/html");
             SetSuffix(".html", "text/html");
-            SetSuffix(".text", "text/plain");
             SetSuffix(".c", "text/plain");
             SetSuffix(".cc", "text/plain");
             SetSuffix(".c++", "text/plain");
             SetSuffix(".h", "text/plain");
             SetSuffix(".pl", "text/plain");
             SetSuffix(".txt", "text/plain");
+            SetSuffix(".text", "text/plain");
             SetSuffix(".java", "text/plain");
             SetSuffix(".xml", "text/xml");
             SetSuffix(".js", "application/javascript");

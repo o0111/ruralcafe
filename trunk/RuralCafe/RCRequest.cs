@@ -198,16 +198,6 @@ namespace RuralCafe
         # endregion
 
         /// <summary>
-        /// DUMMY Constructor for a RuralCafe Request matching
-        /// </summary>
-        /// <param name="itemId">requestId.</param>
-        public RCRequest(string itemId)
-        {
-            // do nothing
-            _itemId = itemId;
-        }
-
-        /// <summary>
         /// Constructor for a RuralCafe Request.
         /// </summary>
         /// <param name="requestHandler">The handler for the request.</param>
@@ -256,7 +246,8 @@ namespace RuralCafe
         /// </summary>
         /// <param name="proxy">Proxy info.</param>
         /// <param name="timeout">Timeout.</param>
-        public void SetProxyAndTimeout(WebProxy proxy, int timeout) {
+        public void SetProxyAndTimeout(WebProxy proxy, int timeout)
+        {
              GenericWebRequest.Proxy = proxy;
              GenericWebRequest.Timeout = timeout;
         }
@@ -297,7 +288,8 @@ namespace RuralCafe
         /// <returns>Hashed file path.</returns>
         public static string GetHashPath(string fileName)
         {
-            fileName = fileName.Replace(Path.DirectorySeparatorChar.ToString(), ""); // for compability with linux filepath delimeter
+            // for compability with linux filepath delimeter
+            fileName = fileName.Replace(Path.DirectorySeparatorChar.ToString(), "");
             int value1 = 0;
             int value2 = 0;
 
