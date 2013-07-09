@@ -233,6 +233,9 @@ namespace RuralCafe.Util
         /// 
         /// try http://stackoverflow.com/questions/16498558/internet-speed-and-bandwidth-usage
         /// 
+        /// This must be integrated into the LocalRequestHandler.HandlerRequest() somehow. See google issue for more
+        /// details.
+        /// 
         /// Source: http://stackoverflow.com/questions/13600604/how-to-get-accurate-download-upload-speed-in-c-net
         /// </summary>
         /// <returns></returns>

@@ -37,6 +37,7 @@ namespace RuralCafe
     [JsonObject(MemberSerialization.OptIn)]
     public abstract class RCProxy
     {
+        // Constants
         /// <summary>
         /// Default local proxy name.
         /// </summary>
@@ -72,9 +73,9 @@ namespace RuralCafe
         protected int _listenPort;
         protected readonly ILog _logger;
         protected string _proxyPath;
-        protected string _cachePath;
         protected string _packagesCachePath;
         protected string _name;
+        protected CacheManager _cacheManager;
 
         // bandwidth measurement
         // lock object
@@ -98,7 +99,12 @@ namespace RuralCafe
         /// <summary>Path to the proxy's cache.</summary>
         public string CachePath
         {
-            get { return _cachePath; }
+            get { return _cacheManager.CachePath; }
+        }
+        /// <summary>The cache manager.</summary>
+        public CacheManager ProxyCacheManager
+        {
+            get { return _cacheManager; }
         }
         /// <summary>Path to the proxy's packages.</summary>
         public string PackagesPath
@@ -164,28 +170,17 @@ namespace RuralCafe
         /// Initializes the cache by making sure that the directory exists.
         /// </summary>
         /// <param name="cachePath">Path of the cache.</param>
+        /// <returns>True or false for success or not.</returns>
         protected bool InitializeCache(string cachePath)
         {
-            _cachePath = cachePath;
-
-            try
-            {
-                if (!Directory.Exists(_cachePath))
-                {
-                    System.IO.Directory.CreateDirectory(_cachePath);
-                }
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-            return true;
+            _cacheManager = new CacheManager(cachePath);
+            return _cacheManager.InitializeCache();
         }
 
         /// <summary>
         /// Initializes the packages by making sure that the directory exists.
         /// </summary>
-        /// <param name="cachePath">Path of the cache.</param>
+        /// <param name="packagesCachePath">Path of the packages cache.</param>
         /// <returns>True or false for success or failure.</returns>
         protected bool InitializePackagesCache(string packagesCachePath)
         {

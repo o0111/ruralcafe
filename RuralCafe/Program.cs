@@ -138,9 +138,6 @@ namespace RuralCafe
             // Log configuration
             LogConfiguration();
 
-            // Log current network speed
-            // HttpUtils.DetermineNetworkSpeed();
-
             bool localProxyStarted = false;
             // start the local proxy
             if (Properties.Settings.Default.LOCAL_PROXY_IP_ADDRESS != null 
