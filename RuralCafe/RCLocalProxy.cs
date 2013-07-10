@@ -174,6 +174,9 @@ namespace RuralCafe
             DeserializeQueue();
             // Tell the programm to serialize the queue before shutdown
             Program.AddShutDownDelegate(SerializeQueue);
+
+            // FIXME remove this test
+            ProxyCacheManager.CreateClusters();
         }
 
         /// <summary>
