@@ -189,16 +189,28 @@ namespace RuralCafe.Util
                 FileInfo f = new FileInfo(fileName);
                 if (f.Exists)
                 {
-                    // read beginning of the file
-                    string fileContents = ReadFileAsString(fileName).Trim();
-                    if (fileContents != null)
+                    StreamReader reader = new StreamReader(new FileStream(fileName, FileMode.Open));
+                    // We only want to read up to 14 chars (length of "<!DOCTYPE html")
+                    char[] buffer = new char[14];
+                    int charsRead = 0;
+                    int pos = 0;
+                    while ((charsRead = reader.Read(buffer, pos, buffer.Length - pos)) != 0)
                     {
-                        if (fileContents.StartsWith("<!DOCTYPE html") ||
-                            fileContents.StartsWith("<html>"))
+                        pos += charsRead;
+                        if (pos == buffer.Length)
                         {
-                            return "text/html";
+                            // We have read 14 chars.
+                            break;
                         }
                     }
+
+                    string fileContents = new string(buffer).ToLower();
+                    if (fileContents.StartsWith("<html>") ||
+                        fileContents.StartsWith("<!doctype html"))
+                    {
+                        return "text/html";
+                    }
+                    
                 }
             }
             catch (Exception)
@@ -359,12 +371,7 @@ namespace RuralCafe.Util
                 using (FileStream fs = f.Open(FileMode.Open, FileAccess.Read))
                 using (StreamReader r = new StreamReader(fs))
                 {
-                    string t;
-                    while ((t = r.ReadLine()) != null)
-                    {
-                        // append to the string
-                        str += t;
-                    }
+                    str = r.ReadToEnd();
                 }
             }
             catch (Exception)

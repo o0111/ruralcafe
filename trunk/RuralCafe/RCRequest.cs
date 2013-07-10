@@ -348,6 +348,38 @@ namespace RuralCafe
             }
         }
 
+        // TODO move all this uri<->filepath to the CacheManager
+
+        /// <summary>
+        /// Determines the URI for the cache file path.
+        /// </summary>
+        /// <param name="relfilepath">The path relaive to the cache path.</param>
+        /// <returns>The URI.</returns>
+        public static string FilePathToUri(string relfilepath)
+        {
+            string uri = relfilepath;
+            // Remove the 2 hash dirs from path
+            for (int i = 0; i < 2; i++)
+            {
+                int startIndex = uri.IndexOf(Path.DirectorySeparatorChar);
+                if (startIndex != -1)
+                {
+                    uri = uri.Substring(startIndex + 1);
+                }
+            }
+            
+            // replace possible backslahes with shlashes
+            uri = uri.Replace(Path.DirectorySeparatorChar, '/');
+            // Remove possible index.html at the end
+            string indexhtml = "index.html";
+            if (uri.EndsWith("/" + indexhtml))
+            {
+                uri = uri.Substring(0, uri.Length - indexhtml.Length);
+            }
+            return uri;
+        }
+
+
         /// <summary>
         /// Translates a URI to a file path.
         /// Synchronized with CIP implementation in Python
@@ -363,7 +395,6 @@ namespace RuralCafe
                 int offset1 = uri.IndexOf("textfield");
                 uri = uri.Substring(offset1 + "textfield".Length + 1);
                 offset1 = uri.IndexOf('&');
-                //offset1 = fileName.IndexOf("%26");
                 if (offset1 > 0)
                 {
                     uri = uri.Substring(0, offset1);
@@ -393,7 +424,7 @@ namespace RuralCafe
         }
         /// <summary>
         /// Makes a URI safe for windows.
-        /// PPrivate helper for UriToFilePath.
+        /// Private helper for UriToFilePath.
         /// </summary>
         /// <param name="uri">URI to make safe.</param>
         /// <returns>Safe URI.</returns>

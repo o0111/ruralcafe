@@ -1,6 +1,8 @@
-﻿using RuralCafe.Util;
+﻿using RuralCafe.Clusters;
+using RuralCafe.Util;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -17,6 +19,11 @@ namespace RuralCafe
     /// </summary>
     public class CacheManager
     {
+        // Constants
+        private const string CLUSTERS_FOLDER = "clusters";
+        private const string DOC_FILE_NAME = "docfile.txt";
+        private const string MAT_FILE_NAME = "cache.mat";
+
         /// <summary>
         /// The path to the cache.
         /// </summary>
@@ -84,6 +91,56 @@ namespace RuralCafe
         {
             return Directory.EnumerateFiles(_cachePath, "*", SearchOption.AllDirectories)
                 .Where(filename => Utils.GetContentTypeOfFile(filename).Equals("text/html")).ToList();
+        }
+
+        /// <summary>
+        /// Creates the clusters.
+        /// 
+        /// TODO customizable
+        /// TODO use proxy's logger, do not write to console directly.
+        /// TODO remove stopwatches
+        /// </summary>
+        public void CreateClusters()
+        {
+            Console.WriteLine("Creating clusters.");
+            // Measure what part takes what time
+            Stopwatch stopwatch = new Stopwatch();
+
+            // Create directory, if it does not exist already
+            string docFileName = _cachePath + CLUSTERS_FOLDER + Path.DirectorySeparatorChar + DOC_FILE_NAME;
+            string matFileName = _cachePath + CLUSTERS_FOLDER + Path.DirectorySeparatorChar + MAT_FILE_NAME;
+            if (!Utils.CreateDirectoryForFile(docFileName))
+            {
+                return;
+            }
+
+            // get files
+            Console.Write("Getting all text files... ");
+            stopwatch.Start();
+            List<string> textFiles = TextFiles();
+            stopwatch.Stop();
+            Console.WriteLine(stopwatch.Elapsed.TotalSeconds + "s");
+
+            // files2doc
+            Console.Write("Creating docfile... ");
+            stopwatch.Restart();
+            Cluster.CreateDocFile(_cachePath.Length, textFiles, docFileName);
+            stopwatch.Stop();
+            Console.WriteLine(stopwatch.Elapsed.TotalSeconds + "s");
+
+            // doc2mat
+            Console.Write("Doc2Mat... ");
+            stopwatch.Restart();
+            Doc2Mat.DoDoc2Mat(docFileName, matFileName);
+            stopwatch.Stop();
+            Console.WriteLine(stopwatch.Elapsed.TotalSeconds + "s");
+
+            // ClutoClusters
+            Console.Write("Clustering... ");
+            stopwatch.Restart();
+            Cluster.CreateClusters(matFileName, 10);
+            stopwatch.Stop();
+            Console.WriteLine(stopwatch.Elapsed.TotalSeconds + "s");
         }
 
         #endregion
