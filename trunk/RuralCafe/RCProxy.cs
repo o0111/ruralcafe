@@ -173,7 +173,7 @@ namespace RuralCafe
         /// <returns>True or false for success or not.</returns>
         protected bool InitializeCache(string cachePath)
         {
-            _cacheManager = new CacheManager(cachePath);
+            _cacheManager = new CacheManager(cachePath, this);
             return _cacheManager.InitializeCache();
         }
 

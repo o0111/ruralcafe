@@ -30,7 +30,6 @@ using System.Collections.ObjectModel;
 using RuralCafe.Lucenenet;
 using Newtonsoft.Json;
 using RuralCafe.Util;
-using System.Windows.Forms;
 using Microsoft.Win32;
 using RuralCafe.Json;
 using RuralCafe.Wiki;
@@ -175,8 +174,9 @@ namespace RuralCafe
             // Tell the programm to serialize the queue before shutdown
             Program.AddShutDownDelegate(SerializeQueue);
 
-            // FIXME remove this test
-            ProxyCacheManager.CreateClusters();
+            // Every x minutes, re-cluster the cachein an own thread.
+            // TODO make timespan customizable.
+            new Timer(StartClustering, null, TimeSpan.Zero, new TimeSpan(0, 30, 0));
         }
 
         /// <summary>
@@ -203,6 +203,17 @@ namespace RuralCafe
         public void SetRCSearchPage(string searchPage)
         {
             _rcSearchPage = RequestHandler.RC_PAGE + searchPage;
+        }
+
+        /// <summary>
+        /// Starts the clustering. This method is called periodically
+        /// by a timer in a new thread.
+        /// </summary>
+        /// <param name="o">Ignored.</param>
+        private void StartClustering(object o)
+        {
+            // TODO make field(s) for CreateClusters parameters
+            ProxyCacheManager.CreateClusters(_uiPagesPath + "clusters.xml", 10);
         }
 
         /// <summary>

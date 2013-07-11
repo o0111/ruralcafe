@@ -21,6 +21,8 @@ namespace RuralCafe.Clusters
 
         /// <summary>
         /// Creates the matFile from a docfile. Currently uses PERL.
+        /// 
+        /// Can throw various Exceptions.
         /// </summary>
         /// <param name="docFile">The docfile.</param>
         /// <param name="matFile">The matfile.</param>
@@ -28,9 +30,9 @@ namespace RuralCafe.Clusters
         {
             // TODO re-implement doc2mat in c#
 
-            // perl doc2mat -nostem -nlskip=1 <docFile> <matFile>
+            // perl doc2mat -nostem <docFile> <matFile>
             ProcessStartInfo perlStartInfo = new ProcessStartInfo("perl");
-            perlStartInfo.Arguments = "\"" + DOC2MAT_PERL_SCRIPT + "\"" + " -nostem -nlskip=1 " +
+            perlStartInfo.Arguments = "\"" + DOC2MAT_PERL_SCRIPT + "\"" + " -nostem " +
                 "\"" + docFile + "\" \"" + matFile + "\"";
             
             perlStartInfo.UseShellExecute = false;
@@ -42,7 +44,10 @@ namespace RuralCafe.Clusters
             perl.StartInfo = perlStartInfo;
             perl.Start();
             perl.WaitForExit();
-            Console.WriteLine(perl.StandardOutput.ReadToEnd());
+            if (perl.ExitCode != 0)
+            {
+                throw new Exception("PERL doc2mat failed with exitcode: " + perl.ExitCode);
+            }
         }
     }
 }
