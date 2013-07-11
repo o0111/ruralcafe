@@ -30,6 +30,11 @@ namespace RuralCafe
         private string _cachePath;
 
         /// <summary>
+        /// The proxy.
+        /// </summary>
+        private RCProxy _proxy;
+
+        /// <summary>
         /// The path to the cache.
         /// </summary>
         public string CachePath
@@ -41,9 +46,10 @@ namespace RuralCafe
         /// Creates a new CacheManager
         /// </summary>
         /// <param name="cachePath">The path to the cache.</param>
-        public CacheManager(string cachePath)
+        public CacheManager(string cachePath, RCProxy proxy)
         {
             this._cachePath = cachePath;
+            this._proxy = proxy;
         }
 
         /// <summary>
@@ -96,13 +102,13 @@ namespace RuralCafe
         /// <summary>
         /// Creates the clusters.
         /// 
-        /// TODO customizable
-        /// TODO use proxy's logger, do not write to console directly.
         /// TODO remove stopwatches
         /// </summary>
-        public void CreateClusters()
+        /// <param name="xmlFile">The file where to store the XML result.</param>
+        /// <param name="k">The number of clusters to create.</param>
+        public void CreateClusters(string xmlFile, int k)
         {
-            Console.WriteLine("Creating clusters.");
+            _proxy.Logger.Info("Creating clusters.");
             // Measure what part takes what time
             Stopwatch stopwatch = new Stopwatch();
 
@@ -111,36 +117,79 @@ namespace RuralCafe
             string matFileName = _cachePath + CLUSTERS_FOLDER + Path.DirectorySeparatorChar + MAT_FILE_NAME;
             if (!Utils.CreateDirectoryForFile(docFileName))
             {
+                _proxy.Logger.Error("Clustering: Could not create directory for docFile.");
                 return;
             }
 
             // get files
-            Console.Write("Getting all text files... ");
+            _proxy.Logger.Debug("Clustering: Getting all text files.");
             stopwatch.Start();
             List<string> textFiles = TextFiles();
             stopwatch.Stop();
             Console.WriteLine(stopwatch.Elapsed.TotalSeconds + "s");
 
             // files2doc
-            Console.Write("Creating docfile... ");
+            _proxy.Logger.Debug("Clustering: Creating docfile.");
             stopwatch.Restart();
-            Cluster.CreateDocFile(_cachePath.Length, textFiles, docFileName);
+            try
+            {
+                Cluster.CreateDocFile(textFiles, docFileName);
+            }
+            catch (IOException e)
+            {
+                _proxy.Logger.Error("Clustering: DocFile creation failed.", e);
+                return;
+            }
             stopwatch.Stop();
             Console.WriteLine(stopwatch.Elapsed.TotalSeconds + "s");
 
             // doc2mat
-            Console.Write("Doc2Mat... ");
+            _proxy.Logger.Debug("Clustering: Doc2Mat.");
             stopwatch.Restart();
-            Doc2Mat.DoDoc2Mat(docFileName, matFileName);
+            try
+            {
+                Doc2Mat.DoDoc2Mat(docFileName, matFileName);
+            }
+            catch (Exception e)
+            {
+                _proxy.Logger.Error("Clustering: Doc2Mat failed.", e);
+                return;
+            }
             stopwatch.Stop();
             Console.WriteLine(stopwatch.Elapsed.TotalSeconds + "s");
 
             // ClutoClusters
-            Console.Write("Clustering... ");
+            _proxy.Logger.Debug("Clustering: Cluto-Clustering.");
             stopwatch.Restart();
-            Cluster.CreateClusters(matFileName, 10);
+            try
+            {
+                Cluster.CreateClusters(matFileName, k);
+            }
+            catch (Exception e)
+            {
+                _proxy.Logger.Error("Clustering: Cluto failed.", e);
+                return;
+            }
             stopwatch.Stop();
             Console.WriteLine(stopwatch.Elapsed.TotalSeconds + "s");
+
+            // Create XML file
+            string clustersFileName = matFileName + ".clustering." + k;
+            _proxy.Logger.Debug("Clustering: Creating clusters.xml.");
+            stopwatch.Restart();
+            try
+            {
+                Cluster.CreateClusterXMLFile(textFiles, clustersFileName, xmlFile, k, _cachePath.Length);
+            }
+            catch (Exception e)
+            {
+                _proxy.Logger.Error("Clustering: Creating XML failed.", e);
+                return;
+            }
+            stopwatch.Stop();
+            Console.WriteLine(stopwatch.Elapsed.TotalSeconds + "s");
+
+            _proxy.Logger.Info("Clustering finished successfully.");
         }
 
         #endregion

@@ -500,7 +500,7 @@ namespace RuralCafe
         public long DownloadToCache(bool replace)
         {
             int bytesRead = 0;
-            Byte[] readBuffer = new Byte[32];
+            Byte[] readBuffer = new Byte[4096];
             FileStream writeFile = null;
             long bytesDownloaded = 0;
 
@@ -575,7 +575,6 @@ namespace RuralCafe
                     }
                 }
 
-                // XXX: Use a stream reader!?
                 Stream responseStream = GenericWebResponse.GetResponseStream();
 
                 writeFile = Utils.CreateFile(_cacheFileName);
@@ -583,15 +582,20 @@ namespace RuralCafe
                 {
                     return -1;
                 }
-                bytesRead = responseStream.Read(readBuffer, 0, 32);
+                // StreamWriter writer = new StreamWriter(writeFile, Encoding.UTF8);
+
+                bytesRead = responseStream.Read(readBuffer, 0, readBuffer.Length);
                 while (bytesRead != 0)
                 {
                     // write the response to the cache
+                    // string readString = System.Text.Encoding.UTF8.GetString(readBuffer, 0, bytesRead);
+                    // writer.Write(readString);
+                    // FIXME above would destroy GZIP magic num !?
                     writeFile.Write(readBuffer, 0, bytesRead);
                     bytesDownloaded += bytesRead;
 
                     // Read the next part of the response
-                    bytesRead = responseStream.Read(readBuffer, 0, 32);
+                    bytesRead = responseStream.Read(readBuffer, 0, readBuffer.Length);
                 }
                 _requestHandler.Logger.Debug("received: " + Uri + " " + bytesDownloaded + " bytes");
             }
