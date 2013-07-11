@@ -41,7 +41,7 @@ namespace RuralCafe.Clusters
                 throw new IOException("Could not create docFile.");
             }
 
-            using (StreamWriter docFileWriter = new StreamWriter(docFileStream))
+            using (StreamWriter docFileWriter = new StreamWriter(docFileStream, Encoding.UTF8))
             {
                 foreach (string file in files)
                 {
@@ -107,6 +107,7 @@ namespace RuralCafe.Clusters
 
             XmlElement clustersElement = xmlDoc.CreateElement("clusters");
             xmlDoc.AppendChild(clustersElement);
+            clustersElement.SetAttribute("amount", "" + k);
 
             // Create a node for each cluster
             XmlElement[] clusters = new XmlElement[k];

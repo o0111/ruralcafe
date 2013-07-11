@@ -496,12 +496,12 @@ namespace RuralCafe
         /// Streams a request from the server into the cache.
         /// Used for both local and remote proxy requests.
         /// </summary>
+        /// <param name="replace">If there is already a file, should it be replaced?</param>
         /// <returns>Length of the downloaded file.</returns>
         public long DownloadToCache(bool replace)
         {
             int bytesRead = 0;
             Byte[] readBuffer = new Byte[4096];
-            FileStream writeFile = null;
             long bytesDownloaded = 0;
 
             // create directory if it doesn't exist and delete the file so we can replace it
@@ -541,8 +541,8 @@ namespace RuralCafe
                     // leave a 301 at the old cache file location
                     string str = "HTTP/1.1 301 Moved Permanently\r\n" +
                           "Location: " + _webResponse.ResponseUri.ToString() + "\r\n";
-                    
-                    using (StreamWriter sw = new StreamWriter(_cacheFileName))
+
+                    using (StreamWriter sw = new StreamWriter(File.Open(_cacheFileName, FileMode.Create), Encoding.UTF8))
                     {
                         sw.Write(str);
                     }
@@ -576,26 +576,37 @@ namespace RuralCafe
                 }
 
                 Stream responseStream = GenericWebResponse.GetResponseStream();
-
-                writeFile = Utils.CreateFile(_cacheFileName);
+                FileStream writeFile = Utils.CreateFile(_cacheFileName);
                 if (writeFile == null)
                 {
                     return -1;
                 }
-                // StreamWriter writer = new StreamWriter(writeFile, Encoding.UTF8);
-
-                bytesRead = responseStream.Read(readBuffer, 0, readBuffer.Length);
-                while (bytesRead != 0)
+                
+                using (writeFile)
                 {
                     // write the response to the cache
-                    // string readString = System.Text.Encoding.UTF8.GetString(readBuffer, 0, bytesRead);
-                    // writer.Write(readString);
-                    // FIXME above would destroy GZIP magic num !?
-                    writeFile.Write(readBuffer, 0, bytesRead);
-                    bytesDownloaded += bytesRead;
+                    if (_webResponse.ContentType.Contains("text"))
+                    {
+                        //Text response, encode UTF-8, trim
+                        using (StreamWriter writer = new StreamWriter(writeFile, Encoding.UTF8))
+                        using (StreamReader reader = new StreamReader(responseStream))
+                        {
+                            writer.Write(reader.ReadToEnd().Trim());
+                        }
+                    }
+                    else
+                    {
+                        // No text. Read buffered.
+                        bytesRead = responseStream.Read(readBuffer, 0, readBuffer.Length);
+                        while (bytesRead != 0)
+                        {
+                            writeFile.Write(readBuffer, 0, bytesRead);
+                            bytesDownloaded += bytesRead;
 
-                    // Read the next part of the response
-                    bytesRead = responseStream.Read(readBuffer, 0, readBuffer.Length);
+                            // Read the next part of the response
+                            bytesRead = responseStream.Read(readBuffer, 0, readBuffer.Length);
+                        }
+                    }
                 }
                 _requestHandler.Logger.Debug("received: " + Uri + " " + bytesDownloaded + " bytes");
             }
@@ -607,13 +618,6 @@ namespace RuralCafe
                 Utils.DeleteFile(_cacheFileName);
                 _requestHandler.Logger.Debug("failed: " + Uri, e);
                 bytesDownloaded = -1; 
-            }
-            finally
-            {
-                if (writeFile != null)
-                {
-                    writeFile.Close();
-                }
             }
 
             return bytesDownloaded;
