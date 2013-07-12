@@ -229,68 +229,6 @@ namespace RuralCafe.Util
         }
 
         /// <summary>
-        /// Determines the network speed. FIXME this gets current network speed, not max possible network speed.
-        /// 
-        /// try http://stackoverflow.com/questions/16498558/internet-speed-and-bandwidth-usage
-        /// 
-        /// This must be integrated into the LocalRequestHandler.HandlerRequest() somehow. See google issue for more
-        /// details.
-        /// 
-        /// Source: http://stackoverflow.com/questions/13600604/how-to-get-accurate-download-upload-speed-in-c-net
-        /// </summary>
-        /// <returns></returns>
-        public static void DetermineNetworkSpeed()
-        {
-            IPAddress localAddr = localIPAdress;
-
-            NetworkInterface[] nics = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces();
-            NetworkInterface nic = null;
-            foreach (NetworkInterface n in nics)
-            {
-                IPInterfaceProperties ipProps = n.GetIPProperties();
-                // check if localAddr is in ipProps.UnicastAddresses
-                foreach (UnicastIPAddressInformation unicastAddr in ipProps.UnicastAddresses)
-                {
-                    if (unicastAddr.Address.Equals(localAddr))
-                    {
-                        nic = n;
-                        break;
-                    }
-                }
-            }
-
-            if (nic == null)
-            {
-                // TODO
-                return;
-            }
-            var reads = Enumerable.Empty<double>();
-            Stopwatch sw = new Stopwatch();
-            long lastBr = nic.GetIPv4Statistics().BytesReceived;
-            for (int i = 0; i < 1000; i++)
-            {
-
-                sw.Restart();
-                Thread.Sleep(100);
-                double elapsed = sw.Elapsed.TotalSeconds;
-                long br = nic.GetIPv4Statistics().BytesReceived;
-
-                double local = (br - lastBr) / elapsed;
-                lastBr = br;
-
-                // Keep last 20, ~2 seconds
-                reads = new[] { local }.Concat(reads).Take(20);
-
-                if (i % 10 == 0)
-                { // ~1 second
-                    double bSec = reads.Sum() / reads.Count();
-                    double kbs = (bSec * 8) / 1024;
-                    Console.WriteLine("Kb/s ~ " + kbs);
-                }
-            }
-        }
-
-        /// <summary>
         /// Adds "http://" to the given URI, if it does not start with it already.
         /// </summary>
         /// <param name="uri">The current URI.</param>

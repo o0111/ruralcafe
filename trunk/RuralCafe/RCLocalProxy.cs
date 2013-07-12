@@ -63,9 +63,14 @@ namespace RuralCafe
         // Constants
         private const int REQUESTS_WITHOUT_USER_CAPACITY = 50;
         private const string QUEUES_FILENAME = "Queues.json";
-        private const int SPEED_ONLINE_THRESHOLD_KBS = 56;
+        private const int SPEED_ONLINE_THRESHOLD_BS = 32768; // 32 KB/s
         private readonly TimeSpan NETWORK_DETECTION_INTERVAL = new TimeSpan(0, 15, 0);
         private readonly TimeSpan CLUSTERING_INTERVAL = new TimeSpan(0, 30, 0);
+        /// <summary>
+        /// Each time a new download is considered, so bytes used for calculation
+        /// so far are multiplicated with this factor.
+        /// </summary>
+        private const double NETWORK_SPEED_REDUCTION_FACTOR = 0.9;
 
         // RuralCafe pages path
         private string _uiPagesPath;
@@ -77,10 +82,29 @@ namespace RuralCafe
         // remoteProxy
         private WebProxy _remoteProxy;
 
-        // Network status
-        private bool _detectNetworkStatusAuto;
+        /// <summary>
+        /// The network status
+        /// </summary>
         private NetworkStatusCode _networkStatus;
-        private int _networkSpeedKBS;
+        /// <summary>
+        /// Automatically detect the network status
+        /// </summary>
+        private bool _detectNetworkStatusAuto;
+        /// <summary>
+        /// The currently determined download speed in byte/s.
+        /// </summary>
+        private long _networkSpeedBS;
+        /// <summary>
+        /// The number of bytes that have been used to determine the network speed.
+        /// </summary>
+        private long _speedCalculationBytesUsed;
+        /// <summary>
+        /// Object used to lock for network speed calculations.
+        /// </summary>
+        private object _speedLockObj = new object();
+        /// <summary>
+        /// The timer that determines the speed and changes the network status accordingly.
+        /// </summary>
         private Timer _changeNetworkStatusTimer;
 
         // big queue for lining up requests to remote proxy
@@ -171,12 +195,6 @@ namespace RuralCafe
             get { return _networkStatus; }
             set { _networkStatus = value; }
         }
-        /// <summary>The network speed in kilobyte/s.</summary>
-        public int NetworkSpeedKBS
-        {
-            get { return _networkSpeedKBS; }
-            set { _networkSpeedKBS = value; }
-        }
         #endregion
 
         /// <summary>
@@ -266,17 +284,6 @@ namespace RuralCafe
         {
             // TODO make field(s) for CreateClusters parameters
             ProxyCacheManager.CreateClusters(_uiPagesPath + "clusters.xml", 10);
-        }
-
-        /// <summary>
-        /// Determines the network status. This method is called periodically
-        /// by a timer in a new thread, if detectAuto is enabled.
-        /// </summary>
-        /// <param name="o">Ignored.</param>
-        private void DetectNetworkStatus(object o)
-        {
-            // TODO do something that makes sense
-            Logger.Info("Detecting network status");
         }
 
         /// <summary>
@@ -435,7 +442,40 @@ namespace RuralCafe
             }
         }
 
-        # region Request Queues Interface
+        #region Network status detection
+
+        /// <summary>
+        /// Determines the network status. This method is called periodically
+        /// by a timer in a new thread, if detectAuto is enabled.
+        /// </summary>
+        /// <param name="o">Ignored.</param>
+        private void DetectNetworkStatus(object o)
+        {
+            // TODO do something that makes sense
+            Logger.Info("Detecting network status");
+        }
+
+        /// <summary>
+        /// Includes a download into the network speed statistics.
+        /// </summary>
+        /// <param name="speedBS">The speed of the download.</param>
+        /// <param name="bytes">The bytes downloaded.</param>
+        public void IncludeDownloadInCalculation(long speedBS, long bytes)
+        {
+            lock (_speedLockObj)
+            {
+                // the bytes used so far are multiplicated with NETWORK_SPEED_REDUCTION_FACTOR
+                // to only take into account recent downloads
+                _speedCalculationBytesUsed = (int)(_speedCalculationBytesUsed * NETWORK_SPEED_REDUCTION_FACTOR);
+                long newSpeedCalcBytesUsed = _speedCalculationBytesUsed + bytes;
+                _networkSpeedBS = (_networkSpeedBS * _speedCalculationBytesUsed + speedBS * bytes)
+                    / newSpeedCalcBytesUsed;
+                _speedCalculationBytesUsed = newSpeedCalcBytesUsed;
+            }
+        }
+
+        #endregion
+        # region Request queues interface
 
         /// <summary>
         /// Adds the request to the global queue and client's queue and wakes up the dispatcher.
