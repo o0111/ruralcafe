@@ -78,6 +78,8 @@ namespace RuralCafe
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
+            this.label22 = new System.Windows.Forms.Label();
+            this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.panel1.SuspendLayout();
             this.groupBox4.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown7)).BeginInit();
@@ -128,6 +130,8 @@ namespace RuralCafe
             // 
             // groupBox4
             // 
+            this.groupBox4.Controls.Add(this.checkBox1);
+            this.groupBox4.Controls.Add(this.label22);
             this.groupBox4.Controls.Add(this.comboBox3);
             this.groupBox4.Controls.Add(this.label21);
             this.groupBox4.Controls.Add(this.comboBox2);
@@ -169,7 +173,7 @@ namespace RuralCafe
             // 
             this.comboBox2.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBox2.FormattingEnabled = true;
-            this.comboBox2.Location = new System.Drawing.Point(463, 44);
+            this.comboBox2.Location = new System.Drawing.Point(465, 67);
             this.comboBox2.Name = "comboBox2";
             this.comboBox2.Size = new System.Drawing.Size(181, 21);
             this.comboBox2.TabIndex = 25;
@@ -178,10 +182,11 @@ namespace RuralCafe
             // 
             this.comboBox1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBox1.FormattingEnabled = true;
-            this.comboBox1.Location = new System.Drawing.Point(462, 17);
+            this.comboBox1.Location = new System.Drawing.Point(464, 40);
             this.comboBox1.Name = "comboBox1";
             this.comboBox1.Size = new System.Drawing.Size(181, 21);
             this.comboBox1.TabIndex = 24;
+            this.comboBox1.SelectedIndexChanged += new System.EventHandler(this.comboBox1_SelectedIndexChanged);
             // 
             // numericUpDown7
             // 
@@ -210,7 +215,7 @@ namespace RuralCafe
             // label16
             // 
             this.label16.AutoSize = true;
-            this.label16.Location = new System.Drawing.Point(327, 48);
+            this.label16.Location = new System.Drawing.Point(329, 71);
             this.label16.Name = "label16";
             this.label16.Size = new System.Drawing.Size(83, 13);
             this.label16.TabIndex = 20;
@@ -219,7 +224,7 @@ namespace RuralCafe
             // label12
             // 
             this.label12.AutoSize = true;
-            this.label12.Location = new System.Drawing.Point(327, 22);
+            this.label12.Location = new System.Drawing.Point(329, 45);
             this.label12.Name = "label12";
             this.label12.Size = new System.Drawing.Size(78, 13);
             this.label12.TabIndex = 14;
@@ -584,6 +589,26 @@ namespace RuralCafe
             this.label1.TabIndex = 1;
             this.label1.Text = "IP address";
             // 
+            // label22
+            // 
+            this.label22.AutoSize = true;
+            this.label22.Location = new System.Drawing.Point(330, 19);
+            this.label22.Name = "label22";
+            this.label22.Size = new System.Drawing.Size(111, 13);
+            this.label22.TabIndex = 28;
+            this.label22.Text = "Detect network status";
+            this.label22.Click += new System.EventHandler(this.label22_Click);
+            // 
+            // checkBox1
+            // 
+            this.checkBox1.AutoSize = true;
+            this.checkBox1.Location = new System.Drawing.Point(465, 14);
+            this.checkBox1.Name = "checkBox1";
+            this.checkBox1.Size = new System.Drawing.Size(15, 14);
+            this.checkBox1.TabIndex = 29;
+            this.checkBox1.UseVisualStyleBackColor = true;
+            this.checkBox1.CheckedChanged += new System.EventHandler(this.checkBox1_CheckedChanged);
+            // 
             // SettingsForm
             // 
             this.AcceptButton = this.button1;
@@ -666,5 +691,7 @@ namespace RuralCafe
         private System.Windows.Forms.ComboBox comboBox2;
         private System.Windows.Forms.ComboBox comboBox3;
         private System.Windows.Forms.Label label21;
+        private System.Windows.Forms.Label label22;
+        private System.Windows.Forms.CheckBox checkBox1;
     }
 }

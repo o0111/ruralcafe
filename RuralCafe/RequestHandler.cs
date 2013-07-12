@@ -30,6 +30,7 @@ using System.Reflection;
 using log4net;
 using RuralCafe.Util;
 using Newtonsoft.Json;
+using System.Diagnostics;
 
 namespace RuralCafe
 {
@@ -470,7 +471,7 @@ namespace RuralCafe
 
         /// <summary>
         /// Stream the request to the server and the response back to the client transparently.
-        /// XXX: does not have gateway support or tunnel to remote proxy support
+        /// XXX: does not have gateway support
         /// </summary>
         /// <returns>The length of the streamed result.</returns>
         protected long StreamTransparently()
@@ -479,6 +480,32 @@ namespace RuralCafe
             // Stream parameters, if we have non GET/HEAD
             HttpUtils.SendBody(_rcRequest.GenericWebRequest, _rcRequest.Body);
             WebResponse serverResponse = _rcRequest.GenericWebRequest.GetResponse();
+            return StreamToClient(serverResponse.GetResponseStream());
+        }
+
+        /// <summary>
+        /// Stream the request to the server and the response back to the client transparently.
+        /// Measures speed.
+        /// 
+        /// TODO test if getResponse does it (for downloading big files...)
+        /// </summary>
+        /// <param name="speedKBS">The speed will be put in here.</param>
+        /// <returns></returns>
+        protected long StreamTransparently(out int speedKBS)
+        {
+            Logger.Debug("streaming: " + RequestUri + " to client and measuring speed.");
+            // Stream parameters, if we have non GET/HEAD
+            HttpUtils.SendBody(_rcRequest.GenericWebRequest, _rcRequest.Body);
+
+            // Download and measure speed
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            WebResponse serverResponse = _rcRequest.GenericWebRequest.GetResponse();
+            stopwatch.Stop();
+            // Content-Length is in bytes.
+            speedKBS = (int) (serverResponse.ContentLength / (1024 * stopwatch.Elapsed.TotalSeconds));
+            Logger.Debug("Streaming download speed: " + speedKBS);
+
             return StreamToClient(serverResponse.GetResponseStream());
         }
 
