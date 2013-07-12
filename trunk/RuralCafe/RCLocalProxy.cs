@@ -46,14 +46,26 @@ namespace RuralCafe
         /// </summary>
         public enum NetworkStatusCode
         {
+            /// <summary>
+            /// Fast connection, the proxies will act transparantly.
+            /// </summary>
             Online = 0,
+            /// <summary>
+            /// Slow connection, requests will be queued.
+            /// </summary>
             Slow = 1,
+            /// <summary>
+            /// No connection, only queueing and offline browsing are possible.
+            /// </summary>
             Offline = 2
-        };
+        }
 
         // Constants
         private const int REQUESTS_WITHOUT_USER_CAPACITY = 50;
         private const string QUEUES_FILENAME = "Queues.json";
+        private const int SPEED_ONLINE_THRESHOLD_KBS = 56;
+        private readonly TimeSpan NETWORK_DETECTION_INTERVAL = new TimeSpan(0, 15, 0);
+        private readonly TimeSpan CLUSTERING_INTERVAL = new TimeSpan(0, 30, 0);
 
         // RuralCafe pages path
         private string _uiPagesPath;
@@ -66,7 +78,10 @@ namespace RuralCafe
         private WebProxy _remoteProxy;
 
         // Network status
+        private bool _detectNetworkStatusAuto;
         private NetworkStatusCode _networkStatus;
+        private int _networkSpeedKBS;
+        private Timer _changeNetworkStatusTimer;
 
         // big queue for lining up requests to remote proxy
         private List<LocalRequestHandler> _globalRequestQueue;
@@ -118,11 +133,49 @@ namespace RuralCafe
         {
             get { return _wikiWrapper; }
         }
+        /// <summary>Detect the network status automatically?
+        /// If yes, the status is first set to online
+        /// and a timer for changing status is started.</summary>
+        public bool DetectNetworkStatusAuto
+        {
+            get { return _detectNetworkStatusAuto; }
+            set 
+            { 
+                _detectNetworkStatusAuto = value;
+                if (_detectNetworkStatusAuto)
+                {
+                    NetworkStatus = NetworkStatusCode.Online;
+                    // (Re)start the timer
+                    if(_changeNetworkStatusTimer == null)
+                    {
+                        _changeNetworkStatusTimer 
+                            = new Timer(DetectNetworkStatus, null, TimeSpan.Zero, NETWORK_DETECTION_INTERVAL);
+                    }
+                    else
+                    {
+                        _changeNetworkStatusTimer.Change(TimeSpan.Zero, NETWORK_DETECTION_INTERVAL);
+                    }
+                }
+                else
+                {
+                    if(_changeNetworkStatusTimer != null)
+                    {
+                        _changeNetworkStatusTimer.Change(Timeout.Infinite , Timeout.Infinite);
+                    }
+                }
+            }
+        }
         /// <summary>The network status.</summary>
         public NetworkStatusCode NetworkStatus
         {
             get { return _networkStatus; }
             set { _networkStatus = value; }
+        }
+        /// <summary>The network speed in kilobyte/s.</summary>
+        public int NetworkSpeedKBS
+        {
+            get { return _networkSpeedKBS; }
+            set { _networkSpeedKBS = value; }
         }
         #endregion
 
@@ -174,9 +227,8 @@ namespace RuralCafe
             // Tell the programm to serialize the queue before shutdown
             Program.AddShutDownDelegate(SerializeQueue);
 
-            // Every x minutes, re-cluster the cachein an own thread.
-            // TODO make timespan customizable.
-            new Timer(StartClustering, null, TimeSpan.Zero, new TimeSpan(0, 30, 0));
+            // Every x minutes, re-cluster the cache in an own thread.
+            new Timer(StartClustering, null, TimeSpan.Zero, CLUSTERING_INTERVAL);
         }
 
         /// <summary>
@@ -214,6 +266,17 @@ namespace RuralCafe
         {
             // TODO make field(s) for CreateClusters parameters
             ProxyCacheManager.CreateClusters(_uiPagesPath + "clusters.xml", 10);
+        }
+
+        /// <summary>
+        /// Determines the network status. This method is called periodically
+        /// by a timer in a new thread, if detectAuto is enabled.
+        /// </summary>
+        /// <param name="o">Ignored.</param>
+        private void DetectNetworkStatus(object o)
+        {
+            // TODO do something that makes sense
+            Logger.Info("Detecting network status");
         }
 
         /// <summary>

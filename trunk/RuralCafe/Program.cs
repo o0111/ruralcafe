@@ -225,8 +225,9 @@ namespace RuralCafe
 
             // set the RC search page
             localProxy.SetRCSearchPage(Properties.Settings.Default.DEFAULT_SEARCH_PAGE);
-            // Set network status
+            // Set network status and auto detection
             localProxy.NetworkStatus = Properties.Settings.Default.NETWORK_STATUS;
+            localProxy.DetectNetworkStatusAuto = Properties.Settings.Default.DETECT_NETWORK_AUTO;
 
             // load the blacklisted domains
             localProxy.LoadBlacklist("blacklist.txt");

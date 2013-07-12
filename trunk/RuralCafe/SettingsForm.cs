@@ -17,6 +17,11 @@ namespace RuralCafe
             InitializeComponent();
         }
 
+        /// <summary>
+        /// On loading the form.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void SettingsForm_Load(object sender, EventArgs e)
         {
             // Give all fields the current setting values. Do NOT do this in 
@@ -43,11 +48,18 @@ namespace RuralCafe
             this.comboBox1.DataSource = Enum.GetValues(typeof(RCLocalProxy.NetworkStatusCode));
             this.comboBox2.DataSource = Enum.GetValues(typeof(RequestHandler.Richness));
             this.comboBox3.DataSource = Enum.GetValues(typeof(LogLevel));
+            this.checkBox1.Checked = Properties.Settings.Default.DETECT_NETWORK_AUTO;
+            checkBox1_CheckedChanged(null, null);
             this.comboBox1.SelectedItem = Properties.Settings.Default.NETWORK_STATUS;
             this.comboBox2.SelectedItem = Properties.Settings.Default.DEFAULT_RICHNESS;
             this.comboBox3.SelectedItem = Properties.Settings.Default.LOGLEVEL;
         }
 
+        /// <summary>
+        /// The OK button.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void button1_Click(object sender, EventArgs e)
         {
             // Dummy for out parameter
@@ -89,6 +101,7 @@ namespace RuralCafe
             Properties.Settings.Default.MAXIMUM_DOWNLOAD_SPEED = (int)this.numericUpDown5.Value;
             Properties.Settings.Default.DEFAULT_DEPTH = (int)this.numericUpDown6.Value;
             Properties.Settings.Default.DEFAULT_QUOTA = (int)this.numericUpDown7.Value;
+            Properties.Settings.Default.DETECT_NETWORK_AUTO = this.checkBox1.Checked;
             Properties.Settings.Default.NETWORK_STATUS = (RCLocalProxy.NetworkStatusCode)this.comboBox1.SelectedItem;
             Properties.Settings.Default.DEFAULT_RICHNESS = (RequestHandler.Richness)this.comboBox2.SelectedItem;
             Properties.Settings.Default.LOGLEVEL = (LogLevel)this.comboBox3.SelectedItem;
@@ -96,6 +109,11 @@ namespace RuralCafe
             this.Close();
         }
 
+        /// <summary>
+        /// The cancel button.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void button2_Click(object sender, EventArgs e)
         {
             this.Close();
@@ -107,6 +125,32 @@ namespace RuralCafe
         }
 
         private void comboBox3_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label22_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void comboBox4_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        /// <summary>
+        /// When detect network auto is (un)checked.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void checkBox1_CheckedChanged(object sender, EventArgs e)
+        {
+            // Enable or disable the network status combo box.
+            this.comboBox1.Enabled = !this.checkBox1.Checked;
+        }
+
+        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
 
         }
