@@ -458,40 +458,38 @@ namespace RuralCafe
         /// <returns>The status of the request.</returns>
         protected Status SelectStreamingMethodAndStream()
         {
+            long dummy, bytes;
+            return SelectStreamingMethodAndStream(out dummy, out bytes);
+        }
+
+        /// <summary>
+        /// If the request is cacheable, it is streamed to cache and then to client.
+        /// If not it is streamed to the client directly. Speed is measured.
+        /// </summary>
+        /// <param name="speedBS">The speed in byte/s will be stored here.</param>
+        /// <param name="bytes">The number of downloaded bytes will be stored here.</param>
+        /// <returns>The status of the request.</returns>
+        protected Status SelectStreamingMethodAndStream(out long speedBS, out long bytes)
+        {
             if (IsCacheable())
             {
                 // Stream to cache and client
-                return StreamToCacheAndClient();
+                return StreamToCacheAndClient(out speedBS, out bytes);
             }
             // Otherwise just stream to the client.
-            long bytesSent = StreamTransparently();
-            _rcRequest.FileSize = bytesSent;
+            bytes = StreamTransparently(out speedBS);
+            _rcRequest.FileSize = bytes;
             return Status.Completed;
         }
 
         /// <summary>
         /// Stream the request to the server and the response back to the client transparently.
+        /// Measures speed.
         /// XXX: does not have gateway support
         /// </summary>
-        /// <returns>The length of the streamed result.</returns>
-        protected long StreamTransparently()
-        {
-            Logger.Debug("streaming: " + RequestUri + " to client.");
-            // Stream parameters, if we have non GET/HEAD
-            HttpUtils.SendBody(_rcRequest.GenericWebRequest, _rcRequest.Body);
-            WebResponse serverResponse = _rcRequest.GenericWebRequest.GetResponse();
-            return StreamToClient(serverResponse.GetResponseStream());
-        }
-
-        /// <summary>
-        /// Stream the request to the server and the response back to the client transparently.
-        /// Measures speed.
-        /// 
-        /// TODO test if getResponse does it (for downloading big files...)
-        /// </summary>
-        /// <param name="speedKBS">The speed will be put in here.</param>
+        /// <param name="speedBS">The speed in byte/s will be stored here.</param>
         /// <returns></returns>
-        protected long StreamTransparently(out int speedKBS)
+        protected long StreamTransparently(out long speedBS)
         {
             Logger.Debug("streaming: " + RequestUri + " to client and measuring speed.");
             // Stream parameters, if we have non GET/HEAD
@@ -502,15 +500,15 @@ namespace RuralCafe
             stopwatch.Start();
             WebResponse serverResponse = _rcRequest.GenericWebRequest.GetResponse();
             stopwatch.Stop();
-            // Content-Length is in bytes.
-            speedKBS = (int) (serverResponse.ContentLength / (1024 * stopwatch.Elapsed.TotalSeconds));
-            Logger.Debug("Streaming download speed: " + speedKBS);
 
-            return StreamToClient(serverResponse.GetResponseStream());
+            long length = StreamToClient(serverResponse.GetResponseStream());
+            speedBS = (long)(length / stopwatch.Elapsed.TotalSeconds);
+            Logger.Debug("Streaming download speed: " + speedBS);
+            return length;
         }
 
         /// <summary>
-        /// Stream the file from the cache to the client.
+        /// Stream the file from the cache to the client. Also sets Content-type accordingly.
         /// </summary>
         /// <param name="fileName">Name of the file to stream to the client.</param>
         /// <returns>Bytes streamed from the cache to the client.</returns>
@@ -551,6 +549,9 @@ namespace RuralCafe
                 SendMessage(content);
                 return content.Length;
             }
+
+            // try getting the content type from the file extension
+            _clientHttpContext.Response.ContentType = Utils.GetContentTypeOfFile(fileName);
 
             // Stream file to client
             FileStream fs = null;
@@ -600,15 +601,17 @@ namespace RuralCafe
         /// XXX: response time could be improved here if it downloads and streams to the client at the same time
         /// basically, somehow merge the DownloadtoCache() and StreamfromcachetoClient() methods into this method.
         /// </summary>
+        /// <param name="speedBS">The speed in byte/s will be stored here.</param>
+        /// <param name="bytes">The number of downloaded bytes will be stored here.</param>
         /// <returns>The Status of the request.</returns>
-        protected Status StreamToCacheAndClient()
+        protected Status StreamToCacheAndClient(out long speedBS, out long bytes)
         {
             Logger.Debug("streaming: " + _rcRequest.GenericWebRequest.RequestUri + " to cache and client.");
-            long bytesDownloaded = _rcRequest.DownloadToCache(true);
+            bytes = _rcRequest.DownloadToCache(true, out speedBS);
             try
             {
                 FileInfo f = new FileInfo(_rcRequest.CacheFileName);
-                if (bytesDownloaded > -1 && f.Exists)
+                if (bytes > -1 && f.Exists)
                 {
                     _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName);
                     if (_rcRequest.FileSize < 0)
@@ -751,7 +754,7 @@ namespace RuralCafe
         /// <summary>
         /// Checks if the request is GET or HEAD.
         /// </summary>
-        /// <returns>True if it is a GET or HEAD request, false if otherwise.</returns>
+        /// <returns>True if it is a GET or HEAD request, false otherwise.</returns>
         protected bool IsGetOrHeadHeader()
         {
             return (_rcRequest.GenericWebRequest.Method == "GET" ||

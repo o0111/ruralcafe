@@ -421,7 +421,9 @@ namespace RuralCafe.Util
             {
                 int read = inStream.Read(buffer, 0, buffer.Length);
                 if (read <= 0)
+                {
                     break;
+                }
                 outStream.Write(buffer, 0, read);
                 bytesWritten += read;
             }

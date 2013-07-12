@@ -114,11 +114,6 @@ namespace RuralCafe
             // Do only use cache for HEAD/GET
             if (IsGetOrHeadHeader() && IsCached(_rcRequest.CacheFileName))
             {
-                // try getting the content type from the file extension
-                string contentType = Utils.GetContentTypeOfFile(_rcRequest.CacheFileName);
-                
-                _clientHttpContext.Response.ContentType = contentType;
-
                 _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName);
                 if (_rcRequest.FileSize < 0)
                 {
@@ -137,7 +132,22 @@ namespace RuralCafe
             {
                 // We're streaming through the remote proxy.
                 SetStreamToRemoteProxy();
-                return SelectStreamingMethodAndStream();
+                if (!Proxy.DetectNetworkStatusAuto)
+                {
+                    // No speed measuring
+                    return SelectStreamingMethodAndStream();
+                }
+
+                // Measure speed
+                long speedBS, bytes;
+                Status result = SelectStreamingMethodAndStream(out speedBS, out bytes);
+                // Take speed into calculation, if successful
+                if (result == Status.Completed)
+                {
+                    // FIXME content-length still doesn't do it
+                    Proxy.IncludeDownloadInCalculation(speedBS, bytes);
+                }
+                return result;
             }
             
             if (Proxy.NetworkStatus != RCLocalProxy.NetworkStatusCode.Online)

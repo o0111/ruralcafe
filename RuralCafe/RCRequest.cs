@@ -27,6 +27,7 @@ using System.Collections.Specialized;
 using System.Text.RegularExpressions;
 using RuralCafe.Util;
 using Newtonsoft.Json;
+using System.Diagnostics;
 
 namespace RuralCafe
 {
@@ -500,9 +501,23 @@ namespace RuralCafe
         /// <returns>Length of the downloaded file.</returns>
         public long DownloadToCache(bool replace)
         {
-            int bytesRead = 0;
+            long dummy;
+            return DownloadToCache(replace, out dummy);
+        }
+
+        /// <summary>
+        /// Streams a request from the server into the cache.
+        /// Used for both local and remote proxy requests.
+        /// </summary>
+        /// <param name="replace">If there is already a file, should it be replaced?</param>
+        /// <param name="speedBS">The speed in byte/s will be stored here.</param>
+        /// <returns>Length of the downloaded file.</returns>
+        public long DownloadToCache(bool replace, out long speedBS)
+        {
             Byte[] readBuffer = new Byte[4096];
             long bytesDownloaded = 0;
+            // First set speed to 0
+            speedBS = 0;
 
             // create directory if it doesn't exist and delete the file so we can replace it
             if (!Utils.CreateDirectoryForFile(_cacheFileName))
@@ -530,9 +545,14 @@ namespace RuralCafe
                 _requestHandler.Logger.Debug("downloading: " + _webRequest.RequestUri);
                 // Stream parameters, if we have non GET/HEAD
                 HttpUtils.SendBody(_webRequest, _body);
-                // get the web response for the web request
+
+                // get the web response for the web request and measure speed
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
                 _webResponse = (HttpWebResponse)_webRequest.GetResponse();
-                _requestHandler.Logger.Debug("downloading done: " + _webRequest.RequestUri);
+                stopwatch.Stop();
+                _requestHandler.Logger.Debug("Received header: " + _webRequest.RequestUri);
+
                 if (!_webResponse.ResponseUri.Equals(_webRequest.RequestUri))
                 {
                     // redirected at some point
@@ -592,12 +612,14 @@ namespace RuralCafe
                         using (StreamReader reader = new StreamReader(responseStream))
                         {
                             writer.Write(reader.ReadToEnd().Trim());
+                            // FIXME
+                            bytesDownloaded = 0;
                         }
                     }
                     else
                     {
                         // No text. Read buffered.
-                        bytesRead = responseStream.Read(readBuffer, 0, readBuffer.Length);
+                        int bytesRead = responseStream.Read(readBuffer, 0, readBuffer.Length);
                         while (bytesRead != 0)
                         {
                             writeFile.Write(readBuffer, 0, bytesRead);
@@ -608,7 +630,11 @@ namespace RuralCafe
                         }
                     }
                 }
-                _requestHandler.Logger.Debug("received: " + Uri + " " + bytesDownloaded + " bytes");
+                // Calculate speed
+                speedBS = (long)(bytesDownloaded / stopwatch.Elapsed.TotalSeconds);
+
+                _requestHandler.Logger.Debug("received: " + Uri + " "
+                    + bytesDownloaded + " bytes at " + speedBS + " byte/s");
             }
             catch (Exception e)
             {

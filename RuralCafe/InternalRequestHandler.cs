@@ -202,15 +202,15 @@ namespace RuralCafe
                     SendErrorPage(HttpStatusCode.InternalServerError, "Return type wrong: " + method.MethodName);
                     return RequestHandler.Status.Failed;
                 }
-                // Specify content type as "text/html" if not set before
-                if (_clientHttpContext.Response.ContentType == null)
-                {
-                    _clientHttpContext.Response.ContentType = "text/html";
-                }
                 // Send result
                 Response response = (Response)result;
                 if (response.Message != null)
                 {
+                    // Specify content type as "text/html" if not set before
+                    if (_clientHttpContext.Response.ContentType == null)
+                    {
+                        _clientHttpContext.Response.ContentType = "text/html";
+                    }
                     SendMessage(response.Message);
                 }
                 else if (response.StreamFileName != null)
