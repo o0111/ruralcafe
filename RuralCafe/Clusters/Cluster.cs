@@ -63,12 +63,18 @@ namespace RuralCafe.Clusters
         /// Can throw various Exceptions.
         /// </summary>
         /// <param name="matFile">The matfile.</param>
+        /// <param name="clustersFile">The clusters file.</param>
         /// <param name="k">The number of clusters to create.</param>
-        public static void CreateClusters(string matFile, int k)
+        /// <param name="fulltree">Wether a full hierarchical tree should be computed.</param>
+        /// <param name="treefile">Only used if fulltree. Path to the treefile.</param>
+        public static void CreateClusters(string matFile, string clustersFile, int k,
+            bool fulltree, string treefile)
         {
-            // vcluster.exe <matFile> k
+            // vcluster.exe -clmethod=rbr [-fulltree -treefile=<treefile>] -clustfile=<clustFile> <matFile> k
             ProcessStartInfo clusterStartInfo = new ProcessStartInfo(VCLUSTERS_PATH);
-            clusterStartInfo.Arguments = "\"" + matFile + "\" " + k; 
+            clusterStartInfo.Arguments = "-clmethod=rbr ";
+            clusterStartInfo.Arguments += fulltree ? "-fulltree -showtree -cltreefile=\"" + treefile + "\" " : "";
+            clusterStartInfo.Arguments += "-clustfile=\"" + clustersFile + "\" \"" + matFile + "\" " + k; 
 
             clusterStartInfo.UseShellExecute = false;
             clusterStartInfo.RedirectStandardOutput = true;
@@ -81,7 +87,7 @@ namespace RuralCafe.Clusters
             vcluster.WaitForExit();
             if (vcluster.ExitCode != 0)
             {
-                throw new Exception("PERL doc2mat failed with exitcode: " + vcluster.ExitCode);
+                throw new Exception("vcluster failed with exitcode: " + vcluster.ExitCode);
             }
         }
 
@@ -93,21 +99,39 @@ namespace RuralCafe.Clusters
         /// </summary>
         /// <param name="fileNames">A list of all files that have been clustered.</param>
         /// <param name="clusterFile">Cluto's result file.</param>
+        /// <param name="treeFile">The tree file from cluto. If null or Empty, a flat XML will be produced.</param>
         /// <param name="xmlFile">The XML result will be stored in here.</param>
         /// <param name="k">The number of clusters</param>
         /// <param name="cachePathLength">The length of a string containing the cache path root folder.</param>
-        public static void CreateClusterXMLFile(List<string> fileNames, string clusterFile, 
+        public static void CreateClusterXMLFile(List<string> fileNames, string clusterFile, string treeFile,
             string xmlFile, int k, int cachePathLength)
         {
+            // Read cluster file
             string clusterFileContent = Utils.ReadFileAsString(clusterFile);
             string[] clusterNumbers = newlineRegex.Split(clusterFileContent);
+
+            bool hierarchical = !String.IsNullOrEmpty(treeFile);
+            string[] parentNumbers = null;
+            if (hierarchical)
+            {
+                // Read tree file
+                string treeFileContent = Utils.ReadFileAsString(treeFile);
+                parentNumbers = newlineRegex.Split(treeFileContent);
+                // Remove additional info, only parent is relevant
+                // Last line is empty and can be ignored
+                for (int i = 0; i < parentNumbers.Length - 1; i++)
+                {
+                    parentNumbers[i] = parentNumbers[i].Substring(0, parentNumbers[i].IndexOf(' '));
+                }
+            }
 
             XmlDocument xmlDoc = new XmlDocument();
             xmlDoc.AppendChild(xmlDoc.CreateXmlDeclaration("1.0", "UTF-8", ""));
 
-            XmlElement clustersElement = xmlDoc.CreateElement("clusters");
-            xmlDoc.AppendChild(clustersElement);
-            clustersElement.SetAttribute("amount", "" + k);
+            XmlElement rootXml = xmlDoc.CreateElement("clusters");
+            xmlDoc.AppendChild(rootXml);
+            rootXml.SetAttribute("numberOfClusters", "" + k);
+            rootXml.SetAttribute("hierarchical", "" + hierarchical);
 
             // Create a node for each cluster
             XmlElement[] clusters = new XmlElement[k];
@@ -115,7 +139,6 @@ namespace RuralCafe.Clusters
             for (int i = 0; i < k; i++)
             {
                 clusters[i] = xmlDoc.CreateElement("cluster");
-                clustersElement.AppendChild(clusters[i]);
                 clusters[i].SetAttribute("number", "" + i);
             }
             // Save each file in the corresponsing cluster
@@ -140,6 +163,58 @@ namespace RuralCafe.Clusters
             for (int i = 0; i < k; i++)
             {
                 clusters[i].SetAttribute("size", "" + sizes[i]);
+            }
+            // Add clusters flat or hierarchical to the document
+            if (hierarchical)
+            {
+                // There are k-1 parents
+                XmlElement[] parents = new XmlElement[k - 1];
+                for (int i = 0; i < parents.Length; i++)
+                {
+                    parents[i] = xmlDoc.CreateElement("cluster");
+                    // Parent numbers start at k
+                    parents[i].SetAttribute("number", "" + (k + i));
+                }
+                // Add leafs to the parents
+                for(int i = 0; i < clusters.Length; i++)
+                {
+                    XmlElement elem = clusters[i];
+                    int parentNum = Int32.Parse(parentNumbers[i]);
+                    if (parentNum == -1)
+                    {
+                        // this is the/a root cluster
+                        rootXml.AppendChild(elem);
+                    }
+                    else
+                    {
+                        // This is not a root cluster
+                        parents[parentNum - k].AppendChild(elem);
+                    }
+                    
+                }
+                // Arrange parents hierarchical
+                for (int i = 0; i < parents.Length; i++)
+                {
+                    XmlElement elem = parents[i];
+                    int parentNum = Int32.Parse(parentNumbers[i + k]);
+                    if (parentNum == -1)
+                    {
+                        // this is the/a root cluster
+                        rootXml.AppendChild(elem);
+                    }
+                    else
+                    {
+                        // This is not a root cluster
+                        parents[parentNum - k].AppendChild(elem);
+                    }
+                }
+            }
+            else
+            {
+                foreach (XmlElement elem in clusters)
+                {
+                    rootXml.AppendChild(elem);
+                }
             }
 
             xmlDoc.Save(xmlFile);
