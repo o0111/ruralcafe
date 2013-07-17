@@ -1,0 +1,21 @@
+#summary Configure Windows registry to improve DNS caching
+
+= DNS caching =
+
+Windows has DNS caching implemented, which is being used by .NET and therefore by Ruralcafe. The cache size is rather small and pages get evicted quickly. In order to change this behaviour, do the following:
+  # Type `regedit` in the start menu (after clicking `Run` in Windows XP).
+  #     Locate and then expand the following registry subkey: `HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Dnscache\Parameters`
+  # To create a new item, click `Edit->New->DWORD (32-bit) Value`. After naming it, double click it change its value. Always select `Decimal` base. The items to create depend on your operating system.
+  # Windows 2000/Vista/7
+    * `CacheHashTableBucketSize = 1`
+    * `CacheHashTableSize = 64000`
+    * `MaxCacheEntryTtlLimit = 259200`
+    * `MaxNegativeCacheTtl = 3600`
+  # Windows XP
+    * `MaxCacheTtl = 259200`
+    * `MaxNegativeCacheTtl = 3600`
+  # Type `cmd` in the start menu (after clicking `Run` in Windows XP).
+  # Type `ipconfig /flushdns` into the command prompt.
+  # Restart the computer.
+
+Of course you can change the values according to your needs. The `Ttl`s (time to live) are specified in seconds.
