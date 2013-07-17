@@ -116,6 +116,56 @@ namespace RuralCafe.Util
         }
 
         /// <summary>
+        /// Copies everything from an incoming WebResponse to an outgoing HttpListenerResponse.
+        /// </summary>
+        /// <param name="outgoingResponse">The outgoing response.</param>
+        /// <param name="originalResponse">The incoming response.</param>
+        public static void CopyWebResponse(HttpListenerResponse outgoingResponse, HttpWebResponse originalResponse)
+        {
+            // TODO integrate other headers, too
+            IntegrateHeadersIntoWebResponse(outgoingResponse, originalResponse.Headers);
+            // Do not set content length or content encoding
+            outgoingResponse.ContentType = originalResponse.ContentType;
+            outgoingResponse.StatusCode = (int)originalResponse.StatusCode;
+            outgoingResponse.Cookies = originalResponse.Cookies;
+        }
+
+        /// <summary>
+        /// Integrates headers into a HttpListenerResponse.
+        /// </summary>
+        /// <param name="response">The response.</param>
+        /// <param name="headers">The headers.</param>
+        public static void IntegrateHeadersIntoWebResponse(HttpListenerResponse response, NameValueCollection headers)
+        {
+            foreach (string key in headers)
+            {
+                if (key.Equals("Content-Type") || key.Equals("Content-Length") || key.Equals("Content-Encoding"))
+                {
+                    continue;
+                }
+                foreach (string value in headers.GetValues(key))
+                {
+                    // Headers that need special treatment
+                    if (key.Equals("Transfer-Encoding"))
+                    {
+                        response.SendChunked = value.Equals("chunked");
+                        continue;
+                    }
+
+                    try
+                    {
+                        response.Headers.Add(key, value);
+                    }
+                    catch (Exception e)
+                    {
+                        // This should ideally not happen!
+                        LogManager.GetLogger(typeof(HttpUtils)).Error(e);
+                    }
+                }
+            }
+        }
+        
+        /// <summary>
         /// Streams the body for a request.
         /// </summary>
         /// <param name="listenerRequest">The incoming request.</param>

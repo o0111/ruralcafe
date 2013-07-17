@@ -495,13 +495,24 @@ namespace RuralCafe
             // Stream parameters, if we have non GET/HEAD
             HttpUtils.SendBody(_rcRequest.GenericWebRequest, _rcRequest.Body);
 
-            // Download and measure speed
+            // Get response
+            HttpWebResponse serverResponse = (HttpWebResponse) _rcRequest.GenericWebRequest.GetResponse();
+
+            // Copy headers
+            HttpUtils.CopyWebResponse(_clientHttpContext.Response, serverResponse);
+
+            // Stream and measure time
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
-            WebResponse serverResponse = _rcRequest.GenericWebRequest.GetResponse();
+            long length = StreamToClient(serverResponse.GetResponseStream());
             stopwatch.Stop();
 
-            long length = StreamToClient(serverResponse.GetResponseStream());
+            if (serverResponse.ContentLength != -1)
+            {
+                // If header is set, this can be more accurate (if GZIP was used).
+                length = serverResponse.ContentLength;
+            }
+
             speedBS = (long)(length / stopwatch.Elapsed.TotalSeconds);
             Logger.Debug("Streaming download speed: " + speedBS);
             return length;
@@ -598,8 +609,8 @@ namespace RuralCafe
         /// <summary>
         /// Streams a request first to the cache and then from the cache back to the client.
         /// 
-        /// XXX: response time could be improved here if it downloads and streams to the client at the same time
-        /// basically, somehow merge the DownloadtoCache() and StreamfromcachetoClient() methods into this method.
+        /// XXX: response time could be improved here if it downloads and streams to the client at the same time.
+        /// Basically, somehow merge the DownloadtoCache() and StreamfromcachetoClient() methods into this method.
         /// </summary>
         /// <param name="speedBS">The speed in byte/s will be stored here.</param>
         /// <param name="bytes">The number of downloaded bytes will be stored here.</param>
