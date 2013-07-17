@@ -141,10 +141,9 @@ namespace RuralCafe
                 // Measure speed
                 long speedBS, bytes;
                 Status result = SelectStreamingMethodAndStream(out speedBS, out bytes);
-                // Take speed into calculation, if successful
-                if (result == Status.Completed)
+                // Take speed into calculation, if successful and speed could be measured
+                if (result == Status.Completed && speedBS > 0)
                 {
-                    // FIXME content-length still doesn't do it
                     Proxy.IncludeDownloadInCalculation(speedBS, bytes);
                 }
                 return result;

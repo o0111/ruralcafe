@@ -546,11 +546,8 @@ namespace RuralCafe
                 // Stream parameters, if we have non GET/HEAD
                 HttpUtils.SendBody(_webRequest, _body);
 
-                // get the web response for the web request and measure speed
-                Stopwatch stopwatch = new Stopwatch();
-                stopwatch.Start();
+                // get the web response for the web request
                 _webResponse = (HttpWebResponse)_webRequest.GetResponse();
-                stopwatch.Stop();
                 _requestHandler.Logger.Debug("Received header: " + _webRequest.RequestUri);
 
                 if (!_webResponse.ResponseUri.Equals(_webRequest.RequestUri))
@@ -595,13 +592,13 @@ namespace RuralCafe
                     }
                 }
 
+                Stopwatch stopwatch = new Stopwatch();
                 Stream responseStream = GenericWebResponse.GetResponseStream();
                 FileStream writeFile = Utils.CreateFile(_cacheFileName);
                 if (writeFile == null)
                 {
                     return -1;
                 }
-                
                 using (writeFile)
                 {
                     // write the response to the cache
@@ -611,13 +608,25 @@ namespace RuralCafe
                         using (StreamWriter writer = new StreamWriter(writeFile, Encoding.UTF8))
                         using (StreamReader reader = new StreamReader(responseStream))
                         {
-                            writer.Write(reader.ReadToEnd().Trim());
-                            // FIXME
-                            bytesDownloaded = 0;
+                            // This can be -1, if header is missing
+                            bytesDownloaded = _webResponse.ContentLength;
+
+                            // Start measuring speed
+                            stopwatch.Start();
+                            string content = reader.ReadToEnd();
+                            stopwatch.Stop();
+
+                            if (bytesDownloaded <= 0)
+                            {
+                                // XXX: for GZIP this will be wrong.
+                                bytesDownloaded = content.Length;
+                            }
+                            writer.Write(content.Trim());
                         }
                     }
                     else
                     {
+                        stopwatch.Start();
                         // No text. Read buffered.
                         int bytesRead = responseStream.Read(readBuffer, 0, readBuffer.Length);
                         while (bytesRead != 0)
@@ -628,6 +637,7 @@ namespace RuralCafe
                             // Read the next part of the response
                             bytesRead = responseStream.Read(readBuffer, 0, readBuffer.Length);
                         }
+                        stopwatch.Stop();
                     }
                 }
                 // Calculate speed
