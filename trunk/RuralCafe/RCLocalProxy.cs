@@ -64,13 +64,18 @@ namespace RuralCafe
         private const int REQUESTS_WITHOUT_USER_CAPACITY = 50;
         private const string QUEUES_FILENAME = "Queues.json";
         private const int SPEED_ONLINE_THRESHOLD_BS = 32768; // 32 KB/s
+        // .. for network speed detection
         private readonly TimeSpan NETWORK_DETECTION_INTERVAL = new TimeSpan(0, 15, 0);
-        private readonly TimeSpan CLUSTERING_INTERVAL = new TimeSpan(0, 30, 0);
         /// <summary>
         /// Each time a new download is considered, so bytes used for calculation
         /// so far are multiplicated with this factor.
         /// </summary>
         private const double NETWORK_SPEED_REDUCTION_FACTOR = 0.9;
+        // .. for clustering
+        private readonly TimeSpan CLUSTERING_INTERVAL = new TimeSpan(0, 30, 0);
+        private const int CLUSTERING_K = 10;
+        private const bool CLUSTERING_HIERARCHICAL = true;
+        private const string CLUSTERING_FILE = "clusters.xml";
 
         // RuralCafe pages path
         private string _uiPagesPath;
@@ -282,8 +287,8 @@ namespace RuralCafe
         /// <param name="o">Ignored.</param>
         private void StartClustering(object o)
         {
-            // TODO make field(s) for CreateClusters parameters
-            ProxyCacheManager.CreateClusters(_uiPagesPath + "clusters.xml", 10);
+            string clusterXMLFileName = _uiPagesPath + CLUSTERING_FILE;
+            ProxyCacheManager.CreateClusters(clusterXMLFileName, CLUSTERING_K, CLUSTERING_HIERARCHICAL);
         }
 
         /// <summary>

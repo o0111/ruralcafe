@@ -23,6 +23,8 @@ namespace RuralCafe
         private const string CLUSTERS_FOLDER = "clusters";
         private const string DOC_FILE_NAME = "docfile.txt";
         private const string MAT_FILE_NAME = "cache.mat";
+        private const string CLUSTERS_FILE_NAME = "clusters";
+        private const string TREE_FILE_NAME = "tree";
 
         /// <summary>
         /// The path to the cache.
@@ -106,7 +108,8 @@ namespace RuralCafe
         /// </summary>
         /// <param name="xmlFile">The file where to store the XML result.</param>
         /// <param name="k">The number of clusters to create.</param>
-        public void CreateClusters(string xmlFile, int k)
+        /// <param name="hierarchical">If the clusters should be organized hierarchical.</param>
+        public void CreateClusters(string xmlFile, int k, bool hierarchical)
         {
             _proxy.Logger.Info("Creating clusters.");
             // Measure what part takes what time
@@ -115,6 +118,7 @@ namespace RuralCafe
             // Create directory, if it does not exist already
             string docFileName = _cachePath + CLUSTERS_FOLDER + Path.DirectorySeparatorChar + DOC_FILE_NAME;
             string matFileName = _cachePath + CLUSTERS_FOLDER + Path.DirectorySeparatorChar + MAT_FILE_NAME;
+            string clustersFileName = _cachePath + CLUSTERS_FOLDER + Path.DirectorySeparatorChar + CLUSTERS_FILE_NAME;
             if (!Utils.CreateDirectoryForFile(docFileName))
             {
                 _proxy.Logger.Error("Clustering: Could not create directory for docFile.");
@@ -160,10 +164,19 @@ namespace RuralCafe
 
             // ClutoClusters
             _proxy.Logger.Debug("Clustering: Cluto-Clustering.");
+            string treeFileName = null;
             stopwatch.Restart();
             try
             {
-                Cluster.CreateClusters(matFileName, k);
+                if (hierarchical)
+                {
+                    treeFileName = _cachePath + CLUSTERS_FOLDER + Path.DirectorySeparatorChar + TREE_FILE_NAME;
+                    Cluster.CreateClusters(matFileName, clustersFileName, k, true, treeFileName);
+                }
+                else
+                {
+                    Cluster.CreateClusters(matFileName, clustersFileName, k, false, "");
+                }
             }
             catch (Exception e)
             {
@@ -174,12 +187,12 @@ namespace RuralCafe
             Console.WriteLine(stopwatch.Elapsed.TotalSeconds + "s");
 
             // Create XML file
-            string clustersFileName = matFileName + ".clustering." + k;
             _proxy.Logger.Debug("Clustering: Creating clusters.xml.");
             stopwatch.Restart();
             try
             {
-                Cluster.CreateClusterXMLFile(textFiles, clustersFileName, xmlFile, k, _cachePath.Length);
+                Cluster.CreateClusterXMLFile(textFiles, clustersFileName, (hierarchical ? treeFileName : ""),
+                    xmlFile, k, _cachePath.Length);
             }
             catch (Exception e)
             {
