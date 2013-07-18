@@ -74,6 +74,7 @@ namespace RuralCafe
         // .. for clustering
         private readonly TimeSpan CLUSTERING_INTERVAL = new TimeSpan(0, 30, 0);
         private const int CLUSTERING_K = 10;
+        // FIXME customizable?
         private const bool CLUSTERING_HIERARCHICAL = true;
         private const string CLUSTERING_FILE = "clusters.xml";
 

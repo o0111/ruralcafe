@@ -304,6 +304,7 @@ namespace RuralCafe
             int maxCacheTtl = Properties.Settings.Default.DNS_CACHE_TTL;
             int maxNegCacheTtl = 300;
             int cacheHashTableSize = 64000;
+            int cacheHashTableBucketSize = 16;
 
             try
             {
@@ -320,6 +321,7 @@ namespace RuralCafe
                     Utils.WriteRegistryKey(Registry.LocalMachine, regPath, "MaxCacheEntryTtlLimit", maxCacheTtl);
                     Utils.WriteRegistryKey(Registry.LocalMachine, regPath, "MaxNegativeCacheTtl", maxNegCacheTtl);
                     Utils.WriteRegistryKey(Registry.LocalMachine, regPath, "CacheHashTableSize", cacheHashTableSize);
+                    Utils.WriteRegistryKey(Registry.LocalMachine, regPath, "CacheHashTableBucketSize", cacheHashTableBucketSize);
                 }
             }
             catch (Exception e)

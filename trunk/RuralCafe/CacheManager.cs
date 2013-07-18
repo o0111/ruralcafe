@@ -165,17 +165,18 @@ namespace RuralCafe
             // ClutoClusters
             _proxy.Logger.Debug("Clustering: Cluto-Clustering.");
             string treeFileName = null;
+            HashSet<string>[] features;
             stopwatch.Restart();
             try
             {
                 if (hierarchical)
                 {
                     treeFileName = _cachePath + CLUSTERS_FOLDER + Path.DirectorySeparatorChar + TREE_FILE_NAME;
-                    Cluster.CreateClusters(matFileName, clustersFileName, k, true, treeFileName);
+                    features = Cluster.CreateClusters(matFileName, clustersFileName, k, true, treeFileName);
                 }
                 else
                 {
-                    Cluster.CreateClusters(matFileName, clustersFileName, k, false, "");
+                    features = Cluster.CreateClusters(matFileName, clustersFileName, k, false, "");
                 }
             }
             catch (Exception e)
@@ -191,7 +192,7 @@ namespace RuralCafe
             stopwatch.Restart();
             try
             {
-                Cluster.CreateClusterXMLFile(textFiles, clustersFileName, (hierarchical ? treeFileName : ""),
+                Cluster.CreateClusterXMLFile(textFiles, features, clustersFileName, (hierarchical ? treeFileName : ""),
                     xmlFile, k, _cachePath.Length);
             }
             catch (Exception e)
