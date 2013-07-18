@@ -28,7 +28,9 @@ namespace RuralCafe.Clusters
         /// <param name="matFile">The matfile.</param>
         public static void DoDoc2Mat(string docFile, string matFile)
         {
-            // TODO re-implement doc2mat in c#
+            // TODO re-implement doc2mat in c# ?
+
+            int timeoutMS = 60000; // 1 minute
 
             // perl doc2mat -nostem <docFile> <matFile>
             ProcessStartInfo perlStartInfo = new ProcessStartInfo("perl");
@@ -43,11 +45,18 @@ namespace RuralCafe.Clusters
             Process perl = new Process();
             perl.StartInfo = perlStartInfo;
             perl.Start();
-            perl.WaitForExit();
-            if (perl.ExitCode != 0)
+            if (perl.WaitForExit(timeoutMS))
             {
-                throw new Exception("PERL doc2mat failed with exitcode: " + perl.ExitCode);
+                if (perl.ExitCode != 0)
+                {
+                    throw new Exception("PERL doc2mat failed with exitcode: " + perl.ExitCode);
+                }
             }
+            else
+            {
+                throw new Exception("PERL doc2mat timed out.");
+            }
+            
         }
     }
 }
