@@ -14,7 +14,7 @@
     <Setting Name="REMOTE_PROXY_LISTEN_PORT" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">8081</Value>
     </Setting>
-    <Setting Name="NETWORK_STATUS" Type="RuralCafe.RCProxy.NetworkStatusCode" Scope="User">
+    <Setting Name="NETWORK_STATUS" Type="RuralCafe.RCLocalProxy.NetworkStatusCode" Scope="User">
       <Value Profile="(Default)">Slow</Value>
     </Setting>
     <Setting Name="EXTERNAL_PROXY_IP_ADDRESS" Type="System.String" Scope="User">
@@ -67,6 +67,9 @@
     </Setting>
     <Setting Name="DETECT_NETWORK_AUTO" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="DNS_CACHE_TTL" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">604800</Value>
     </Setting>
   </Settings>
 </SettingsFile>

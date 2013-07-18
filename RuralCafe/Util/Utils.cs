@@ -30,6 +30,7 @@ using HtmlAgilityPack;
 using System.Net.NetworkInformation;
 using System.Threading;
 using System.Diagnostics;
+using Microsoft.Win32;
 
 namespace RuralCafe.Util
 {
@@ -458,6 +459,27 @@ namespace RuralCafe.Util
                 }
             }
             return nameValueCollection;
+        }
+
+        /// <summary>
+        /// Writes a key to the registry. Non-existing keys will be created and existing will be overridden.
+        /// 
+        /// Source: http://www.codeproject.com/Articles/3389/Read-write-and-delete-from-registry-with-C
+        /// </summary>
+        /// <param name="rk">The base registry key.</param>
+        /// <param name="subKeyPath">The subkey path.</param>
+        /// <param name="keyName">The key name.</param>
+        /// <param name="value">The value to store.</param>
+        /// <returns></returns>
+        public static void WriteRegistryKey(RegistryKey rk, string subKeyPath, string keyName, object value)
+        {
+            // I have to use CreateSubKey 
+            // (create or open it if already exits), 
+            // 'cause OpenSubKey open a subKey as read-only
+            RegistryKey sk1 = rk.OpenSubKey(subKeyPath, true);
+            //RegistryKey sk1 = rk.CreateSubKey(subKeyPath);
+            // Save the value
+            sk1.SetValue(keyName, value);
         }
 
         #endregion
