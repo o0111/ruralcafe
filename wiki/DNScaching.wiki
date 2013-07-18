@@ -9,11 +9,11 @@ Windows has DNS caching implemented, which is being used by .NET and therefore b
   # Windows 2000/Vista/7
     * `CacheHashTableBucketSize = 1`
     * `CacheHashTableSize = 64000`
-    * `MaxCacheEntryTtlLimit = 259200`
-    * `MaxNegativeCacheTtl = 3600`
+    * `MaxCacheEntryTtlLimit = 604800`
+    * `MaxNegativeCacheTtl = 300`
   # Windows XP
-    * `MaxCacheTtl = 259200`
-    * `MaxNegativeCacheTtl = 3600`
+    * `MaxCacheTtl = 604800`
+    * `MaxNegativeCacheTtl = 300`
   # Type `cmd` in the start menu (after clicking `Run` in Windows XP).
   # Type `ipconfig /flushdns` into the command prompt.
   # Restart the computer.

@@ -138,6 +138,9 @@ namespace RuralCafe
             // Log configuration
             LogConfiguration();
 
+            // Configure Windows
+            ConfigureWindows();
+
             bool localProxyStarted = false;
             // start the local proxy
             if (Properties.Settings.Default.LOCAL_PROXY_IP_ADDRESS != null 
@@ -282,6 +285,49 @@ namespace RuralCafe
 
             // listen for cc connection
             return remoteProxy;
+        }
+
+        /// <summary>
+        /// Configures Windows (registry) according to the user preferences.
+        /// Changes DNS caching behaviour.
+        /// </summary>
+        private static void ConfigureWindows()
+        {
+            // Check if OS too old or Mac or Unix
+            if(System.Environment.OSVersion.Platform != System.PlatformID.Win32NT)
+            {
+                // We can't do anything here
+                return;
+            }
+
+            string regPath = @"SYSTEM\CurrentControlSet\Services\Dnscache\Parameters";
+            int maxCacheTtl = Properties.Settings.Default.DNS_CACHE_TTL;
+            int maxNegCacheTtl = 300;
+            int cacheHashTableSize = 64000;
+
+            try
+            {
+                // Check if we're running on XP
+                if (System.Environment.OSVersion.Version.Major == 5
+                    && System.Environment.OSVersion.Version.Minor == 1)
+                {
+                    Utils.WriteRegistryKey(Registry.LocalMachine, regPath, "MaxCacheTtl", maxCacheTtl);
+                    Utils.WriteRegistryKey(Registry.LocalMachine, regPath, "MaxNegativeCacheTtl", maxNegCacheTtl);
+                }
+                else
+                {
+                    // Hopefully we're running on 2000/Vista/7 where this should work.
+                    Utils.WriteRegistryKey(Registry.LocalMachine, regPath, "MaxCacheEntryTtlLimit", maxCacheTtl);
+                    Utils.WriteRegistryKey(Registry.LocalMachine, regPath, "MaxNegativeCacheTtl", maxNegCacheTtl);
+                    Utils.WriteRegistryKey(Registry.LocalMachine, regPath, "CacheHashTableSize", cacheHashTableSize);
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.Error("Could not change windows registry: ", e);
+                return;
+            }
+            _logger.Info("Wrote DNS cache registry keys.");            
         }
     }
 }

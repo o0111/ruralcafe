@@ -286,5 +286,17 @@ namespace RuralCafe.Properties {
                 this["DETECT_NETWORK_AUTO"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("604800")]
+        public int DNS_CACHE_TTL {
+            get {
+                return ((int)(this["DNS_CACHE_TTL"]));
+            }
+            set {
+                this["DNS_CACHE_TTL"] = value;
+            }
+        }
     }
 }
