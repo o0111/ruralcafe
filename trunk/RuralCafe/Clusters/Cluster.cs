@@ -100,7 +100,12 @@ namespace RuralCafe.Clusters
                 {
                     if (e.Data == null)
                     {
-                        outputWaitHandle.Set();
+                        try
+                        {
+                            outputWaitHandle.Set();
+                        }
+                        catch { }
+                        
                     }
                     else
                     {
@@ -111,7 +116,11 @@ namespace RuralCafe.Clusters
                 {
                     if (e.Data == null)
                     {
-                        errorWaitHandle.Set();
+                        try
+                        {
+                            errorWaitHandle.Set();
+                        }
+                        catch { }
                     }
                     else
                     {

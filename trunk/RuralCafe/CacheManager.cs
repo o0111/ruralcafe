@@ -85,10 +85,10 @@ namespace RuralCafe
         /// </summary>
         public void LogCacheMetrics()
         {
-            // TODO when this is done at the same time with Cluto, the clustering fails.
+            // XXX when this is done at the same time with Cluto, the clustering fails.
 
-            //_proxy.Logger.Metric("Cache Items: " + AllFiles().Count);
-            //_proxy.Logger.Metric("Cache Items with text/html mimetype: " + TextFiles().Count);
+            _proxy.Logger.Metric("Cache Items: " + AllFiles().Count);
+            _proxy.Logger.Metric("Cache Items with text/html mimetype: " + TextFiles().Count);
         }
 
         #region static filepath methods

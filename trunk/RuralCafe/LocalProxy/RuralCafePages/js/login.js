@@ -36,6 +36,13 @@ function redirectUser() {
 							document.location = "trotro-user.html?u="+xmlId;
 						document.cookie = "uid="+xmlId;
 						document.cookie = "uname="+xmlUser;
+						
+						
+						// let the server know
+						var loginRequest= new ajaxRequest();       
+						loginRequest.open("GET","request/login",true);
+						loginRequest.send(null);
+						
 						break;
 					}
 				}
