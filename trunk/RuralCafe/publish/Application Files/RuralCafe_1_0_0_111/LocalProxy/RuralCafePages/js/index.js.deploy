@@ -2,6 +2,7 @@
 
 var ixmlDoc = 0;	//xml object for the index topics
 var ixhttp = 0;		//ajax requset for retrieving index topics
+// TODO remove
 var noc=6; 	//number of categories
 var noi=4; //number of items maximum per category
 var nod=2; //total number of digits in noc and noi
@@ -10,7 +11,7 @@ var nod=2; //total number of digits in noc and noi
 window.onload=function () {
 	if (window.location.pathname) {
 		var path = window.location.href;
-		showCategory("request/index.xml?c="+noc+"&n="+noi);
+		showCategory("clusters.xml");
 	}
 }
 
@@ -30,20 +31,25 @@ function showXML() {
 		if (ixhttp.status == 200) {
 			var xmldata=ixhttp.responseXML; //retrieve result as an XML object
 			var innerHtml = "";
-			var categories = xmldata.getElementsByTagName("category");
-			for (var i=0;i<categories.length;i++) {
-				if (i%2==0) innerHtml+='<div class="index_row">';
-				innerHtml += '<div class="index_cat">';
-				var catTitle = categories.item(i).attributes[0].nodeValue;
-				innerHtml += '<h2><a href="'+catTitle+'" onclick="onSearch(\''+catTitle+'\',this);">'+catTitle+'</a></h2>';
-				var catItem = categories[i].getElementsByTagName('item');
-				for (var j=0;j<catItem.length;j++) {
-					var itemTitle = catItem[j].firstChild.nodeValue;
-					innerHtml += '<div class="index_page"><p><a href="'+itemTitle+'" onclick="onSearch(\''+itemTitle+'\',this);">'+itemTitle+'</a></p></div>';
+			var clusters = xmldata.firstChild;
+			var hierarchical = clusters.getAttribute("hierarchical"); // string!
+			
+			if(hierarchical == 'True') {
+				// TODO
+			} else {
+				for (var i=0;i<clusters.children.length;i++) {
+					innerHtml+='<div class="index_row"><div class="index_cat">';
+					var clustLabels = clusters.children[i].getAttribute("features");
+					innerHtml += '<h2>' + clustLabels + '</h2>';
+					for (var j=0;j<clusters.children[i].children.length;j++) {
+						var uri = clusters.children[i].children[j].innerHTML;
+						innerHtml += '<div class="index_page"><p><a href="'+uri+'">'+uri+'</a></p></div>';
+					}
+					innerHtml += "</div></div>";
 				}
-				innerHtml += "</div>";
-				if (i%2 == 1) innerHtml += '</div>';
 			}
+			
+			
 			document.getElementById('updateArea').innerHTML = innerHtml;
 		}
 		else {
