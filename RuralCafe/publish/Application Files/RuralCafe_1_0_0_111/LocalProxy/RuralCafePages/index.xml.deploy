@@ -43,5 +43,13 @@ GET request will be sent to request/index.xml?c=6&n=4&s=root where
     </item>
 </category>
 
+<category title="useless stuff">
+    <item>
+        <title>Stupidedia</title>
+        <url>stupidedia.org</url>
+        <snippet>A free encyclopedia built collaboratively using wiki software. (Creative Commons Attribution-ShareAlike License).</snippet>
+    </item>
+</category>
+
 </categories>
 

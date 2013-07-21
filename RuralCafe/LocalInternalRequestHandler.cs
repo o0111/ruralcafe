@@ -31,8 +31,6 @@ namespace RuralCafe
         /// </summary>
         static LocalInternalRequestHandler()
         {
-            routines.Add("/request/index.xml", new RoutineMethod("ServeRCIndexPage",
-                new string[] { "n", "c", "s" }, new Type[] { typeof(int), typeof(int), typeof(string) }));
             routines.Add("/request/search.xml", new RoutineMethod("ServeRCRemoteResultPage",
                 new string[] { "p", "s" }, new Type[] { typeof(int), typeof(string) }));
             routines.Add("/request/result.xml", new RoutineMethod("ServeRCResultPage",
@@ -251,21 +249,6 @@ namespace RuralCafe
 
             _clientHttpContext.Response.ContentType = contentType;
             return new Response(fileName, true);
-        }
-
-        /// <summary>
-        /// Sends the RC Index page to the client.
-        /// GET request will be sent to request/index.xml?c=6&n=4&s=root where
-        /// c is the number of categories, the number of <category> required
-        /// n is the maximum number of items in a category, the number of <item> allowed
-        /// s is the upper level category which the user want to explore (the top level category is defined as 'root')
-        /// </summary>
-        public Response ServeRCIndexPage(int numItems, int numCategories, string searchString)
-        {
-			 // XXX: not building the xml file yet, just sending the dummy page for now since there's really no top categories query yet
-            // for the cache path
-            PrepareXMLRequestAnswer();
-            return new Response(UIPagesPath + "index.xml", true);
         }
 
         /// <summary>

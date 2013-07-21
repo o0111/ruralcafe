@@ -67,7 +67,7 @@ namespace RuralCafe
         // .. for network speed detection
         private readonly TimeSpan NETWORK_DETECTION_INTERVAL = new TimeSpan(0, 15, 0);
         /// <summary>
-        /// Each time a new download is considered, so bytes used for calculation
+        /// Each time a new download is considered, the bytes used for calculation
         /// so far are multiplicated with this factor.
         /// </summary>
         private const double NETWORK_SPEED_REDUCTION_FACTOR = 0.9;
@@ -75,7 +75,7 @@ namespace RuralCafe
         private readonly TimeSpan CLUSTERING_INTERVAL = new TimeSpan(0, 30, 0);
         private const int CLUSTERING_K = 10;
         // FIXME customizable?
-        private const bool CLUSTERING_HIERARCHICAL = true;
+        private const bool CLUSTERING_HIERARCHICAL = false;
         private const string CLUSTERING_FILE = "clusters.xml";
 
         // RuralCafe pages path

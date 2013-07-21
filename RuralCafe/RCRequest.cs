@@ -377,6 +377,8 @@ namespace RuralCafe
             {
                 uri = uri.Substring(0, uri.Length - indexhtml.Length);
             }
+            // Preappend http://
+            uri = HttpUtils.AddHttpPrefix(uri);
             return uri;
         }
 
