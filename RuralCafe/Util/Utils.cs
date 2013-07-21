@@ -112,16 +112,22 @@ namespace RuralCafe.Util
         {
             string fileExtension = fileName;
             
-            int offset1 = fileExtension.LastIndexOf("?");
-            if (offset1 >= 0)
+            int offsetQM = fileExtension.LastIndexOf("?");
+            if (offsetQM >= 0)
             {
-                fileExtension = fileExtension.Substring(0, offset1);
+                fileExtension = fileExtension.Substring(0, offsetQM);
             }
 
-            int offset2 = fileExtension.LastIndexOf(".");
-            if (offset2 > 0)
+            int offsetSep = fileExtension.LastIndexOf(Path.DirectorySeparatorChar);
+            if (offsetSep > 0)
             {
-                fileExtension = fileExtension.Substring(offset2);
+                fileExtension = fileExtension.Substring(offsetSep + 1);
+            }
+
+            int offsetDot = fileExtension.LastIndexOf(".");
+            if (offsetDot > 0)
+            {
+                fileExtension = fileExtension.Substring(offsetDot);
             }
             return fileExtension;
         }
@@ -190,28 +196,29 @@ namespace RuralCafe.Util
                 FileInfo f = new FileInfo(fileName);
                 if (f.Exists)
                 {
-                    StreamReader reader = new StreamReader(new FileStream(fileName, FileMode.Open));
-                    // We only want to read up to 14 chars (length of "<!DOCTYPE html")
-                    char[] buffer = new char[14];
-                    int charsRead = 0;
-                    int pos = 0;
-                    while ((charsRead = reader.Read(buffer, pos, buffer.Length - pos)) != 0)
+                    using (StreamReader reader = new StreamReader(new FileStream(fileName, FileMode.Open)))
                     {
-                        pos += charsRead;
-                        if (pos == buffer.Length)
+                        // We only want to read up to 14 chars (length of "<!DOCTYPE html")
+                        char[] buffer = new char[14];
+                        int charsRead = 0;
+                        int pos = 0;
+                        while ((charsRead = reader.Read(buffer, pos, buffer.Length - pos)) != 0)
                         {
-                            // We have read 14 chars.
-                            break;
+                            pos += charsRead;
+                            if (pos == buffer.Length)
+                            {
+                                // We have read 14 chars.
+                                break;
+                            }
+                        }
+
+                        string fileContents = new string(buffer).ToLower();
+                        if (fileContents.StartsWith("<html>") ||
+                            fileContents.StartsWith("<!doctype html"))
+                        {
+                            return "text/html";
                         }
                     }
-
-                    string fileContents = new string(buffer).ToLower();
-                    if (fileContents.StartsWith("<html>") ||
-                        fileContents.StartsWith("<!doctype html"))
-                    {
-                        return "text/html";
-                    }
-                    
                 }
             }
             catch (Exception)
@@ -286,7 +293,6 @@ namespace RuralCafe.Util
                 if (f.Exists)
                 {
                     f.Delete();
-                    return true;
                 }
             }
             catch (Exception)
