@@ -112,6 +112,10 @@ namespace RuralCafe
         /// The timer that determines the speed and changes the network status accordingly.
         /// </summary>
         private Timer _changeNetworkStatusTimer;
+        /// <summary>
+        /// The timer that does the clustering.
+        /// </summary>
+        private Timer _clusteringTimer;
 
         // big queue for lining up requests to remote proxy
         private List<LocalRequestHandler> _globalRequestQueue;
@@ -250,9 +254,6 @@ namespace RuralCafe
             DeserializeQueue();
             // Tell the programm to serialize the queue before shutdown
             Program.AddShutDownDelegate(SerializeQueue);
-
-            // Every x minutes, re-cluster the cache in an own thread.
-            new Timer(StartClustering, null, TimeSpan.Zero, CLUSTERING_INTERVAL);
         }
 
         /// <summary>
@@ -279,6 +280,12 @@ namespace RuralCafe
         public void SetRCSearchPage(string searchPage)
         {
             _rcSearchPage = RequestHandler.RC_PAGE + searchPage;
+        }
+
+        public void StartClusteringTimer()
+        {
+            // Every x minutes, re-cluster the cache in an own thread.
+            _clusteringTimer =  new Timer(StartClustering, null, TimeSpan.Zero, CLUSTERING_INTERVAL);
         }
 
         /// <summary>

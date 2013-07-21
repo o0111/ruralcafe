@@ -49,6 +49,10 @@ namespace RuralCafe
                 new string[] { "i" }, new Type[] { typeof(string) }));
             routines.Add("/request/signup", new RoutineMethod("SignupRequest",
                 new string[] { "u", "p", "i" }, new Type[] { typeof(string), typeof(string), typeof(int) }));
+            routines.Add("/request/login", new RoutineMethod("LoginRequest",
+                new string[] { }, new Type[] { }));
+            routines.Add("/request/logout", new RoutineMethod("LogoutRequest",
+                new string[] { }, new Type[] { }));
             routines.Add("/", new RoutineMethod("HomePage"));
 
             // All delegated routines
@@ -152,9 +156,10 @@ namespace RuralCafe
             {
                 currLine = lines[i];
 
-                // get the title of the page
+                // get the title
                 if ((pos = currLine.LastIndexOf("<a href=")) >= 0)
                 {
+                    // title
                     currTitle = currLine.Substring(pos);
                     // find start
                     if ((pos = currTitle.IndexOf(">")) >= 0)
@@ -172,18 +177,17 @@ namespace RuralCafe
                 }
 
                 // get the uri
-                string uriSplit = "<cite>";
-                if ((pos = currLine.IndexOf("<cite>")) > 0)
+                if ((pos = currLine.LastIndexOf("<a href=\"/url?q=")) >= 0)
                 {
-                    // cut start
-                    currUri = currLine.Substring(pos + uriSplit.Length);
-                    if ((pos = currUri.IndexOf(" - ")) > 0)
+                    // start right after
+                    currUri = currLine.Substring(pos + "<a href=\"/url?q=".Length);
+                    if ((pos = currUri.IndexOf("&amp")) >= 0)
                     {
+                        // cut end
                         currUri = currUri.Substring(0, pos);
+                        currUri = HtmlUtils.StripTagsCharArray(currUri);
+                        currUri = currUri.Trim();
                     }
-                    // no end to cut!
-                    currUri = HtmlUtils.StripTagsCharArray(currUri);
-                    currUri = currUri.Trim();
 
                     // instead of translating to absolute, prepend http:// to make webrequest constructor happy
                     currUri = HttpUtils.AddHttpPrefix(currUri);
@@ -556,7 +560,7 @@ namespace RuralCafe
         /// <param name="username">The username.</param>
         /// <param name="pw">The password</param>
         /// <param name="custid">The new id of the user.</param>
-        public Response SignupRequest(String username, String pw, int custid)
+        public Response SignupRequest(string username, string pw, int custid)
         {
             // Append zeros
             String custidStr = custid.ToString("D3");
@@ -577,6 +581,35 @@ namespace RuralCafe
             // Log
             Logger.Info("A new user signed up with id " + custid + ": " + username);
             return new Response("Signup successful.");
+        }
+
+        /// <summary>
+        /// At the moment this just lets the server know someone logged in.
+        /// The server than attached the IP to the user ID in the cookie.
+        /// 
+        /// Lates this should be changed so that the server actually logs the persons in 
+        /// and performs the pw checks, etc.
+        /// </summary>
+        /// <returns></returns>
+        public Response LoginRequest()
+        {
+            // TODO does not get called and does nothing ATM
+            Logger.Info("User " + UserIDCookieValue + " logs in.");
+            return new Response();
+        }
+
+        /// <summary>
+        /// At the moment this just lets the server know someone logged out.
+        /// The server than detaches the IP from the user ID in the cookie.
+        /// 
+        /// Later this should be changed so that the server actually logs the persons out.
+        /// </summary>
+        /// <returns></returns>
+        public Response LogoutRequest()
+        {
+            // TODO does not get called and does nothing ATM
+            Logger.Info("User " + UserIDCookieValue + " logs out.");
+            return new Response();
         }
 
         #endregion

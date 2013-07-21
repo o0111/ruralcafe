@@ -235,6 +235,9 @@ namespace RuralCafe
             // load the blacklisted domains
             localProxy.LoadBlacklist("blacklist.txt");
 
+            // Log cache metrics
+            // localProxy.ProxyCacheManager.LogCacheMetrics();
+
             // start local listener thread
             Thread localListenerThread = new Thread(new ThreadStart(localProxy.StartListener));
             localListenerThread.Name = String.Format("localListenerThread");
@@ -245,8 +248,8 @@ namespace RuralCafe
             localRequesterThread.Name = String.Format("localRequesterThread");
             localRequesterThread.Start();
 
-            // Log cache metrics
-            localProxy.ProxyCacheManager.LogCacheMetrics();
+            // Start the clustering timer
+            localProxy.StartClusteringTimer();            
 
             // listen for cc connection
             return localProxy;
@@ -281,13 +284,13 @@ namespace RuralCafe
             // set the default low watermark for each request
             RemoteRequestHandler.DEFAULT_LOW_WATERMARK = Properties.Settings.Default.DEFAULT_QUOTA / LOW_WATERMARK_DIVIDOR_QUOTA;
 
+            // Log cache metrics
+            // remoteProxy.ProxyCacheManager.LogCacheMetrics();
+
             // start remote listener thread
             Thread remoteListenerThread = new Thread(new ThreadStart(remoteProxy.StartListener));
             remoteListenerThread.Name = String.Format("remoteListenerThread");
             remoteListenerThread.Start();
-
-            // Log cache metrics
-            remoteProxy.ProxyCacheManager.LogCacheMetrics();
 
             // listen for cc connection
             return remoteProxy;
