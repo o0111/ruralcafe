@@ -37,10 +37,6 @@ namespace RuralCafe
     [JsonObject(MemberSerialization.OptIn)]
     public class RCRequest
     {
-        // Regex's for safe URI replacements
-        private static readonly Regex unsafeChars1 = new Regex(@"[^a-z0-9\\\-\.]");
-        private static readonly Regex unsafeChars2 = new Regex(@"[^a-z0-9/\-\.]");
-
         [JsonProperty]
         private string _anchorText;
         [JsonProperty]
@@ -230,8 +226,8 @@ namespace RuralCafe
             _webRequest.Referer = _refererUri;
             _body = body;
 
-            _fileName = UriToFilePath(_webRequest.RequestUri.ToString());
-            _hashPath = GetHashPath(_fileName);
+            _fileName = CacheManager.UriToFilePath(_webRequest.RequestUri.ToString());
+            _hashPath = CacheManager.GetHashPath(_fileName);
             _itemId = _hashPath.Replace(Path.DirectorySeparatorChar.ToString(), "");
             _cacheFileName = requestHandler.GenericProxy.CachePath + _hashPath + _fileName;
             _fileSize = 0;
@@ -270,76 +266,6 @@ namespace RuralCafe
             return Uri.GetHashCode() * _webRequest.Method.GetHashCode() * Body.GetHashCode();
         }
 
-        /// <summary>
-        /// Gets the path of a filename from an URI. Relative to the cache path.
-        /// </summary>
-        /// <param name="uri">The URI.</param>
-        /// <returns>Retalive cache file name.</returns>
-        public static string GetRelativeCacheFileName(string uri)
-        {
-            string fileName = UriToFilePath(uri);
-            string hashPath = GetHashPath(fileName);
-            return hashPath + fileName;
-        }
-
-        /// <summary>
-        /// Actually hashes the file name to a file path.
-        /// </summary>
-        /// <param name="fileName">File name to hash.</param>
-        /// <returns>Hashed file path.</returns>
-        public static string GetHashPath(string fileName)
-        {
-            // for compability with linux filepath delimeter
-            fileName = fileName.Replace(Path.DirectorySeparatorChar.ToString(), "");
-            int value1 = 0;
-            int value2 = 0;
-
-            int hashSpace = 5000;
-            int length = fileName.Length;
-            if (length == 0) {
-                return "0" + Path.DirectorySeparatorChar.ToString() + "0" + Path.DirectorySeparatorChar.ToString() + fileName;
-            }
-
-            value1 = HashString(fileName.Substring(length/2));
-            value2 = HashString(fileName.Substring(0, length/2));
-
-            if (value1 < 0)
-            {
-                value1 = value1 * -1;
-            }
-
-            if (value2 < 0)
-            {
-                value2 = value2 * -1;
-            }
-
-            value1 = value1 % hashSpace;
-            value2 = value2 % hashSpace;
-
-            string hashedPath = value1.ToString() + Path.DirectorySeparatorChar.ToString() + value2.ToString() + Path.DirectorySeparatorChar.ToString(); // +fileName;
-            return hashedPath;
-        }
-        /// <summary>
-        /// Port of Python implementation of string hashing.
-        /// </summary>
-        /// <param name="s">String to hash.</param>
-        /// <returns>Hashed value as an integer.</returns>
-        private static int HashString(string s)
-        {
-            if (s == null)
-                return 0;
-            int value = (int)s[0] << 7;
-            for (int i = 0; i < s.Length; i++) {
-                char c = s[i];
-                value = (1000003 * value) ^ (int)c;
-            }
-            value = value ^ s.Length;
-            if (value == -1) {
-                value = -2;
-            }
-            return value;
-        }
-
         /// <summary>Set the reset event.</summary>
         public void SetDone()
         {
@@ -347,127 +273,6 @@ namespace RuralCafe
             {
                 _resetEvents[_childNumber].Set();
             }
-        }
-
-        // TODO move all this uri<->filepath to the CacheManager
-
-        /// <summary>
-        /// Determines the URI for the cache file path.
-        /// </summary>
-        /// <param name="relfilepath">The path relaive to the cache path.</param>
-        /// <returns>The URI.</returns>
-        public static string FilePathToUri(string relfilepath)
-        {
-            string uri = relfilepath;
-            // Remove the 2 hash dirs from path
-            for (int i = 0; i < 2; i++)
-            {
-                int startIndex = uri.IndexOf(Path.DirectorySeparatorChar);
-                if (startIndex != -1)
-                {
-                    uri = uri.Substring(startIndex + 1);
-                }
-            }
-            
-            // replace possible backslahes with shlashes
-            uri = uri.Replace(Path.DirectorySeparatorChar, '/');
-            // Remove possible index.html at the end
-            string indexhtml = "index.html";
-            if (uri.EndsWith("/" + indexhtml))
-            {
-                uri = uri.Substring(0, uri.Length - indexhtml.Length);
-            }
-            // Preappend http://
-            uri = HttpUtils.AddHttpPrefix(uri);
-            return uri;
-        }
-
-
-        /// <summary>
-        /// Translates a URI to a file path.
-        /// Synchronized with CIP implementation in Python
-        /// </summary>
-        /// <param name="uri">The URI to translate.</param>
-        /// <returns>Translated file path.</returns>
-        public static string UriToFilePath(string uri)
-        {
-            // need to shrink the size of filenames for ruralcafe search prefs
-            if (uri.Contains("ruralcafe.net") &&
-                uri.Contains("textfield"))
-            {
-                int offset1 = uri.IndexOf("textfield");
-                uri = uri.Substring(offset1 + "textfield".Length + 1);
-                offset1 = uri.IndexOf('&');
-                if (offset1 > 0)
-                {
-                    uri = uri.Substring(0, offset1);
-                }
-            }
-
-            // trim http
-            uri = HttpUtils.RemoveHttpPrefix(uri);
-
-            if (uri.IndexOf("/") == -1)
-            {
-                uri = uri + "/";
-            }
-
-            uri = uri.Replace("/", Path.DirectorySeparatorChar.ToString());
-
-            uri = System.Web.HttpUtility.UrlDecode(uri);
-            string fileName = MakeSafeUri(uri);
-
-            // fix the filename extension
-            if (fileName.EndsWith(Path.DirectorySeparatorChar.ToString()))
-            {
-                fileName = fileName + "index.html";
-            }
-
-            return fileName;
-        }
-        /// <summary>
-        /// Makes a URI safe for windows.
-        /// Private helper for UriToFilePath.
-        /// </summary>
-        /// <param name="uri">URI to make safe.</param>
-        /// <returns>Safe URI.</returns>
-        private static string MakeSafeUri(string uri)
-        {
-            // first trim the raw string
-            string safe = uri.Trim();
-
-            // replace spaces with hyphens
-            safe = safe.Replace(" ", "-").ToLower();
-
-            // replace any 'double spaces' with singles
-            if (safe.IndexOf("--") > -1)
-            {
-                while (safe.IndexOf("--") > -1)
-                {
-                    safe = safe.Replace("--", "-");
-                }
-            }
-
-            // trim out illegal characters
-            if (Path.DirectorySeparatorChar == '\\')
-            {
-                safe = unsafeChars1.Replace(safe, "");
-            }
-            else
-            {
-                safe = unsafeChars2.Replace(safe, "");
-            }
-
-            // trim the length
-            if (safe.Length > 220)
-                safe = safe.Substring(0, 219);
-
-            // clean the beginning and end of the filename
-            char[] replace = { '-', '.' };
-            safe = safe.TrimStart(replace);
-            safe = safe.TrimEnd(replace);
-
-            return safe;
         }
 
         /// <summary>
@@ -496,6 +301,51 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// Makes preparations for a file to be created.
+        /// </summary>
+        /// <param name="replace">Whether the file should be replaced, if it exists.</param>
+        /// <param name="fileSizeReturnValue">The size of the file or -1 if something goes wrong.
+        /// The return value of DownloadToCache if we do return false here.</param>
+        /// <returns>True, if the download should proceed, false if not.</returns>
+        private bool PrepareFileForCreation(bool replace, out long fileSizeReturnValue)
+        {
+            CacheManager cacheManager = _requestHandler.GenericProxy.ProxyCacheManager;
+            // XXX: should also check for cache expiration
+            // check for 0 size file to re-download
+            fileSizeReturnValue = cacheManager.CacheItemBytes(_cacheFileName);
+            if (fileSizeReturnValue > 0)
+            {
+                if (replace)
+                {
+                    if (!cacheManager.RemoveCacheItem(_cacheFileName))
+                    {
+                        // Old file couldn't be removed.
+                        fileSizeReturnValue = -1;
+                        return false;
+                    }
+                }
+                else
+                {
+                    // We don't replace so we're done.
+                    //_requestHandler.LogDebug("exists: " + cacheFileName + " " + fileSize + " bytes");
+                    return false;
+                }
+            }
+            else
+            {
+                // File does not exist
+                // create directory if it doesn't exist
+                if (!cacheManager.CreateDirectoryForCacheItem(_cacheFileName))
+                {
+                    // Directory couldn't be created.
+                    fileSizeReturnValue = -1;
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
         /// Streams a request from the server into the cache.
         /// Used for both local and remote proxy requests.
         /// </summary>
@@ -516,32 +366,19 @@ namespace RuralCafe
         /// <returns>Length of the downloaded file.</returns>
         public long DownloadToCache(bool replace, out long speedBS)
         {
+            CacheManager cacheManager = _requestHandler.GenericProxy.ProxyCacheManager;
             Byte[] readBuffer = new Byte[4096];
             long bytesDownloaded = 0;
             // First set speed to 0
             speedBS = 0;
 
-            // create directory if it doesn't exist and delete the file so we can replace it
-            if (!Utils.CreateDirectoryForFile(_cacheFileName))
+            long fileSize;
+            if (!PrepareFileForCreation(replace, out fileSize))
             {
-                return -1;
-            }
-
-            // XXX: should also check for cache expiration
-            // check for 0 size file to re-download
-            long fileSize = Utils.GetFileSize(_cacheFileName);
-            if (fileSize > 0 && !replace)
-            {
-                //_requestHandler.LogDebug("exists: " + cacheFileName + " " + fileSize + " bytes");
+                // Either file exists and we're not replacing or an error.
                 return fileSize;
             }
-            else
-            {
-                if (!Utils.DeleteFile(_cacheFileName))
-                {
-                    return -1;
-                }
-            }
+
             try
             {
                 _requestHandler.Logger.Debug("downloading: " + _webRequest.RequestUri);
@@ -561,89 +398,24 @@ namespace RuralCafe
                     string str = "HTTP/1.1 301 Moved Permanently\r\n" +
                           "Location: " + _webResponse.ResponseUri.ToString() + "\r\n";
 
-                    using (StreamWriter sw = new StreamWriter(File.Open(_cacheFileName, FileMode.Create), Encoding.UTF8))
-                    {
-                        sw.Write(str);
-                    }
+                    cacheManager.AddCacheItem(_cacheFileName, str);
 
                     // have to save to the new cache file location
                     string uri = _webResponse.ResponseUri.ToString();
-                    _fileName = UriToFilePath(uri);
-                    _hashPath = GetHashPath(_fileName);
+                    _fileName = CacheManager.UriToFilePath(uri);
+                    _hashPath = CacheManager.GetHashPath(_fileName);
                     _cacheFileName = _requestHandler.GenericProxy.CachePath + _hashPath + _fileName;
 
-                    // create directory if it doesn't exist and delete the file so we can replace it
-                    if (!Utils.CreateDirectoryForFile(_cacheFileName))
+                    // Prepare new filepath for creation
+                    if (!PrepareFileForCreation(replace, out fileSize))
                     {
-                        return -1;
-                    }
-
-                    // XXX: should also check for cache expiration
-                    // check for 0 size file to re-download
-                    fileSize = Utils.GetFileSize(_cacheFileName);
-                    if (fileSize > 0 && !replace)
-                    {
+                        // Either file exists and we're not replacing or an error.
                         return fileSize;
                     }
-                    else
-                    {
-                        if (!Utils.DeleteFile(_cacheFileName))
-                        {
-                            return -1;
-                        }
-                    }
                 }
 
-                Stopwatch stopwatch = new Stopwatch();
-                Stream responseStream = GenericWebResponse.GetResponseStream();
-                FileStream writeFile = Utils.CreateFile(_cacheFileName);
-                if (writeFile == null)
-                {
-                    return -1;
-                }
-                using (writeFile)
-                {
-                    // write the response to the cache
-                    if (_webResponse.ContentType.Contains("text"))
-                    {
-                        //Text response, encode UTF-8, trim
-                        using (StreamWriter writer = new StreamWriter(writeFile, Encoding.UTF8))
-                        using (StreamReader reader = new StreamReader(responseStream))
-                        {
-                            // This can be -1, if header is missing
-                            bytesDownloaded = _webResponse.ContentLength;
-
-                            // Start measuring speed
-                            stopwatch.Start();
-                            string content = reader.ReadToEnd();
-                            stopwatch.Stop();
-
-                            if (bytesDownloaded <= 0)
-                            {
-                                // XXX: for GZIP this will be wrong.
-                                bytesDownloaded = content.Length;
-                            }
-                            writer.Write(content.Trim());
-                        }
-                    }
-                    else
-                    {
-                        stopwatch.Start();
-                        // No text. Read buffered.
-                        int bytesRead = responseStream.Read(readBuffer, 0, readBuffer.Length);
-                        while (bytesRead != 0)
-                        {
-                            writeFile.Write(readBuffer, 0, bytesRead);
-                            bytesDownloaded += bytesRead;
-
-                            // Read the next part of the response
-                            bytesRead = responseStream.Read(readBuffer, 0, readBuffer.Length);
-                        }
-                        stopwatch.Stop();
-                    }
-                }
-                // Calculate speed
-                speedBS = (long)(bytesDownloaded / stopwatch.Elapsed.TotalSeconds);
+                // Add stream content to the cache. 
+                bytesDownloaded = cacheManager.AddCacheItem(_cacheFileName, GenericWebResponse, out speedBS);
 
                 _requestHandler.Logger.Debug("received: " + Uri + " "
                     + bytesDownloaded + " bytes at " + speedBS + " byte/s");
@@ -653,7 +425,7 @@ namespace RuralCafe
                 // XXX: not handled well
                 // timed out
                 // incomplete, clean up the partial download
-                Utils.DeleteFile(_cacheFileName);
+                cacheManager.RemoveCacheItem(_cacheFileName);
                 _requestHandler.Logger.Debug("failed: " + Uri, e);
                 bytesDownloaded = -1; 
             }

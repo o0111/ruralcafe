@@ -143,7 +143,7 @@ namespace RuralCafe.Lucenenet
                 Document doc = searcher.Doc(docId);
 
                 // Read the whole file from the cache to find the content snippet.
-                string filepath = RCRequest.GetRelativeCacheFileName(doc.Get("uri"));
+                string filepath = CacheManager.GetRelativeCacheFileName(doc.Get("uri"));
                 string documentContent = Utils.ReadFileAsString(cachePath + filepath);
 
                 // Remove unusable stuff.

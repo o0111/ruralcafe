@@ -308,7 +308,7 @@ namespace RuralCafe.Clusters
             for (int i = 0; i < fileNames.Count; i++)
             {
                 // Determine relative file path
-                string uri = RCRequest.FilePathToUri(fileNames[i].Substring(cachePathLength));
+                string uri = CacheManager.FilePathToUri(fileNames[i].Substring(cachePathLength));
                 int clusterNumber = Int32.Parse(clusterNumbers[i]);
                 if (clusterNumber == -1)
                 {
