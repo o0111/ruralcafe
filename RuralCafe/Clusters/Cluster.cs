@@ -133,9 +133,8 @@ namespace RuralCafe.Clusters
                     {
                         throw new Exception("vcluster failed with exitcode: " + vcluster.ExitCode);
                     }
-                    // TODO parse output.
+                    // Parse output
                     string[] lines = newlineRegex.Split(output.ToString());
-                    Console.WriteLine(output);
                     // Create result array
                     HashSet<string>[] result = new HashSet<string>[fulltree ? 2 * k - 1 : k];
                     // Fill with empty lists
