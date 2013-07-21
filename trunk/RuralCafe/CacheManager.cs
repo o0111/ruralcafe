@@ -74,15 +74,18 @@ namespace RuralCafe
             return true;
         }
 
-        #region analysis
-
         /// <summary>
+        /// Logs the cache metrics.
         /// </summary>
-        /// <returns>The overall number of elements in the cache.</returns>
-        public int CountElements()
+        public void LogCacheMetrics()
         {
-            return AllFiles().Count;
+            // TODO when this is done at the same time with Cluto, the clustering fails.
+
+            //_proxy.Logger.Metric("Cache Items: " + AllFiles().Count);
+            //_proxy.Logger.Metric("Cache Items with text/html mimetype: " + TextFiles().Count);
         }
+
+        #region analysis
 
         /// <summary>
         /// </summary>

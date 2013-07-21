@@ -245,6 +245,9 @@ namespace RuralCafe
             localRequesterThread.Name = String.Format("localRequesterThread");
             localRequesterThread.Start();
 
+            // Log cache metrics
+            localProxy.ProxyCacheManager.LogCacheMetrics();
+
             // listen for cc connection
             return localProxy;
         }
@@ -282,6 +285,9 @@ namespace RuralCafe
             Thread remoteListenerThread = new Thread(new ThreadStart(remoteProxy.StartListener));
             remoteListenerThread.Name = String.Format("remoteListenerThread");
             remoteListenerThread.Start();
+
+            // Log cache metrics
+            remoteProxy.ProxyCacheManager.LogCacheMetrics();
 
             // listen for cc connection
             return remoteProxy;
