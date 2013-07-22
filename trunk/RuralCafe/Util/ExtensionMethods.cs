@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Xml;
 
 namespace RuralCafe.Util
 {
@@ -65,6 +66,19 @@ namespace RuralCafe.Util
 
             logger.Metric(userId, refererCategorization
                 + (isCached ? "result cached, " : "result not cached, ") + "URI: " + uri);
+        }
+
+        /// <summary>
+        /// Removes all childs from an XML element.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        public static void RemoveAllChilds(this XmlElement element)
+        {
+            // Do NOT use foreach or count forward!
+            for (int i = element.ChildNodes.Count - 1; i >= 0; i--)
+            {
+                element.RemoveChild(element.ChildNodes[i]);
+            }
         }
     }
 }

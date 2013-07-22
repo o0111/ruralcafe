@@ -285,7 +285,7 @@ namespace RuralCafe
                     if (!existed)
                     {
                         string document = Utils.ReadFileAsString(cacheFileName);
-                        string title = HtmlUtils.GetPageTitle(document);
+                        string title = HtmlUtils.GetPageTitleFromHTML(document);
                         // Use whole file, so we can also find results with tags, etc.
                         string content = document;
                         // XXX: Why always with "Content-Type: text/html" ???

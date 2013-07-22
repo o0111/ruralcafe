@@ -118,16 +118,38 @@ namespace RuralCafe.Util
         };
 
         /// <summary>
+        /// Gets the title from an HTML document.
+        /// </summary>
+        /// <param name="doc"></param>
+        /// <returns></returns>
+        private static string GetTitle(HtmlDocument doc)
+        {
+            HtmlNode titleNode = doc.DocumentNode.SelectSingleNode("//head/title");
+            return titleNode != null ? titleNode.InnerText : "";
+        }
+
+        /// <summary>
+        /// Gets the title from a page.
+        /// </summary>
+        /// <param name="fileName">The file name.</param>
+        /// <returns>String containing the page title.</returns>
+        public static string GetPageTitleFromFile(string fileName)
+        {
+            HtmlDocument doc = new HtmlDocument();
+            doc.Load(fileName);
+            return GetTitle(doc);
+        }
+
+        /// <summary>
         /// Gets the title from a page.
         /// </summary>
         /// <param name="pageContent">Page content.</param>
         /// <returns>String containing the page title.</returns>
-        public static string GetPageTitle(string pageContent)
+        public static string GetPageTitleFromHTML(string pageContent)
         {
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(pageContent);
-            HtmlNode titleNode = doc.DocumentNode.SelectSingleNode("//head/title");
-            return titleNode != null ? titleNode.InnerText : "";
+            return GetTitle(doc);
         }
 
         /// <summary>

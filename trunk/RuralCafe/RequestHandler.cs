@@ -72,7 +72,7 @@ namespace RuralCafe
         /// The name of our homepage without preceding www.
         /// </summary>
         public const string RC_PAGE_WITHOUT_WWW = "http://ruralcafe.net/";
-        private static readonly Regex redirRegex = new Regex(@"HTTP/1\.1 301 Moved PermanentlyLocation: (?<uri>\S+)");
+        public static readonly Regex REDIR_REGEX = new Regex(@"HTTP/1\.1 301 Moved Permanently\s?Location: (?<uri>\S+)");
 
         /// <summary>
         /// The Name of the cookie for the user id.
@@ -553,7 +553,7 @@ namespace RuralCafe
             // As soon as metadata will be included somehow, this won't be necessary any more.
             // Then remove this! Reading the file twice is bad!
             string content = Utils.ReadFileAsString(fileName);
-            Match match = redirRegex.Match(content);
+            Match match = REDIR_REGEX.Match(content);
             if (match.Success)
             {
                 _clientHttpContext.Response.Redirect(match.Groups["uri"].Value);
