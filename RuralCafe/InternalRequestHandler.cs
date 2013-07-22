@@ -264,9 +264,20 @@ namespace RuralCafe
             {
                 String parameterName = method.ParameterNames[i];
                 Type parameterType = method.ParameterTypes[i];
-                //_originalRequest.
                 // Convert to required type
-                result[i] = Convert.ChangeType(parameterCollection.Get(parameterName), parameterType);
+                object value = parameterCollection.Get(parameterName);
+                if(value == null && parameterType.IsPrimitive)
+                {
+                    if (parameterType == typeof(bool))
+                    {
+                        value = false;
+                    }
+                    else
+                    {
+                        value = 0;
+                    }
+                }
+                result[i] = Convert.ChangeType(value, parameterType);
             }
             return result;
         }

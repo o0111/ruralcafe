@@ -73,10 +73,10 @@ namespace RuralCafe
         private const double NETWORK_SPEED_REDUCTION_FACTOR = 0.9;
         // .. for clustering
         private readonly TimeSpan CLUSTERING_INTERVAL = new TimeSpan(0, 30, 0);
-        private const int CLUSTERING_K = 10;
+        private const int CLUSTERING_K = 22;
         // FIXME customizable?
-        private const bool CLUSTERING_HIERARCHICAL = false;
-        private const string CLUSTERING_FILE = "clusters.xml";
+        private const bool CLUSTERING_HIERARCHICAL = true;
+        private const string CLUSTERS_FOLDER = "clusters";
 
         // RuralCafe pages path
         private string _uiPagesPath;
@@ -257,6 +257,18 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// Initializes the cache by making sure that the directories exist.
+        /// The cache manager is initialized with a clusters path.
+        /// </summary>
+        /// <param name="cachePath">Path of the cache.</param>
+        /// <returns>True or false for success or not.</returns>
+        protected override bool InitializeCache(string cachePath)
+        {
+            _cacheManager = new CacheManager(cachePath, _proxyPath + CLUSTERS_FOLDER + Path.DirectorySeparatorChar, this);
+            return _cacheManager.InitializeCache();
+        }
+
+        /// <summary>
         /// Sets the remote proxy address and port.
         /// </summary>
         /// <param name="proxyAddress">Remote proxy address.</param>
@@ -282,6 +294,9 @@ namespace RuralCafe
             _rcSearchPage = RequestHandler.RC_PAGE + searchPage;
         }
 
+        /// <summary>
+        /// Starts the clustering timer.
+        /// </summary>
         public void StartClusteringTimer()
         {
             // Every x minutes, re-cluster the cache in an own thread.
@@ -295,8 +310,7 @@ namespace RuralCafe
         /// <param name="o">Ignored.</param>
         private void StartClustering(object o)
         {
-            string clusterXMLFileName = _uiPagesPath + CLUSTERING_FILE;
-            ProxyCacheManager.CreateClusters(clusterXMLFileName, CLUSTERING_K, CLUSTERING_HIERARCHICAL);
+            ProxyCacheManager.CreateClusters(CLUSTERING_K, CLUSTERING_HIERARCHICAL);
         }
 
         /// <summary>

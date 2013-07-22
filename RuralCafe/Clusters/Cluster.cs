@@ -4,9 +4,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Web;
 using System.Xml;
 
 namespace RuralCafe.Clusters
@@ -16,10 +18,26 @@ namespace RuralCafe.Clusters
     /// </summary>
     public static class Cluster
     {
-        /// <summary>
-        /// Regex for newlines.
-        /// </summary>
+        // XML name constants
+        public const string CLUSTERS_XML_NAME = "clusters";
+        public const string CLUSTERS_NUMBEROFCLUSTERS_XML_NAME = "numberOfClusters";
+        public const string CLUSTERS_HIERARCHICAL_XML_NAME = "hierarchical";
+        public const string PARENT_CLUSTER_XML_NAME = "category";
+        public const string CLUSTER_XML_NAME = "subcategory";
+        public const string CLUSTER_ID_XML_NAME = "id";
+        public const string CLUSTER_FEATURES_XML_NAME = "title";
+        public const string CLUSTER_SIZE_XML_NAME = "size";
+        public const string CLUSTER_FEATURES_JOIN_STRING = ", ";
+        public const string ITEM_XML_NAME = "item";
+        public const string ITEM_URL_XML_NAME = "url";
+        public const string ITEM_TITLE_XML_NAME = "title";
+        public const string ITEM_SNIPPET_XML_NAME = "snippet";
+        public const string INDEX_CATEGORIES_XML_NAME = "categories";
+
+        /// Regex's for docfile creation replacement
         private static readonly Regex newlineRegex = new Regex(@"\r\n|\n|\r");
+        private static readonly Regex wordsStartingInvalidRegex = new Regex(@"\s\W\S*");
+        private static readonly Regex httpStartingRegex = new Regex(@"(\shttp\S*)|(http\S*\s)", RegexOptions.IgnoreCase);
         /// <summary>
         /// Path to vcluster.exe
         /// </summary>
@@ -48,10 +66,21 @@ namespace RuralCafe.Clusters
                 {
                     // Read file
                     string content = Utils.ReadFileAsString(file);
+                    // Format HTML
+                    content = WebUtility.HtmlDecode(content);
                     // Extract text from Html
                     content = HtmlUtils.ExtractText(content);
                     // Remove newlines
                     content = newlineRegex.Replace(content, " ");
+                    // Empty content if this is a redirect
+                    if (RequestHandler.REDIR_REGEX.IsMatch(content))
+                    {
+                        content = String.Empty;
+                    }
+                    // Remove words not starting with a alphabetic char and URLs
+                    content = wordsStartingInvalidRegex.Replace(content, "");
+                    content = httpStartingRegex.Replace(content, "");
+
                     // Write content in a new line to docfile
                     docFileWriter.WriteLine(content);
                 }
@@ -74,11 +103,11 @@ namespace RuralCafe.Clusters
         {
             int timeoutMS = 60000; // 1 minute
 
-            // vcluster.exe -clmethod=rbr [-fulltree -showtree -labeltree -treefile=<treefile>]
+            // vcluster.exe -clmethod=rbr [-showtree -labeltree -treefile=<treefile>]
             //  -showfeatures -clustfile=<clustFile> <matFile> k
             ProcessStartInfo clusterStartInfo = new ProcessStartInfo(VCLUSTERS_PATH);
             clusterStartInfo.Arguments = "-clmethod=rbr ";
-            clusterStartInfo.Arguments += fulltree ? "-fulltree -showtree -labeltree -cltreefile=\"" + treefile + "\" " : "";
+            clusterStartInfo.Arguments += fulltree ? "-showtree -labeltree -cltreefile=\"" + treefile + "\" " : "";
             clusterStartInfo.Arguments += "-showfeatures -clustfile=\"" + clustersFile + "\" \"" + matFile + "\" " + k; 
 
             clusterStartInfo.UseShellExecute = false;
@@ -143,6 +172,7 @@ namespace RuralCafe.Clusters
                         throw new Exception("vcluster failed with exitcode: " + vcluster.ExitCode);
                     }
                     // Parse output
+                    // Console.Write(output);
                     string[] lines = newlineRegex.Split(output.ToString());
                     // Create result array
                     HashSet<string>[] result = new HashSet<string>[fulltree ? 2 * k - 1 : k];
@@ -296,22 +326,23 @@ namespace RuralCafe.Clusters
             }
 
             XmlDocument xmlDoc = new XmlDocument();
-            xmlDoc.AppendChild(xmlDoc.CreateXmlDeclaration("1.0", "UTF-8", ""));
+            xmlDoc.AppendChild(xmlDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
 
-            XmlElement rootXml = xmlDoc.CreateElement("clusters");
+            XmlElement rootXml = xmlDoc.CreateElement(CLUSTERS_XML_NAME);
             xmlDoc.AppendChild(rootXml);
-            rootXml.SetAttribute("numberOfClusters", "" + k);
-            rootXml.SetAttribute("hierarchical", "" + hierarchical);
+            rootXml.SetAttribute(CLUSTERS_NUMBEROFCLUSTERS_XML_NAME, String.Empty + k);
+            rootXml.SetAttribute(CLUSTERS_HIERARCHICAL_XML_NAME, String.Empty + hierarchical);
 
             // Create a node for each cluster
             XmlElement[] clusters = new XmlElement[k];
             int[] sizes = new int[k];
             for (int i = 0; i < k; i++)
             {
-                clusters[i] = xmlDoc.CreateElement("cluster");
-                clusters[i].SetAttribute("number", "" + i);
+                clusters[i] = xmlDoc.CreateElement(CLUSTER_XML_NAME);
+                clusters[i].SetAttribute(CLUSTER_ID_XML_NAME, String.Empty + i);
                 // Save cluster features
-                clusters[i].SetAttribute("features", String.Join(",", features[i]));
+                clusters[i].SetAttribute(CLUSTER_FEATURES_XML_NAME, 
+                    String.Join(CLUSTER_FEATURES_JOIN_STRING, features[i]));
             }
             // Save each file in the corresponsing cluster
             for (int i = 0; i < fileNames.Count; i++)
@@ -325,16 +356,29 @@ namespace RuralCafe.Clusters
                     continue;
                 }
 
-                XmlElement uriElement = xmlDoc.CreateElement("uri");
-                clusters[clusterNumber].AppendChild(uriElement);
+                // Create an item with title, uri and snippet
+                XmlElement itemElement = xmlDoc.CreateElement(ITEM_XML_NAME);
+                clusters[clusterNumber].AppendChild(itemElement);
+
+                XmlElement titleElement = xmlDoc.CreateElement(ITEM_TITLE_XML_NAME);
+                itemElement.AppendChild(titleElement);
+                titleElement.InnerText = HtmlUtils.GetPageTitleFromFile(fileNames[i]);
+
+                XmlElement uriElement = xmlDoc.CreateElement(ITEM_URL_XML_NAME);
+                itemElement.AppendChild(uriElement);
                 uriElement.InnerText = uri;
+
+                XmlElement snippetElement = xmlDoc.CreateElement(ITEM_SNIPPET_XML_NAME);
+                itemElement.AppendChild(snippetElement);
+                snippetElement.InnerText = ""; // XXX: maybe we want to support this sometime
+
                 // Increment size
                 sizes[clusterNumber]++;
             }
             // Save sizes
             for (int i = 0; i < k; i++)
             {
-                clusters[i].SetAttribute("size", "" + sizes[i]);
+                clusters[i].SetAttribute(CLUSTER_SIZE_XML_NAME, String.Empty + sizes[i]);
             }
             // Add clusters flat or hierarchical to the document
             if (hierarchical)
@@ -343,11 +387,12 @@ namespace RuralCafe.Clusters
                 XmlElement[] parents = new XmlElement[k - 1];
                 for (int i = 0; i < parents.Length; i++)
                 {
-                    parents[i] = xmlDoc.CreateElement("cluster");
+                    parents[i] = xmlDoc.CreateElement(PARENT_CLUSTER_XML_NAME);
                     // Parent numbers start at k
-                    parents[i].SetAttribute("number", "" + (k + i));
+                    parents[i].SetAttribute(CLUSTER_ID_XML_NAME, String.Empty + (k + i));
                     // Save cluster features
-                    parents[i].SetAttribute("features", String.Join(",", features[k + i]));
+                    parents[i].SetAttribute(CLUSTER_FEATURES_XML_NAME, 
+                        String.Join(CLUSTER_FEATURES_JOIN_STRING, features[k + i]));
                 }
                 // Add leafs to the parents
                 for(int i = 0; i < clusters.Length; i++)
@@ -390,8 +435,166 @@ namespace RuralCafe.Clusters
                     rootXml.AppendChild(elem);
                 }
             }
-
             xmlDoc.Save(xmlFile);
         }
+
+        #region index serving
+
+        public static string Level1Index(string clusterXMLFile, int maxCategories, int maxSubCategories)
+        {
+            return "";
+        }
+
+        public static string Level2Index(string clusterXMLFile, string categoryId, int maxSubCategories, int maxItems)
+        {
+            XmlDocument clustersDoc = new XmlDocument();
+            clustersDoc.Load(new XmlTextReader(clusterXMLFile));
+
+            XmlDocument indexDoc = new XmlDocument();
+            indexDoc.AppendChild(indexDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
+
+            XmlElement indexRootXml = indexDoc.CreateElement(INDEX_CATEGORIES_XML_NAME);
+            indexDoc.AppendChild(indexRootXml);
+            indexRootXml.SetAttribute("level", String.Empty + 2);
+
+            XmlElement categoryElement = FindCategory(clustersDoc.DocumentElement, categoryId);
+            if (categoryElement == null)
+            {
+                throw new ArgumentException("Could not find category with that id.");
+            }
+            // Get all plain subcategories.
+            List<XmlElement> subCategories = FindSubCategories(categoryElement);
+            // Remove all childs from category
+            categoryElement.RemoveAllChilds();
+
+            // Add until maxSubCategories is reached (if it's != 0)
+            for (int i = 0; i < subCategories.Count && (maxSubCategories == 0 || i < maxSubCategories); i++)
+            {
+                categoryElement.AppendChild(subCategories[i]);
+            }
+            if (maxItems != 0)
+            {
+                // For each subcategory we might have to cut some elements
+                foreach (XmlElement subCategoryElement in categoryElement.ChildNodes)
+                {
+                    for (int i = subCategoryElement.ChildNodes.Count - 1; i >= maxItems; i--)
+                    {
+                        subCategoryElement.RemoveChild(subCategoryElement.ChildNodes[i]);
+                    }
+                }
+            }
+            // Add category to indexRootXml
+            indexRootXml.AppendChild(indexDoc.ImportNode(categoryElement, true));
+
+            return indexDoc.InnerXml;
+        }
+
+        /// <summary>
+        /// Computes the 3rd level in the hierarchy for a given category and subcategory.
+        /// </summary>
+        /// <param name="clusterXMLFile">The path to clusters.xml</param>
+        /// <param name="categoryId">The category id.</param>
+        /// <param name="subCategoryId">The subcategory id.</param>
+        /// <param name="maxItems">The maximum number of items for the subcatefory.</param>
+        /// <returns>The index.xml string.</returns>
+        public static string Level3Index(string clusterXMLFile, string categoryId, string subCategoryId, int maxItems)
+        {
+            XmlDocument clustersDoc = new XmlDocument();
+            clustersDoc.Load(new XmlTextReader(clusterXMLFile));
+
+            XmlDocument indexDoc = new XmlDocument();
+            indexDoc.AppendChild(indexDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
+
+            XmlElement indexRootXml = indexDoc.CreateElement(INDEX_CATEGORIES_XML_NAME);
+            indexDoc.AppendChild(indexRootXml);
+            indexRootXml.SetAttribute("level", String.Empty + 3);
+
+            XmlElement categoryElement = FindCategory(clustersDoc.DocumentElement, categoryId);
+            if (categoryElement == null)
+            {
+                throw new ArgumentException("Could not find category with that id.");
+            }
+            XmlElement subCategoryElement = FindCategory(categoryElement, subCategoryId);
+            if (subCategoryElement == null)
+            {
+                throw new ArgumentException("Could not find subcategory with that id.");
+            }
+            if (maxItems != 0 && maxItems < subCategoryElement.ChildNodes.Count)
+            {
+                // We have to cut some items
+                for (int i = subCategoryElement.ChildNodes.Count - 1; i >= maxItems; i--)
+                {
+                    subCategoryElement.RemoveChild(subCategoryElement.ChildNodes[i]);
+                }
+            }
+
+            // Remove all childs
+            categoryElement.RemoveAllChilds();
+            // Add subcategory plain
+            categoryElement.AppendChild(subCategoryElement);
+            // Add category to indexRootXml
+            indexRootXml.AppendChild(indexDoc.ImportNode(categoryElement, true));
+
+            return indexDoc.InnerXml;
+        }
+
+        /// <summary>
+        /// Finds all plain subcategories in this category.
+        /// </summary>
+        /// <param name="parent">The category.</param>
+        /// <returns>A list of all subcategories.</returns>
+        private static List<XmlElement> FindSubCategories(XmlElement parent)
+        {
+            List<XmlElement> result = new List<XmlElement>();
+            List<XmlElement> nodesToLookAt = new List<XmlElement>();
+            nodesToLookAt.Add(parent);
+            while (nodesToLookAt.Count != 0)
+            {
+                XmlElement currentNode = nodesToLookAt[0];
+                nodesToLookAt.RemoveAt(0);
+                if (currentNode.Name.Equals(CLUSTER_XML_NAME))
+                {
+                    result.Add(currentNode);
+                }
+                else
+                {
+                    foreach (XmlElement child in currentNode.ChildNodes)
+                    {
+                        nodesToLookAt.Add(child);
+                    }
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Finds the (sub)category with the given id in all children of the supplied parent.
+        /// </summary>
+        /// <param name="parent">The element to search.</param>
+        /// <param name="id">The id to find.</param>
+        /// <returns>The category with the given id or null.</returns>
+        private static XmlElement FindCategory(XmlElement parent, string id)
+        {
+            if (parent.Name.Equals(CLUSTERS_XML_NAME) || parent.Name.Equals(PARENT_CLUSTER_XML_NAME)
+                || parent.Name.Equals(CLUSTER_XML_NAME))
+            {
+                if (id.Equals(parent.GetAttribute(CLUSTER_ID_XML_NAME)))
+                {
+                    return parent;
+                }
+                // Recursively look through the children
+                foreach (XmlElement child in parent.ChildNodes)
+                {
+                    XmlElement childResult = FindCategory(child, id);
+                    if (childResult != null)
+                    {
+                        return childResult;
+                    }
+                }
+            }
+            return null;
+        }
+
+        #endregion
     }
 }

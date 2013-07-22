@@ -22,11 +22,11 @@ namespace RuralCafe
     public class CacheManager
     {
         // Constants
-        private const string CLUSTERS_FOLDER = "clusters";
         private const string DOC_FILE_NAME = "docfile.txt";
         private const string MAT_FILE_NAME = "cache.mat";
         private const string CLUSTERS_FILE_NAME = "clusters";
         private const string TREE_FILE_NAME = "tree";
+        public const string CLUSTERS_XML_FILENAME = "clusters.xml";
 
         // Regex's for safe URI replacements
         private static readonly Regex unsafeChars1 = new Regex(@"[^a-z0-9\\\-\.]");
@@ -36,6 +36,11 @@ namespace RuralCafe
         /// The path to the cache.
         /// </summary>
         private string _cachePath;
+
+        /// <summary>
+        /// The path to the clusters.
+        /// </summary>
+        private string _clustersPath;
 
         /// <summary>
         /// The proxy.
@@ -49,11 +54,19 @@ namespace RuralCafe
         {
             get { return _cachePath; }
         }
+        /// <summary>
+        /// The path to the cache.
+        /// </summary>
+        public string ClustersPath
+        {
+            get { return _clustersPath; }
+        }
 
         /// <summary>
-        /// Creates a new CacheManager
+        /// Creates a new CacheManager without a clusters path.
         /// </summary>
         /// <param name="cachePath">The path to the cache.</param>
+        /// <param name="proxy">The proxy.</param>
         public CacheManager(string cachePath, RCProxy proxy)
         {
             this._cachePath = cachePath;
@@ -61,7 +74,20 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Initializes the cache by making sure that the directory exists.
+        /// Creates a new CacheManager with a clusters path.
+        /// </summary>
+        /// <param name="cachePath">The path to the cache.</param>
+        /// <param name="clustersPath">The path to the clusters</param>
+        /// <param name="proxy">The proxy.</param>
+        public CacheManager(string cachePath, string clustersPath, RCProxy proxy)
+        {
+            this._cachePath = cachePath;
+            this._clustersPath = clustersPath;
+            this._proxy = proxy;
+        }
+
+        /// <summary>
+        /// Initializes the cache by making sure that the directory/ies exist(s).
         /// </summary>
         /// <returns>True or false for success or not.</returns>
         public bool InitializeCache()
@@ -71,6 +97,10 @@ namespace RuralCafe
                 if (!Directory.Exists(_cachePath))
                 {
                     System.IO.Directory.CreateDirectory(_cachePath);
+                }
+                if (!String.IsNullOrEmpty(_clustersPath) && !Directory.Exists(_clustersPath))
+                {
+                    System.IO.Directory.CreateDirectory(_clustersPath);
                 }
             }
             catch (Exception)
@@ -391,7 +421,11 @@ namespace RuralCafe
         #endregion
         #region analysis
 
-        // TODO make fileName relative, not absolute
+        /// <summary>
+        /// The file size of a cache item.
+        /// </summary>
+        /// <param name="fileName">The filename.</param>
+        /// <returns>The filesize.</returns>
         public long CacheItemBytes(string fileName)
         {
             return Utils.GetFileSize(fileName);
@@ -419,24 +453,19 @@ namespace RuralCafe
         /// 
         /// TODO remove stopwatches
         /// </summary>
-        /// <param name="xmlFile">The file where to store the XML result.</param>
         /// <param name="k">The number of clusters to create.</param>
         /// <param name="hierarchical">If the clusters should be organized hierarchical.</param>
-        public void CreateClusters(string xmlFile, int k, bool hierarchical)
+        public void CreateClusters(int k, bool hierarchical)
         {
             _proxy.Logger.Info("Creating clusters.");
             // Measure what part takes what time
             Stopwatch stopwatch = new Stopwatch();
 
-            // Create directory, if it does not exist already
-            string docFileName = _cachePath + CLUSTERS_FOLDER + Path.DirectorySeparatorChar + DOC_FILE_NAME;
-            string matFileName = _cachePath + CLUSTERS_FOLDER + Path.DirectorySeparatorChar + MAT_FILE_NAME;
-            string clustersFileName = _cachePath + CLUSTERS_FOLDER + Path.DirectorySeparatorChar + CLUSTERS_FILE_NAME;
-            if (!Utils.CreateDirectoryForFile(docFileName))
-            {
-                _proxy.Logger.Error("Clustering: Could not create directory for docFile.");
-                return;
-            }
+            // Filenames
+            string docFileName = _clustersPath + DOC_FILE_NAME;
+            string matFileName = _clustersPath + MAT_FILE_NAME;
+            string clustersFileName = _clustersPath + CLUSTERS_FILE_NAME;
+            string xmlFileName = _clustersPath + CLUSTERS_XML_FILENAME;
 
             // get files
             _proxy.Logger.Debug("Clustering: Getting all text files.");
@@ -484,7 +513,7 @@ namespace RuralCafe
             {
                 if (hierarchical)
                 {
-                    treeFileName = _cachePath + CLUSTERS_FOLDER + Path.DirectorySeparatorChar + TREE_FILE_NAME;
+                    treeFileName = _clustersPath + TREE_FILE_NAME;
                     features = Cluster.CreateClusters(matFileName, clustersFileName, k, true, treeFileName);
                 }
                 else
@@ -506,7 +535,7 @@ namespace RuralCafe
             try
             {
                 Cluster.CreateClusterXMLFile(textFiles, features, clustersFileName, (hierarchical ? treeFileName : ""),
-                    xmlFile, k, _cachePath.Length);
+                    xmlFileName, k, _cachePath.Length);
             }
             catch (Exception e)
             {

@@ -1,4 +1,5 @@
 ﻿using BzReader;
+using RuralCafe.Clusters;
 using RuralCafe.Lucenenet;
 using RuralCafe.Util;
 using System;
@@ -31,6 +32,8 @@ namespace RuralCafe
         /// </summary>
         static LocalInternalRequestHandler()
         {
+             routines.Add("/request/index.xml", new RoutineMethod("ServeRCIndexPage", 		
+ 	            new string[] { "n", "c", "s" }, new Type[] { typeof(int), typeof(int), typeof(string) }));
             routines.Add("/request/search.xml", new RoutineMethod("ServeRCRemoteResultPage",
                 new string[] { "p", "s" }, new Type[] { typeof(int), typeof(string) }));
             routines.Add("/request/result.xml", new RoutineMethod("ServeRCResultPage",
@@ -253,6 +256,70 @@ namespace RuralCafe
 
             _clientHttpContext.Response.ContentType = contentType;
             return new Response(fileName, true);
+        }
+
+        /// <summary> 		
+        /// Sends the RC Index page to the client. 		
+        /// GET request will be sent to request/index.xml?c=6&n=4&s=root where 		
+        /// n is the maximum number of items in a category, the number of <item>.
+        /// c is the number of categories, the number of <category>. Only for level 1 and 2.
+        /// s is the upper level category which the user want to explore (the top level category is defined as 'root') 		
+        /// </summary> 		
+        public Response ServeRCIndexPage(int numItems, int numCategories, string searchString)
+        {
+            string xmlAnswer;
+            // Determine the hierarchy-level (1, 2 or 3)
+            if (searchString.Equals("root"))
+            {
+                // Level 1
+                try
+                {
+                    xmlAnswer = Cluster.Level1Index(Proxy.ProxyCacheManager.ClustersPath + CacheManager.CLUSTERS_XML_FILENAME, 
+                        numCategories, numItems);
+                }
+                catch (ArgumentException e)
+                {
+                    throw new HttpException(HttpStatusCode.BadRequest, e.Message);
+                }
+            }
+            else if (!searchString.Contains('.'))
+            {
+                // Level 2
+                try
+                {
+                    xmlAnswer = Cluster.Level2Index(Proxy.ProxyCacheManager.ClustersPath + CacheManager.CLUSTERS_XML_FILENAME,
+                        searchString, numCategories, numItems);
+                }
+                catch (ArgumentException e)
+                {
+                    throw new HttpException(HttpStatusCode.BadRequest, e.Message);
+                }
+            }
+            else
+            {
+                // Level 3
+                // Try to parse searchstring into categoryId and subCategoryId
+                string[] catStrings = searchString.Split('.');
+                if(catStrings.Length != 2)
+                {
+                    // Send error
+                    throw new HttpException(HttpStatusCode.BadRequest, "searchstring malformed");
+                }
+                string catId = catStrings[0];
+                string subCatId = catStrings[1];
+
+                try
+                {
+                    xmlAnswer = Cluster.Level3Index(Proxy.ProxyCacheManager.ClustersPath + CacheManager.CLUSTERS_XML_FILENAME,
+                        catId, subCatId, numItems);
+                }
+                catch (ArgumentException e)
+                {
+                    throw new HttpException(HttpStatusCode.BadRequest, e.Message);
+                }
+            }
+            PrepareXMLRequestAnswer();
+            return new Response(xmlAnswer, false);
         }
 
         /// <summary>

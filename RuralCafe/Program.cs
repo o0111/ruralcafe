@@ -123,7 +123,7 @@ namespace RuralCafe
         private static void StartRuralCafe()
         {
             // XXX check if positive for mega small screens
-            Console.WindowWidth = Console.LargestWindowWidth - 10;
+            Console.WindowWidth = Console.LargestWindowWidth - 4;
             Console.WindowHeight = Console.LargestWindowHeight - 10;
             Console.SetWindowPosition(0, 0);
 

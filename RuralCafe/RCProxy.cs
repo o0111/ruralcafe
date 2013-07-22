@@ -171,7 +171,7 @@ namespace RuralCafe
         /// </summary>
         /// <param name="cachePath">Path of the cache.</param>
         /// <returns>True or false for success or not.</returns>
-        protected bool InitializeCache(string cachePath)
+        protected virtual bool InitializeCache(string cachePath)
         {
             _cacheManager = new CacheManager(cachePath, this);
             return _cacheManager.InitializeCache();
