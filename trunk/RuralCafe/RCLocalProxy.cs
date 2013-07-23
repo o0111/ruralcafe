@@ -73,7 +73,7 @@ namespace RuralCafe
         private const double NETWORK_SPEED_REDUCTION_FACTOR = 0.9;
         // .. for clustering
         private readonly TimeSpan CLUSTERING_INTERVAL = new TimeSpan(0, 30, 0);
-        private const int CLUSTERING_K = 50;
+        private const int CLUSTERING_K = 20;
         // FIXME customizable?
         private const bool CLUSTERING_HIERARCHICAL = true;
         private const string CLUSTERS_FOLDER = "clusters";

@@ -14,14 +14,15 @@ body{
 }
 
 a:link{
+	text-decoration: none;
 	color:#2bb600;
 }
 a:visited{
 	color:#1e7e00;
 }
 
-.index_cat{
-	width:20%;
+.index_cat_broad{
+	clear:both;
 	float:left;
 	margin-left:5%;
 	margin-top:10px;
@@ -29,18 +30,52 @@ a:visited{
 .index_row{
 	clear:both;
 }
-
+.index_cat{
+	width:20%;
+	float:left;
+	margin-left:5%;
+	margin-top:10px;
+}
+h1{
+	float:left;
+	margin-left:2%;
+	margin-top:15px;
+	margin-bottom:15px;
+	font-size:22px;
+	text-transform:capitalize;
+}
 h2{
 	margin-bottom:5px;
 	font-size:20px;
 	text-transform:capitalize;
+}
+h3{
+	margin-bottom:5px;
+	font-size:18px;
+	text-transform:capitalize;
+}
+hr {
+  border: 0;
+  clear:both;
+  display:block;
+  width: 100%;               
+  background-color:#c8d5d5;
+  height: 1px;
+}
+.index_subcat{
+	padding-left:10px;
+	margin-bottom:5px;
+}
+.index_subcat p a{
+	font-weight:bold;
+	font-size:14px;
 }
 .index_page{
 	padding-left:10px;
 	margin-bottom:5px;
 }
 .index_page p a{
-	font-weight:bold;
+	color:blue;
 	font-size:14px;
 }
 .url{

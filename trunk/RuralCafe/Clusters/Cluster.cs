@@ -107,7 +107,7 @@ namespace RuralCafe.Clusters
             // vcluster.exe -clmethod=rbr [-showtree -labeltree -treefile=<treefile>]
             //  -showfeatures -clustfile=<clustFile> <matFile> k
             ProcessStartInfo clusterStartInfo = new ProcessStartInfo(VCLUSTERS_PATH);
-            clusterStartInfo.Arguments = "-clmethod=rbr ";
+            clusterStartInfo.Arguments = "-clmethod=agglo ";
             clusterStartInfo.Arguments += fulltree ? "-showtree -labeltree -cltreefile=\"" + treefile + "\" " : "";
             clusterStartInfo.Arguments += "-showfeatures -clustfile=\"" + clustersFile + "\" \"" + matFile + "\" " + k; 
 
