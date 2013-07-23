@@ -33,6 +33,7 @@ namespace RuralCafe.Clusters
         public const string ITEM_TITLE_XML_NAME = "title";
         public const string ITEM_SNIPPET_XML_NAME = "snippet";
         public const string INDEX_CATEGORIES_XML_NAME = "categories";
+        public const string INDEX_LEVEL_XML_NAME = "level";
 
         /// Regex's for docfile creation replacement
         private static readonly Regex newlineRegex = new Regex(@"\r\n|\n|\r");
@@ -172,7 +173,7 @@ namespace RuralCafe.Clusters
                         throw new Exception("vcluster failed with exitcode: " + vcluster.ExitCode);
                     }
                     // Parse output
-                    // Console.Write(output);
+                    Console.Write(output);
                     string[] lines = newlineRegex.Split(output.ToString());
                     // Create result array
                     HashSet<string>[] result = new HashSet<string>[fulltree ? 2 * k - 1 : k];
@@ -442,7 +443,45 @@ namespace RuralCafe.Clusters
 
         public static string Level1Index(string clusterXMLFile, int maxCategories, int maxSubCategories)
         {
-            return "";
+            XmlDocument clustersDoc = new XmlDocument();
+            clustersDoc.Load(new XmlTextReader(clusterXMLFile));
+
+            XmlDocument indexDoc = new XmlDocument();
+            indexDoc.AppendChild(indexDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
+
+            XmlElement indexRootXml = indexDoc.CreateElement(INDEX_CATEGORIES_XML_NAME);
+            indexDoc.AppendChild(indexRootXml);
+            indexRootXml.SetAttribute(INDEX_LEVEL_XML_NAME, String.Empty + 1);
+
+            // Check for root node
+            if (clustersDoc.DocumentElement.ChildNodes.Count == 0)
+            {
+                throw new ArgumentException("No categories");
+            }
+            XmlElement rootNode = (XmlElement) clustersDoc.DocumentElement.ChildNodes[0];
+            // Find up to maxCategories categories
+            List<XmlElement> categories = FindCategories(rootNode, maxCategories);
+            foreach (XmlElement categoryElement in categories)
+            {
+                // Get all plain subcategories for each category
+                List<XmlElement> subCategories = FindSubCategories(categoryElement);
+                // Remove all childs from category
+                categoryElement.RemoveAllChilds();
+                // Add until maxSubCategories is reached (if it's != 0)
+                for (int i = 0; i < subCategories.Count && (maxSubCategories == 0 || i < maxSubCategories); i++)
+                {
+                    categoryElement.AppendChild(subCategories[i]);
+                }
+                // For each subcategory we must remove all childs
+                foreach (XmlElement subCategoryElement in categoryElement.ChildNodes)
+                {
+                    subCategoryElement.RemoveAllChilds();
+                }
+                // Add category to indexRootXml
+                indexRootXml.AppendChild(indexDoc.ImportNode(categoryElement, true));
+            }
+
+            return indexDoc.InnerXml;
         }
 
         public static string Level2Index(string clusterXMLFile, string categoryId, int maxSubCategories, int maxItems)
@@ -455,7 +494,7 @@ namespace RuralCafe.Clusters
 
             XmlElement indexRootXml = indexDoc.CreateElement(INDEX_CATEGORIES_XML_NAME);
             indexDoc.AppendChild(indexRootXml);
-            indexRootXml.SetAttribute("level", String.Empty + 2);
+            indexRootXml.SetAttribute(INDEX_LEVEL_XML_NAME, String.Empty + 2);
 
             XmlElement categoryElement = FindCategory(clustersDoc.DocumentElement, categoryId);
             if (categoryElement == null)
@@ -507,7 +546,7 @@ namespace RuralCafe.Clusters
 
             XmlElement indexRootXml = indexDoc.CreateElement(INDEX_CATEGORIES_XML_NAME);
             indexDoc.AppendChild(indexRootXml);
-            indexRootXml.SetAttribute("level", String.Empty + 3);
+            indexRootXml.SetAttribute(INDEX_LEVEL_XML_NAME, String.Empty + 3);
 
             XmlElement categoryElement = FindCategory(clustersDoc.DocumentElement, categoryId);
             if (categoryElement == null)
@@ -593,6 +632,63 @@ namespace RuralCafe.Clusters
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// Traverses the binary tree and finds up to maxCategories categories.
+        /// </summary>
+        /// <param name="xmlElement">The root xml element.</param>
+        /// <param name="maxCategories">The maximum number of categories to find.</param>
+        /// <returns>The list of category xml elements.</returns>
+        private static List<XmlElement> FindCategories(XmlElement xmlElement, int maxCategories)
+        {
+            List<XmlElement> categories = new List<XmlElement>();
+            List<XmlElement> nodesToLookAt = new List<XmlElement>();
+            nodesToLookAt.Add(xmlElement);
+
+            while (nodesToLookAt.Count != 0 &&
+                (maxCategories == 0 || nodesToLookAt.Count + categories.Count < maxCategories))
+            {
+                XmlElement node = nodesToLookAt[0];
+                nodesToLookAt.RemoveAt(0);
+
+                if (IsParentOfLeaf(node))
+                {
+                    // We cannot go further down here
+                    categories.Add(node);
+                }
+                else
+                {
+                    // Look at all childs (2)
+                    foreach (XmlElement child in node.ChildNodes)
+                    {
+                        nodesToLookAt.Add(child);
+                    }
+                }
+            }
+            // All remaining nodes to look at will be categories
+            foreach (XmlElement node in nodesToLookAt)
+            {
+                categories.Add(node);
+            }
+            return categories;
+        }
+
+        /// <summary>
+        /// Checks if a node is parent of a leaf(/subcategory/flat cluster).
+        /// </summary>
+        /// <param name="node">The node</param>
+        /// <returns>If it is parent of a leaf.</returns>
+        private static bool IsParentOfLeaf(XmlElement node)
+        {
+            foreach (XmlElement child in node.ChildNodes)
+            {
+                if (child.Name.Equals(CLUSTER_XML_NAME))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         #endregion
