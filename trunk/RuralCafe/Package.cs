@@ -76,12 +76,6 @@ namespace RuralCafe
         /// <returns>True iff the request has been packed successfully.</returns>
         public bool Pack(RemoteRequestHandler requestHandler, RCRequest rcRequest, ref long quota)
         {
-            if (rcRequest.Uri.Contains(' '))
-            {
-                requestHandler.Logger.Debug("object contains spaces: " + rcRequest.Uri);
-                return false;
-            }
-
             if (_rcRequests.Contains(rcRequest))
             {
                 requestHandler.Logger.Debug("object exists in package: " + rcRequest.Uri);
@@ -169,18 +163,16 @@ namespace RuralCafe
             long bytesReadOfCurrFile = 0;
             long unpackedBytes = 0;
             Byte[] buffer = new Byte[1024];
-            string[] packageEntryArr;
             string currUri = "";
             long currFileSize = 0;
             foreach (string entry in packageContentArr)
             {
-                stringSeparator = new string[] { " " };
-                packageEntryArr = entry.Split(stringSeparator, StringSplitOptions.RemoveEmptyEntries);
-                currUri = packageEntryArr[0];
+                int lastSpaceIndex = entry.LastIndexOf(' ');
+                currUri = entry.Substring(0, lastSpaceIndex);
 
                 try
                 {
-                    currFileSize = Int64.Parse(packageEntryArr[1]);
+                    currFileSize = Int64.Parse(entry.Substring(lastSpaceIndex + 1));
                 }
                 catch (Exception e)
                 {
@@ -194,10 +186,7 @@ namespace RuralCafe
                     return unpackedBytes;
                 }
 
-                // FIXME: a new RCRequest shouldn't be created just to know the cache file name.
-                // The cache file name logic should be moved into another class, Util e.g.
-                RCRequest rcRequest = new RCRequest(requestHandler, (HttpWebRequest)WebRequest.Create(currUri.Trim()));
-                string cacheFileName = rcRequest.CacheFileName;
+                string cacheFileName = requestHandler.Proxy.CachePath + CacheManager.GetRelativeCacheFileName(currUri);
 
                 unpackedBytes += currFileSize;
 
@@ -272,7 +261,7 @@ namespace RuralCafe
                 if (bytesReadOfCurrFile != currFileSize)
                 {
                     // ran out of bytes for this file
-                    requestHandler.Logger.Error("unexpected package size: " + rcRequest.CacheFileName +
+                    requestHandler.Logger.Error("unexpected package size: " + cacheFileName +
                         "(" + bytesReadOfCurrFile + " / " + currFileSize + ")");
                     return unpackedBytes * -1;
                 }
@@ -289,7 +278,7 @@ namespace RuralCafe
                         // Use whole file, so we can also find results with tags, etc.
                         string content = document;
                         // XXX: Why always with "Content-Type: text/html" ???
-                        IndexWrapper.IndexDocument(indexPath, "Content-Type: text/html", rcRequest.Uri, title, content);
+                        IndexWrapper.IndexDocument(indexPath, "Content-Type: text/html", currUri, title, content);
                     }
                 }
             }

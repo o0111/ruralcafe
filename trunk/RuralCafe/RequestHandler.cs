@@ -790,7 +790,7 @@ namespace RuralCafe
         /// <returns>True if cached, false if not.</returns>
         protected bool IsCached(string fileName)
         {
-            if (fileName == null || fileName.Equals("") || (fileName.Length > 248))
+            if (fileName == null || fileName.Equals("") || !Utils.IsNotTooLongFileName(fileName))
             {
                 return false;
             }

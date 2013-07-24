@@ -397,7 +397,7 @@ namespace RuralCafe.Util
         /// <returns>true, if the filename is OK; false, if it is too long.</returns>
         public static bool IsNotTooLongFileName(string fileName)
         {
-            string pathName = fileName.Substring(fileName.LastIndexOf(Path.DirectorySeparatorChar));
+            string pathName = fileName.Substring(0, fileName.LastIndexOf(Path.DirectorySeparatorChar));
             return pathName.Length < 248 && fileName.Length < 260;
         }
 
