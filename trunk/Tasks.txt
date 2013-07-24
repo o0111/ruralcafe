@@ -24,7 +24,7 @@ Minor tasks
 - DNS cache hit/miss logging (César: Packet sniffing)
 - Domain name & Search query clustering 
 - Measure download speed correctly (see http://stuff.seans.com/2009/01/05/using-httpwebrequest-for-asynchronous-downloads/ ). Too fast at the moment.
-- Handle 304 correctly.
+- Handle 304 correctly (done for StreamTransparently, missing for DownloadToCache, but it doesn't seem to happen there)
 - When getting file from cache, only read file ONCE!
 - Configure Windows Firewall correct and write an article in the Wiki.
 - How to react to other server responses than 200 (e.g. 500), if the content is still useful?
@@ -35,8 +35,8 @@ Minor tasks
 Code piece integration
 - Clustering:
   - Create TextFiles and docfile on the fly?
-  - Make cache access (cluster, add, remove) synchronized
-  - Create 3-level-hierarchy from cluto's binary tree. (Maybe after restructuring cache, otherwise we might have to do it again.)
+  - Make cache access (cluster, add, remove) synchronized. (Maybe after restructuring cache, otherwise we might have to do it again.)
+  - Create 3-level-hierarchy from cluto's binary tree.
 - Link recommendation
   - Firefox extension that sends request to server on link mouseover.
 - Crawler
