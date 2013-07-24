@@ -2,15 +2,16 @@
 
 var ixmlDoc = 0;	//xml object for the index topics
 var ixhttp = 0;		//ajax requset for retrieving index topics
-var noc=6; 	//number of categories
-var noi=4; //number of items maximum per category
+
+var lvl1noc=10; 	// level1: max number of categories
+var lvl1nos=5;		// level1: max number of subcategories per category
+var lvl2nos=10; 	// level2: max number of subcategories
+var lvl2nol=5;		// level2: max number of links per subcategory
+var lvl3nol=20;		// level3: max number of links
 
 //initiate the index page
 window.onload=function () {
-	showCategorySCN("root", noc, noi);
-	// TODO remove
-	if (window.location.pathname) {
-	}
+	showCategorySCN("root", lvl1noc, lvl1nos);
 }
 
 function showCategorySCN(s, c, n) {
@@ -66,12 +67,12 @@ function showXMLLevel1(categories) {
 		
 		var catTitle = categories.children[i].getAttribute("title");
 		var catId = categories.children[i].getAttribute("id");
-		innerHtml += '<h2><a href="" onclick="return showCategorySCN(\''+catId+'\', '+noc+', '+noi+')">' + catTitle + '</a></h2>';
+		innerHtml += '<h2><a href="" onclick="return showCategorySCN(\''+catId+'\', '+lvl2nos+', '+lvl2nol+')">' + catTitle + '</a></h2>';
 		
 		for (var j=0;j<categories.children[i].children.length;j++) {
 			var subCatTitle = categories.children[i].children[j].getAttribute("title");
 			var subCatId = categories.children[i].children[j].getAttribute("id");
-			innerHtml += '<div class="index_subcat"><p><a href="" onclick="return showCategorySCN(\''+catId+'.'+subCatId+'\', '+noc+', '+noi+')">'+subCatTitle+'</a></p></div>';
+			innerHtml += '<div class="index_subcat"><p><a href="" onclick="return showCategorySCN(\''+catId+'.'+subCatId+'\', 0, '+lvl3nol+')">'+subCatTitle+'</a></p></div>';
 		}
 		innerHtml += "</div>";
 		if (i%2 == 1) {
@@ -94,7 +95,7 @@ function showXMLLevel2(categories) {
 		
 		var subCatTitle = subcategories[i].getAttribute("title");
 		var subCatId = subcategories[i].getAttribute("id");
-		innerHtml += '<h3><a href="" onclick="return showCategorySCN(\''+catId+'.'+subCatId+'\', '+noc+', '+noi+')">'+subCatTitle+'</a></h3>';
+		innerHtml += '<h3><a href="" onclick="return showCategorySCN(\''+catId+'.'+subCatId+'\', 0, '+lvl3nol+')">'+subCatTitle+'</a></h3>';
 		
 		for (var j=0;j<subcategories[i].children.length;j++) {
 			var item = subcategories[i].children[j];
@@ -119,7 +120,7 @@ function showXMLLevel3(categories) {
 	var subCatTitle = subCat.getAttribute("title");
 	var subCatId = subCat.getAttribute("id")
 	
-	innerHtml += '<h1><a href="" onclick="return showCategorySCN(\''+catId+'\', '+noc+', '+noi+')">'+catTitle+'</a> / ' + subCatTitle + '</h1><hr />';
+	innerHtml += '<h1><a href="" onclick="return showCategorySCN(\''+catId+'\', '+lvl2nos+', '+lvl2nol+')">'+catTitle+'</a> / ' + subCatTitle + '</h1><hr />';
 	innerHtml += '<div class="index_cat_broad">';
 	for (var j=0;j<subCat.children.length;j++) {
 			var item = subCat.children[j];

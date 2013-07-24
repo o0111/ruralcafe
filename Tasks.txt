@@ -1,0 +1,96 @@
+Mayor tasks
+- Inter-Proxy-Protocol
+	- Cancel request
+	- Detect network outage
+		- Restart interrupted downloads
+- Cache
+	- caching larger granularity
+		- intelligent eviction, timeout, etc. (also for subcomponents)
+	- Directory hashes - better solution ideas?
+	- Include metadata in cache
+		- (download time, headers?, lastrequesttime, #requests) in a priority queue or something. (For clustering priorization...)
+		- Remove dirty redirect when metadata is included
+	- Cache problems with POST and subsequent requests. E.g. user is logged in but gets old page.
+	  - Per user cache?
+- Add/RequestWithoutUser redesign
+  - Either
+    - GET -> Redirect to Trotro or
+    - POST -> Stream transparently or
+	  -> Redirect to /request/add directly
+	  -> make /request/add redirect to index.html
+	  -> See if old (GET) redirect doesn't work for other pages, too.
+
+Minor tasks
+- DNS cache hit/miss logging (César: Packet sniffing)
+- Domain name & Search query clustering 
+- Measure download speed correctly (see http://stuff.seans.com/2009/01/05/using-httpwebrequest-for-asynchronous-downloads/ ). Too fast at the moment.
+- Handle 304 correctly.
+- When getting file from cache, only read file ONCE!
+- Configure Windows Firewall correct and write an article in the Wiki.
+- Cache search: Share IndexSearcher/Writer: It is threadsafe and thus this will be much more performant.
+
+Code piece integration
+- Clustering:
+  - Create TextFiles and docfile on the fly?
+  - Make cache access (cluster, add, remove) synchronized
+  - Create 3-level-hierarchy from cluto's binary tree.
+- Link recommendation
+  - Firefox extension that sends request to server on link mouseover.
+- Crawler
+
+Metrics logging
+- Save IP per userId
+- login/logout request (just let the server know)
+  - sync cookie timeout and server "session" timeout
+- log all requests
+  - per user
+- log every RC request?
+- self reported user satisfaction
+  - html form before or after logout
+  - request for the server that logs this
+- total number of cached objects (works, commented out)
+- network speed + status (when detection is implemented)
+
+Tests
+- Test metadata restoring: POST requests
+- Test search avg. time with >100 local search results
+- Test if queue works for offline network status.
+
+Bugs
+- "Failed finishing the search work item due to timeout." Indexer:809
+- HttpListenerException (close browser window) uncatched. (Hard to reproduce)
+- http://jsfiddle.net/mpRmV/5/
+- InvalidDataException in GzipWrapper:121  
+- Trotro
+  - "User doesn't exist" design flaw
+  - 2x download click might be necessary
+  - needs F5 to show page is ready sometimes
+  - always opens in first tab!
+  - Do NOT send queue.xml without userid!
+  - Way too many ETA requests!
+  - Don't show "fetching results from internet", for empty searches, because nothing is done!
+  - Always show local AND google search. Remove arrow if searching or design page properly.
+  - Login mechanism does not work correct
+  - Wait time not visible if title long and takes 2 rows
+- favicon.ico
+- https
+  - http://https//twitter.com/search?q=%23lololo bzw.
+    https://twitter.com/search?q=%23lololo (entering URI)
+  - Google search
+
+Webpage issues
+- 9gag no images
+- facebook, youtube -> blacklisted!?
+- sometimes no css at all (chefkoch.de)
+- myvideo.de
+- albinoblacksheep.com: works fine but no flash/ Failed!?
+  - Closed Sockets!!?
+- web.de -> Pending
+  - Login doesn't work
+- gmx.net -> Pending
+  - Login (CGI) doesn't work
+- Trac (Authentication required) -> Fails
+- MyTVToday -> Fails
+- uni-bremen.de : Most subpages don't work (PHP?)
+  - Search does not work
+- Google Login doesn't work
