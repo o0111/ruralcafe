@@ -65,14 +65,14 @@ namespace RuralCafe
         private const string QUEUES_FILENAME = "Queues.json";
         private const int SPEED_ONLINE_THRESHOLD_BS = 32768; // 32 KB/s
         // .. for network speed detection
-        private readonly TimeSpan NETWORK_DETECTION_INTERVAL = new TimeSpan(0, 15, 0);
+        private static readonly TimeSpan NETWORK_DETECTION_INTERVAL = new TimeSpan(0, 15, 0);
         /// <summary>
         /// Each time a new download is considered, the bytes used for calculation
         /// so far are multiplicated with this factor.
         /// </summary>
         private const double NETWORK_SPEED_REDUCTION_FACTOR = 0.9;
         // .. for clustering
-        private readonly TimeSpan CLUSTERING_INTERVAL = new TimeSpan(0, 30, 0);
+        private static readonly TimeSpan CLUSTERING_INTERVAL = new TimeSpan(0, 30, 0);
         private const int CLUSTERING_K = 20;
         // FIXME customizable?
         private const bool CLUSTERING_HIERARCHICAL = true;
@@ -81,7 +81,6 @@ namespace RuralCafe
         // RuralCafe pages path
         private string _uiPagesPath;
         private string _rcSearchPage;
-        private string _indexPath;
         private string _wikiDumpPath;
         private int _activeRequests;
 
@@ -121,7 +120,7 @@ namespace RuralCafe
         private List<LocalRequestHandler> _globalRequestQueue;
         // dictionary of lists of requests made by each client
         private Dictionary<int, List<LocalRequestHandler>> _clientRequestQueueMap;
-        // dictionary of requests without a user. They await to be "added" via trotro by a specific user
+        // dictionary of requests without a user. They await to be "added" via Trotro by a specific user
         private IntKeyedCollection<LocalRequestHandler> _requestsWithoutUser;
         // Random for the keys of the above Dictionary
         private Random _random;
@@ -131,9 +130,13 @@ namespace RuralCafe
 
         // state for maintaining the time for request/responses for measuring the ETA
         private TimeSpan _averageTimePerRequest;
-
-        // the wiki wrapper
+        
+        // the wrappers
         private WikiWrapper _wikiWrapper;
+        private IndexWrapper _indexWrapper;
+
+        // the session manager
+        private SessionManager _sessionManager;
 
         #region Property accessors
 
@@ -152,11 +155,6 @@ namespace RuralCafe
         {
             get { return _wikiDumpPath; }
         }
-        /// <summary>Path to the proxy's index.</summary>
-        public string IndexPath
-        {
-            get { return _indexPath; }
-        }
         /// <summary>WebProxy information for the remote proxy.</summary>
         public WebProxy RemoteProxy
         {
@@ -166,6 +164,16 @@ namespace RuralCafe
         public WikiWrapper WikiWrapper
         {
             get { return _wikiWrapper; }
+        }
+        /// <summary>The index wrapper.</summary>
+        public IndexWrapper IndexWrapper
+        {
+            get { return _indexWrapper; }
+        }
+        /// <summary>The session manager.</summary>
+        public SessionManager SessionManager
+        {
+            get { return _sessionManager; }
         }
         /// <summary>Detect the network status automatically?
         /// If yes, the status is first set to online
@@ -224,7 +232,6 @@ namespace RuralCafe
         {
             _activeRequests = 0;
             _uiPagesPath = proxyPath + "RuralCafePages" + Path.DirectorySeparatorChar;
-            _indexPath = indexPath;
             _wikiDumpPath = wikiDumpPath;
             _globalRequestQueue = new List<LocalRequestHandler>();
             _clientRequestQueueMap = new Dictionary<int, List<LocalRequestHandler>>();
@@ -233,16 +240,14 @@ namespace RuralCafe
             _newRequestEvent = new AutoResetEvent(false);
             _averageTimePerRequest = new TimeSpan(0);
 
+            _sessionManager = new SessionManager();
+
             _wikiWrapper = new WikiWrapper(wikiDumpPath);
+            _indexWrapper = new IndexWrapper(indexPath);
+            // initialize the index
+            _indexWrapper.EnsureIndexExists();
 
             bool success = false;
-            // initialize the index
-            success = IndexWrapper.EnsureIndexExists(indexPath);
-            if (!success)
-            {
-                _logger.Warn("Error initializing the local proxy index.");
-            }
-
             // initialize the wiki index
             success = _wikiWrapper.InitializeWikiIndex();
             if (!success)
@@ -424,7 +429,7 @@ namespace RuralCafe
                             // Get RC response headers
                             RCSpecificResponseHeaders headers = requestHandler.GetRCSpecificResponseHeaders();
 
-                            long unpackedBytes = Package.Unpack(requestHandler, headers, _indexPath);
+                            long unpackedBytes = Package.Unpack(requestHandler, headers, _indexWrapper);
                             if (unpackedBytes > 0)
                             {
                                 _logger.Debug("unpacked: " + requestHandler.RequestUri);

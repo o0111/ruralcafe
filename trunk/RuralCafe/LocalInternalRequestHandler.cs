@@ -42,8 +42,6 @@ namespace RuralCafe
                 new string[] { "v" }, new Type[] { typeof(string) }));
             routines.Add("/request/status.xml", new RoutineMethod("ServeNetworkStatus"));
 
-            routines.Add("/request/visit", new RoutineMethod("VisitRequest",
-                new string[] { "c", "u" }, new Type[] { typeof(bool), typeof(string) }));
             routines.Add("/request/remove", new RoutineMethod("RemoveRequest",
                 new string[] { "i" }, new Type[] { typeof(string) }));
             routines.Add("/request/add", new RoutineMethod("AddRequest",
@@ -481,8 +479,8 @@ namespace RuralCafe
             }
            
             // Query our RuralCafe index
-            SearchResults luceneResults = IndexWrapper.Query(Proxy.IndexPath, 
-                queryString, Proxy.CachePath, offsets[0], resultAmounts[0]);
+            SearchResults luceneResults = Proxy.IndexWrapper.Query(queryString, 
+                Proxy.CachePath, offsets[0], resultAmounts[0]);
             // Query the Wiki index
             SearchResults wikiResults = Proxy.WikiWrapper.
                 Query(queryString, offsets[1], resultAmounts[1]);
@@ -660,8 +658,8 @@ namespace RuralCafe
         /// <returns></returns>
         public Response LoginRequest()
         {
-            // TODO does not get called and does nothing ATM
             Logger.Info("User " + UserIDCookieValue + " logs in.");
+            Proxy.SessionManager.LogUserIn(ClientIP, UserIDCookieValue);
             return new Response();
         }
 
@@ -674,8 +672,8 @@ namespace RuralCafe
         /// <returns></returns>
         public Response LogoutRequest()
         {
-            // TODO does not get called and does nothing ATM
             Logger.Info("User " + UserIDCookieValue + " logs out.");
+            Proxy.SessionManager.LogUserOut(UserIDCookieValue);
             return new Response();
         }
 
@@ -728,21 +726,6 @@ namespace RuralCafe
         public Response RemoveRequest(string itemId)
         {
             Proxy.DequeueRequest(UserIDCookieValue, itemId);
-            return new Response();
-        }
-
-        /// <summary>
-        /// Redirects to the given Uri and logs the users visit to the page.
-        /// </summary>
-        /// <param name="cached">Whether we expet this page to be cached.</param>
-        /// <param name="uri">The URI to visit.</param>
-        /// <returns></returns>
-        public Response VisitRequest(bool cached, string uri)
-        {
-            // Log query metric
-            Logger.QueryMetric(UserIDCookieValue, cached, RefererUri, uri);
-            // Redirect
-            _clientHttpContext.Response.Redirect(HttpUtils.AddHttpPrefix(uri));
             return new Response();
         }
 

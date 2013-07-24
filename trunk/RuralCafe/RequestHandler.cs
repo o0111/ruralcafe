@@ -292,6 +292,34 @@ namespace RuralCafe
             set { _rcRequest.FinishTime = value; }
             get { return _rcRequest.FinishTime; }
         }
+
+        /// <summary>The time of creation.</summary>
+        public long CreationTime
+        {
+            get { return _creationTime; }
+        }
+        /// <summary>
+        /// The Proxy's Logger.
+        /// </summary>
+        public ILog Logger
+        {
+            get { return _proxy.Logger; }
+        }
+        /// <summary>
+        /// Gets the Value. -1 if cookie not set.
+        /// </summary>
+        public int UserIDCookieValue
+        {
+            get
+            {
+                return _originalRequest.Cookies[cookieUserID] == null ?
+                    -1 : Int32.Parse(_originalRequest.Cookies[cookieUserID].Value);
+            }
+        }
+        public IPAddress ClientIP
+        {
+            get { return _clientHttpContext.Request.RemoteEndPoint.Address; }
+        }
         
         // accessors for the underlying RCRequest
         /// <summary>Status of the request.</summary>
@@ -334,29 +362,6 @@ namespace RuralCafe
         {
             set { _rcRequest.CacheFileName = value; }
             get { return _rcRequest.CacheFileName; }
-        }
-        /// <summary>The time of creation.</summary>
-        public long CreationTime
-        {
-            get { return _creationTime; }
-        }
-        /// <summary>
-        /// The Proxy's Logger.
-        /// </summary>
-        public ILog Logger
-        {
-            get { return _proxy.Logger; }
-        }
-        /// <summary>
-        /// Gets the Value. -1 if cookie not set.
-        /// </summary>
-        public int UserIDCookieValue
-        {
-            get
-            {
-                return _originalRequest.Cookies[cookieUserID] == null ?
-                    -1 : Int32.Parse(_originalRequest.Cookies[cookieUserID].Value);
-            }
         }
 
         #endregion

@@ -36,38 +36,56 @@ namespace RuralCafe.Lucenenet
     /// Interacts with Lucene.Net to manage the cache index.
     /// Compatible with Lucene.Net version 2.9.1
     /// </summary>
-    public static class IndexWrapper
+    public class IndexWrapper
     {
         /// <summary>
         /// The maximum number of results.
         /// </summary>
         private const int LUCENE_MAX_RESULTS = 1000;
 
+        private string _indexPath;
+        private Analyzer _analyzer = new StandardAnalyzer(Lucene.Net.Util.Version.LUCENE_CURRENT);
+
+        /// <summary>
+        /// The path to the index.
+        /// </summary>
+        public string IndexPath
+        {
+            get { return _indexPath; }
+        }
+
+        /// <summary>
+        /// Creates a new index wrapper with the specified path.
+        /// </summary>
+        /// <param name="indexPath"></param>
+        public IndexWrapper(string indexPath)
+        {
+            this._indexPath = indexPath;
+        }
+
         /// <summary>
         /// Ensure that the index exists.
         /// </summary>
-        /// <param name="indexPath">The index path.</param>
-        /// <returns>True XXX: this is nonsense</returns>
-        public static bool EnsureIndexExists(string indexPath)
+        public void EnsureIndexExists()
         {
-            if (!Directory.Exists(indexPath))
+            if (!Directory.Exists(_indexPath))
             {
-                System.IO.Directory.CreateDirectory(indexPath);
+                Directory.CreateDirectory(_indexPath);
             }
 
-            Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(indexPath));
+            Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(_indexPath));
             if (!IndexReader.IndexExists(directory))
             {
-                IndexWriter writer = new IndexWriter(directory, new StandardAnalyzer(Lucene.Net.Util.Version.LUCENE_CURRENT), true);
+                // Create the index with a writer, if there is none
+                IndexWriter writer = new IndexWriter(directory, _analyzer, true);
                 writer.Close();
             }
             // Remove an old lock file that may not have been deleted on system shutdown
-            FileInfo lockFile = new FileInfo(indexPath + "write.lock");
+            FileInfo lockFile = new FileInfo(_indexPath + "write.lock");
             if (lockFile.Exists)
             {
                 lockFile.Delete();
             }
-            return true;
         }
 
         /// <summary>
@@ -75,27 +93,27 @@ namespace RuralCafe.Lucenenet
         /// To be used for cache coherence/maintainence.
         /// Unused. Untested.
         /// </summary>
-        public static void DeleteDocument(string indexPath, string Uri)
+        /// <param name="Uri">The uri to delete from the index.</param>
+        public void DeleteDocument(string Uri)
         {
-            Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(indexPath));
-            IndexReader indexReader = IndexReader.Open(directory, true);
+            Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(_indexPath));
+            IndexReader indexReader = IndexReader.Open(directory, false);
             indexReader.DeleteDocuments(new Term("uri", Uri));
         }
 
         /// <summary>
         /// Adds a document to the index.
         /// </summary>
-        /// <param name="indexPath">Path to the Lucene index.</param>
         /// <param name="headers">HTTP response headers.</param>
         /// <param name="uri">URI of the page.</param>
         /// <param name="title">Title of the page.</param>
         /// <param name="content">The page contents.</param>
-        public static void IndexDocument(string indexPath, string headers, string uri, string title, string content)
+        public void IndexDocument(string headers, string uri, string title, string content)
         {
             // remove the document if it exists in the index to prevent duplicates
             //DeleteDocument(indexPath, Uri);
 
-            IndexWriter writer = new IndexWriter(indexPath, new StandardAnalyzer(Lucene.Net.Util.Version.LUCENE_CURRENT), false);
+            IndexWriter writer = new IndexWriter(_indexPath, _analyzer, false);
 
             Document doc = new Document();
             doc.Add(new Field("uri", uri, Field.Store.YES, Field.Index.NOT_ANALYZED));
@@ -110,22 +128,19 @@ namespace RuralCafe.Lucenenet
         /// <summary>
         /// Queries the index for a list of results.
         /// </summary>
-        /// <param name="indexPath">Path to the Lucene index.</param>
         /// <param name="queryString">String to query the index for.</param>
         /// <param name="cachePath">The path to the local cache.</param>
         /// <param name="offset">The offset for the first result to return.</param>
         /// <param name="resultAmount">The max munber of results to return for the current page.</param>
         /// <returns>A list of search results.</returns>
-        public static SearchResults Query(string indexPath, string queryString, string cachePath,
+        public SearchResults Query(string queryString, string cachePath,
             int offset, int resultAmount)
         {
             SearchResults results = new SearchResults();
-
-            Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(indexPath));
+            Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(_indexPath));
             IndexReader reader = IndexReader.Open(directory, true);
             IndexSearcher searcher = new IndexSearcher(reader);
-            Analyzer analyzer =  new StandardAnalyzer(Lucene.Net.Util.Version.LUCENE_CURRENT);
-            QueryParser parser = new QueryParser(Lucene.Net.Util.Version.LUCENE_CURRENT, "content", analyzer);
+            QueryParser parser = new QueryParser(Lucene.Net.Util.Version.LUCENE_CURRENT, "content", _analyzer);
             
             // the search function
             string searchQuery = "(" + QueryParser.Escape(queryString) + ")";
@@ -155,7 +170,7 @@ namespace RuralCafe.Lucenenet
                 SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<b>", "</b>");
                 Highlighter highlighter = new Highlighter(formatter, scorer);
                 highlighter.SetTextFragmenter(new SentenceFragmenter());
-                TokenStream stream = analyzer.TokenStream("content", new StringReader(documentContent));
+                TokenStream stream = _analyzer.TokenStream("content", new StringReader(documentContent));
 
                 // Get 1 fragment
                 string contentSnippet = "";
