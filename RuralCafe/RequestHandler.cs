@@ -501,7 +501,16 @@ namespace RuralCafe
             HttpUtils.SendBody(_rcRequest.GenericWebRequest, _rcRequest.Body);
 
             // Get response
-            HttpWebResponse serverResponse = (HttpWebResponse) _rcRequest.GenericWebRequest.GetResponse();
+            HttpWebResponse serverResponse;
+            try
+            {
+                serverResponse = (HttpWebResponse)_rcRequest.GenericWebRequest.GetResponse();
+            }
+            catch (WebException e)
+            {
+                // Even if we have other status than 200 we just stream
+                serverResponse = (HttpWebResponse)e.Response;
+            }
 
             // Copy headers
             HttpUtils.CopyWebResponse(_clientHttpContext.Response, serverResponse);
