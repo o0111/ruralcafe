@@ -283,7 +283,7 @@ namespace RuralCafe.Util
         /// </summary>
         /// <param name="uri">The current URI.</param>
         /// <returns>The new URI.</returns>
-        public static String AddHttpPrefix(String uri)
+        public static string AddHttpPrefix(string uri)
         {
             if (!uri.StartsWith(HTTP))
             {
@@ -297,13 +297,32 @@ namespace RuralCafe.Util
         /// </summary>
         /// <param name="uri">The current URI.</param>
         /// <returns>The new URI.</returns>
-        public static String RemoveHttpPrefix(String uri)
+        public static string RemoveHttpPrefix(string uri)
         {
             if (uri.StartsWith(HTTP))
             {
                 return uri.Substring(HTTP.Length);
             }
             return uri;
+        }
+
+        /// <summary>
+        /// Returns the uri with "www." at the beginning, if it was not there before.
+        /// Returns the uri without "www." at the beginning, if it was there before.
+        /// </summary>
+        /// <param name="uri">The uri.</param>
+        /// <returns>The modified uri.</returns>
+        public static string AddOrRemoveWWW(string uri)
+        {
+            string www = "www.";
+            if (uri.StartsWith(www))
+            {
+                return uri.Substring(www.Length);
+            }
+            else
+            {
+                return www + uri;
+            }
         }
     }
 }

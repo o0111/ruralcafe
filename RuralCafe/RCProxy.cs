@@ -308,7 +308,7 @@ namespace RuralCafe
             // check against all domains in the blacklist
             foreach (string domain in _blacklistedDomains)
             {
-                if (requestUri.StartsWith(domain))
+                if (requestUri.StartsWith(domain) || HttpUtils.AddOrRemoveWWW(requestUri).StartsWith(domain))
                 {
                     return true;
                 }

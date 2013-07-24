@@ -103,6 +103,10 @@ namespace RuralCafe
             string wikiContent = Proxy.WikiWrapper.GetWikiContentIfAvailable(RequestUri, out redir);
             if (wikiContent != null)
             {
+                // Log query metric
+                Proxy.Logger.QueryMetric(Proxy.SessionManager.GetUserId(ClientIP),
+                    true, RefererUri, RequestUri);
+
                 if (!redir.Equals(""))
                 {
                     _clientHttpContext.Response.Redirect(redir);
@@ -114,6 +118,10 @@ namespace RuralCafe
             // Do only use cache for HEAD/GET
             if (IsGetOrHeadHeader() && IsCached(_rcRequest.CacheFileName))
             {
+                // Log query metric
+                Proxy.Logger.QueryMetric(Proxy.SessionManager.GetUserId(ClientIP),
+                    true, RefererUri, RequestUri);
+
                 _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName);
                 if (_rcRequest.FileSize < 0)
                 {
@@ -121,6 +129,10 @@ namespace RuralCafe
                 }
                 return Status.Completed;
             }
+
+            // Log query metric for uncached items
+            Proxy.Logger.QueryMetric(Proxy.SessionManager.GetUserId(ClientIP),
+                false, RefererUri, RequestUri);
 
             // XXX: not sure if this should even be here, technically for a cacheable file that's not cached, this is
             // XXX: behaving like a synchronous proxy
@@ -147,6 +159,14 @@ namespace RuralCafe
                     Proxy.IncludeDownloadInCalculation(speedBS, bytes);
                 }
                 return result;
+            }
+
+            // if we're not online, let's check if the packe file name is not too long
+            if (!Utils.IsNotTooLongFileName(_packageFileName))
+            {
+                Logger.Debug("package filename for " + RequestUri + " is too long. Aborting.");
+                SendErrorPage(HttpStatusCode.InternalServerError, "package filename for " + RequestUri + " is too long.");
+                return Status.Failed;
             }
             
             if (Proxy.NetworkStatus != RCLocalProxy.NetworkStatusCode.Online)

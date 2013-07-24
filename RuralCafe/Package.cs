@@ -131,7 +131,7 @@ namespace RuralCafe
         /// <param name="requestHandler">Calling handler for this method.</param>
         /// <returns>Total unpacked content size.</returns>
         public static long Unpack(LocalRequestHandler requestHandler, RCSpecificResponseHeaders headers,
-            string indexPath)
+            IndexWrapper indexWrapper)
         {
             long packageIndexSize = headers.RCPackageIndexSize;
             long packageContentSize = headers.RCPackageContentSize;
@@ -278,7 +278,7 @@ namespace RuralCafe
                         // Use whole file, so we can also find results with tags, etc.
                         string content = document;
                         // XXX: Why always with "Content-Type: text/html" ???
-                        IndexWrapper.IndexDocument(indexPath, "Content-Type: text/html", currUri, title, content);
+                        indexWrapper.IndexDocument("Content-Type: text/html", currUri, title, content);
                     }
                 }
             }

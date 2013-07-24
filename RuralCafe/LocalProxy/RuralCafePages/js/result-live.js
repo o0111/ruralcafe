@@ -52,8 +52,7 @@ function showXMLl(){
 					
 					var itemTitle=results[i].getElementsByTagName('title')[0].firstChild?results[i].getElementsByTagName('title')[0].firstChild.nodeValue:itemURL;
 					var itemSnippet=results[i].getElementsByTagName('snippet')[0].firstChild?results[i].getElementsByTagName('snippet')[0].firstChild.nodeValue:"";
-					// link to /request/visit
-					innerHtml+='<div class="result_page"><p><a href="http://www.ruralcafe.net/request/visit?c=False&u='+itemURL+'" target="_parent">'+itemTitle+'</a></p><p class="url">'+itemURL+'</p><p>'+itemSnippet+'</p></div>';
+					innerHtml+='<div class="result_page"><p><a href="http://'+itemURL+'" target="_parent">'+itemTitle+'</a></p><p class="url">'+itemURL+'</p><p>'+itemSnippet+'</p></div>';
 				}
 			}
 			document.getElementById('live_updateArea').innerHTML=innerHtml;

@@ -116,6 +116,7 @@
     <Compile Include="InternalRequestHandler.cs" />
     <Compile Include="LocalInternalRequestHandler.cs" />
     <Compile Include="Lucenenet\SentenceFragmenter.cs" />
+    <Compile Include="SessionManager.cs" />
     <Compile Include="SettingsForm.cs">
       <SubType>Form</SubType>
     </Compile>

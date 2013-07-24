@@ -27,28 +27,31 @@ Minor tasks
 - Handle 304 correctly.
 - When getting file from cache, only read file ONCE!
 - Configure Windows Firewall correct and write an article in the Wiki.
-- Cache search: Share IndexSearcher/Writer: It is threadsafe and thus this will be much more performant.
+- How to react to other server responses than 200 (e.g. 500), if the content is still useful?
+- If a request failed, provide more information (Server error (statuscode) vs. RC error (reason))
+- Rewrite the internal XML requests (queue, cache search, ...) with XMLDocument, rather than building the xml string manually.
+- Create more sub-namespaces and restructure the .cs files.
 
 Code piece integration
 - Clustering:
   - Create TextFiles and docfile on the fly?
   - Make cache access (cluster, add, remove) synchronized
-  - Create 3-level-hierarchy from cluto's binary tree.
+  - Create 3-level-hierarchy from cluto's binary tree. (Maybe after restructuring cache, otherwise we might have to do it again.)
 - Link recommendation
   - Firefox extension that sends request to server on link mouseover.
 - Crawler
 
 Metrics logging
-- Save IP per userId
-- login/logout request (just let the server know)
+- Save IP per userId (done)
+- login/logout request (just let the server know) (done)
   - sync cookie timeout and server "session" timeout
-- log all requests
-  - per user
+- log all requests (done)
+  - per user (done)
 - log every RC request?
 - self reported user satisfaction
   - html form before or after logout
   - request for the server that logs this
-- total number of cached objects (works, commented out)
+- total number of cached objects (done, commented out)
 - network speed + status (when detection is implemented)
 
 Tests

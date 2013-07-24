@@ -139,6 +139,13 @@ namespace RuralCafe
                 string fileExtension = Utils.GetFileExtension(requestUri);
                 requestUri = HttpUtils.AddHttpPrefix(requestUri);
 
+                // Check if we can save the package
+                if (!Utils.IsNotTooLongFileName(_packageFileName))
+                {
+                    Logger.Debug("package filename for " + RequestUri + " is too long. Aborting.");
+                    return Status.Failed;
+                }
+
                 // Check if we can save the file
                 if (Utils.IsNotTooLongFileName(_rcRequest.CacheFileName))
                 {

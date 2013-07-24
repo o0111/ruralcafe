@@ -58,10 +58,7 @@ namespace RuralCafe.Util
             }
             else
             {
-                refererCategorization = "Hyperlink clicked, ";
-                // This covers way too much.
-                // just abort ATM
-                return;
+                refererCategorization = "Hyperlink clicked or page subrequest, ";
             }
 
             logger.Metric(userId, refererCategorization
