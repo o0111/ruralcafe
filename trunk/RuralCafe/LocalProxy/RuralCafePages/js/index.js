@@ -67,7 +67,13 @@ function showXMLLevel1(categories) {
 		
 		var catTitle = categories.children[i].getAttribute("title");
 		var catId = categories.children[i].getAttribute("id");
-		innerHtml += '<h2><a href="" onclick="return showCategorySCN(\''+catId+'\', '+lvl2nos+', '+lvl2nol+')">' + catTitle + '</a></h2>';
+		if(catId) {
+			innerHtml += '<h2><a href="" onclick="return showCategorySCN(\''+catId+'\', '+lvl2nos+', '+lvl2nol+')">' + catTitle + '</a></h2>';
+		} else {
+			// You cannot navigate to that category.
+			innerHtml += '<h2>' + catTitle + '</h2>';
+		}
+		
 		
 		for (var j=0;j<categories.children[i].children.length;j++) {
 			var subCatTitle = categories.children[i].children[j].getAttribute("title");
@@ -120,7 +126,12 @@ function showXMLLevel3(categories) {
 	var subCatTitle = subCat.getAttribute("title");
 	var subCatId = subCat.getAttribute("id")
 	
-	innerHtml += '<h1><a href="" onclick="return showCategorySCN(\''+catId+'\', '+lvl2nos+', '+lvl2nol+')">'+catTitle+'</a> / ' + subCatTitle + '</h1><hr />';
+	if(catId) {
+		innerHtml += '<h1><a href="" onclick="return showCategorySCN(\''+catId+'\', '+lvl2nos+', '+lvl2nol+')">'+catTitle+'</a> / ' + subCatTitle + '</h1><hr />';
+	} else {
+		// You cannot navigate to that category.
+		innerHtml += '<h1>'+catTitle+' / ' + subCatTitle + '</h1><hr />'
+	}
 	innerHtml += '<div class="index_cat_broad">';
 	for (var j=0;j<subCat.children.length;j++) {
 			var item = subCat.children[j];
