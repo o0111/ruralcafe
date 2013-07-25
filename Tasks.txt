@@ -29,7 +29,6 @@ Minor tasks
 - Configure Windows Firewall correct and write an article in the Wiki.
 - How to react to other server responses than 200 (e.g. 500), if the content is still useful?
 - If a request failed, provide more information (Server error (statuscode) vs. RC error (reason))
-- Rewrite the internal XML requests (queue, cache search, ...) with XMLDocument, rather than building the xml string manually.
 - Create more sub-namespaces and restructure the .cs files.
 
 Code piece integration
@@ -59,6 +58,7 @@ Tests
 - Test if queue works for offline network status.
 
 Bugs
+- en.wikipedia.org/wiki/Bananas*! (bad chars...)
 - "Failed finishing the search work item due to timeout." Indexer:809
 - HttpListenerException (close browser window) uncatched. (Hard to reproduce)
 - http://jsfiddle.net/mpRmV/5/
