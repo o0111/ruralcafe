@@ -246,7 +246,6 @@ namespace RuralCafe
         /// </summary>
         public Response DefaultPage()
         {
-            // FIXME why "result-", not "result-offline"?
             string fileName = _originalRequest.Url.LocalPath.Substring(1);
             fileName = fileName.Replace('/', Path.DirectorySeparatorChar);
             fileName = Proxy.UIPagesPath + fileName;
@@ -365,15 +364,17 @@ namespace RuralCafe
             // get requests for this user
             List<LocalRequestHandler> requestHandlers = Proxy.GetRequests(UserIDCookieValue);
 
-            string queuePageString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + "<queue>";
-            int i = 1;
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.AppendChild(xmlDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
+            XmlElement queueXml = xmlDoc.CreateElement("queue");
+            xmlDoc.AppendChild(queueXml);
+
             if (requestHandlers != null)
             {
                 foreach (LocalRequestHandler requestHandler in requestHandlers)
                 {
-                    string itemId = System.Security.SecurityElement.Escape("" + requestHandler.ItemId);
-                    string linkAnchorText = System.Security.SecurityElement.Escape(requestHandler.AnchorText);
-                    string linkTarget = System.Security.SecurityElement.Escape(requestHandler.RequestUri);
+                    string linkAnchorText = requestHandler.AnchorText;
+                    string linkTarget = requestHandler.RequestUri;
 
                     // XXX: temporary hack to change the way the Title is being displayed
                     Uri tempUri = new Uri(linkTarget);
@@ -390,32 +391,34 @@ namespace RuralCafe
                         }
                     }
 
-                    string statusString = "";
                     DateTime requestDate = requestHandler.StartTime;
-
                     if (!queryOnDate || (
                         (requestDate.Year == queryDate.Year) &&
                         (requestDate.Month == queryDate.Month)) &&
                         ((queryOnDay && (requestDate.Day == queryDate.Day)) || !queryOnDay))
                     {
-                        statusString = System.Security.SecurityElement.Escape(requestHandler.RequestStatus.ToString());
-
                         // build the actual element
-                        queuePageString = queuePageString +
-                                        "<item id=\"" + itemId + "\">" +
-                                            "<title>" + linkAnchorText + "</title>" +
-                                            "<url>" + linkTarget + "</url>" +
-                                            "<status>" + statusString + "</status>" +
-                                            "<size>" + "unknown" + "</size>" +
-                                        "</item>";
-                        i++;
+                        XmlElement itemXml = xmlDoc.CreateElement("item");
+                        itemXml.SetAttribute("id", requestHandler.ItemId);
+                        queueXml.AppendChild(itemXml);
+
+                        XmlElement titleXml = xmlDoc.CreateElement("title");
+                        titleXml.InnerText = linkAnchorText;
+                        itemXml.AppendChild(titleXml);
+                        XmlElement urlXml = xmlDoc.CreateElement("url");
+                        urlXml.InnerText = linkTarget;
+                        itemXml.AppendChild(urlXml);
+                        XmlElement statusXml = xmlDoc.CreateElement("status");
+                        statusXml.InnerText = requestHandler.RequestStatus.ToString();
+                        itemXml.AppendChild(statusXml);
+                        XmlElement sizeXml = xmlDoc.CreateElement("size");
+                        sizeXml.InnerText = "unknown";
+                        itemXml.AppendChild(sizeXml);
                     }
                 }
             }
-
-            queuePageString = queuePageString + "</queue>"; //end tag
             PrepareXMLRequestAnswer();
-            return new Response(queuePageString);
+            return new Response(xmlDoc.InnerXml);
         }
 
         /// <summary>Serves the RuralCafe search page.</summary>
@@ -450,12 +453,16 @@ namespace RuralCafe
                 Logger.Metric(UserIDCookieValue, "Search term: " + queryString);
             }
 
-            string resultsString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.AppendChild(xmlDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
+            XmlElement searchXml = xmlDoc.CreateElement("search");
+            xmlDoc.AppendChild(searchXml);
+
             if (queryString.Trim().Length == 0)
             {
-                return new Response(resultsString + "<search total=\"0\"></search>");
+                searchXml.SetAttribute("total", "0");
+                return new Response(xmlDoc.InnerXml);
             }
-
 
             int[] resultAmounts = new int[2];
             int[] offsets = new int[2];
@@ -501,39 +508,27 @@ namespace RuralCafe
             int numResults = luceneResults.NumResults + wikiResults.NumResults;
             Logger.Debug(numResults +  " results");
 
-            resultsString = resultsString + "<search total=\"" + numResults + "\">";
-            resultsString += GetSearchResultsXMLString(luceneResults);
-            resultsString += GetSearchResultsXMLString(wikiResults);
-            resultsString += "</search>";
+            searchXml.SetAttribute("total", "" + numResults);
+            AppendSearchResultsXMLElements(luceneResults, xmlDoc, searchXml);
+            AppendSearchResultsXMLElements(wikiResults, xmlDoc, searchXml);
 
             PrepareXMLRequestAnswer();
-            return new Response(resultsString);
+            return new Response(xmlDoc.InnerXml);
         }
 
         /// <summary>
-        /// Gets the XML string for search results.
+        /// Adds children to elem for each search result.
         /// </summary>
         /// <param name="results">The search results.</param>
-        /// <returns>The XML string.</returns>
-        private string GetSearchResultsXMLString(SearchResults results)
+        /// <param name="doc">The XmlDocument.</param>
+        /// <param name="elem">The XmlElement to append the childs.</param>
+        private void AppendSearchResultsXMLElements(SearchResults results, XmlDocument doc, XmlElement elem)
         {
-            string resultsString = "";
             foreach (SearchResult result in results.Results)
             {
-                // escape xml strings
-                string uri = System.Security.SecurityElement.Escape(result.URI);
-                string title = System.Security.SecurityElement.Escape(result.Title);
-                string contentSnippet = System.Security.SecurityElement.Escape(result.ContentSnippet);
-
-                uri = HttpUtils.RemoveHttpPrefix(uri);
-
-                resultsString += "<item>" +
-                                "<title>" + title + "</title>" +
-                                "<url>" + uri + "</url>" +
-                                "<snippet>" + contentSnippet + "</snippet>" +
-                                "</item>";
+                elem.AppendChild(BuildSearchResultXmlElement(doc,
+                    result.Title, HttpUtils.RemoveHttpPrefix(result.URI), result.ContentSnippet));
             }
-            return resultsString;
         }
 
         /// <summary>
@@ -546,10 +541,15 @@ namespace RuralCafe
         /// </summary>
         public Response ServeRCRemoteResultPage(int pageNumber, string queryString)
         {
-            string resultsString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.AppendChild(xmlDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
+            XmlElement searchXml = xmlDoc.CreateElement("search");
+            xmlDoc.AppendChild(searchXml);
+
             if (queryString.Trim().Length == 0 || Proxy.NetworkStatus == RCLocalProxy.NetworkStatusCode.Offline)
             {
-                return new Response(resultsString + "<search total=\"0\"></search>");
+                searchXml.SetAttribute("total", "0");
+                return new Response(xmlDoc.InnerXml);
             }
             // Google search
             string googleSearchString = ConstructGoogleSearch(queryString, pageNumber);
@@ -563,26 +563,16 @@ namespace RuralCafe
                 {
                     LinkedList<RCRequest> resultLinkUris = ExtractGoogleResults(resultPage);
                     long numResults = GetGoogleResultsNumber(resultPage);
-                    resultsString = resultsString + "<search total=\"" + numResults + "\">";
+                    searchXml.SetAttribute("total", "" + numResults);
+
                     foreach (RCRequest linkObject in resultLinkUris)
                     {
-                        string uri = System.Security.SecurityElement.Escape(linkObject.Uri);
-                        string title = System.Security.SecurityElement.Escape(linkObject.AnchorText);
-                        string contentSnippet = System.Security.SecurityElement.Escape(linkObject.ContentSnippet);
-
-                        uri = HttpUtils.RemoveHttpPrefix(uri);
-
-                        resultsString += "<item>" +
-                                        "<title>" + title + "</title>" +
-                                        "<url>" + uri + "</url>" +
-                                        "<snippet>" + contentSnippet + "</snippet>" +
-                                        "</item>";
+                        searchXml.AppendChild(BuildSearchResultXmlElement(xmlDoc,
+                            linkObject.AnchorText, HttpUtils.RemoveHttpPrefix(linkObject.Uri), linkObject.ContentSnippet));
                     }
 
-                    resultsString += "</search>";
-
                     PrepareXMLRequestAnswer();
-                    return new Response(resultsString);
+                    return new Response(xmlDoc.InnerXml);
                 }
                 else
                 {
@@ -593,6 +583,31 @@ namespace RuralCafe
             {
                 return new Response();
             }
+        }
+
+        /// <summary>
+        /// Builds a search result XmlElement.
+        /// </summary>
+        /// <param name="doc">The XmlDocument</param>
+        /// <param name="title">The title.</param>
+        /// <param name="url">The URL.</param>
+        /// <param name="snippet">The content snippet.</param>
+        /// <returns>The XmlElement.</returns>
+        private XmlElement BuildSearchResultXmlElement(XmlDocument doc, string title, string url, string snippet)
+        {
+            XmlElement itemXml = doc.CreateElement("item");
+
+            XmlElement titleXml = doc.CreateElement("title");
+            titleXml.InnerText = title;
+            itemXml.AppendChild(titleXml);
+            XmlElement urlXml = doc.CreateElement("url");
+            urlXml.InnerText = HttpUtils.RemoveHttpPrefix(url);
+            itemXml.AppendChild(urlXml);
+            XmlElement snippetXml = doc.CreateElement("snippet");
+            snippetXml.InnerText = snippet;
+            itemXml.AppendChild(snippetXml);
+
+            return itemXml;
         }
 
         #endregion

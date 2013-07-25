@@ -443,6 +443,13 @@ namespace RuralCafe.Clusters
 
         #region index serving
 
+        /// <summary>
+        /// Computes the 1st level in the hierarchy.
+        /// </summary>
+        /// <param name="clusterXMLFile">The path to clusters.xml</param>
+        /// <param name="maxCategories">The maximum number of categories.</param>
+        /// <param name="maxSubCategories">The maximum number of subcategories per category.</param>
+        /// <returns>The index.xml string.</returns>
         public static string Level1Index(string clusterXMLFile, int maxCategories, int maxSubCategories)
         {
             XmlDocument clustersDoc = new XmlDocument();
@@ -486,6 +493,14 @@ namespace RuralCafe.Clusters
             return indexDoc.InnerXml;
         }
 
+        /// <summary>
+        /// Computes the 2nd level in the hierarchy for a given category.
+        /// </summary>
+        /// <param name="clusterXMLFile">The path to clusters.xml</param>
+        /// <param name="categoryId">The category id.</param>
+        /// <param name="maxSubCategories">The maximum number of subcategories.</param>
+        /// <param name="maxItems">The maximum number of items per subcategory.</param>
+        /// <returns>The index.xml string.</returns>
         public static string Level2Index(string clusterXMLFile, string categoryId, int maxSubCategories, int maxItems)
         {
             XmlDocument clustersDoc = new XmlDocument();
@@ -536,7 +551,7 @@ namespace RuralCafe.Clusters
         /// <param name="clusterXMLFile">The path to clusters.xml</param>
         /// <param name="categoryId">The category id.</param>
         /// <param name="subCategoryId">The subcategory id.</param>
-        /// <param name="maxItems">The maximum number of items for the subcatefory.</param>
+        /// <param name="maxItems">The maximum number of items for the subcategory.</param>
         /// <returns>The index.xml string.</returns>
         public static string Level3Index(string clusterXMLFile, string categoryId, string subCategoryId, int maxItems)
         {
