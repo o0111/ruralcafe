@@ -34,7 +34,7 @@ namespace RuralCafe.Clusters
         public const string ITEM_SNIPPET_XML_NAME = "snippet";
         public const string INDEX_CATEGORIES_XML_NAME = "categories";
         public const string INDEX_LEVEL_XML_NAME = "level";
-        public const string INDEX_ONLY_LEAF_CHILDS_TITLE = "Without main category";
+        public const string INDEX_ONLY_LEAF_CHILDS_TITLE = "Other";
         public const string INDEX_ONLY_LEAF_CHILDS_TROTRO_ID = "null";
 
         /// Regex's for docfile creation replacement
@@ -47,6 +47,32 @@ namespace RuralCafe.Clusters
         private static readonly string VCLUSTERS_PATH =
             Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar +
             "Clusters" + Path.DirectorySeparatorChar + "vcluster.exe";
+        /// <summary>
+        /// Path to dict.txt
+        /// </summary>
+        private static readonly string DICT_PATH =
+            Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar +
+            "Clusters" + Path.DirectorySeparatorChar + "dict.txt";
+        /// <summary>
+        /// A dictionary of the english language. Used as a whitelist for the clustering.
+        /// </summary>
+        private static HashSet<string> _dictionary = new HashSet<string>();
+
+        /// <summary>
+        /// Static Constructor. Fills the _dictionary.
+        /// </summary>
+        static Cluster()
+        {
+            FileInfo f = new FileInfo(DICT_PATH);
+            using (FileStream fs = f.Open(FileMode.Open, FileAccess.Read))
+            using (StreamReader r = new StreamReader(fs))
+            {
+                while (!r.EndOfStream)
+                {
+                    _dictionary.Add(r.ReadLine());
+                }
+            }
+        }
 
         /// <summary>
         /// Creates one doc file containing all the given files. This file will be input for Doc2Mat.
@@ -80,9 +106,20 @@ namespace RuralCafe.Clusters
                     {
                         content = String.Empty;
                     }
-                    // Remove words not starting with a alphabetic char and URLs
-                    content = wordsStartingInvalidRegex.Replace(content, "");
-                    content = httpStartingRegex.Replace(content, "");
+                    // Filter all words by our dictionary.
+                    StringBuilder builder = new StringBuilder();
+                    string[] words = content.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (string word in words)
+                    {
+                        if (_dictionary.Contains(word.ToLower()))
+                        {
+                            builder.Append(word).Append(' ');
+                        }
+                    }
+                    content = builder.ToString();
+                    // Remove words not starting with a alphabetic char and URLs (not necessary if dict is used)
+                    // content = wordsStartingInvalidRegex.Replace(content, "");
+                    // content = httpStartingRegex.Replace(content, "");
 
                     // Write content in a new line to docfile
                     docFileWriter.WriteLine(content);
