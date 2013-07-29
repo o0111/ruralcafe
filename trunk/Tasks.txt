@@ -1,17 +1,24 @@
 Mayor tasks
 - Inter-Proxy-Protocol
+	- Multiple requests at the same time
+	- Async requests 
+		- We need a listener for responses from the RP at the LP side
+		- RP requests management (IDs, save from which LP request came, ...)
 	- Cancel request
 	- Detect network outage
 		- Restart interrupted downloads
 - Cache
-	- caching larger granularity
+	- caching larger granularity (lower priority)
 		- intelligent eviction, timeout, etc. (also for subcomponents)
 	- Directory hashes - better solution ideas?
 	- Include metadata in cache
 		- (download time, headers?, lastrequesttime, #requests) in a priority queue or something. (For clustering priorization...)
 		- Remove dirty redirect when metadata is included
 	- Cache problems with POST and subsequent requests. E.g. user is logged in but gets old page.
-	  - Per user cache?
+	  - Per user cache:
+		- User must be logged in into Trotro to do POSTs
+		- While logged in, after a POST with a setcookie-header in the response, create a per user-cache for the specific domain, and use that instead of global cache.
+		- Delete this when user logs out.
 - Add/RequestWithoutUser redesign
   - Either
     - GET -> Redirect to Trotro or
@@ -24,8 +31,9 @@ Minor tasks
 - DNS cache hit/miss logging (César: Packet sniffing)
 - Domain name & Search query clustering 
 - Measure download speed correctly (see http://stuff.seans.com/2009/01/05/using-httpwebrequest-for-asynchronous-downloads/ ). Too fast at the moment.
+  - Thread for network usage. Only take current values, if RC is downloading something. Switch Network status on certain thresholds.
 - Handle 304 correctly (done for StreamTransparently, missing for DownloadToCache, but it doesn't seem to happen there)
-- When getting file from cache, only read file ONCE!
+- When getting file from cache, only read file ONCE! (Do that after cache restructuring)
 - Configure Windows Firewall correct and write an article in the Wiki.
 - How to react to other server responses than 200 (e.g. 500), if the content is still useful?
 - If a request failed, provide more information (Server error (statuscode) vs. RC error (reason))
@@ -33,10 +41,8 @@ Minor tasks
 
 Code piece integration
 - Clustering:
-  - Create TextFiles and docfile on the fly?
   - Make cache access (cluster, add, remove) synchronized. (Maybe both after restructuring cache, otherwise we might have to do it again.)
 - Link recommendation
-  - Firefox extension that sends request to server on link mouseover.
 - Crawler
 
 Metrics logging
@@ -74,11 +80,11 @@ Bugs
   - Always show local AND google search. Remove arrow if searching or design page properly.
   - Login mechanism does not work correct
   - Wait time not visible if title long and takes 2 rows
+  - Embed opened pages instead of new tabs. Page inside main frame. At the moment, if you do that, you end up having Trotro inside Trotro ....
 - favicon.ico
 - https
   - http://https//twitter.com/search?q=%23lololo bzw.
     https://twitter.com/search?q=%23lololo (entering URI)
-  - Google search
 
 Webpage issues
 - 9gag no images

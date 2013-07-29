@@ -137,16 +137,18 @@ namespace RuralCafe.Clusters
         /// <param name="k">The number of clusters to create.</param>
         /// <param name="fulltree">Wether a full hierarchical tree should be computed.</param>
         /// <param name="treefile">Only used if fulltree. Path to the treefile.</param>
+        /// <param name="catNFeatures">The maximum number of features for a category.</param>
+        /// <param name="subcatNFeatures">The maximum number of features for a subcategory.</param>
         /// <returns>A set of string-lists. Each list contains the labels for the cluster.</returns>
         public static HashSet<string>[] CreateClusters(string matFile, string clustersFile, int k,
-            bool fulltree, string treefile)
+            bool fulltree, string treefile, int catNFeatures, int subcatNFeatures)
         {
             int timeoutMS = 60000; // 1 minute
 
-            // vcluster.exe -clmethod=rbr [-showtree -labeltree -treefile=<treefile>]
+            // vcluster.exe -clmethod=rbr -nfeatures=<n> [-showtree -labeltree -treefile=<treefile>]
             //  -showfeatures -clustfile=<clustFile> <matFile> k
             ProcessStartInfo clusterStartInfo = new ProcessStartInfo(VCLUSTERS_PATH);
-            clusterStartInfo.Arguments = "-clmethod=rbr ";
+            clusterStartInfo.Arguments = "-clmethod=rbr -nfeatures=" + subcatNFeatures + " ";
             clusterStartInfo.Arguments += fulltree ? "-showtree -labeltree -cltreefile=\"" + treefile + "\" " : "";
             clusterStartInfo.Arguments += "-showfeatures -clustfile=\"" + clustersFile + "\" \"" + matFile + "\" " + k; 
 
@@ -223,12 +225,12 @@ namespace RuralCafe.Clusters
                     }
 
                     // Parse leaf cluster features
-                    ParseLeafClusterFeatures(lines, result, k);
+                    ParseLeafClusterFeatures(lines, result, k, subcatNFeatures);
 
                     if (fulltree)
                     {
                         // Parse non-leaf cluster features
-                        ParseNonLeafClusterFeatures(lines, result, k);
+                        ParseNonLeafClusterFeatures(lines, result, k, catNFeatures);
                     }
 
                     return result;
@@ -247,7 +249,9 @@ namespace RuralCafe.Clusters
         /// <param name="lines">The vcluster output, split into lines.</param>
         /// <param name="features">The list of features, which will be filled.</param>
         /// <param name="k">The number of clusters.</param>
-        private static void ParseLeafClusterFeatures(string[] lines, HashSet<string>[] features, int k)
+        /// <param name="subcatNFeatures">The maximum number of features to be displayed for a subcategory.</param>
+        private static void ParseLeafClusterFeatures(string[] lines, HashSet<string>[] features, int k,
+            int subcatNFeatures)
         {
             // Get Index of line that contains "Descriptive & Discriminating Features"
             int cluster0lineIndex = -1;
@@ -263,12 +267,9 @@ namespace RuralCafe.Clusters
             for (int i = 0, index = cluster0lineIndex; i < k; i++, index += 4)
             {
                 // For both descriptive and discriminating features
-                for (int lineIndex = index; lineIndex < index + 2; lineIndex++)
-                {
-                    // Cut off "Descriptive|Discriminating:"
-                    string featuresString = lines[lineIndex].Substring(lines[lineIndex].IndexOf(':') + 1);
-                    PutFeaturesIntoSet(featuresString, features[i]);
-                }
+                string featuresString = lines[index].Substring(lines[index].IndexOf(':') + 1)
+                    + ", " + lines[index + 1].Substring(lines[index + 1].IndexOf(':') + 1);
+                PutFeaturesIntoSet(featuresString, features[i], subcatNFeatures);
             }
         }
 
@@ -278,7 +279,9 @@ namespace RuralCafe.Clusters
         /// <param name="lines">The vcluster output, split into lines.</param>
         /// <param name="features">The list of features, which will be filled.</param>
         /// <param name="k">The number of clusters.</param>
-        private static void ParseNonLeafClusterFeatures(string[] lines, HashSet<string>[] features, int k)
+        /// <param name="catNFeatures">The maximum number of features to be displayed for a category.</param>
+        private static void ParseNonLeafClusterFeatures(string[] lines, HashSet<string>[] features, int k,
+            int catNFeatures)
         {
             // Get Index of line that contains "Hierarchical Tree"
             int clusterlineIndex = -1;
@@ -309,24 +312,54 @@ namespace RuralCafe.Clusters
                 int featuresStartIndex = lines[i].IndexOf('[', numDelemitingIndex + 1) + 1;
                 int featuresEndIndex = lines[i].LastIndexOf(',');
                 string featureString = lines[i].Substring(featuresStartIndex, featuresEndIndex - featuresStartIndex);
-                PutFeaturesIntoSet(featureString, features[clusterNumber]);
+                PutFeaturesIntoSet(featureString, features[clusterNumber], catNFeatures);
             }
         }
 
         /// <summary>
-        /// Puts all the features from the feature string into the set.
+        /// Puts all the features from the feature string into the set, but not more than max.
         /// </summary>
         /// <param name="featuresString">The features string.</param>
         /// <param name="features">The feature set.</param>
-        private static void PutFeaturesIntoSet(string featuresString, HashSet<string> features)
+        /// <param name="max">The maximum number of features to put in the set.</param>
+        private static void PutFeaturesIntoSet(string featuresString, HashSet<string> features, int max)
         {
             string[] featuresStringArray = featuresString.Split(',');
-            foreach (string featurePlusPercent in featuresStringArray)
+            if (featuresStringArray.Length > max)
             {
-                string feature = featurePlusPercent.Split(new string[] { " ", "\t" },
-                    StringSplitOptions.RemoveEmptyEntries)[0];
-                features.Add(feature);
+                // We have to filter
+                List<KeyValuePair<double, string>> sortedFeatures = new List<KeyValuePair<double, string>>(featuresStringArray.Length);
+                // Add all features and their percent value to a list
+                for (int i = 0; i < featuresStringArray.Length; i++)
+                {
+                    string[] featuresPlusPercent = featuresStringArray[i].Split(new string[] { " ", "\t" },
+                        StringSplitOptions.RemoveEmptyEntries);
+                    string feature = featuresPlusPercent[0];
+                    double percent = Double.Parse(featuresPlusPercent[1].Substring(0, featuresPlusPercent[1].Length - 1));
+                    sortedFeatures.Add(new KeyValuePair<double,string>(percent, feature));
+                }
+                // Sort features by their percent value, descending
+                sortedFeatures.Sort((pair1, pair2) => (int) (pair2.Key - pair1.Key));
+
+                // Put into feautues until max is reached
+                // (We cannot just count until max, since there may be dups)
+                for (int i = 0; i < sortedFeatures.Count && features.Count < max; i++)
+                {
+                    features.Add(sortedFeatures.ElementAt(i).Value);
+                }
             }
+            else
+            {
+                // We don't need to filter
+                for (int i = 0; i < featuresStringArray.Length; i++)
+                {
+                    string feature = featuresStringArray[i].Split(new string[] { " ", "\t" },
+                        StringSplitOptions.RemoveEmptyEntries)[0];
+                    features.Add(feature);
+                }
+            }
+
+            
         }
 
         /// <summary>

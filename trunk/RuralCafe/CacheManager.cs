@@ -454,8 +454,10 @@ namespace RuralCafe
         /// TODO remove stopwatches
         /// </summary>
         /// <param name="k">The number of clusters to create.</param>
+        /// <param name="catNFeatures">The maximum number of features for a category.</param>
+        /// <param name="subcatNFeatures">The maximum number of features for a subcategory.</param>
         /// <param name="hierarchical">If the clusters should be organized hierarchical.</param>
-        public void CreateClusters(int k, bool hierarchical)
+        public void CreateClusters(int k, int catNFeatures, int subcatNFeatures, bool hierarchical)
         {
             _proxy.Logger.Info("Creating clusters.");
             // Measure what part takes what time
@@ -514,11 +516,13 @@ namespace RuralCafe
                 if (hierarchical)
                 {
                     treeFileName = _clustersPath + TREE_FILE_NAME;
-                    features = Cluster.CreateClusters(matFileName, clustersFileName, k, true, treeFileName);
+                    features = Cluster.CreateClusters(matFileName, clustersFileName, k, true, treeFileName,
+                        catNFeatures, subcatNFeatures);
                 }
                 else
                 {
-                    features = Cluster.CreateClusters(matFileName, clustersFileName, k, false, "");
+                    features = Cluster.CreateClusters(matFileName, clustersFileName, k, false, "",
+                        catNFeatures, subcatNFeatures);
                 }
             }
             catch (Exception e)
