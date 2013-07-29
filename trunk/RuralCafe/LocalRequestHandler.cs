@@ -32,6 +32,7 @@ using BzReader;
 using System.Xml;
 using RuralCafe.Util;
 using Newtonsoft.Json;
+using RuralCafe.LinkSuggestion;
 
 namespace RuralCafe
 {
@@ -111,6 +112,13 @@ namespace RuralCafe
                 {
                     _clientHttpContext.Response.Redirect(redir);
                 }
+                // Set content type.
+                _clientHttpContext.Response.ContentType = "text/html";
+                // Include link suggestions if we're offline. XXX do we want that for wiki?
+                if (Proxy.NetworkStatus == RCLocalProxy.NetworkStatusCode.Offline)
+                {
+                    wikiContent = LinkSuggestionHtmlModifier.IncludeTooltips(wikiContent);
+                }
                 SendMessage(wikiContent);
                 return Status.Completed;
             }
@@ -121,6 +129,21 @@ namespace RuralCafe
                 // Log query metric
                 Proxy.Logger.QueryMetric(Proxy.SessionManager.GetUserId(ClientIP),
                     true, RefererUri, RequestUri);
+
+                // Include link suggestions if we're offline for html pages
+                if (Proxy.NetworkStatus == RCLocalProxy.NetworkStatusCode.Offline
+                    && Utils.GetContentTypeOfFile(_rcRequest.CacheFileName).Equals("text/html"))
+                {
+                    string content = Utils.ReadFileAsString(_rcRequest.CacheFileName);
+                    if (String.IsNullOrEmpty(content))
+                    {
+                        return Status.Failed;
+                    }
+                    content = LinkSuggestionHtmlModifier.IncludeTooltips(content);
+                    _clientHttpContext.Response.ContentType = "text/html";
+                    SendMessage(content);
+                    return Status.Completed;
+                }
 
                 _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName);
                 if (_rcRequest.FileSize < 0)

@@ -543,13 +543,6 @@ namespace RuralCafe
             FileInfo f;
             try
             {
-                int offset = fileName.LastIndexOf("?"); // laura: check get parameters
-                string htmlQuery = "";
-                if (offset >= 0)
-                {
-                    htmlQuery = fileName.Substring(offset + 1);
-                    fileName = fileName.Substring(0, offset);
-                }
                 f = new FileInfo(fileName);
                 if (!f.Exists)
                 {

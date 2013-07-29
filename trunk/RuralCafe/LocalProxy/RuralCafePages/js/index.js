@@ -1,7 +1,7 @@
 /* Laura Li 09-06-2012: show topics on the index page*/
 
 var ixmlDoc = 0;	//xml object for the index topics
-var ixhttp = 0;		//ajax requset for retrieving index topics
+var ixhttp = 0;		//ajax request for retrieving index topics
 
 var lvl1noc=10; 	// level1: max number of categories
 var lvl1nos=5;		// level1: max number of subcategories per category

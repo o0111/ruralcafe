@@ -25,16 +25,16 @@ function get_cookie(name) {
 	var returnvalue = "";
 	if (document.cookie.length > 0) {
 		var offset = document.cookie.indexOf(searchstr);
-    	// if cookie exists
-    	if (offset != -1) {
-      		offset += searchstr.length;
-      		// set index of beginning of value
-      		var end = document.cookie.indexOf(";", offset);
- 			// set index of end of cookie value
-      		if (end == -1) 
-	  			end = document.cookie.length;
-      		returnvalue=unescape(document.cookie.substring(offset, end));
-      	}
+		// if cookie exists
+		if (offset != -1) {
+			offset += searchstr.length;
+			// set index of beginning of value
+			var end = document.cookie.indexOf(";", offset);
+				// set index of end of cookie value
+			if (end == -1) 
+					end = document.cookie.length;
+			returnvalue=unescape(document.cookie.substring(offset, end));
+		}
    	}
   	return returnvalue;
 }

@@ -41,7 +41,7 @@ namespace RuralCafe
             routines.Add("/request/queue.xml", new RoutineMethod("ServeRCQueuePage",
                 new string[] { "v" }, new Type[] { typeof(string) }));
             routines.Add("/request/status.xml", new RoutineMethod("ServeNetworkStatus"));
-            routines.Add("/request/linkSuggestions", new RoutineMethod("LinkSuggestions",
+            routines.Add("/request/linkSuggestions.xml", new RoutineMethod("LinkSuggestions",
                 new string[] { "url" }, new Type[] { typeof(string) }));
 
             routines.Add("/request/remove", new RoutineMethod("RemoveRequest",
@@ -615,14 +615,27 @@ namespace RuralCafe
         /// <summary>
         /// TODO
         /// </summary>
-        /// <param name="uri"></param>
+        /// <param name="url"></param>
         /// <returns></returns>
-        public Response LinkSuggestions(string uri)
+        public Response LinkSuggestions(string url)
         {
-            _clientHttpContext.Response.ContentType = "text/html";
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.AppendChild(xmlDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
+            XmlElement suggestionsXml = xmlDoc.CreateElement("suggestions");
+            xmlDoc.AppendChild(suggestionsXml);
 
-            return new Response("<!DOCTYPE html><html><head></head><body>Here should be some link suggestions." +
-                "</body></html>");
+            // XXX Mockup data
+            for (int i = 0; i < 3; i++)
+            {
+                XmlElement elem = xmlDoc.CreateElement("suggestion");
+                suggestionsXml.AppendChild(elem);
+                elem.InnerText = url + i;
+            }
+
+            PrepareXMLRequestAnswer();
+            // allow cross origin! (this request is being made from other domains.)
+            _clientHttpContext.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+            return new Response(xmlDoc.InnerXml);
         }
 
         #endregion
