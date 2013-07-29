@@ -41,6 +41,8 @@ namespace RuralCafe
             routines.Add("/request/queue.xml", new RoutineMethod("ServeRCQueuePage",
                 new string[] { "v" }, new Type[] { typeof(string) }));
             routines.Add("/request/status.xml", new RoutineMethod("ServeNetworkStatus"));
+            routines.Add("/request/linkSuggestions", new RoutineMethod("LinkSuggestions",
+                new string[] { "url" }, new Type[] { typeof(string) }));
 
             routines.Add("/request/remove", new RoutineMethod("RemoveRequest",
                 new string[] { "i" }, new Type[] { typeof(string) }));
@@ -608,6 +610,19 @@ namespace RuralCafe
             itemXml.AppendChild(snippetXml);
 
             return itemXml;
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        /// <param name="uri"></param>
+        /// <returns></returns>
+        public Response LinkSuggestions(string uri)
+        {
+            _clientHttpContext.Response.ContentType = "text/html";
+
+            return new Response("<!DOCTYPE html><html><head></head><body>Here should be some link suggestions." +
+                "</body></html>");
         }
 
         #endregion

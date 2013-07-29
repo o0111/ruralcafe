@@ -71,11 +71,13 @@ namespace RuralCafe
         /// so far are multiplicated with this factor.
         /// </summary>
         private const double NETWORK_SPEED_REDUCTION_FACTOR = 0.9;
-        // .. for clustering
+        // .. for clustering XXX customizable?
         private static readonly TimeSpan CLUSTERING_INTERVAL = new TimeSpan(0, 30, 0);
         private const int CLUSTERING_K = 20;
-        // FIXME customizable?
         private const bool CLUSTERING_HIERARCHICAL = true;
+        private const int CLUSTERING_CAT_NFEATURES = 2;
+        private const int CLUSTERING_SUBCAT_NFEATURES = 4;
+
         private const string CLUSTERS_FOLDER = "clusters";
 
         // RuralCafe pages path
@@ -315,7 +317,8 @@ namespace RuralCafe
         /// <param name="o">Ignored.</param>
         private void StartClustering(object o)
         {
-            ProxyCacheManager.CreateClusters(CLUSTERING_K, CLUSTERING_HIERARCHICAL);
+            ProxyCacheManager.CreateClusters(CLUSTERING_K, CLUSTERING_CAT_NFEATURES, CLUSTERING_SUBCAT_NFEATURES,
+                CLUSTERING_HIERARCHICAL);
         }
 
         /// <summary>
