@@ -124,7 +124,7 @@ namespace RuralCafe.Util
         /// <returns></returns>
         private static string GetTitle(HtmlDocument doc)
         {
-            HtmlNode titleNode = doc.DocumentNode.SelectSingleNode("//head/title");
+            HtmlNode titleNode = doc.DocumentNode.SelectSingleNode("/html/head/title");
             return titleNode != null ? titleNode.InnerText : "";
         }
 
@@ -224,9 +224,10 @@ namespace RuralCafe.Util
                 {
                     if (item.ParentNode != null && !noContentTextHtmlTags.Contains(item.ParentNode.Name))
                     {
-                        if (item.InnerText.Trim() != "")
+                        string trimmedInnerText;
+                        if ((trimmedInnerText = item.InnerText.Trim()) != "")
                         {
-                            chunks.Add(item.InnerText.Trim());
+                            chunks.Add(trimmedInnerText);
                         }
                     }
                 }

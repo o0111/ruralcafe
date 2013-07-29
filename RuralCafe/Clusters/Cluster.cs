@@ -358,8 +358,6 @@ namespace RuralCafe.Clusters
                     features.Add(feature);
                 }
             }
-
-            
         }
 
         /// <summary>
