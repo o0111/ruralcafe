@@ -22,6 +22,11 @@ namespace RuralCafe.LinkSuggestion
             doc.LoadHtml(html);
 
             HtmlNode head = doc.DocumentNode.SelectSingleNode("/html/head");
+            if (head == null)
+            {
+                // We haven't sane HTML, just return it as it is.
+                return html;
+            }
             // include style document
             HtmlNode opentipStyle = doc.CreateElement("link");
             head.AppendChild(opentipStyle);

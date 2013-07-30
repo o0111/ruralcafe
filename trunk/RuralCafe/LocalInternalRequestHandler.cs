@@ -20,6 +20,9 @@ namespace RuralCafe
     /// </summary>
     public class LocalInternalRequestHandler : InternalRequestHandler
     {
+        // Constants
+        private const string LINK_SUGGESTIONS_CACHED_TEXT = "cached";
+
         private static Dictionary<String, RoutineMethod> routines = new Dictionary<String, RoutineMethod>();
         private static RoutineMethod defaultMethod = new RoutineMethod("DefaultPage");
         // Regex that matches two or more spaces. Useful for trimming them to one space.
@@ -42,7 +45,8 @@ namespace RuralCafe
                 new string[] { "v" }, new Type[] { typeof(string) }));
             routines.Add("/request/status.xml", new RoutineMethod("ServeNetworkStatus"));
             routines.Add("/request/linkSuggestions.xml", new RoutineMethod("LinkSuggestions",
-                new string[] { "url" }, new Type[] { typeof(string) }));
+                new string[] { "url", "anchor", "text" },
+                new Type[] { typeof(string), typeof(string), typeof(string) }));
 
             routines.Add("/request/remove", new RoutineMethod("RemoveRequest",
                 new string[] { "i" }, new Type[] { typeof(string) }));
@@ -613,23 +617,37 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// TODO
+        /// Sends an XML with link suggestions. If the target URL is cached, that information is sent.
         /// </summary>
-        /// <param name="url"></param>
-        /// <returns></returns>
-        public Response LinkSuggestions(string url)
+        /// <param name="url">The target URL.</param>
+        /// <param name="anchorText">The anchor text.</param>
+        /// <param name="surroundingText">The text surrounding the link.</param>
+        public Response LinkSuggestions(string url, string anchorText, string surroundingText)
         {
             XmlDocument xmlDoc = new XmlDocument();
             xmlDoc.AppendChild(xmlDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
             XmlElement suggestionsXml = xmlDoc.CreateElement("suggestions");
             xmlDoc.AppendChild(suggestionsXml);
 
-            // XXX Mockup data
-            for (int i = 0; i < 3; i++)
+            // Make global uri from relative url and referrer
+            Uri refUri = new Uri(RefererUri);
+            Uri targetUri = new Uri(refUri, url);
+
+            // Test if url is cached.
+            string filePath = Proxy.CachePath + CacheManager.GetRelativeCacheFileName(targetUri.AbsoluteUri);
+            if (IsCached(filePath))
             {
-                XmlElement elem = xmlDoc.CreateElement("suggestion");
-                suggestionsXml.AppendChild(elem);
-                elem.InnerText = url + i;
+                suggestionsXml.InnerText = LINK_SUGGESTIONS_CACHED_TEXT;
+            }
+            else
+            {
+                // XXX Mockup data
+                for (int i = 0; i < 3; i++)
+                {
+                    XmlElement elem = xmlDoc.CreateElement("suggestion");
+                    suggestionsXml.AppendChild(elem);
+                    elem.InnerText = url + i;
+                }
             }
 
             PrepareXMLRequestAnswer();
@@ -674,8 +692,7 @@ namespace RuralCafe
             String custidStr = custid.ToString("D3");
 
             // Open users.xml
-            String filename = "LocalProxy" + Path.DirectorySeparatorChar + "RuralCafePages"
-                + Path.DirectorySeparatorChar + "users.xml";
+            String filename = Proxy.UIPagesPath + "users.xml";
             XmlDocument doc = new XmlDocument();
             doc.Load(filename);
             XmlNode custsNode = doc.SelectSingleNode("customers");
