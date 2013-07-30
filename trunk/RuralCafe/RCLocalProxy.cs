@@ -70,7 +70,7 @@ namespace RuralCafe
         /// Each time a new download is considered, the bytes used for calculation
         /// so far are multiplicated with this factor.
         /// </summary>
-        private const double NETWORK_SPEED_REDUCTION_FACTOR = 0.9;
+        private const double NETWORK_SPEED_REDUCTION_FACTOR = 0.95;
         // .. for clustering XXX customizable?
         private static readonly TimeSpan CLUSTERING_INTERVAL = new TimeSpan(0, 30, 0);
         private const int CLUSTERING_K = 20;
@@ -192,12 +192,12 @@ namespace RuralCafe
                     // (Re)start the timer
                     if(_changeNetworkStatusTimer == null)
                     {
-                        _changeNetworkStatusTimer 
-                            = new Timer(DetectNetworkStatus, null, TimeSpan.Zero, NETWORK_DETECTION_INTERVAL);
+                        _changeNetworkStatusTimer
+                            = new Timer(DetectNetworkStatus, null, NETWORK_DETECTION_INTERVAL, NETWORK_DETECTION_INTERVAL);
                     }
                     else
                     {
-                        _changeNetworkStatusTimer.Change(TimeSpan.Zero, NETWORK_DETECTION_INTERVAL);
+                        _changeNetworkStatusTimer.Change(NETWORK_DETECTION_INTERVAL, NETWORK_DETECTION_INTERVAL);
                     }
                 }
                 else
@@ -504,6 +504,10 @@ namespace RuralCafe
         /// <param name="o">Ignored.</param>
         private void DetectNetworkStatus(object o)
         {
+            if (NetworkStatus == NetworkStatusCode.Online)
+            {
+                // When online, the system will check speed after each
+            }
             // TODO do something that makes sense
             Logger.Info("Detecting network status");
         }
@@ -524,6 +528,7 @@ namespace RuralCafe
                 _networkSpeedBS = (_networkSpeedBS * _speedCalculationBytesUsed + speedBS * bytes)
                     / newSpeedCalcBytesUsed;
                 _speedCalculationBytesUsed = newSpeedCalcBytesUsed;
+                Logger.Debug("Detected speed: " + _networkSpeedBS);
             }
         }
 

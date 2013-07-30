@@ -71,12 +71,10 @@ Bugs
 - InvalidDataException in GzipWrapper:121  
 - Trotro
   - "User doesn't exist" design flaw
-  - 2x download click might be necessary
   - needs F5 to show page is ready sometimes
   - always opens in first tab!
-  - Do NOT send queue.xml without userid!
   - Way too many ETA requests!
-  - Don't show "fetching results from internet", for empty searches, because nothing is done!
+  - Don't show "fetching results from internet" for empty searches, because nothing is done!
   - Always show local AND google search. Remove arrow if searching or design page properly.
   - Login mechanism does not work correct
   - Wait time not visible if title long and takes 2 rows

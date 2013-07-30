@@ -488,6 +488,31 @@ namespace RuralCafe.Util
             sk1.SetValue(keyName, value);
         }
 
+        /// <summary>
+        /// Gets the network interface that is being used for the given IP or null.
+        /// </summary>
+        /// <param name="ip">The IP address.</param>
+        /// <returns>The used network iterface.</returns>
+        public static NetworkInterface GetNetworkInterfaceFor(IPAddress ip)
+        {
+            NetworkInterface[] nics = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces();
+            NetworkInterface nic = null;
+            foreach (NetworkInterface n in nics)
+            {
+                IPInterfaceProperties ipProps = n.GetIPProperties();
+                // check if localAddr is in ipProps.UnicastAddresses
+                foreach (UnicastIPAddressInformation unicastAddr in ipProps.UnicastAddresses)
+                {
+                    if (unicastAddr.Address.Equals(ip))
+                    {
+                        nic = n;
+                        break;
+                    }
+                }
+            }
+            return nic;
+        }
+
         #endregion
     }
 }
