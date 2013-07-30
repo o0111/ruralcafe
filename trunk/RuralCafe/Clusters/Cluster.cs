@@ -209,16 +209,16 @@ namespace RuralCafe.Clusters
                     errorWaitHandle.WaitOne(timeoutMS))
                 {
                     // Process completed. Check process.ExitCode here.
+                    // Parse output
+                    Console.Write(output);
                     if (vcluster.ExitCode != 0)
                     {
                         throw new Exception("vcluster failed with exitcode: " + vcluster.ExitCode);
                     }
-                    // Parse output
-                    Console.Write(output);
                     string[] lines = newlineRegex.Split(output.ToString());
                     // Create result array
                     HashSet<string>[] result = new HashSet<string>[fulltree ? 2 * k - 1 : k];
-                    // Fill with empty lists
+                    // Fill with empty sets
                     for (int i = 0; i < result.Length; i++)
                     {
                         result[i] = new HashSet<string>();
@@ -335,13 +335,20 @@ namespace RuralCafe.Clusters
                     string[] featuresPlusPercent = featuresStringArray[i].Split(new string[] { " ", "\t" },
                         StringSplitOptions.RemoveEmptyEntries);
                     string feature = featuresPlusPercent[0];
-                    double percent = Double.Parse(featuresPlusPercent[1].Substring(0, featuresPlusPercent[1].Length - 1));
-                    sortedFeatures.Add(new KeyValuePair<double,string>(percent, feature));
+
+                    double percent = 0;
+                    // This is displayed for empty clusters. For empty we clusters we don't extract the features.
+                    if(!featuresPlusPercent[1].Equals("-1.$%"))
+                    {
+                        percent = Double.Parse(featuresPlusPercent[1].Substring(0, featuresPlusPercent[1].Length - 1));
+                        sortedFeatures.Add(new KeyValuePair<double, string>(percent, feature));
+                    }
+                    
                 }
                 // Sort features by their percent value, descending
                 sortedFeatures.Sort((pair1, pair2) => (int) (pair2.Key - pair1.Key));
 
-                // Put into feautues until max is reached
+                // Put into features until max is reached
                 // (We cannot just count until max, since there may be dups)
                 for (int i = 0; i < sortedFeatures.Count && features.Count < max; i++)
                 {

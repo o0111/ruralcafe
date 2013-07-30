@@ -476,6 +476,18 @@ namespace RuralCafe
             stopwatch.Stop();
             Console.WriteLine(stopwatch.Elapsed.TotalSeconds + "s");
 
+            // Abort if we're having less than 2 text files
+            if (textFiles.Count < 2)
+            {
+                _proxy.Logger.Debug("Clustering: Less than 2 text files, aborting.");
+                return;
+            }
+            // List all Text files XXX Debug
+            foreach(string textFile in textFiles)
+            {
+                _proxy.Logger.Debug("Clustering uses file: " + textFile);
+            }
+
             // files2doc
             _proxy.Logger.Debug("Clustering: Creating docfile.");
             stopwatch.Restart();
