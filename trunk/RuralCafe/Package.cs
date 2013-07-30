@@ -168,6 +168,11 @@ namespace RuralCafe
             foreach (string entry in packageContentArr)
             {
                 int lastSpaceIndex = entry.LastIndexOf(' ');
+                if (lastSpaceIndex < 0)
+                {
+                    requestHandler.Logger.Error("unparseable entry: " + entry);
+                    return lastSpaceIndex;
+                }
                 currUri = entry.Substring(0, lastSpaceIndex);
 
                 try
