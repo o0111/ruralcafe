@@ -48,6 +48,9 @@ namespace RuralCafe
         // ruralcafe specific stuff
         private Package _package;
 
+        // abort
+        private bool _killYourself;
+
         /*
         // benchmarking variables
         protected DateTime handleRequestStart;
@@ -74,12 +77,19 @@ namespace RuralCafe
 
             _quota = Properties.Settings.Default.DEFAULT_QUOTA;
             _package = new Package();
+            _killYourself = false;
         }
 
         /// <summary>The proxy that this request belongs to.</summary>
         public RCRemoteProxy Proxy
         {
             get { return (RCRemoteProxy)_proxy; }
+        }
+
+        /// <summary>Big red button to kill the thread.</summary>
+        public void KillYourself()
+        {
+            _killYourself = true;
         }
 
         /// <summary>
@@ -307,7 +317,7 @@ namespace RuralCafe
         /// <returns></returns>
         private bool RecursivelyDownloadPage(RCRequest rcRequest, Richness richness, int depth)
         {
-            if (_quota < DEFAULT_LOW_WATERMARK)
+            if (_killYourself ||_quota < DEFAULT_LOW_WATERMARK)
             {
                 return false;
             }
@@ -378,7 +388,7 @@ namespace RuralCafe
         {
             LinkedList<RCRequest> filteredEmbeddedObjects = new LinkedList<RCRequest>();
 
-            if (_quota < DEFAULT_LOW_WATERMARK)
+            if (_killYourself || _quota < DEFAULT_LOW_WATERMARK)
             {
                 return filteredEmbeddedObjects;
             }
@@ -409,7 +419,6 @@ namespace RuralCafe
             }
             embeddedObjects = filteredEmbeddedObjects;
 
-            //return DownloadObjects(rcRequest, embeddedObjects);
             return DownloadObjectsInParallel(rcRequest, embeddedObjects);
         }
 
@@ -486,7 +495,7 @@ namespace RuralCafe
             ThreadPool.SetMaxThreads(4, 4);
             LinkedList<RCRequest> addedObjects = new LinkedList<RCRequest>();
 
-            if (children.Count == 0)
+            if (_killYourself || children.Count == 0)
             {
                 return addedObjects;
             }
@@ -550,6 +559,11 @@ namespace RuralCafe
         {
             // cast the RCRequest
             RCRequest request = (RCRequest)requestObj;
+
+            if (_killYourself)
+            {
+                return;
+            }
 
             // make sure this root request is not timed out
             if (!request.RootRequest.IsTimedOut())

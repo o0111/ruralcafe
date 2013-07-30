@@ -384,89 +384,107 @@ namespace RuralCafe
             // Decrement number of active requests
             System.Threading.Interlocked.Decrement(ref _activeRequests);
         }
+        
+        /// <summary>
+        /// Dispatch Threads.
+        /// </summary>
+        public void DispatchGo(object requestHandlerObj)
+        {
+            LocalRequestHandler requestHandler = requestHandlerObj as LocalRequestHandler;
+
+            // Save start time
+            requestHandler.StartTime = DateTime.Now;
+            if (_gatewayProxy != null)
+            {
+                requestHandler.RCRequest.SetProxyAndTimeout(_gatewayProxy, System.Threading.Timeout.Infinite);
+            }
+            else
+            {
+                requestHandler.RCRequest.SetProxyAndTimeout(_remoteProxy, System.Threading.Timeout.Infinite);
+            }
+            // save the request file as a package
+            requestHandler.RCRequest.CacheFileName = requestHandler.PackageFileName;
+
+            requestHandler.RequestStatus = RequestHandler.Status.Downloading;
+
+            _logger.Debug("dispatching to remote proxy: " + requestHandler.RequestUri);
+            long bytesDownloaded = requestHandler.RCRequest.DownloadToCache(true);
+
+            if (bytesDownloaded > 0)
+            {
+                // Get RC response headers
+                RCSpecificResponseHeaders headers = requestHandler.GetRCSpecificResponseHeaders();
+
+                long unpackedBytes = Package.Unpack(requestHandler, headers, _indexWrapper);
+                if (unpackedBytes > 0)
+                {
+                    _logger.Debug("unpacked: " + requestHandler.RequestUri);
+                    requestHandler.RCRequest.FileSize = unpackedBytes;
+                    requestHandler.RequestStatus = RequestHandler.Status.Completed;
+                }
+                else
+                {
+                    _logger.Warn("failed to unpack: " + requestHandler.RequestUri);
+                    requestHandler.RequestStatus = RequestHandler.Status.Failed;
+                }
+
+                // XXX: for benchmarking only
+                //SaveBenchmarkTimes(totalProcessingTime);
+            }
+            else
+            {
+                requestHandler.RequestStatus = RequestHandler.Status.Failed;
+            }
+
+            requestHandler.FinishTime = DateTime.Now;
+            UpdateTimePerRequest(requestHandler.StartTime, requestHandler.FinishTime);
+
+            requestHandler.LogResponse();
+        }
 
         /// <summary>
         /// Starts the dispatcher which requests pages from the remote proxy.
-        /// Currently makes one request at a time via a single TCP connection.
+        /// Currently makes up to 20 requests at a time.
         /// </summary>
         public void StartDispatcher()
         {
+            int workerThreads;
+            int portThreads;
+
+            // XXX: probably don't want to hard-code this as the number of port threads should be proportional to line speed.
+            ThreadPool.SetMaxThreads(50, 50);
+            ThreadPool.GetMaxThreads(out workerThreads, out portThreads);
+            Console.WriteLine("\nMaximum worker threads: \t{0}" +
+                "\nMaximum completion port threads: {1}",
+                workerThreads, portThreads);
+            ThreadPool.GetAvailableThreads(out workerThreads, out portThreads);
+            Console.WriteLine("\nAvailable worker threads: \t{0}" +
+                "\nAvailable completion port threads: {1}\n",
+                workerThreads, portThreads);
+
             _logger.Info("Started Requester");
             // go through the outstanding requests forever
             while (true)
             {
-                if (NetworkStatus == NetworkStatusCode.Slow)
+                LocalRequestHandler requestHandler = GetFirstGlobalRequest();
+                if (NetworkStatus == NetworkStatusCode.Slow && requestHandler != null)
                 {
-                    LocalRequestHandler requestHandler = GetFirstGlobalRequest();
-                    if (requestHandler != null)
+                    if (requestHandler.RequestStatus != RequestHandler.Status.Pending)
                     {
-                        if (requestHandler.RequestStatus != RequestHandler.Status.Pending)
-                        {
-                            // skip requests in global queue that are not pending, probably requeued from log
-                            lock (_globalRequestQueue)
-                            {
-                                _globalRequestQueue.RemoveAt(0);
-                            }
-                            continue;
-                        }
-                        // Save start time
-                        requestHandler.StartTime = DateTime.Now;
-                        if (_gatewayProxy != null)
-                        {
-                            requestHandler.RCRequest.SetProxyAndTimeout(_gatewayProxy, System.Threading.Timeout.Infinite);
-                        }
-                        else
-                        {
-                            requestHandler.RCRequest.SetProxyAndTimeout(_remoteProxy, System.Threading.Timeout.Infinite);
-                        }
-                        // save the request file as a package
-                        requestHandler.RCRequest.CacheFileName = requestHandler.PackageFileName;
-
-                        requestHandler.RequestStatus = RequestHandler.Status.Downloading;
-
-                        _logger.Debug("dispatching to remote proxy: " + requestHandler.RequestUri);
-                        long bytesDownloaded = requestHandler.RCRequest.DownloadToCache(true);
-
-                        if (bytesDownloaded > 0)
-                        {
-                            // Get RC response headers
-                            RCSpecificResponseHeaders headers = requestHandler.GetRCSpecificResponseHeaders();
-
-                            long unpackedBytes = Package.Unpack(requestHandler, headers, _indexWrapper);
-                            if (unpackedBytes > 0)
-                            {
-                                _logger.Debug("unpacked: " + requestHandler.RequestUri);
-                                requestHandler.RCRequest.FileSize = unpackedBytes;
-                                requestHandler.RequestStatus = RequestHandler.Status.Completed;
-                            }
-                            else
-                            {
-                                _logger.Warn("failed to unpack: " + requestHandler.RequestUri);
-                                requestHandler.RequestStatus = RequestHandler.Status.Failed;
-                            }
-
-                            // XXX: for benchmarking only
-                            //SaveBenchmarkTimes(totalProcessingTime);
-                        }
-                        else
-                        {
-                            requestHandler.RequestStatus = RequestHandler.Status.Failed;
-                        }
-
-                        requestHandler.FinishTime = DateTime.Now;
-                        UpdateTimePerRequest(requestHandler.StartTime, requestHandler.FinishTime);
-
-                        requestHandler.LogResponse();
-                        // Remove from queue, as request is finished
+                        // skip requests in global queue that are not pending, probably requeued from log
                         lock (_globalRequestQueue)
                         {
                             _globalRequestQueue.RemoveAt(0);
                         }
+                        continue;
                     }
-                    else
+                    // Queue the request as a thread
+                    ThreadPool.QueueUserWorkItem(new WaitCallback(DispatchGo), (object) requestHandler);
+
+                    // Remove from queue, as request is finished
+                    lock (_globalRequestQueue)
                     {
-                        // wait for an add event
-                        _newRequestEvent.WaitOne();
+                        _globalRequestQueue.RemoveAt(0);
                     }
                 }
                 else
