@@ -171,7 +171,7 @@ namespace RuralCafe
                 if (lastSpaceIndex < 0)
                 {
                     requestHandler.Logger.Error("unparseable entry: " + entry);
-                    return lastSpaceIndex;
+                    return unpackedBytes;
                 }
                 currUri = entry.Substring(0, lastSpaceIndex);
 

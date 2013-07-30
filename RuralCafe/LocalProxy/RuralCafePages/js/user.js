@@ -107,10 +107,10 @@ function setRichness(richness){
 	return false;
 }
 
-//signup
+//signup (sync, or the request the new page will load too early and nothing happens)
 function sendSignupRequest(username, password, id){
 	var mygetrequest=new ajaxRequest()
-	mygetrequest.open("GET", "request/signup?u="+username+"&p="+password+"&i="+id, true);
+	mygetrequest.open("GET", "request/signup?u="+username+"&p="+password+"&i="+id, false);
 	mygetrequest.send(null);
 	return false;
 }
