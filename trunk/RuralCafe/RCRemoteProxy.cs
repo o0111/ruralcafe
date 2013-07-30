@@ -50,8 +50,8 @@ namespace RuralCafe
             : base(REMOTE_PROXY_NAME, listenAddress, listenPort, proxyPath, 
             cachePath, packagesPath)
         {
-            _requestQueue = new List<string>();
             _userSettings = new Dictionary<IPEndPoint, Dictionary<int, RCUserSettings>>();
+            _maxInflightRequests = 50; // XXX: Should be defaulted to something then fluctuate based on connection management
         }
 
         /// <summary>
@@ -76,10 +76,17 @@ namespace RuralCafe
                     // accept connections on the proxy port (blocks)
                     HttpListenerContext context = listener.GetContext();
 
+                    // queued instead of immediately dispatched
+                    RemoteRequestHandler requestHandler = (RemoteRequestHandler) RequestHandler.PrepareNewRequestHandler(this, context);
+                    //requestHandler.RequestStatus = RequestHandler.Status.Pending;
+                    _logger.Debug("Queueing request: ");// + requestHandler.RequestUri);
+                    QueueRequest(requestHandler);
+                    /*
                     // handle the accepted connection in a separate thread
                     RequestHandler requestHandler = RequestHandler.PrepareNewRequestHandler(this, context);
                     Thread proxyThread = new Thread(new ThreadStart(requestHandler.Go));
                     proxyThread.Start();
+                     */
                 }
             }
             catch (SocketException e)
@@ -91,6 +98,38 @@ namespace RuralCafe
                 _logger.Fatal("Exception in StartRemoteListener", e);
             }
         }
+
+        /// <summary>
+        /// Dispatch Threads.
+        /// </summary>
+        public override void DispatchGo(object requestHandlerObj)
+        {
+            RequestHandler requestHandler = requestHandlerObj as RequestHandler;
+
+            requestHandler.Go();
+        }
+
+
+        /*
+        /// <summary>
+        /// Returns the first global request in the queue or null if no request exists.
+        /// </summary>
+        /// <returns>The first unsatisfied request by the next user or null if no request exists.</returns>
+        public RequestHandler GetFirstGlobalRequest()
+        {
+            RequestHandler requestHandler = null;
+
+            // lock to make sure nothing is added or removed
+            lock (_globalRequestQueue)
+            {
+                if (_globalRequestQueue.Count > 0)
+                {
+                    requestHandler = _globalRequestQueue[0];
+                }
+            }
+            return requestHandler;
+        }
+        */
 
         /// <summary>
         /// Gets the setting of the user with the given id. Creates a new settings object
@@ -116,44 +155,31 @@ namespace RuralCafe
                 return _userSettings[localProxyIP][userID];
             }
         }
-        # region Queue (Unused)
-
-        // requests from the local proxy
-        public List<string> _requestQueue;
+        # region Queue
 
         /// <summary>
-        /// Add a request to the queue.
-        /// Unused and untested at the moment.
+        /// Adds the request to the global queue and wakes up the dispatcher.
         /// </summary>
-        /// <param name="requestUri">The request URI.</param>
-        /// <returns>True if the request is added, and false if the URI is already in the queue.</returns>
-        public bool AddRequest(string requestUri)
+        /// <param name="requestHandler">The request handler to queue.</param>
+        public void QueueRequest(RemoteRequestHandler requestHandler)
         {
-            if (!_requestQueue.Contains(requestUri))
-            {
-                _requestQueue.Add(requestUri);
-                return true;
-            }
-            
-            return false;
+            // Order is important!
+            requestHandler = (RemoteRequestHandler) QueueRequestGlobalQueue(requestHandler);
+
+            // Notify that a new request has been added. The Dispatcher will wake up if it was waiting.
+            _newRequestEvent.Set();
         }
 
         /// <summary>
-        /// Removes a request from the queue.
-        /// Unused and untested at the moment.
+        /// Removes a single request from the queues.
         /// </summary>
-        /// <param name="requestUri">The URI of the request.</param>
-        /// <returns>True if the request is removed, and false if the URI is not in the queue.</returns>
-        public bool RemoveRequest(string requestUri)
+        /// <param name="requestHandlerItemId">The item id of the request handlers to dequeue.</param>
+        public void DequeueRequest(string requestHandlerItemId)
         {
-            if (!_requestQueue.Contains(requestUri))
-            {
-                return false;
-            }
-
-            _requestQueue.Remove(requestUri);
-
-            return true;
+            // Order is important!
+            RemoteRequestHandler requestHandler = (RemoteRequestHandler) DequeueRequestGlobalQueue(requestHandlerItemId);
+            // abort! XXX: no interrupt handling, but better than nothing for now.
+            requestHandler.KillYourself();
         }
 
         # endregion

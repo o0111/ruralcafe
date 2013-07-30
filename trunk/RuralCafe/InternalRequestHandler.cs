@@ -180,7 +180,7 @@ namespace RuralCafe
         /// Handles an RC internal request.
         /// </summary>
         /// <returns>The status.</returns>
-        public override Status HandleRequest()
+        public override void HandleRequest()
         {
             Logger.Debug("Processing internal request: " + _originalRequest.Url);
 
@@ -193,14 +193,14 @@ namespace RuralCafe
                 if (mInfo == null)
                 {
                     Logger.Error("Unknown method in internal handler: " + method.MethodName);
-                    return RequestHandler.Status.Failed;
+                    return;// RequestHandler.Status.Failed;
                 }
                 Object result = mInfo.Invoke(this, GetParameters(method));
                 if (result == null || !(result is Response))
                 {
                     Logger.Error("Return type wrong: " + method.MethodName);
                     SendErrorPage(HttpStatusCode.InternalServerError, "Return type wrong: " + method.MethodName);
-                    return RequestHandler.Status.Failed;
+                    return;// RequestHandler.Status.Failed;
                 }
                 // Send result
                 Response response = (Response)result;
@@ -219,10 +219,10 @@ namespace RuralCafe
                     if (bytesSent <= 0)
                     {
                         SendErrorPage(HttpStatusCode.NotFound, "page does not exist: " + RequestUri);
-                        return RequestHandler.Status.Failed;
+                        return;// RequestHandler.Status.Failed;
                     }
                 }
-                return RequestHandler.Status.Completed;
+                return;// RequestHandler.Status.Completed;
             }
             catch (Exception e)
             {
@@ -240,7 +240,7 @@ namespace RuralCafe
                     string message = innerE != null ? innerE.Message : e.Message;
                     SendErrorPage(HttpStatusCode.InternalServerError, message);
                 }
-                return RequestHandler.Status.Failed;
+                return;// RequestHandler.Status.Failed;
             }
         }
 

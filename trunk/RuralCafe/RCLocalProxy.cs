@@ -41,25 +41,6 @@ namespace RuralCafe
     /// </summary>
     public class RCLocalProxy : RCProxy
     {
-        /// <summary>
-        /// Enum for the network status.
-        /// </summary>
-        public enum NetworkStatusCode
-        {
-            /// <summary>
-            /// Fast connection, the proxies will act transparantly.
-            /// </summary>
-            Online = 0,
-            /// <summary>
-            /// Slow connection, requests will be queued.
-            /// </summary>
-            Slow = 1,
-            /// <summary>
-            /// No connection, only queueing and offline browsing are possible.
-            /// </summary>
-            Offline = 2
-        }
-
         // Constants
         private const int REQUESTS_WITHOUT_USER_CAPACITY = 50;
         private const string QUEUES_FILENAME = "Queues.json";
@@ -90,10 +71,6 @@ namespace RuralCafe
         private WebProxy _remoteProxy;
 
         /// <summary>
-        /// The network status
-        /// </summary>
-        private NetworkStatusCode _networkStatus;
-        /// <summary>
         /// Automatically detect the network status
         /// </summary>
         private bool _detectNetworkStatusAuto;
@@ -118,18 +95,13 @@ namespace RuralCafe
         /// </summary>
         private Timer _clusteringTimer;
 
-        // big queue for lining up requests to remote proxy
-        private List<LocalRequestHandler> _globalRequestQueue;
         // dictionary of lists of requests made by each client
         private Dictionary<int, List<LocalRequestHandler>> _clientRequestQueueMap;
         // dictionary of requests without a user. They await to be "added" via Trotro by a specific user
         private IntKeyedCollection<LocalRequestHandler> _requestsWithoutUser;
         // Random for the keys of the above Dictionary
         private Random _random;
-
-        // notifies that a new request has arrived
-        private AutoResetEvent _newRequestEvent;
-
+        
         // state for maintaining the time for request/responses for measuring the ETA
         private TimeSpan _averageTimePerRequest;
         
@@ -209,12 +181,7 @@ namespace RuralCafe
                 }
             }
         }
-        /// <summary>The network status.</summary>
-        public NetworkStatusCode NetworkStatus
-        {
-            get { return _networkStatus; }
-            set { _networkStatus = value; }
-        }
+
         #endregion
 
         /// <summary>
@@ -235,12 +202,12 @@ namespace RuralCafe
             _activeRequests = 0;
             _uiPagesPath = proxyPath + "RuralCafePages" + Path.DirectorySeparatorChar;
             _wikiDumpPath = wikiDumpPath;
-            _globalRequestQueue = new List<LocalRequestHandler>();
             _clientRequestQueueMap = new Dictionary<int, List<LocalRequestHandler>>();
             _requestsWithoutUser = new IntKeyedCollection<LocalRequestHandler>();
             _random = new Random();
-            _newRequestEvent = new AutoResetEvent(false);
             _averageTimePerRequest = new TimeSpan(0);
+
+            _maxInflightRequests = 5; // XXX: Should be defaulted to something then fluctuate based on connection management
 
             _sessionManager = new SessionManager();
 
@@ -259,7 +226,7 @@ namespace RuralCafe
 
             // Deserialize the queue
             DeserializeQueue();
-            // Tell the programm to serialize the queue before shutdown
+            // Tell the program to serialize the queue before shutdown
             Program.AddShutDownDelegate(SerializeQueue);
         }
 
@@ -388,7 +355,7 @@ namespace RuralCafe
         /// <summary>
         /// Dispatch Threads.
         /// </summary>
-        public void DispatchGo(object requestHandlerObj)
+        public override void DispatchGo(object requestHandlerObj)
         {
             LocalRequestHandler requestHandler = requestHandlerObj as LocalRequestHandler;
 
@@ -442,58 +409,6 @@ namespace RuralCafe
             requestHandler.LogResponse();
         }
 
-        /// <summary>
-        /// Starts the dispatcher which requests pages from the remote proxy.
-        /// Currently makes up to 20 requests at a time.
-        /// </summary>
-        public void StartDispatcher()
-        {
-            int workerThreads;
-            int portThreads;
-
-            // XXX: probably don't want to hard-code this as the number of port threads should be proportional to line speed.
-            ThreadPool.SetMaxThreads(50, 50);
-            ThreadPool.GetMaxThreads(out workerThreads, out portThreads);
-            Console.WriteLine("\nMaximum worker threads: \t{0}" +
-                "\nMaximum completion port threads: {1}",
-                workerThreads, portThreads);
-            ThreadPool.GetAvailableThreads(out workerThreads, out portThreads);
-            Console.WriteLine("\nAvailable worker threads: \t{0}" +
-                "\nAvailable completion port threads: {1}\n",
-                workerThreads, portThreads);
-
-            _logger.Info("Started Requester");
-            // go through the outstanding requests forever
-            while (true)
-            {
-                LocalRequestHandler requestHandler = GetFirstGlobalRequest();
-                if (NetworkStatus == NetworkStatusCode.Slow && requestHandler != null)
-                {
-                    if (requestHandler.RequestStatus != RequestHandler.Status.Pending)
-                    {
-                        // skip requests in global queue that are not pending, probably requeued from log
-                        lock (_globalRequestQueue)
-                        {
-                            _globalRequestQueue.RemoveAt(0);
-                        }
-                        continue;
-                    }
-                    // Queue the request as a thread
-                    ThreadPool.QueueUserWorkItem(new WaitCallback(DispatchGo), (object) requestHandler);
-
-                    // Remove from queue, as request is finished
-                    lock (_globalRequestQueue)
-                    {
-                        _globalRequestQueue.RemoveAt(0);
-                    }
-                }
-                else
-                {
-                    // wait for an add event
-                    _newRequestEvent.WaitOne();
-                }
-            }
-        }
 
         #region Network status detection
 
@@ -543,37 +458,11 @@ namespace RuralCafe
         public void QueueRequest(int userId, LocalRequestHandler requestHandler)
         {
             // Order is important!
-            requestHandler = QueueRequestGlobalQueue(requestHandler);
+            requestHandler = (LocalRequestHandler) QueueRequestGlobalQueue(requestHandler);
             QueueRequestUserQueue(userId, requestHandler);
 
             // Notify that a new request has been added. The Dispatcher will wake up if it was waiting.
             _newRequestEvent.Set();
-        }
-
-        /// <summary>
-        /// Adds the request handler to the global queue.
-        /// </summary>
-        /// <param name="requestHandler">The request handler to queue.</param>
-        /// <returns>The request handler in the queue.
-        /// Either the parameter or an already exiting equivalent RH in the queue.</returns>
-        private LocalRequestHandler QueueRequestGlobalQueue(LocalRequestHandler requestHandler)
-        {
-            // add the request to the global queue
-            lock (_globalRequestQueue)
-            {
-                if (_globalRequestQueue.Contains(requestHandler))
-                {
-                    // grab the existing handler instead of the new one
-                    int existingRequestIndex = _globalRequestQueue.IndexOf(requestHandler);
-                    requestHandler = _globalRequestQueue[existingRequestIndex];
-                }
-                else
-                {
-                    // queue new request
-                    _globalRequestQueue.Add(requestHandler);
-                }
-                return requestHandler;
-            }
         }
 
         /// <summary>
@@ -626,30 +515,6 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Removes a single request from global queue.
-        /// </summary>
-        /// <param name="requestHandlerItemId">The item id of the request handlers to dequeue.</param>
-        private void DequeueRequestGlobalQueue(string requestHandlerItemId)
-        {
-            // remove the request from the global queue
-            lock (_globalRequestQueue)
-            {
-                // This gets the requestHandler with the same ID, if there is one
-                LocalRequestHandler requestHandler =
-                    _globalRequestQueue.FirstOrDefault(rh => rh.ItemId == requestHandlerItemId);
-                if (requestHandler != null)
-                {
-                    // check to see if this URI is requested more than once
-                    // if not, remove it
-                    if (requestHandler.OutstandingRequests == 1)
-                    {
-                        _globalRequestQueue.Remove(requestHandler);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
         /// Removes a single request from user queue.
         /// </summary>
         /// <param name="userId">The userId of the client.</param>
@@ -673,25 +538,6 @@ namespace RuralCafe
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// Returns the first global request in the queue or null if no request exists.
-        /// </summary>
-        /// <returns>The first unsatisfied request by the next user or null if no request exists.</returns>
-        public LocalRequestHandler GetFirstGlobalRequest()
-        {
-            LocalRequestHandler requestHandler = null;
-
-            // lock to make sure nothing is added or removed
-            lock (_globalRequestQueue)
-            {
-                if (_globalRequestQueue.Count > 0)
-                {
-                    requestHandler = _globalRequestQueue[0];
-                }
-            }
-            return requestHandler;
         }
 
         /// <summary>
@@ -719,7 +565,7 @@ namespace RuralCafe
                                 if (index != -1)
                                 {
                                     // ..replace in user queue
-                                    requestHandlers[i]= _globalRequestQueue[index];
+                                    requestHandlers[i] = (LocalRequestHandler) _globalRequestQueue[index];
                                 }
                                 else
                                 {
@@ -887,7 +733,7 @@ namespace RuralCafe
 
             // Determine the time the first request is already running
             double secondsFirstRequestRunning = _averageTimePerRequest.TotalSeconds;
-            LocalRequestHandler firstHandler = _globalRequestQueue[0];
+            LocalRequestHandler firstHandler = (LocalRequestHandler) _globalRequestQueue[0];
             if(firstHandler != null)
             {
                 secondsFirstRequestRunning = (DateTime.Now - firstHandler.StartTime).TotalSeconds;

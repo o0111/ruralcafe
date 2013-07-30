@@ -26,6 +26,12 @@ namespace RuralCafe
         {
             routines.Add("/request/richness", new RoutineMethod("RichnessRequest",
                 new string[] { "r" }, new Type[] { typeof(string) }));
+            routines.Add("/request/remove", new RoutineMethod("RemoveRequest",
+                new string[] { "i" }, new Type[] { typeof(string) }));
+            /*
+            routines.Add("/request/add", new RoutineMethod("AddRequest",
+                new string[] { "t", "a", }, new Type[] { typeof(string), typeof(int) }));
+             */
         }
 
         /// <summary>
@@ -68,6 +74,15 @@ namespace RuralCafe
             Logger.Debug("Richness of user " + userid + " from Local Proxy " + 
                 Context.Request.RemoteEndPoint + " was set to: " + richness);
             return new Response("Richness set.");
+        }
+
+        /// <summary>
+        /// Removes the request from Ruralcafe's queue.
+        /// </summary>
+        public Response RemoveRequest(string itemId)
+        {
+            Proxy.DequeueRequest(itemId);
+            return new Response("Removed request.");
         }
 
         #endregion
