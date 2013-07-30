@@ -29,7 +29,7 @@ namespace RuralCafe.Util
         /// <summary>
         /// The local IP address.
         /// </summary>
-        private static readonly IPAddress localIPAdress = LocalIPAddress();
+        public static readonly IPAddress LOCAL_IP_ADDRESS = LocalIPAddress();
 
         /// <summary>
         /// Creates an outgoing HttpWebRequest from an incoming HttpListenerRequest.
@@ -255,7 +255,7 @@ namespace RuralCafe.Util
         /// <returns>The new address.</returns>
         public static string UseLocalNetworkAdressForLocalAdress(string address)
         {
-            return localAddressRegex.Replace(address, localIPAdress + "${add2}");
+            return localAddressRegex.Replace(address, LOCAL_IP_ADDRESS + "${add2}");
         }
 
         /// <summary>

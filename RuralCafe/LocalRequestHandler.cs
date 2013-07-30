@@ -175,12 +175,24 @@ namespace RuralCafe
 
                 // Measure speed
                 long speedBS, bytes;
+                // Method 2
+                
+                bool measuring = NetworkUsageDetector.StartMeasuringIfNotRunning();
+
                 Status result = SelectStreamingMethodAndStream(out speedBS, out bytes);
-                // Take speed into calculation, if successful and speed could be measured
-                if (result == Status.Completed && speedBS > 0)
+
+                // Only get the results if this thread was measuring. Maybe another thread was measuring at the same time.
+                if (measuring)
                 {
-                    Proxy.IncludeDownloadInCalculation(speedBS, bytes);
+                    long bytesDownloadedByNetworkCard;
+                    long speedBS2 = NetworkUsageDetector.GetMeasuringResults(out bytesDownloadedByNetworkCard);
+                    // Take speed into calculation, if successful and speed could be measured
+                    if (result == Status.Completed && speedBS2 > 0)
+                    {
+                        Proxy.IncludeDownloadInCalculation(speedBS2, bytesDownloadedByNetworkCard);
+                    }
                 }
+                
                 return result;
             }
 
