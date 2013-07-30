@@ -243,7 +243,7 @@ namespace RuralCafe
             localListenerThread.Name = String.Format("localListenerThread");
             localListenerThread.Start();
 
-            // start remote requester thread
+            // start local requester thread
             Thread localRequesterThread = new Thread(new ThreadStart(localProxy.StartDispatcher));
             localRequesterThread.Name = String.Format("localRequesterThread");
             localRequesterThread.Start();
@@ -275,6 +275,9 @@ namespace RuralCafe
                                             GATEWAY_PROXY_LOGIN, GATEWAY_PROXY_PASS);
             }*/
 
+            // default remote proxy network status to online
+            remoteProxy.NetworkStatus = global::RuralCafe.RCLocalProxy.NetworkStatusCode.Online;
+
             // set the maximum downlink speed to the local proxy
             remoteProxy.MAXIMUM_DOWNLINK_BANDWIDTH = Properties.Settings.Default.MAXIMUM_DOWNLOAD_SPEED;
 
@@ -291,6 +294,11 @@ namespace RuralCafe
             Thread remoteListenerThread = new Thread(new ThreadStart(remoteProxy.StartListener));
             remoteListenerThread.Name = String.Format("remoteListenerThread");
             remoteListenerThread.Start();
+
+            // start remote requester thread
+            Thread remoteRequesterThread = new Thread(new ThreadStart(remoteProxy.StartDispatcher));
+            remoteRequesterThread.Name = String.Format("remoteRequesterThread");
+            remoteRequesterThread.Start();
 
             // listen for cc connection
             return remoteProxy;

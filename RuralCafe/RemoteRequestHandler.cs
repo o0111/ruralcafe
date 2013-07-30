@@ -96,7 +96,7 @@ namespace RuralCafe
         /// Main logic of RuralCafe RPRequestHandler.
         /// Called by Go() in the base RequestHandler class.
         /// </summary>
-        public override Status HandleRequest()
+        public override void HandleRequest()
         {
             // benchmarking
             //handleRequestStart = DateTime.Now;
@@ -108,7 +108,8 @@ namespace RuralCafe
             {
                 // We're streaming transparantly:
                 // No prefetching, no packaging.
-                return SelectStreamingMethodAndStream();
+                SelectStreamingMethodAndStream();
+                return;
             }
 
             // Get current richness!
@@ -153,7 +154,7 @@ namespace RuralCafe
                 if (!Utils.IsNotTooLongFileName(_packageFileName))
                 {
                     Logger.Debug("package filename for " + RequestUri + " is too long. Aborting.");
-                    return Status.Failed;
+                    return;
                 }
 
                 // Check if we can save the file
@@ -164,18 +165,17 @@ namespace RuralCafe
                     if (RecursivelyDownloadPage(_rcRequest, richness, 0))
                     {
                         _rcRequest.FileSize = SendResponsePackage();
+                        /*
                         if (_rcRequest.FileSize > 0)
                         {
-                            return Status.Completed;
-                        }
+                            return; Status.Completed;
+                        }*/
                     }
                 }
                 else   
                 {
                     // XXX: not handled at the moment, technically nothing should be "not cacheable" though.
                     Logger.Warn("not cacheable, failed.");
-
-                    return Status.Failed;
                 }
             }
 
@@ -183,7 +183,7 @@ namespace RuralCafe
             //handleRequestEnd = DateTime.Now;
             //SaveBenchmarkTimes();
 
-            return Status.Failed;
+            return;
         }
 
         #region benchmarking (unused)

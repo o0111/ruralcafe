@@ -406,6 +406,7 @@ namespace RuralCafe
             }
             catch (Exception e)
             {
+                RequestStatus = RequestHandler.Status.Failed;
                 String errmsg = "error handling request: ";
                 if (_originalRequest != null)
                 {
@@ -452,7 +453,7 @@ namespace RuralCafe
         }
 
         /// <summary>Abstract method for proxies to handle requests.</summary>
-        public abstract Status HandleRequest();
+        public abstract void HandleRequest();
 
 
         #region streaming
@@ -882,7 +883,7 @@ namespace RuralCafe
         /// </summary>
         public void LogRequest()
         {
-            string str = "ID" + _requestId + " " + Context.Request.RemoteEndPoint.Address +
+            string str = "ID " + _requestId + " " + Context.Request.RemoteEndPoint.Address +
                          " " + _rcRequest.GenericWebRequest.Method + " " + RequestUri +
                          " REFERER " + RefererUri + " " + 
                          RequestStatus + " " + _rcRequest.FileSize;
@@ -894,7 +895,7 @@ namespace RuralCafe
         /// </summary>
         public void LogResponse()
         {
-            string str = "ID" + _requestId + " RSP " + RequestUri + " " + 
+            string str = "ID " + _requestId + " RSP " + RequestUri + " " + 
                         RequestStatus + " " + _rcRequest.FileSize;
             Logger.Info(str);
         }

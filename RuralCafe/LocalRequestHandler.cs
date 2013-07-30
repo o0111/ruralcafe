@@ -90,13 +90,13 @@ namespace RuralCafe
         /// Main logic of RuralCafe LPRequestHandler.
         /// Called by Go() in the base RequestHandler class.
         /// </summary>
-        public override Status HandleRequest()
+        public override void HandleRequest()
         {
             if (IsBlacklisted(RequestUri))
             {
                 Logger.Debug("ignoring blacklisted: " + RequestUri);
                 SendErrorPage(HttpStatusCode.NotFound, "blacklisted: " + RequestUri);
-                return Status.Failed;
+                return;// Status.Failed;
             }
 
             // Try to get content from the wiki, if available.
@@ -120,7 +120,7 @@ namespace RuralCafe
                     wikiContent = LinkSuggestionHtmlModifier.IncludeTooltips(wikiContent);
                 }
                 SendMessage(wikiContent);
-                return Status.Completed;
+                return;// Status.Completed;
             }
 
             // Do only use cache for HEAD/GET
@@ -137,20 +137,20 @@ namespace RuralCafe
                     string content = Utils.ReadFileAsString(_rcRequest.CacheFileName);
                     if (String.IsNullOrEmpty(content))
                     {
-                        return Status.Failed;
+                        return;// Status.Failed;
                     }
                     content = LinkSuggestionHtmlModifier.IncludeTooltips(content);
                     _clientHttpContext.Response.ContentType = "text/html";
                     SendMessage(content);
-                    return Status.Completed;
+                    return;// Status.Completed;
                 }
 
                 _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName);
                 if (_rcRequest.FileSize < 0)
                 {
-                    return Status.Failed;
+                    return;// Status.Failed;
                 }
-                return Status.Completed;
+                return;// Status.Completed;
             }
 
             // Log query metric for uncached items
@@ -170,7 +170,8 @@ namespace RuralCafe
                 if (!Proxy.DetectNetworkStatusAuto)
                 {
                     // No speed measuring
-                    return SelectStreamingMethodAndStream();
+                    SelectStreamingMethodAndStream();
+                    return;
                 }
 
                 // Measure speed
@@ -192,8 +193,8 @@ namespace RuralCafe
                         Proxy.IncludeDownloadInCalculation(speedBS2, bytesDownloadedByNetworkCard);
                     }
                 }
-                
-                return result;
+
+                return;// result;
             }
 
             // if we're not online, let's check if the packe file name is not too long
@@ -201,7 +202,7 @@ namespace RuralCafe
             {
                 Logger.Debug("package filename for " + RequestUri + " is too long. Aborting.");
                 SendErrorPage(HttpStatusCode.InternalServerError, "package filename for " + RequestUri + " is too long.");
-                return Status.Failed;
+                return;// Status.Failed;
             }
             
             if (Proxy.NetworkStatus != RCLocalProxy.NetworkStatusCode.Online)
@@ -235,9 +236,9 @@ namespace RuralCafe
                 _clientHttpContext.Response.Redirect(redirectUrl);
                 //_clientHttpContext.Response.StatusCode = (int)HttpStatusCode.TemporaryRedirect;
 
-                return Status.Completed;
+                //return Status.Completed;
             }
-            return Status.Failed;
+            //return Status.Failed;
         }
 
         /// <summary>
