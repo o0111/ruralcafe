@@ -315,14 +315,12 @@ namespace RuralCafe
                     // accept connections on the proxy port (blocks)
                     HttpListenerContext context = listener.GetContext();
 
-                    // handle the accepted connection in a separate thread
+                    // create the request handler
                     RequestHandler requestHandler = RequestHandler.PrepareNewRequestHandler(this, context);
-                    if (requestHandler != null)
-                    {
-                        // Start own method StartRequestHandler in the thread, which also in- and decreases _activeRequests
-                        Thread proxyThread = new Thread(new ParameterizedThreadStart(this.StartRequestHandler));
-                        proxyThread.Start(requestHandler);
-                    }
+
+                    // Start own method StartRequestHandler in the thread, which also in- and decreases _activeRequests
+                    Thread proxyThread = new Thread(new ParameterizedThreadStart(this.StartRequestHandler));
+                    proxyThread.Start(requestHandler);
                 }
             }
             catch (SocketException e)
@@ -495,13 +493,9 @@ namespace RuralCafe
             // add the request to the client's queue
             lock (requestHandlers)
             {
-                if (!requestHandlers.Contains(requestHandler))
-                {
-                    // Just add, if its not already contained.
-                    requestHandlers.Add(requestHandler);
-                    requestHandler.OutstandingRequests++;
-                }
-                
+                // Just add
+                requestHandlers.Add(requestHandler);
+                requestHandler.OutstandingRequests++;
             }
         }
 

@@ -104,9 +104,15 @@ namespace RuralCafe
             // Get RC headers
             RCSpecificRequestHeaders rcHeaders = GetRCSpecificRequestHeaders();
 
+            // streaming
+            if (rcHeaders.IsStreamingTransparently)
+            {
+                SelectStreamingMethodAndStream();
+                return;
+            }
+
             // Get current richness!
-            Richness richness = Proxy.
-                GetUserSettings(Context.Request.RemoteEndPoint, rcHeaders.RCUserID).richness;
+            Richness richness = Proxy.GetUserSettings(Context.Request.RemoteEndPoint, rcHeaders.RCUserID).richness;
             if (richness == 0)
             {
                 // Use default when nothing is set.
@@ -479,7 +485,7 @@ namespace RuralCafe
         /// <returns>List of downloaded requests.</returns>
         private LinkedList<RCRequest> DownloadObjectsInParallel(RCRequest parentRequest, LinkedList<Uri> childObjects)
         {
-            ThreadPool.SetMaxThreads(4, 4);
+            //ThreadPool.SetMaxThreads(4, 4);
             LinkedList<RCRequest> addedObjects = new LinkedList<RCRequest>();
 
             if (_killYourself || childObjects.Count == 0)

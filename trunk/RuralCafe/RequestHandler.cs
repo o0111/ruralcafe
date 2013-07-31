@@ -101,18 +101,7 @@ namespace RuralCafe
                     else
                     {
                         RequestHandler newHandler = new LocalRequestHandler((RCLocalProxy)proxy, context);
-                        
-                        // get the referer URI and create the RCRequest object for this request handler
-                        if (newHandler.CreateRequest(newHandler.OriginalRequest))
-                        {
-                            return newHandler;
-                        }
-                        else
-                        {
-                            // Invalid URIs are ignored.
-                            newHandler.Logger.Debug("URI invalid: " + newHandler.OriginalRequest.RawUrl.ToString());
-                            return null;
-                        }
+                        return newHandler;
                     }
                 }
                 else
@@ -124,18 +113,7 @@ namespace RuralCafe
                     else
                     {
                         RequestHandler newHandler = new RemoteRequestHandler((RCRemoteProxy)proxy, context);
-
-                        // get the referer URI and create the RCRequest object for this request handler
-                        if (newHandler.CreateRequest(newHandler.OriginalRequest))
-                        {
-                            return newHandler;
-                        }
-                        else
-                        {
-                            // Invalid URIs are ignored.
-                            newHandler.Logger.Debug("URI invalid: " + newHandler.OriginalRequest.RawUrl.ToString());
-                            return null;
-                        }
+                        return newHandler;
                     }
                 }
             }
@@ -242,7 +220,7 @@ namespace RuralCafe
             {
                 return false;
             }
-            return ItemId.Equals(((RequestHandler)obj).ItemId);
+            return _originalRequest.RawUrl.Equals(((RequestHandler)obj).OriginalRequest.RawUrl);
         }
         
         /// <summary>
@@ -251,7 +229,7 @@ namespace RuralCafe
         /// </summary>        
         public override int GetHashCode()
         {
-            return ItemId.GetHashCode();
+            return _originalRequest.RawUrl.GetHashCode();
         }
 
         /// <summary>Checks whether the request is blacklisted by the proxy.</summary>
@@ -399,6 +377,28 @@ namespace RuralCafe
                     return;
                 }
 
+                if (IsBlacklisted(OriginalRequest.RawUrl))
+                {
+                    Logger.Debug("ignoring blacklisted: " + OriginalRequest.RawUrl);
+                    SendErrorPage(HttpStatusCode.NotFound, "blacklisted: " + OriginalRequest.RawUrl);
+                    return;// Status.Failed;
+                }
+
+                // check if the URI is valid
+                if (HttpUtils.IsValidUri(OriginalRequest.RawUrl))
+                {
+                    // create the RCRequest object for this request handler
+                    CreateRequest(OriginalRequest);
+                }
+                else
+                {
+                    // Invalid URIs are ignored.
+                    Logger.Debug("URI invalid: " + OriginalRequest.RawUrl);
+                    SendErrorPage(HttpStatusCode.BadRequest, "URI invalid: " + OriginalRequest.RawUrl);
+
+                    return;
+                }
+
                 // XXX: need to avoid duplicate request/response logging when redirecting e.g. after an add
                 // handle the request
                 if (IsRCRequest())
@@ -447,16 +447,11 @@ namespace RuralCafe
         /// <param name="request">The HTTP request.</param>
         /// <param name="refererUri">The referrer.</param>
         /// <returns><code>True</code>, iff the URI is valid and a request has been created.</returns>
-        protected bool CreateRequest(HttpListenerRequest request)
+        protected void CreateRequest(HttpListenerRequest request)
         {
-            if (HttpUtils.IsValidUri(request.RawUrl.ToString()))
-            {
-                // create the request object
-                string refererUri = _originalRequest.UrlReferrer != null ? _originalRequest.UrlReferrer.ToString() : "";
-                _rcRequest = new RCRequest(this, HttpUtils.CreateWebRequest(request), "", refererUri, HttpUtils.ReceiveBody(request));
-                return true;
-            }
-            return false;
+            // create the request object
+            string refererUri = _originalRequest.UrlReferrer != null ? _originalRequest.UrlReferrer.ToString() : "";
+            _rcRequest = new RCRequest(this, HttpUtils.CreateWebRequest(request), "", refererUri, HttpUtils.ReceiveBody(request));
         }
 
         /// <summary>Abstract method for proxies to handle requests.</summary>
@@ -469,10 +464,10 @@ namespace RuralCafe
         /// If not it is streamed to the client directly.
         /// </summary>
         /// <returns>The status of the request.</returns>
-        public Status SelectStreamingMethodAndStream()
+        public void SelectStreamingMethodAndStream()
         {
             long dummy, bytes;
-            return SelectStreamingMethodAndStream(out dummy, out bytes);
+            SelectStreamingMethodAndStream(out dummy, out bytes);
         }
 
         /// <summary>
@@ -603,7 +598,8 @@ namespace RuralCafe
             Stream output = _clientHttpContext.Response.OutputStream;
             try
             {
-                return Utils.Stream(ms, output);
+                long bytes = Utils.Stream(ms, output);
+                return bytes;
             }
             catch (Exception e)
             {
