@@ -103,6 +103,7 @@ namespace RuralCafe
         /// The network status
         /// </summary>
         private NetworkStatusCode _networkStatus;
+        protected int _activeRequests;
         
         // bandwidth measurement
         // lock object
@@ -271,11 +272,6 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Abstract method for starting listener.
-        /// </summary>
-        public abstract void StartListener();
-
-        /// <summary>
         /// Checks to see if the proxy still has free downlink bandwidth.
         /// Used to rate limit the downlink transfer speed.
         /// </summary>
@@ -395,9 +391,49 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Abstract method for dispatcher.
+        /// Starts the listener for connections from clients.
         /// </summary>
-        public abstract void DispatchGo(object requestHandlerObj);
+        public void StartListener()
+        {
+            _logger.Info("Started Listener on " + _listenAddress + ":" + _listenPort);
+            try
+            {
+                // create a listener for the proxy port
+                HttpListener listener = new HttpListener();
+                // prefix URL at which the listener will listen
+                listener.Prefixes.Add("http://*:" + _listenPort + "/");
+                listener.Start();
+
+                // loop and listen for the next connection request
+                while (true)
+                {
+                    if (_activeRequests >= Properties.Settings.Default.LOCAL_MAXIMUM_ACTIVE_REQUESTS)
+                    {
+                        _logger.Debug("Waiting. Active Requests: " + _activeRequests);
+                        while (_activeRequests >= Properties.Settings.Default.LOCAL_MAXIMUM_ACTIVE_REQUESTS)
+                        {
+                            Thread.Sleep(100);
+                        }
+                    }
+                    // accept connections on the proxy port (blocks)
+                    HttpListenerContext context = listener.GetContext();
+
+                    // create the request handler
+                    RequestHandler requestHandler = RequestHandler.PrepareNewRequestHandler(this, context);
+
+                    // Start own method StartRequestHandler in the thread, which also in- and decreases _activeRequests
+                    ThreadPool.QueueUserWorkItem(new WaitCallback(requestHandler.HandleRequest), null);
+                }
+            }
+            catch (SocketException e)
+            {
+                _logger.Fatal("SocketException in StartListener, errorcode: " + e.NativeErrorCode, e);
+            }
+            catch (Exception e)
+            {
+                _logger.Fatal("Exception in StartListener", e);
+            }
+        }
 
         /// <summary>
         /// Starts the dispatcher which requests pages from the remote proxy.
@@ -419,7 +455,8 @@ namespace RuralCafe
                 "\nAvailable completion port threads: {1}\n",
                 workerThreads, portThreads);
 
-            _logger.Info("Started Requester");
+            _logger.Info("Started Dispatcher");
+
             // go through the outstanding requests forever
             while (true)
             {
@@ -437,8 +474,7 @@ namespace RuralCafe
                         continue;
                     }
                     // Queue the request as a thread
-                    _logger.Debug("Dispatching request");// + requestHandler.RequestUri);
-                    ThreadPool.QueueUserWorkItem(new WaitCallback(DispatchGo), (object)requestHandler);
+                    ThreadPool.QueueUserWorkItem(new WaitCallback(requestHandler.DispatchRequest), null);
 
                     // Remove from queue, as request is finished
                     lock (_globalRequestQueue)

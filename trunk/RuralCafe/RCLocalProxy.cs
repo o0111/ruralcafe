@@ -65,7 +65,6 @@ namespace RuralCafe
         private string _uiPagesPath;
         private string _rcSearchPage;
         private string _wikiDumpPath;
-        private int _activeRequests;
 
         // remoteProxy
         private WebProxy _remoteProxy;
@@ -288,51 +287,7 @@ namespace RuralCafe
                 CLUSTERING_HIERARCHICAL);
         }
 
-        /// <summary>
-        /// Starts the listener for connections from clients.
-        /// </summary>
-        public override void StartListener()
-        {
-            _logger.Info("Started Listener on " + _listenAddress + ":" + _listenPort);
-            try
-            {
-                HttpListener listener = new HttpListener();
-                // prefix URL at which the listener will listen
-                listener.Prefixes.Add("http://*:" + _listenPort + "/");
-                listener.Start();
-
-                // loop and listen for the next connection request
-                while (true)
-                {
-                    if (_activeRequests >= Properties.Settings.Default.LOCAL_MAXIMUM_ACTIVE_REQUESTS)
-                    {
-                        _logger.Debug("Waiting. Active Requests: " + _activeRequests);
-                        while (_activeRequests >= Properties.Settings.Default.LOCAL_MAXIMUM_ACTIVE_REQUESTS)
-                        {
-                            Thread.Sleep(100);
-                        }
-                    }
-                    // accept connections on the proxy port (blocks)
-                    HttpListenerContext context = listener.GetContext();
-
-                    // create the request handler
-                    RequestHandler requestHandler = RequestHandler.PrepareNewRequestHandler(this, context);
-
-                    // Start own method StartRequestHandler in the thread, which also in- and decreases _activeRequests
-                    Thread proxyThread = new Thread(new ParameterizedThreadStart(this.StartRequestHandler));
-                    proxyThread.Start(requestHandler);
-                }
-            }
-            catch (SocketException e)
-            {
-                _logger.Fatal("SocketException in StartRemoteListener, errorcode: " + e.NativeErrorCode, e);
-            }
-            catch (Exception e)
-            {
-                _logger.Fatal("Exception in StartRemoteListener", e);
-            }
-        }
-
+        /*
         /// <summary>
         /// Invokes the <see cref="RequestHandler.Go"/> method. While it is running, the number of
         /// active requests is increased.
@@ -348,69 +303,11 @@ namespace RuralCafe
             // Increment number of active requests
             System.Threading.Interlocked.Increment(ref _activeRequests);
             // Start request handler
-            ((RequestHandler)requestHandler).Go();
+            ((RequestHandler)requestHandler).Go(null);
             // Decrement number of active requests
             System.Threading.Interlocked.Decrement(ref _activeRequests);
-        }
+        }*/
         
-        /// <summary>
-        /// Dispatch Threads.
-        /// </summary>
-        public override void DispatchGo(object requestHandlerObj)
-        {
-            LocalRequestHandler requestHandler = requestHandlerObj as LocalRequestHandler;
-
-            // Save start time
-            requestHandler.StartTime = DateTime.Now;
-            if (_gatewayProxy != null)
-            {
-                requestHandler.RCRequest.SetProxyAndTimeout(_gatewayProxy, System.Threading.Timeout.Infinite);
-            }
-            else
-            {
-                requestHandler.RCRequest.SetProxyAndTimeout(_remoteProxy, System.Threading.Timeout.Infinite);
-            }
-            // save the request file as a package
-            requestHandler.RCRequest.CacheFileName = requestHandler.PackageFileName;
-
-            requestHandler.RequestStatus = RequestHandler.Status.Downloading;
-
-            _logger.Debug("dispatching to remote proxy: " + requestHandler.RequestUri);
-            long bytesDownloaded = requestHandler.RCRequest.DownloadToCache(true);
-
-            if (bytesDownloaded > 0)
-            {
-                // Get RC response headers
-                RCSpecificResponseHeaders headers = requestHandler.GetRCSpecificResponseHeaders();
-
-                long unpackedBytes = Package.Unpack(requestHandler, headers, _indexWrapper);
-                if (unpackedBytes > 0)
-                {
-                    _logger.Debug("unpacked: " + requestHandler.RequestUri);
-                    requestHandler.RCRequest.FileSize = unpackedBytes;
-                    requestHandler.RequestStatus = RequestHandler.Status.Completed;
-                }
-                else
-                {
-                    _logger.Warn("failed to unpack: " + requestHandler.RequestUri);
-                    requestHandler.RequestStatus = RequestHandler.Status.Failed;
-                }
-
-                // XXX: for benchmarking only
-                //SaveBenchmarkTimes(totalProcessingTime);
-            }
-            else
-            {
-                requestHandler.RequestStatus = RequestHandler.Status.Failed;
-            }
-
-            requestHandler.FinishTime = DateTime.Now;
-            UpdateTimePerRequest(requestHandler.StartTime, requestHandler.FinishTime);
-
-            requestHandler.LogResponse();
-        }
-
-
         #region Network status detection
 
         /// <summary>
@@ -696,7 +593,7 @@ namespace RuralCafe
         /// updates the time per request given a timespan
         /// Exponential moving average alpha = 0.2
         /// </summary>
-        private void UpdateTimePerRequest(DateTime startTime, DateTime finishTime)
+        public void UpdateTimePerRequest(DateTime startTime, DateTime finishTime)
         {
             TimeSpan totalProcessingTime = finishTime - startTime;
 

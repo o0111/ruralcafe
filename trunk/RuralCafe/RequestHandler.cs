@@ -100,8 +100,7 @@ namespace RuralCafe
                     }
                     else
                     {
-                        RequestHandler newHandler = new LocalRequestHandler((RCLocalProxy)proxy, context);
-                        return newHandler;
+                        return new LocalRequestHandler((RCLocalProxy)proxy, context);
                     }
                 }
                 else
@@ -112,8 +111,7 @@ namespace RuralCafe
                     }
                     else
                     {
-                        RequestHandler newHandler = new RemoteRequestHandler((RCRemoteProxy)proxy, context);
-                        return newHandler;
+                        return new RemoteRequestHandler((RCRemoteProxy)proxy, context);
                     }
                 }
             }
@@ -364,52 +362,68 @@ namespace RuralCafe
         }
 
         #endregion
-        /// <summary>
-        /// Main entry point for listener threads for a HttpWebRequest.
-        /// </summary>
-        public void Go()
+
+        public bool CheckIfBlackListedOrInvalidUri()
         {
             try
             {
                 if (!_validRequest)
                 {
-                    // finally will still be executed!
-                    return;
+                    return false;
                 }
 
+                // check for blacklist
                 if (IsBlacklisted(OriginalRequest.RawUrl))
                 {
                     Logger.Debug("ignoring blacklisted: " + OriginalRequest.RawUrl);
                     SendErrorPage(HttpStatusCode.NotFound, "blacklisted: " + OriginalRequest.RawUrl);
-                    return;// Status.Failed;
+                    return false;
                 }
 
                 // check if the URI is valid
-                if (HttpUtils.IsValidUri(OriginalRequest.RawUrl))
+                if (!HttpUtils.IsValidUri(OriginalRequest.RawUrl))
                 {
-                    // create the RCRequest object for this request handler
-                    CreateRequest(OriginalRequest);
-                }
-                else
-                {
-                    // Invalid URIs are ignored.
                     Logger.Debug("URI invalid: " + OriginalRequest.RawUrl);
                     SendErrorPage(HttpStatusCode.BadRequest, "URI invalid: " + OriginalRequest.RawUrl);
-
-                    return;
+                    return false;
                 }
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
 
-                // XXX: need to avoid duplicate request/response logging when redirecting e.g. after an add
-                // handle the request
-                if (IsRCRequest())
+            return true;
+        }
+
+        public void DisconnectSocket()
+        {
+            // disconnect and close the socket
+            if (_clientHttpContext != null)
+            {
+                try
                 {
-                    HandleRequest();
+                    _clientHttpContext.Response.Close();
                 }
-                else {
-                    LogRequest();
-                    HandleRequest();
-                    LogResponse();
+                catch (Exception e)
+                {
+                    Logger.Warn("Could not close the response context: ", e);
                 }
+            }
+        }
+
+        /*
+        /// <summary>
+        /// Main entry point for listener threads for a HttpWebRequest.
+        /// </summary>
+        public void Go(object nullObj)
+        {
+
+            // save start time for ETA calculation
+            StartTime = DateTime.Now;
+            try
+            {
+
             }
             catch (Exception e)
             {
@@ -423,29 +437,16 @@ namespace RuralCafe
             }
             finally
             {
-                // disconnect and close the socket
-                if (_clientHttpContext != null)
-                {
-                    try
-                    {
-                        _clientHttpContext.Response.Close();
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.Warn("Could not close the response context: ", e);
-                    }
-                    
-                }
-                // XXX: _rcRequest.FinishTime = DateTime.Now;
+                DisconnectSocket();
             }
+
             // returning from this method will terminate the thread
-        }
+        }*/
 
         /// <summary>
         /// Creates RCRequest object for the request. Entry point for new RequestHandler objects.
         /// </summary>
         /// <param name="request">The HTTP request.</param>
-        /// <param name="refererUri">The referrer.</param>
         /// <returns><code>True</code>, iff the URI is valid and a request has been created.</returns>
         protected void CreateRequest(HttpListenerRequest request)
         {
@@ -455,7 +456,10 @@ namespace RuralCafe
         }
 
         /// <summary>Abstract method for proxies to handle requests.</summary>
-        public abstract void HandleRequest();
+        public abstract void HandleRequest(object nullObj);
+
+        /// <summary>Abstract method for handlers to issue requests.</summary>
+        public abstract void DispatchRequest(object nullObj);
 
 
         #region streaming

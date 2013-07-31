@@ -96,92 +96,88 @@ namespace RuralCafe
         /// Main logic of RuralCafe RPRequestHandler.
         /// Called by Go() in the base RequestHandler class.
         /// </summary>
-        public override void HandleRequest()
+        public override void HandleRequest(object nullObj)
         {
-            // benchmarking
-            //handleRequestStart = DateTime.Now;
-
-            // Get RC headers
-            RCSpecificRequestHeaders rcHeaders = GetRCSpecificRequestHeaders();
-
-            // streaming
-            if (rcHeaders.IsStreamingTransparently)
+            if (!CheckIfBlackListedOrInvalidUri())
             {
-                SelectStreamingMethodAndStream();
+                DisconnectSocket();
                 return;
-            }
-
-            // Get current richness!
-            Richness richness = Proxy.GetUserSettings(Context.Request.RemoteEndPoint, rcHeaders.RCUserID).richness;
-            if (richness == 0)
-            {
-                // Use default when nothing is set.
-                richness = Properties.Settings.Default.DEFAULT_RICHNESS;
-            }
-
-            // XXX: static quota for now
-            /* QUOTA parameterization in the UI
-            // get the quota
-            string quotaString = GetRuralCafeSearchField("quota");
-            long remainingQuota = Int32.Parse(quotaString);
-            if (quotaString.Equals(""))
-            {
-                // no quota
-                remainingQuota = 1000000000; // XXX: very large number
             }
             else
             {
-                try
-                {
-                    remainingQuota = Int32.Parse(quotaString);
-                }
-                catch (Exception e)
-                {
-                    remainingQuota = 0;
-                    LogException("Couldn't parse quota: " + e.StackTrace + " " + e.Message);
-                }                
-            }*/
-            string requestUri = _rcRequest.Uri;
-
-            if (requestUri.Trim().Length > 0)
-            {
-                string fileExtension = Utils.GetFileExtension(requestUri);
-                requestUri = HttpUtils.AddHttpPrefix(requestUri);
-
-                // Check if we can save the package
-                if (!Utils.IsNotTooLongFileName(PackageFileName))
-                {
-                    Logger.Debug("package filename for " + RequestUri + " is too long. Aborting.");
-                    return;
-                }
-
-                // Check if we can save the file
-                if (Utils.IsNotTooLongFileName(_rcRequest.CacheFileName))
-                {
-                    //_rcRequest.SetProxy(_proxy.GatewayProxy, WEB_REQUEST_DEFAULT_TIMEOUT);
-
-                    if (RecursivelyDownloadPage(_rcRequest, richness, 0))
-                    {
-                        _rcRequest.FileSize = SendResponsePackage();
-                        /*
-                        if (_rcRequest.FileSize > 0)
-                        {
-                            return; Status.Completed;
-                        }*/
-                    }
-                }
-                else   
-                {
-                    // XXX: not handled at the moment, technically nothing should be "not cacheable" though.
-                    Logger.Warn("not cacheable, failed.");
-                }
+                // create the RCRequest object for this request handler
+                CreateRequest(OriginalRequest);
             }
 
-            // benchmarking
-            //handleRequestEnd = DateTime.Now;
-            //SaveBenchmarkTimes();
+            // ugly variable
+            bool isStreaming = false;
+            try
+            {
+                LogRequest();
 
-            return;
+                // check for streaming
+                RCSpecificRequestHeaders rcHeaders = GetRCSpecificRequestHeaders();
+                if (rcHeaders.IsStreamingTransparently)
+                {
+                    // stream the request
+                    isStreaming = true;
+                    SelectStreamingMethodAndStream();
+                }
+                else
+                {
+                    // queue the request
+                    ((RCRemoteProxy)_proxy).QueueRequest(this);
+                }
+            }
+            catch (Exception e)
+            {
+                RequestStatus = RequestHandler.Status.Failed;
+                String errmsg = "error handling request: ";
+                if (_originalRequest != null)
+                {
+                    errmsg += " " + _originalRequest.RawUrl.ToString(); ;
+                }
+                Logger.Warn(errmsg, e);
+            }
+            finally
+            {
+                if (isStreaming)
+                {
+                    DisconnectSocket();
+                }
+                LogResponse();
+            }
+
+            // do NOT close the socket till dispatcher is done.
+        }
+
+        /// <summary>
+        /// Dispatch Threads.
+        /// </summary>
+        public override void DispatchRequest(object nullObj)
+        {
+            // set proxy and timeouts
+            if (_proxy.GatewayProxy != null)
+            {
+                _rcRequest.SetProxyAndTimeout(_proxy.GatewayProxy, _requestTimeout);
+            }
+            
+            // check user richness setting
+            RequestHandler.Richness richness = ((RCRemoteProxy)_proxy).GetUserSettings(Context.Request.RemoteEndPoint, GetRCSpecificRequestHeaders().RCUserID).richness;
+            if (richness == 0)
+            {
+                // Use default when nothing is set
+                richness = Properties.Settings.Default.DEFAULT_RICHNESS;
+            }
+            
+            // download the package and return it to local proxy
+            if (RecursivelyDownloadPage(RCRequest, richness, 0))
+            {
+                RCRequest.FileSize = SendResponsePackage();
+            }
+
+            DisconnectSocket();
+            // thread dies upon return
         }
 
         #region benchmarking (unused)
@@ -313,7 +309,7 @@ namespace RuralCafe
         /// <param name="richness">Richness setting.</param>
         /// <param name="depth">Depth to download.</param>
         /// <returns></returns>
-        private bool RecursivelyDownloadPage(RCRequest rcRequest, Richness richness, int depth)
+        public bool RecursivelyDownloadPage(RCRequest rcRequest, Richness richness, int depth)
         {
             if (_killYourself ||_quota < DEFAULT_LOW_WATERMARK)
             {
@@ -593,11 +589,8 @@ namespace RuralCafe
         /// Sends the request result package to the client
         /// </summary>
         /// <returns>The size of the package sent.</returns>
-        private long SendResponsePackage()
+        public long SendResponsePackage()
         {
-            // benchmarking
-            //transmitStart = DateTime.Now;
-
             // build the package index
             if (!BuildPackageIndex())
             {
