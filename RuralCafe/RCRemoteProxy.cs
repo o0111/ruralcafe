@@ -78,27 +78,20 @@ namespace RuralCafe
 
                     // create the handler for the request
                     RemoteRequestHandler requestHandler = (RemoteRequestHandler) RequestHandler.PrepareNewRequestHandler(this, context);
-                    if (requestHandler != null)
+                    
+                    // XXX: a bit ugly since duplicate check for streaming in Go.
+                    RCSpecificRequestHeaders rcHeaders = requestHandler.GetRCSpecificRequestHeaders();
+                    if (rcHeaders.IsStreamingTransparently)
                     {
-                        RCSpecificRequestHeaders rcHeaders = requestHandler.GetRCSpecificRequestHeaders();
-                        if (rcHeaders.IsStreamingTransparently)
-                        {
-                            // streaming
-                            requestHandler.SelectStreamingMethodAndStream();
-                        }
-                        else
-                        {
-                            // queued instead of streaming
-                            //requestHandler.RequestStatus = RequestHandler.Status.Pending;
-                            _logger.Debug("Queueing request: ");// + requestHandler.RequestUri);
-                            QueueRequest(requestHandler);
-                            /*
-                            // handle the accepted connection in a separate thread
-                            RequestHandler requestHandler = RequestHandler.PrepareNewRequestHandler(this, context);
-                            Thread proxyThread = new Thread(new ThreadStart(requestHandler.Go));
-                            proxyThread.Start();
-                             */
-                        }
+                        // streaming in a separate thread
+                        Thread proxyThread = new Thread(new ThreadStart(requestHandler.Go));
+                        proxyThread.Start();
+                    }
+                    else
+                    {
+                        // queued instead of streaming
+                        //requestHandler.RequestStatus = RequestHandler.Status.Pending;
+                        QueueRequest(requestHandler);
                     }
                 }
             }

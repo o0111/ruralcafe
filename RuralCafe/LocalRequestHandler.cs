@@ -92,13 +92,6 @@ namespace RuralCafe
         /// </summary>
         public override void HandleRequest()
         {
-            if (IsBlacklisted(RequestUri))
-            {
-                Logger.Debug("ignoring blacklisted: " + RequestUri);
-                SendErrorPage(HttpStatusCode.NotFound, "blacklisted: " + RequestUri);
-                return;// Status.Failed;
-            }
-
             // Try to get content from the wiki, if available.
             string redir;
             string wikiContent = Proxy.WikiWrapper.GetWikiContentIfAvailable(RequestUri, out redir);

@@ -424,7 +424,7 @@ namespace RuralCafe
             while (true)
             {
                 RequestHandler requestHandler = GetFirstGlobalRequest();
-                if (_name == REMOTE_PROXY_NAME && requestHandler != null||
+                if (_name == REMOTE_PROXY_NAME && requestHandler != null ||
                     (NetworkStatus == NetworkStatusCode.Slow && requestHandler != null))
                 {
                     if (requestHandler.RCRequest != null && requestHandler.RequestStatus != RequestHandler.Status.Pending)
@@ -465,17 +465,9 @@ namespace RuralCafe
             // add the request to the global queue
             lock (_globalRequestQueue)
             {
-                if (_globalRequestQueue.Contains(requestHandler))
-                {
-                    // grab the existing handler instead of the new one
-                    int existingRequestIndex = _globalRequestQueue.IndexOf(requestHandler);
-                    requestHandler = _globalRequestQueue[existingRequestIndex];
-                }
-                else
-                {
-                    // queue new request
-                    _globalRequestQueue.Add(requestHandler);
-                }
+                // queue new request
+                _globalRequestQueue.Add(requestHandler);
+
                 return requestHandler;
             }
         }
