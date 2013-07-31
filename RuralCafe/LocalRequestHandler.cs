@@ -51,7 +51,7 @@ namespace RuralCafe
             _requestTimeout = LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT;
             // Copy fields from internalHandler
             _outstandingRequests = internalHandler.OutstandingRequests;
-            _packageFileName = internalHandler.PackageFileName;
+            PackageFileName = internalHandler.PackageFileName;
         }
 
         /// <summary>
@@ -198,7 +198,7 @@ namespace RuralCafe
             }
 
             // if we're not online, let's check if the packe file name is not too long
-            if (!Utils.IsNotTooLongFileName(_packageFileName))
+            if (!Utils.IsNotTooLongFileName(PackageFileName))
             {
                 Logger.Debug("package filename for " + RequestUri + " is too long. Aborting.");
                 SendErrorPage(HttpStatusCode.InternalServerError, "package filename for " + RequestUri + " is too long.");

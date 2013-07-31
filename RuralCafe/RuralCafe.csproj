@@ -100,7 +100,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AnalysisTools.cs" />
     <Compile Include="CacheManager.cs" />
     <Compile Include="Clusters\Cluster.cs" />
     <Compile Include="Clusters\Doc2Mat.cs" />
