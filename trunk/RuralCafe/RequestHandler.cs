@@ -100,7 +100,19 @@ namespace RuralCafe
                     }
                     else
                     {
-                        return new LocalRequestHandler((RCLocalProxy)proxy, context);
+                        RequestHandler newHandler = new LocalRequestHandler((RCLocalProxy)proxy, context);
+                        
+                        // get the referer URI and create the RCRequest object for this request handler
+                        if (newHandler.CreateRequest(newHandler.OriginalRequest))
+                        {
+                            return newHandler;
+                        }
+                        else
+                        {
+                            // Invalid URIs are ignored.
+                            newHandler.Logger.Debug("URI invalid: " + newHandler.OriginalRequest.RawUrl.ToString());
+                            return null;
+                        }
                     }
                 }
                 else
@@ -111,7 +123,19 @@ namespace RuralCafe
                     }
                     else
                     {
-                        return new RemoteRequestHandler((RCRemoteProxy)proxy, context);
+                        RequestHandler newHandler = new RemoteRequestHandler((RCRemoteProxy)proxy, context);
+
+                        // get the referer URI and create the RCRequest object for this request handler
+                        if (newHandler.CreateRequest(newHandler.OriginalRequest))
+                        {
+                            return newHandler;
+                        }
+                        else
+                        {
+                            // Invalid URIs are ignored.
+                            newHandler.Logger.Debug("URI invalid: " + newHandler.OriginalRequest.RawUrl.ToString());
+                            return null;
+                        }
                     }
                 }
             }
@@ -167,10 +191,6 @@ namespace RuralCafe
         // timeout in milliseconds
         [JsonProperty]
         protected int _requestTimeout;
-
-        // filename for the package
-        [JsonProperty]
-        protected string _packageFileName;
 
         // If request is valid
         [JsonProperty]
@@ -278,7 +298,8 @@ namespace RuralCafe
         /// <summary>The name of the package if this is to be a package.</summary>
         public string PackageFileName
         {
-            get { return _packageFileName; }
+            set { _rcRequest.PackageFileName = value; }
+            get { return _rcRequest.PackageFileName; }
         }
         /// <summary>Time this request started.</summary>
         public DateTime StartTime
@@ -370,8 +391,6 @@ namespace RuralCafe
         /// </summary>
         public void Go()
         {
-            string refererUri = "";
-
             try
             {
                 if (!_validRequest)
@@ -379,29 +398,17 @@ namespace RuralCafe
                     // finally will still be executed!
                     return;
                 }
-                // get the referer URI
-                refererUri = _originalRequest.UrlReferrer != null ? _originalRequest.UrlReferrer.ToString() : "";
 
-                if (CreateRequest(_originalRequest, refererUri))
+                // XXX: need to avoid duplicate request/response logging when redirecting e.g. after an add
+                // handle the request
+                if (IsRCRequest())
                 {
-                    _packageFileName = _proxy.PackagesPath + _rcRequest.HashPath + _rcRequest.FileName + ".gzip";
-
-                    // XXX: need to avoid duplicate request/response logging when redirecting e.g. after an add
-                    // handle the request
-                    if (IsRCRequest())
-                    {
-                        HandleRequest();
-                    }
-                    else {
-                        LogRequest();
-                        HandleRequest();
-                        LogResponse();
-                    }
+                    HandleRequest();
                 }
-                else
-                {
-                    // Invalid URIs are ignored.
-                    Logger.Debug("URI invalid: " + _originalRequest.RawUrl.ToString());
+                else {
+                    LogRequest();
+                    HandleRequest();
+                    LogResponse();
                 }
             }
             catch (Exception e)
@@ -435,18 +442,18 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Creates RCRequest object for the request.
+        /// Creates RCRequest object for the request. Entry point for new RequestHandler objects.
         /// </summary>
         /// <param name="request">The HTTP request.</param>
         /// <param name="refererUri">The referrer.</param>
         /// <returns><code>True</code>, iff the URI is valid and a request has been created.</returns>
-        protected bool CreateRequest(HttpListenerRequest request, string refererUri)
+        protected bool CreateRequest(HttpListenerRequest request)
         {
             if (HttpUtils.IsValidUri(request.RawUrl.ToString()))
             {
                 // create the request object
-                _rcRequest = new RCRequest(this, HttpUtils.CreateWebRequest(request), "", refererUri,
-                HttpUtils.ReceiveBody(request));
+                string refererUri = _originalRequest.UrlReferrer != null ? _originalRequest.UrlReferrer.ToString() : "";
+                _rcRequest = new RCRequest(this, HttpUtils.CreateWebRequest(request), "", refererUri, HttpUtils.ReceiveBody(request));
                 return true;
             }
             return false;
@@ -462,7 +469,7 @@ namespace RuralCafe
         /// If not it is streamed to the client directly.
         /// </summary>
         /// <returns>The status of the request.</returns>
-        protected Status SelectStreamingMethodAndStream()
+        public Status SelectStreamingMethodAndStream()
         {
             long dummy, bytes;
             return SelectStreamingMethodAndStream(out dummy, out bytes);
@@ -475,7 +482,7 @@ namespace RuralCafe
         /// <param name="speedBS">The speed in byte/s will be stored here.</param>
         /// <param name="bytes">The number of downloaded bytes will be stored here.</param>
         /// <returns>The status of the request.</returns>
-        protected Status SelectStreamingMethodAndStream(out long speedBS, out long bytes)
+        public Status SelectStreamingMethodAndStream(out long speedBS, out long bytes)
         {
             if (IsCacheable())
             {

@@ -52,6 +52,8 @@ namespace RuralCafe
         private string _itemId;
         [JsonProperty]
         private string _cacheFileName;
+        [JsonProperty]
+        private string _packageFileName;
 
         [JsonProperty]
         private string _uriBeforeRedirect;
@@ -117,6 +119,12 @@ namespace RuralCafe
         {
             set { _fileName = value; }
             get { return _fileName; }
+        }
+        /// <summary>The file name of the object.</summary>
+        public string PackageFileName
+        {
+            set { _packageFileName = value; }
+            get { return _packageFileName; }
         }
         /// <summary>The hashed file name of the object.</summary>
         public string HashPath
@@ -230,6 +238,7 @@ namespace RuralCafe
             _hashPath = CacheManager.GetHashPath(_fileName);
             _itemId = _hashPath.Replace(Path.DirectorySeparatorChar.ToString(), "");
             _cacheFileName = requestHandler.GenericProxy.CachePath + _hashPath + _fileName;
+            _packageFileName = requestHandler.GenericProxy.PackagesPath + _hashPath + _fileName + ".gzip";
             _fileSize = 0;
 
             _requestHandler = requestHandler;

@@ -104,14 +104,6 @@ namespace RuralCafe
             // Get RC headers
             RCSpecificRequestHeaders rcHeaders = GetRCSpecificRequestHeaders();
 
-            if (rcHeaders.IsStreamingTransparently)
-            {
-                // We're streaming transparantly:
-                // No prefetching, no packaging.
-                SelectStreamingMethodAndStream();
-                return;
-            }
-
             // Get current richness!
             Richness richness = Proxy.
                 GetUserSettings(Context.Request.RemoteEndPoint, rcHeaders.RCUserID).richness;
@@ -151,7 +143,7 @@ namespace RuralCafe
                 requestUri = HttpUtils.AddHttpPrefix(requestUri);
 
                 // Check if we can save the package
-                if (!Utils.IsNotTooLongFileName(_packageFileName))
+                if (!Utils.IsNotTooLongFileName(PackageFileName))
                 {
                     Logger.Debug("package filename for " + RequestUri + " is too long. Aborting.");
                     return;
@@ -370,10 +362,12 @@ namespace RuralCafe
             DownloadEmbeddedObjects(rcRequest, richness);
 
             // recurse if necessary
-            LinkedList<RCRequest> resultLinkUris = ExtractLinks(rcRequest);
-            foreach (RCRequest currObject in resultLinkUris)
+            LinkedList<Uri> resultLinkUris = ExtractLinks(rcRequest);
+            foreach (Uri currUri in resultLinkUris)
             {
-                RecursivelyDownloadPage(currObject, richness, depth + 1);
+                RCRequest currRequest = new RCRequest(this, (HttpWebRequest)WebRequest.Create(currUri));
+
+                RecursivelyDownloadPage(currRequest, richness, depth + 1);
             }
             return true;
         }
@@ -386,36 +380,29 @@ namespace RuralCafe
         /// <returns>List of RCRequests of embedded objects downloaded</returns>
         private LinkedList<RCRequest> DownloadEmbeddedObjects(RCRequest rcRequest, Richness richness)
         {
-            LinkedList<RCRequest> filteredEmbeddedObjects = new LinkedList<RCRequest>();
+            LinkedList<Uri> filteredEmbeddedObjects = new LinkedList<Uri>();
 
             if (_killYourself || _quota < DEFAULT_LOW_WATERMARK)
             {
-                return filteredEmbeddedObjects;
+                return new LinkedList<RCRequest>();
             }
             
-            LinkedList<RCRequest> embeddedObjects = ExtractEmbeddedObjects(rcRequest);
+            LinkedList<Uri> embeddedObjects = ExtractEmbeddedObjects(rcRequest);
 
             // XXX: refactor into filter class/method.
             // filter out based on richness
-            int objectNumber = 0;
-            foreach (RCRequest embeddedObject in embeddedObjects)
+            foreach (Uri currUri in embeddedObjects)
             {
                 // ignore blacklisted domains
-                if (IsBlacklisted(embeddedObject.Uri))
+                if (IsBlacklisted(currUri.ToString()))
                 {
                     continue;
                 }
-
-                if (richness == Richness.Normal || (richness == Richness.Low && IsATextPage(embeddedObject.Uri)))
+                
+                if (richness == Richness.Normal || (richness == Richness.Low && IsATextPage(currUri.ToString())))
                 {
-                    filteredEmbeddedObjects.AddLast(embeddedObject);
+                    filteredEmbeddedObjects.AddLast(currUri);
                 }
-                else 
-                {
-                    continue;
-                }
-                embeddedObject.ChildNumber = objectNumber;
-                objectNumber++;
             }
             embeddedObjects = filteredEmbeddedObjects;
 
@@ -490,45 +477,49 @@ namespace RuralCafe
         /// <param name="parentRequest">Root request.</param>
         /// <param name="children">Children requests to be downloaded.</param>
         /// <returns>List of downloaded requests.</returns>
-        private LinkedList<RCRequest> DownloadObjectsInParallel(RCRequest parentRequest, LinkedList<RCRequest> children)
+        private LinkedList<RCRequest> DownloadObjectsInParallel(RCRequest parentRequest, LinkedList<Uri> childObjects)
         {
             ThreadPool.SetMaxThreads(4, 4);
             LinkedList<RCRequest> addedObjects = new LinkedList<RCRequest>();
 
-            if (_killYourself || children.Count == 0)
+            if (_killYourself || childObjects.Count == 0)
             {
                 return addedObjects;
             }
             
-            parentRequest.ResetEvents = new ManualResetEvent[children.Count];
+            parentRequest.ResetEvents = new ManualResetEvent[childObjects.Count];
 
             try
             {
                 // queue up worker threads to download URIs
-                for (int i = 0; i < children.Count; i++)
+                for (int i = 0; i < childObjects.Count; i++)
                 {
-                    RCRequest currChild = children.ElementAt(i);
+                    // create the RCRequest for the object
+                    RCRequest currChildObject = new RCRequest(this, (HttpWebRequest)WebRequest.Create(childObjects.ElementAt(i)));
+                    currChildObject.ChildNumber = i;
+                    addedObjects.AddLast(currChildObject);
+
                     // set the resetEvent
-                    currChild.ResetEvents = parentRequest.ResetEvents;
+                    currChildObject.ResetEvents = parentRequest.ResetEvents;
                     parentRequest.ResetEvents[i] = new ManualResetEvent(false);
 
                     // make sure we haven't downloaded this before
-                    if (_package.RCRequests.Contains(currChild))
+                    if (_package.RCRequests.Contains(currChildObject))
                     {
                         // skip it
-                        currChild.SetDone();
+                        currChildObject.SetDone();
                         continue;
                     }                    
  
                     // download the page
                     //LogDebug("queueing: " + currChild.ChildNumber + " " + currChild.Uri);
-                    ThreadPool.QueueUserWorkItem(new WaitCallback(DownloadPageWorkerThread), (object)currChild);
+                    ThreadPool.QueueUserWorkItem(new WaitCallback(DownloadPageWorkerThread), (object)currChildObject);
                 }
 
                 // wait for timeout
                 WaitAll(parentRequest.ResetEvents);
 
-                addedObjects = _package.Pack(this, children, ref _quota);
+                addedObjects = _package.Pack(this, addedObjects, ref _quota);
             }
             catch (Exception e)
             {
@@ -615,7 +606,7 @@ namespace RuralCafe
 
             // stream out the pages (w/compression)
             LinkedList<string> fileNames = new LinkedList<string>();
-            fileNames.AddLast(_packageFileName);
+            fileNames.AddLast(PackageFileName);
             foreach (RCRequest rcRequest in _package.RCRequests)
             {
                 fileNames.AddLast(rcRequest.CacheFileName);
@@ -633,16 +624,16 @@ namespace RuralCafe
             _package.ContentSize = 0;
             try
             {
-                if (!Utils.CreateDirectoryForFile(_packageFileName))
+                if (!Utils.CreateDirectoryForFile(PackageFileName))
                 {
                     return false;
                 }
-                if (!Utils.DeleteFile(_packageFileName))
+                if (!Utils.DeleteFile(PackageFileName))
                 {
                     return false;
                 }
 
-                TextWriter tw = new StreamWriter(_packageFileName);
+                TextWriter tw = new StreamWriter(PackageFileName);
 
                 // create the package index file
                 foreach (RCRequest rcRequest in _package.RCRequests)
@@ -654,15 +645,15 @@ namespace RuralCafe
                 tw.Close();
 
                 // calculate the index size
-                _package.IndexSize = Utils.GetFileSize(_packageFileName);
+                _package.IndexSize = Utils.GetFileSize(PackageFileName);
                 if (_package.IndexSize < 0)
                 {
-                    Logger.Warn("problem getting file info: " + _packageFileName);
+                    Logger.Warn("problem getting file info: " + PackageFileName);
                 }
             }
             catch (Exception e)
             {
-                Logger.Error("problem creating package file: " + _packageFileName, e);
+                Logger.Error("problem creating package file: " + PackageFileName, e);
                 return false;
             }
 
@@ -725,7 +716,7 @@ namespace RuralCafe
         /// Wrapper for ExtractReferences()
         /// XXX: not completely implemented, need non HTML/"src=" references.
         /// </summary>
-        LinkedList<RCRequest> ExtractEmbeddedObjects(RCRequest rcRequest)
+        LinkedList<Uri> ExtractEmbeddedObjects(RCRequest rcRequest)
         {
             return ExtractReferences(rcRequest, HtmlUtils.EmbeddedObjectTagAttributes);
         }
@@ -735,7 +726,7 @@ namespace RuralCafe
         /// Wrapper for ExtractReferences()
         /// XXX: not completely implemented, need non HTML/"a href=" references.
         /// </summary>
-        LinkedList<RCRequest> ExtractLinks(RCRequest rcRequest)
+        LinkedList<Uri> ExtractLinks(RCRequest rcRequest)
         {
             return ExtractReferences(rcRequest, HtmlUtils.LinkTagAttributes);
         }
@@ -746,9 +737,9 @@ namespace RuralCafe
         /// <param name="rcRequest">Page to parse.</param>
         /// <param name="tagAttributes">Seperator tokens.</param>
         /// <returns>List of references.</returns>
-        LinkedList<RCRequest> ExtractReferences(RCRequest rcRequest, string[,] tagAttributes)
+        LinkedList<Uri> ExtractReferences(RCRequest rcRequest, string[,] tagAttributes)
         {
-            LinkedList<RCRequest> extractedReferences = new LinkedList<RCRequest>();
+            LinkedList<Uri> extractedReferences = new LinkedList<Uri>();
 
             string fileString = Utils.ReadFileAsString(rcRequest.CacheFileName).ToLower();
             HtmlDocument doc = new HtmlDocument();
@@ -769,26 +760,33 @@ namespace RuralCafe
                 {
                     HtmlAttribute att = link.Attributes[attribute];
                     // Get the absolute URI
-                    string currUri;
+                    string currUriStr;
                     try
                     {
-                        currUri = new Uri(baseUri, att.Value).AbsoluteUri;
+                        currUriStr = new Uri(baseUri, att.Value).AbsoluteUri;
                     }
                     catch(UriFormatException)
                     {
                         continue;
                     }
 
-                    if (!HttpUtils.IsValidUri(currUri))
+                    if (!HttpUtils.IsValidUri(currUriStr))
                     {
                         continue;
                     }
 
-                    RCRequest extractedRCRequest = new RCRequest(this, (HttpWebRequest)WebRequest.Create(currUri.Trim()));
-
-                    if (!extractedReferences.Contains(extractedRCRequest))
+                    try
                     {
-                        extractedReferences.AddLast(extractedRCRequest);
+                        Uri currUri = new Uri(currUriStr.Trim());
+
+                        if (!extractedReferences.Contains(currUri))
+                        {
+                            extractedReferences.AddLast(currUri);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        // pass
                     }
                 }
             }

@@ -71,32 +71,32 @@ namespace RuralCafe
         /// XXX: should be changed to check for compressed size rather than actual size.
         /// </summary>
         /// <param name="requestHandler">Calling handler for this method.</param>
-        /// <param name="rcRequest">RCRequest to add.</param>
+        /// <param name="requestObject">RCRequest to add.</param>
         /// <param name="quota">Quota limit.</param>
         /// <returns>True iff the request has been packed successfully.</returns>
-        public bool Pack(RemoteRequestHandler requestHandler, RCRequest rcRequest, ref long quota)
+        public bool Pack(RemoteRequestHandler requestHandler, RCRequest requestObject, ref long quota)
         {
-            if (_rcRequests.Contains(rcRequest))
+            if (_rcRequests.Contains(requestObject))
             {
-                requestHandler.Logger.Debug("object exists in package: " + rcRequest.Uri);
+                requestHandler.Logger.Debug("object exists in package: " + requestObject.Uri);
                 return false;
             }
 
-            rcRequest.FileSize = Utils.GetFileSize(rcRequest.CacheFileName);
-            if (rcRequest.FileSize <= 0)
+            requestObject.FileSize = Utils.GetFileSize(requestObject.CacheFileName);
+            if (requestObject.FileSize <= 0)
             {
                 return false;
             }
 
             // quota check
-            if ((quota - rcRequest.FileSize) < 0)
+            if ((quota - requestObject.FileSize) < 0)
             {
-                requestHandler.Logger.Debug("object doesn't fit in quota: " + rcRequest.Uri);
+                requestHandler.Logger.Debug("object doesn't fit in quota: " + requestObject.Uri);
                 return false;
             }
 
-            _rcRequests.AddLast(rcRequest);
-            quota -= rcRequest.FileSize;
+            _rcRequests.AddLast(requestObject);
+            quota -= requestObject.FileSize;
 
             return true;
         }
@@ -105,19 +105,19 @@ namespace RuralCafe
         /// Adds all the requests to the package.
         /// </summary>
         /// <param name="requestHandler">The request Handler</param>
-        /// <param name="requests">The requests to add.</param>
+        /// <param name="childObjects">The requests to add.</param>
         /// <param name="quota">The remaining quota.</param>
         /// <returns>The added requests.</returns>
-        public LinkedList<RCRequest> Pack(RemoteRequestHandler requestHandler, LinkedList<RCRequest> requests, ref long quota)
+        public LinkedList<RCRequest> Pack(RemoteRequestHandler requestHandler, LinkedList<RCRequest> childObjects, ref long quota)
         {
             LinkedList<RCRequest> addedObjects = new LinkedList<RCRequest>();
             // add files that were completed to the package
-            foreach (RCRequest request in requests)
+            foreach (RCRequest childObject in childObjects)
             {
                 // add to the package
-                if (Pack(requestHandler, request, ref quota))
+                if (Pack(requestHandler, childObject, ref quota))
                 {
-                    addedObjects.AddLast(request);
+                    addedObjects.AddLast(childObject);
                 }
             }
             
