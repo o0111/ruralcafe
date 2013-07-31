@@ -76,6 +76,12 @@ namespace RuralCafe
             return new Response("Richness set.");
         }
 
+        /// <summary>Dummy.</summary>
+        public override void DispatchRequest(object nullObj)
+        {
+            // dummy
+        }
+
         /// <summary>
         /// Removes the request from Ruralcafe's queue.
         /// </summary>

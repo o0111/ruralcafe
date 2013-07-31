@@ -180,7 +180,7 @@ namespace RuralCafe
         /// Handles an RC internal request.
         /// </summary>
         /// <returns>The status.</returns>
-        public override void HandleRequest()
+        public override void HandleRequest(object nullObj)
         {
             Logger.Debug("Processing internal request: " + _originalRequest.Url);
 
@@ -193,6 +193,8 @@ namespace RuralCafe
                 if (mInfo == null)
                 {
                     Logger.Error("Unknown method in internal handler: " + method.MethodName);
+
+                    DisconnectSocket();
                     return;// RequestHandler.Status.Failed;
                 }
                 Object result = mInfo.Invoke(this, GetParameters(method));
@@ -200,6 +202,8 @@ namespace RuralCafe
                 {
                     Logger.Error("Return type wrong: " + method.MethodName);
                     SendErrorPage(HttpStatusCode.InternalServerError, "Return type wrong: " + method.MethodName);
+
+                    DisconnectSocket();
                     return;// RequestHandler.Status.Failed;
                 }
                 // Send result
@@ -219,9 +223,13 @@ namespace RuralCafe
                     if (bytesSent <= 0)
                     {
                         SendErrorPage(HttpStatusCode.NotFound, "page does not exist: " + RequestUri);
+
+                        DisconnectSocket();
                         return;// RequestHandler.Status.Failed;
                     }
                 }
+
+                DisconnectSocket();
                 return;// RequestHandler.Status.Completed;
             }
             catch (Exception e)
@@ -240,6 +248,8 @@ namespace RuralCafe
                     string message = innerE != null ? innerE.Message : e.Message;
                     SendErrorPage(HttpStatusCode.InternalServerError, message);
                 }
+
+                DisconnectSocket();
                 return;// RequestHandler.Status.Failed;
             }
         }

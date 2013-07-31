@@ -90,148 +90,240 @@ namespace RuralCafe
         /// Main logic of RuralCafe LPRequestHandler.
         /// Called by Go() in the base RequestHandler class.
         /// </summary>
-        public override void HandleRequest()
+        public override void HandleRequest(object nullObj)
         {
-            // Try to get content from the wiki, if available.
-            string redir;
-            string wikiContent = Proxy.WikiWrapper.GetWikiContentIfAvailable(RequestUri, out redir);
-            if (wikiContent != null)
+            if (!CheckIfBlackListedOrInvalidUri())
             {
-                // Log query metric
-                Proxy.Logger.QueryMetric(Proxy.SessionManager.GetUserId(ClientIP),
-                    true, RefererUri, RequestUri);
-
-                if (!redir.Equals(""))
-                {
-                    _clientHttpContext.Response.Redirect(redir);
-                }
-                // Set content type.
-                _clientHttpContext.Response.ContentType = "text/html";
-                // Include link suggestions if we're offline. XXX do we want that for wiki?
-                if (Proxy.NetworkStatus == RCLocalProxy.NetworkStatusCode.Offline)
-                {
-                    wikiContent = LinkSuggestionHtmlModifier.IncludeTooltips(wikiContent);
-                }
-                SendMessage(wikiContent);
-                return;// Status.Completed;
+                DisconnectSocket();
+                return;
+            }
+            else
+            {
+                // create the RCRequest object for this request handler
+                CreateRequest(OriginalRequest);
             }
 
-            // Do only use cache for HEAD/GET
-            if (IsGetOrHeadHeader() && IsCached(_rcRequest.CacheFileName))
+            try
             {
-                // Log query metric
-                Proxy.Logger.QueryMetric(Proxy.SessionManager.GetUserId(ClientIP),
-                    true, RefererUri, RequestUri);
+                LogRequest();
 
-                // Include link suggestions if we're offline for html pages
-                if (Proxy.NetworkStatus == RCLocalProxy.NetworkStatusCode.Offline
-                    && Utils.GetContentTypeOfFile(_rcRequest.CacheFileName).Equals("text/html"))
+                // Try to get content from the wiki, if available.
+                string redir;
+                string wikiContent = Proxy.WikiWrapper.GetWikiContentIfAvailable(RequestUri, out redir);
+                if (wikiContent != null)
                 {
-                    string content = Utils.ReadFileAsString(_rcRequest.CacheFileName);
-                    if (String.IsNullOrEmpty(content))
+                    // Log query metric
+                    Proxy.Logger.QueryMetric(Proxy.SessionManager.GetUserId(ClientIP),
+                        true, RefererUri, RequestUri);
+
+                    if (!redir.Equals(""))
                     {
-                        return;// Status.Failed;
+                        _clientHttpContext.Response.Redirect(redir);
                     }
-                    content = LinkSuggestionHtmlModifier.IncludeTooltips(content);
+                    // Set content type.
                     _clientHttpContext.Response.ContentType = "text/html";
-                    SendMessage(content);
+                    // Include link suggestions if we're offline. XXX do we want that for wiki?
+                    if (Proxy.NetworkStatus == RCLocalProxy.NetworkStatusCode.Offline)
+                    {
+                        wikiContent = LinkSuggestionHtmlModifier.IncludeTooltips(wikiContent);
+                    }
+                    SendMessage(wikiContent);
+
+                    DisconnectSocket();
                     return;// Status.Completed;
                 }
 
-                _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName);
-                if (_rcRequest.FileSize < 0)
+                // Check if this request is cacheable
+                if (IsCacheable() && IsCached(_rcRequest.CacheFileName))
                 {
+                    // Log query metric
+                    Proxy.Logger.QueryMetric(Proxy.SessionManager.GetUserId(ClientIP),
+                        true, RefererUri, RequestUri);
+
+                    // Include link suggestions if we're offline for html pages
+                    if (Proxy.NetworkStatus == RCLocalProxy.NetworkStatusCode.Offline
+                        && Utils.GetContentTypeOfFile(_rcRequest.CacheFileName).Equals("text/html"))
+                    {
+                        string content = Utils.ReadFileAsString(_rcRequest.CacheFileName);
+                        if (String.IsNullOrEmpty(content))
+                        {
+                            DisconnectSocket();
+                            return;// Status.Failed;
+                        }
+                        content = LinkSuggestionHtmlModifier.IncludeTooltips(content);
+                        _clientHttpContext.Response.ContentType = "text/html";
+                        SendMessage(content);
+                        DisconnectSocket();
+                        return;// Status.Completed;
+                    }
+
+                    _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName);
+                    if (_rcRequest.FileSize < 0)
+                    {
+                        DisconnectSocket();
+                        return;// Status.Failed;
+                    }
+                    DisconnectSocket();
+                    return;// Status.Completed;
+                }
+
+                // Log query metric for uncached items
+                Proxy.Logger.QueryMetric(Proxy.SessionManager.GetUserId(ClientIP), false, RefererUri, RequestUri);
+
+                // cacheable but not cached, cache it, then send to client if there is no remote proxy
+                // if online, stream to cache, then stream to client.
+                if (Proxy.NetworkStatus == RCLocalProxy.NetworkStatusCode.Online)
+                {
+                    // We're streaming through the remote proxy.
+                    SetStreamToRemoteProxy();
+                    if (!Proxy.DetectNetworkStatusAuto)
+                    {
+                        // No speed measuring
+                        SelectStreamingMethodAndStream();
+                        DisconnectSocket();
+                        return;
+                    }
+
+                    // Measure speed
+                    long speedBS, bytes;
+                    // Method 2
+
+                    bool measuring = NetworkUsageDetector.StartMeasuringIfNotRunning();
+
+                    Status result = SelectStreamingMethodAndStream(out speedBS, out bytes);
+
+                    // Only get the results if this thread was measuring. Maybe another thread was measuring at the same time.
+                    if (measuring)
+                    {
+                        long bytesDownloadedByNetworkCard;
+                        long speedBS2 = NetworkUsageDetector.GetMeasuringResults(out bytesDownloadedByNetworkCard);
+                        // Take speed into calculation, if successful and speed could be measured
+                        if (result == Status.Completed && speedBS2 > 0)
+                        {
+                            Proxy.IncludeDownloadInCalculation(speedBS2, bytesDownloadedByNetworkCard);
+                        }
+                    }
+
+                    DisconnectSocket();
+                    return;// Status.Completed?;
+                }
+
+                // if we're not online, let's check if the packe file name is not too long
+                if (!Utils.IsNotTooLongFileName(PackageFileName))
+                {
+                    Logger.Debug("package filename for " + RequestUri + " is too long. Aborting.");
+                    SendErrorPage(HttpStatusCode.InternalServerError, "package filename for " + RequestUri + " is too long.");
+
+                    DisconnectSocket();
                     return;// Status.Failed;
                 }
-                return;// Status.Completed;
-            }
 
-            // Log query metric for uncached items
-            Proxy.Logger.QueryMetric(Proxy.SessionManager.GetUserId(ClientIP),
-                false, RefererUri, RequestUri);
-
-            // XXX: not sure if this should even be here, technically for a cacheable file that's not cached, this is
-            // XXX: behaving like a synchronous proxy
-            // XXX: this is fine if we're online, fine if we're offline since it'll fail.. but doesn't degrade gradually
-
-            // cacheable but not cached, cache it, then send to client if there is no remote proxy
-            // if online, stream to cache, then stream to client.
-            if (Proxy.NetworkStatus == RCLocalProxy.NetworkStatusCode.Online)
-            {
-                // We're streaming through the remote proxy.
-                SetStreamToRemoteProxy();
-                if (!Proxy.DetectNetworkStatusAuto)
+                if (Proxy.NetworkStatus != RCLocalProxy.NetworkStatusCode.Online)
                 {
-                    // No speed measuring
-                    SelectStreamingMethodAndStream();
+                    // Uncached links should be redirected to
+                    // /trotro-user.html?t=title&a=id (GET/HEAD) or (because they should have been prefetched)
+                    // /request/add?t=title&a=id (POST/...) (because prefetching POSTs is impossible) (XXX: Not necessary!?)
+                    // when the system mode is slow or offline
+                    // Parse parameters to get title
+                    NameValueCollection qscoll = HttpUtility.ParseQueryString(_originalRequest.Url.Query);
+                    string title = qscoll.Get("trotro");
+                    if (title == null)
+                    {
+                        title = RequestUri;
+                        int pos = title.LastIndexOf("/");
+                        while (pos > 20)
+                        {
+                            title = title.Substring(0, pos);
+                            pos = title.LastIndexOf("/");
+                        }
+                    }
+
+                    // Save the request in the "without user" queue
+                    string id = "" + Proxy.AddRequestWithoutUser(this);
+
+                    string redirectUrl = "http://www.ruralcafe.net/" +
+                        "trotro-user.html"
+                        + "?t=" + title + "&a=" + id;
+                    _clientHttpContext.Response.Redirect(redirectUrl);
+
+                    DisconnectSocket();
                     return;
+                    //return Status.Completed;
                 }
+                //return Status.Failed;
 
-                // Measure speed
-                long speedBS, bytes;
-                // Method 2
-                
-                bool measuring = NetworkUsageDetector.StartMeasuringIfNotRunning();
-
-                Status result = SelectStreamingMethodAndStream(out speedBS, out bytes);
-
-                // Only get the results if this thread was measuring. Maybe another thread was measuring at the same time.
-                if (measuring)
-                {
-                    long bytesDownloadedByNetworkCard;
-                    long speedBS2 = NetworkUsageDetector.GetMeasuringResults(out bytesDownloadedByNetworkCard);
-                    // Take speed into calculation, if successful and speed could be measured
-                    if (result == Status.Completed && speedBS2 > 0)
-                    {
-                        Proxy.IncludeDownloadInCalculation(speedBS2, bytesDownloadedByNetworkCard);
-                    }
-                }
-
-                return;// result;
             }
-
-            // if we're not online, let's check if the packe file name is not too long
-            if (!Utils.IsNotTooLongFileName(PackageFileName))
+            catch (Exception e)
             {
-                Logger.Debug("package filename for " + RequestUri + " is too long. Aborting.");
-                SendErrorPage(HttpStatusCode.InternalServerError, "package filename for " + RequestUri + " is too long.");
-                return;// Status.Failed;
-            }
-            
-            if (Proxy.NetworkStatus != RCLocalProxy.NetworkStatusCode.Online)
-            {
-                // Uncached links should be redirected to
-                // /trotro-user.html?t=title&a=id (GET/HEAD) or (because they should have been prefetched)
-                // /request/add?t=title&a=id (POST/...) (because prefetching POSTs is impossible) (XXX: Not necessary!?)
-                // when the system mode is slow or offline
-                // Parse parameters to get title
-                NameValueCollection qscoll = HttpUtility.ParseQueryString(_originalRequest.Url.Query);
-                string title = qscoll.Get("trotro");
-                if (title == null)
+                RequestStatus = RequestHandler.Status.Failed;
+                String errmsg = "error handling request: ";
+                if (_originalRequest != null)
                 {
-                    title = RequestUri;
-                    int pos = title.LastIndexOf("/");
-                    while (pos > 20)
-                    {
-                        title = title.Substring(0, pos);
-                        pos = title.LastIndexOf("/");
-                    }
+                    errmsg += " " + _originalRequest.RawUrl.ToString(); ;
                 }
-
-                // Save the request in the "without user" queue
-                string id = "" + Proxy.AddRequestWithoutUser(this);
-
-                string redirectUrl = "http://www.ruralcafe.net/" +
-                    //(IsGetOrHeadHeader() ? 
-                    "trotro-user.html"
-                    //: "request/add")
-                    + "?t=" + title + "&a=" + id;
-                _clientHttpContext.Response.Redirect(redirectUrl);
-                //_clientHttpContext.Response.StatusCode = (int)HttpStatusCode.TemporaryRedirect;
-
-                //return Status.Completed;
+                Logger.Warn(errmsg, e);
             }
-            //return Status.Failed;
+            finally
+            {
+                DisconnectSocket();
+
+                LogResponse();
+            }
+        }
+        
+        /// <summary>
+        /// Dispatch Threads.
+        /// </summary>
+        public override void DispatchRequest(object nullObj)
+        {
+            // set proxy and timeouts
+            if (_proxy.GatewayProxy == null)
+            {
+                // connect directly to remote proxy
+                _rcRequest.SetProxyAndTimeout(((RCLocalProxy)_proxy).RemoteProxy, System.Threading.Timeout.Infinite);
+            }
+            else
+            {
+                // connect through gateway proxy
+                _rcRequest.SetProxyAndTimeout(_proxy.GatewayProxy, System.Threading.Timeout.Infinite);
+            }
+
+            // download the request file as a package
+            Logger.Debug("dispatching to remote proxy: " + RequestUri);
+            RCRequest.CacheFileName = PackageFileName;
+            RequestStatus = RequestHandler.Status.Downloading;
+            long bytesDownloaded = RCRequest.DownloadToCache(true);
+
+            // check results and unpack
+            if (bytesDownloaded > 0)
+            {
+                RCSpecificResponseHeaders headers = GetRCSpecificResponseHeaders();
+
+                long unpackedBytes = Package.Unpack(this, headers, ((RCLocalProxy)_proxy).IndexWrapper);
+                if (unpackedBytes > 0)
+                {
+                    Logger.Debug("unpacked: " + RequestUri);
+                    RCRequest.FileSize = unpackedBytes;
+                    RequestStatus = RequestHandler.Status.Completed;
+                }
+                else
+                {
+                    Logger.Warn("failed to unpack: " + RequestUri);
+                    RequestStatus = RequestHandler.Status.Failed;
+                }
+            }
+            else
+            {
+                RequestStatus = RequestHandler.Status.Failed;
+            }
+
+            // save finish time
+            FinishTime = DateTime.Now;
+            ((RCLocalProxy)_proxy).UpdateTimePerRequest(StartTime, FinishTime);
+
+            LogResponse();
+
+            // thread dies upon return
         }
 
         /// <summary>

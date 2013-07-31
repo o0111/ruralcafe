@@ -89,6 +89,12 @@ namespace RuralCafe
             get { return (RCLocalProxy)_proxy; }
         }
 
+        /// <summary>Dummy.</summary>
+        public override void DispatchRequest(object nullObj)
+        {
+            // dummy
+        }
+
         #region helper methods
 
         /// <summary>
