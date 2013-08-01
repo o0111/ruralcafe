@@ -90,19 +90,16 @@ namespace RuralCafe
         /// Main logic of RuralCafe LPRequestHandler.
         /// Called by Go() in the base RequestHandler class.
         /// </summary>
-        public override void HandleRequest(object nullObj)
+        public override void HandleRequest()
         {
             if (!CheckIfBlackListedOrInvalidUri())
             {
                 DisconnectSocket();
                 return;
             }
-            else
-            {
-                // create the RCRequest object for this request handler
-                CreateRequest(OriginalRequest);
-            }
 
+            // create the RCRequest object for this request handler
+            CreateRequest(OriginalRequest);
             try
             {
                 LogRequest();
@@ -176,25 +173,15 @@ namespace RuralCafe
                 {
                     // We're streaming through the remote proxy.
                     SetStreamToRemoteProxy();
-                    if (!Proxy.DetectNetworkStatusAuto)
-                    {
-                        // No speed measuring
-                        SelectStreamingMethodAndStream();
-                        DisconnectSocket();
-                        return;
-                    }
+                    // Try to start measuring the speed, but only if detect auto is enabled
+                    bool measuring = Proxy.DetectNetworkStatusAuto &&
+                        NetworkUsageDetector.StartMeasuringIfNotRunningWithCallback(Proxy.IncludeDownloadInCalculation);
 
-                    // Measure speed
+                    // Measure speed (XXX delete speedBS and bytes as we another way of measuring speed now!)
                     long speedBS, bytes;
-                    // Method 2
-
-                    // Method 2 TODO ms constant
-                    bool measuring = NetworkUsageDetector.StartMeasuringIfNotRunningWithCallback(
-                        Proxy.IncludeDownloadInCalculation);
-
                     Status result = SelectStreamingMethodAndStream(out speedBS, out bytes);
 
-                    // Only get the results if this thread was measuring. Maybe another thread was measuring at the same time.
+                    // Only get the results if this thread was measuring.
                     if (measuring)
                     {
                         // Take speed into calculation, if successful
@@ -264,9 +251,10 @@ namespace RuralCafe
                 String errmsg = "error handling request: ";
                 if (_originalRequest != null)
                 {
-                    errmsg += " " + _originalRequest.RawUrl.ToString(); ;
+                    errmsg += " " + _originalRequest.RawUrl;
                 }
                 Logger.Warn(errmsg, e);
+                SendErrorPage(HttpStatusCode.InternalServerError, errmsg);
             }
             finally
             {
@@ -285,19 +273,34 @@ namespace RuralCafe
             if (_proxy.GatewayProxy == null)
             {
                 // connect directly to remote proxy
-                _rcRequest.SetProxyAndTimeout(((RCLocalProxy)_proxy).RemoteProxy, System.Threading.Timeout.Infinite);
+                _rcRequest.SetProxyAndTimeout(Proxy.RemoteProxy, System.Threading.Timeout.Infinite);
             }
             else
             {
                 // connect through gateway proxy
-                _rcRequest.SetProxyAndTimeout(_proxy.GatewayProxy, System.Threading.Timeout.Infinite);
+                _rcRequest.SetProxyAndTimeout(Proxy.GatewayProxy, System.Threading.Timeout.Infinite);
             }
+
+            // Try to start measuring the speed, but only if detect auto is enabled
+            bool measuring = Proxy.DetectNetworkStatusAuto && NetworkUsageDetector.StartMeasuringIfNotRunning();
 
             // download the request file as a package
             Logger.Debug("dispatching to remote proxy: " + RequestUri);
             RCRequest.CacheFileName = PackageFileName;
             RequestStatus = RequestHandler.Status.Downloading;
             long bytesDownloaded = RCRequest.DownloadToCache(true);
+
+            // Only get the results if this thread was measuring.
+            if (measuring)
+            {
+                long bytesDownloadedByNetworkCard;
+                long speedBS = NetworkUsageDetector.GetMeasuringResults(out bytesDownloadedByNetworkCard);
+                if (bytesDownloaded > 0)
+                {
+                    // If request successful, we save the results
+                    Proxy.IncludeDownloadInCalculation(speedBS, bytesDownloadedByNetworkCard);
+                }
+            }
 
             // check results and unpack
             if (bytesDownloaded > 0)

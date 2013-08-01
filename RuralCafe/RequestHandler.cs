@@ -363,39 +363,38 @@ namespace RuralCafe
 
         #endregion
 
+        /// <summary>
+        /// Checks if the URI is blacklisted or invalid.
+        /// </summary>
+        /// <returns>True, if the request is OK.</returns>
         public bool CheckIfBlackListedOrInvalidUri()
         {
-            try
-            {
-                if (!_validRequest)
-                {
-                    return false;
-                }
-
-                // check for blacklist
-                if (IsBlacklisted(OriginalRequest.RawUrl))
-                {
-                    Logger.Debug("ignoring blacklisted: " + OriginalRequest.RawUrl);
-                    SendErrorPage(HttpStatusCode.NotFound, "blacklisted: " + OriginalRequest.RawUrl);
-                    return false;
-                }
-
-                // check if the URI is valid
-                if (!HttpUtils.IsValidUri(OriginalRequest.RawUrl))
-                {
-                    Logger.Debug("URI invalid: " + OriginalRequest.RawUrl);
-                    SendErrorPage(HttpStatusCode.BadRequest, "URI invalid: " + OriginalRequest.RawUrl);
-                    return false;
-                }
-            }
-            catch (Exception e)
+            if (!_validRequest)
             {
                 return false;
             }
 
+            // check for blacklist
+            if (IsBlacklisted(OriginalRequest.RawUrl))
+            {
+                Logger.Debug("ignoring blacklisted: " + OriginalRequest.RawUrl);
+                SendErrorPage(HttpStatusCode.NotFound, "blacklisted: " + OriginalRequest.RawUrl);
+                return false;
+            }
+
+            // check if the URI is valid
+            if (!HttpUtils.IsValidUri(OriginalRequest.RawUrl))
+            {
+                Logger.Debug("URI invalid: " + OriginalRequest.RawUrl);
+                SendErrorPage(HttpStatusCode.BadRequest, "URI invalid: " + OriginalRequest.RawUrl);
+                return false;
+            }
             return true;
         }
 
+        /// <summary>
+        /// Disconnects the socket.
+        /// </summary>
         public void DisconnectSocket()
         {
             // disconnect and close the socket
@@ -456,7 +455,7 @@ namespace RuralCafe
         }
 
         /// <summary>Abstract method for proxies to handle requests.</summary>
-        public abstract void HandleRequest(object nullObj);
+        public abstract void HandleRequest();
 
         /// <summary>Abstract method for handlers to issue requests.</summary>
         public abstract void DispatchRequest(object nullObj);

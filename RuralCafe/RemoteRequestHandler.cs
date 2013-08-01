@@ -96,19 +96,16 @@ namespace RuralCafe
         /// Main logic of RuralCafe RPRequestHandler.
         /// Called by Go() in the base RequestHandler class.
         /// </summary>
-        public override void HandleRequest(object nullObj)
+        public override void HandleRequest()
         {
             if (!CheckIfBlackListedOrInvalidUri())
             {
                 DisconnectSocket();
                 return;
             }
-            else
-            {
-                // create the RCRequest object for this request handler
-                CreateRequest(OriginalRequest);
-            }
 
+            // create the RCRequest object for this request handler
+            CreateRequest(OriginalRequest);
             // ugly variable
             bool isStreaming = false;
             try
@@ -138,6 +135,7 @@ namespace RuralCafe
                     errmsg += " " + _originalRequest.RawUrl.ToString(); ;
                 }
                 Logger.Warn(errmsg, e);
+                SendErrorPage(HttpStatusCode.InternalServerError, errmsg);
             }
             finally
             {
@@ -148,7 +146,7 @@ namespace RuralCafe
                 LogResponse();
             }
 
-            // do NOT close the socket till dispatcher is done.
+            // do NOT close the socket for queued items till dispatcher is done.
         }
 
         /// <summary>
@@ -159,11 +157,12 @@ namespace RuralCafe
             // set proxy and timeouts
             if (_proxy.GatewayProxy != null)
             {
-                _rcRequest.SetProxyAndTimeout(_proxy.GatewayProxy, _requestTimeout);
+                _rcRequest.SetProxyAndTimeout(Proxy.GatewayProxy, _requestTimeout);
             }
             
             // check user richness setting
-            RequestHandler.Richness richness = ((RCRemoteProxy)_proxy).GetUserSettings(Context.Request.RemoteEndPoint, GetRCSpecificRequestHeaders().RCUserID).richness;
+            RequestHandler.Richness richness = Proxy.GetUserSettings(Context.Request.RemoteEndPoint,
+                GetRCSpecificRequestHeaders().RCUserID).richness;
             if (richness == 0)
             {
                 // Use default when nothing is set
