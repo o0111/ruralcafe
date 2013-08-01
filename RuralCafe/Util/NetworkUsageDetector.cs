@@ -17,6 +17,50 @@ namespace RuralCafe.Util
     public static class NetworkUsageDetector
     {
         /// <summary>
+        /// The results of a network usage measurement.
+        /// </summary>
+        public class NetworkUsageResults
+        {
+            private long _speedBs;
+            private long _bytesDownloaded;
+            private double _elapsedSeconds;
+
+            /// <summary>
+            /// Constructs a new results object.
+            /// </summary>
+            /// <param name="speedBs">The speed in bytes/second.</param>
+            /// <param name="bytesDownloaded">The bytes downloaded.</param>
+            /// <param name="elapsedSeconds">The time elapsed in seconds.</param>
+            public NetworkUsageResults(long speedBs, long bytesDownloaded, double elapsedSeconds)
+            {
+                this._speedBs = speedBs;
+                this._bytesDownloaded = bytesDownloaded;
+                this._elapsedSeconds = elapsedSeconds;
+            }
+            /// <summary>
+            /// The speed in bytes/second.
+            /// </summary>
+            public long SpeedBs
+            {
+                get { return _speedBs; }
+            }
+            /// <summary>
+            /// The bytes downloaded.
+            /// </summary>
+            public long BytesDownloaded
+            {
+                get { return _bytesDownloaded; }
+            }
+            /// <summary>
+            /// The time elapsed in seconds.
+            /// </summary>
+            public double ElapsedSeconds
+            {
+                get { return _elapsedSeconds; }
+            }
+        }
+
+        /// <summary>
         /// Enum for the callback status.
         /// </summary>
         private enum CallBackStatus
@@ -53,9 +97,8 @@ namespace RuralCafe.Util
         /// <summary>
         /// A delegate for callbacks that want to evaluate the measuring results.
         /// </summary>
-        /// <param name="speedBS">The average speed in byted per second.</param>
-        /// <param name="bytesDownloaded">The total bytes downloaded while measuring.</param>
-        public delegate void NetworkUsageDetectorDelegate(long speedBS, long bytesDownloaded);
+        /// <param name="results">The results</param>
+        public delegate void NetworkUsageDetectorDelegate(NetworkUsageResults results);
 
         /// <summary>
         /// The network interface used for the local IP address.
@@ -113,12 +156,13 @@ namespace RuralCafe.Util
         /// <summary>
         /// Stops measuring and gets the result.
         /// </summary>
-        /// <param name="bytesDownloadedTotal">The bytes downloaded will be stored in here.</param>
-        /// <returns>The speed in bytes per second on average.</returns>
-        public static long GetMeasuringResults(out long bytesDownloadedTotal)
+        /// <returns>The measurement resulta.</returns>
+        public static NetworkUsageResults GetMeasuringResults()
         {
             List<double> timeIntervals = new List<double>();
             List<long> partSizes = new List<long>();
+            long bytesDownloaded;
+            double elapsedSeconds;
 
             // Lock as long as we access static fields.
             lock (_stopwatch)
@@ -128,11 +172,8 @@ namespace RuralCafe.Util
                 // Stop measurement
                 long bytesReceivedOld = _bytesReceived;
                 Stop();
-                bytesDownloadedTotal = _bytesReceived - bytesReceivedOld;
-
-                // This was the simple calculation. Uncommented.
-                //double elapsedSeconds = _stopwatch.Elapsed.TotalSeconds;
-                //double bytesPerSec = bytesDownloadedTotal / elapsedSeconds;
+                bytesDownloaded = _bytesReceived - bytesReceivedOld;
+                elapsedSeconds = _stopwatch.Elapsed.TotalSeconds;
                 
                 // Determine the elapsedTime and bytesDownloaded values for each part
                 double lastElapsedTime = 0;
@@ -177,8 +218,8 @@ namespace RuralCafe.Util
                 weightedSum += speeds[i] * timeIntervals[i];
             }
             double weightedAvg = weightedSum / timeIntervals.Sum();
-                
-            return (long)weightedAvg;
+
+            return new NetworkUsageResults((long)weightedAvg, bytesDownloaded, elapsedSeconds);
         }
 
         /// <summary>
@@ -247,11 +288,10 @@ namespace RuralCafe.Util
                     break;
                 case CallBackStatus.READY:
                     // Get the results.
-                    long bytesDownloaded;
-                    long speedBS = GetMeasuringResults(out bytesDownloaded);
+                    NetworkUsageResults results = GetMeasuringResults();
                     // And call the callbackMethod.
                     NetworkUsageDetectorDelegate callbackMethod = o as NetworkUsageDetectorDelegate;
-                    callbackMethod(speedBS, bytesDownloaded);
+                    callbackMethod(results);
                     break;
             }
         }

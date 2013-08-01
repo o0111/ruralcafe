@@ -50,9 +50,11 @@ namespace RuralCafe
         /// Each time a new download is considered, the bytes used for calculation
         /// so far are multiplicated with this factor.
         /// </summary>
-        private const double NETWORK_SPEED_REDUCTION_FACTOR = 0.95;
+        private const double NETWORK_SPEED_REDUCTION_FACTOR = 0.9;
+        private const double NETWORK_SPEED_TIME_WEIGHT = 0.7;
         // FIXME do some tests to find good default value! Customizable!?
         private const long BYTES_PER_SECOND_ONLINE_THRESHOLD = 10240; // 10 kb/s
+        private static readonly TimeSpan NETWORK_DETECTION_INTERVAL = new TimeSpan(0, 5, 0);
         /// <summary>
         /// The status will only be changed if up, if we're above THRESHOLD * (1 + THRESHOLD_PERCENT_ANTI_FLAPPING)
         /// and only down if we're below THRESHOLD * (1 - THRESHOLD_PERCENT_ANTI_FLAPPING)
@@ -87,9 +89,18 @@ namespace RuralCafe
         /// </summary>
         private long _speedCalculationBytesUsed;
         /// <summary>
+        /// The number of seconds that have been used to determine the network speed.
+        /// </summary>
+        private double _speedCalculationSecondsUsed;
+        /// <summary>
         /// Object used to lock for network speed calculations.
         /// </summary>
         private object _speedLockObj = new object();
+        /// <summary>
+        /// The timer that determines the speed and changes the network status accordingly.
+        /// </summary>
+        private Timer _changeNetworkStatusTimer;
+        /// <summary>
 
         /// <summary>
         /// The timer that does the clustering.
@@ -151,7 +162,8 @@ namespace RuralCafe
             get { return _sessionManager; }
         }
         /// <summary>Detect the network status automatically?
-        /// If yes, the status is first set to online.</summary>
+        /// If yes, the status is first set to online 
+        /// and a timer for changing status is started.</summary>
         public bool DetectNetworkStatusAuto
         {
             get { return _detectNetworkStatusAuto; }
@@ -161,6 +173,23 @@ namespace RuralCafe
                 if (_detectNetworkStatusAuto)
                 {
                     NetworkStatus = NetworkStatusCode.Online;
+                    // (Re)start the timer
+                    if (_changeNetworkStatusTimer == null)
+                    {
+                        _changeNetworkStatusTimer
+                            = new Timer(ChangeNetworkStatusAccordingToDeterminedSpeed, null, NETWORK_DETECTION_INTERVAL, NETWORK_DETECTION_INTERVAL);
+                    }
+                    else
+                    {
+                        _changeNetworkStatusTimer.Change(NETWORK_DETECTION_INTERVAL, NETWORK_DETECTION_INTERVAL);
+                    }
+                }
+                else
+                {
+                    if (_changeNetworkStatusTimer != null)
+                    {
+                        _changeNetworkStatusTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                    }
                 }
             }
         }
@@ -300,28 +329,52 @@ namespace RuralCafe
         /// </summary>
         /// <param name="speedBS">The speed of the download.</param>
         /// <param name="bytes">The bytes downloaded.</param>
-        public void IncludeDownloadInCalculation(long speedBS, long bytes)
+        public void IncludeDownloadInCalculation(NetworkUsageDetector.NetworkUsageResults results)
         {
-            Logger.Debug(String.Format("Speed: {0} for {1} bytes." , speedBS, bytes));
+            Logger.Debug(String.Format("Speed: {0} for {1} bytes in {2:0.00} seconds.",
+                results.SpeedBs, results.BytesDownloaded, results.ElapsedSeconds));
             lock (_speedLockObj)
             {
-                // the bytes used so far are multiplicated with NETWORK_SPEED_REDUCTION_FACTOR
-                // to only take into account recent downloads
+                // the bytes and seconds used so far are multiplicated with NETWORK_SPEED_REDUCTION_FACTOR
+                // (exponential decay)
+                _speedCalculationSecondsUsed = _speedCalculationSecondsUsed * NETWORK_SPEED_REDUCTION_FACTOR;
                 _speedCalculationBytesUsed = (int)(_speedCalculationBytesUsed * NETWORK_SPEED_REDUCTION_FACTOR);
-                long newSpeedCalcBytesUsed = _speedCalculationBytesUsed + bytes;
-                _networkSpeedBS = (_networkSpeedBS * _speedCalculationBytesUsed + speedBS * bytes)
-                    / newSpeedCalcBytesUsed;
+
+                // New values
+                double newSpeedCalcSecondsUsed = _speedCalculationSecondsUsed + results.ElapsedSeconds;
+                long newSpeedCalcBytesUsed = _speedCalculationBytesUsed + results.BytesDownloaded;
+
+                // In percent of how much the already existing values are weighted
+                double weightOfOldResults = 1;
+                double weightOfNewResults;
+                if(_speedCalculationBytesUsed == 0 || _speedCalculationSecondsUsed == 0)
+                {
+                    weightOfOldResults = 0;
+                    weightOfNewResults = 1;
+                } 
+                else
+                {
+                    weightOfNewResults = NETWORK_SPEED_TIME_WEIGHT * (results.ElapsedSeconds / _speedCalculationSecondsUsed)
+                        + (1 - NETWORK_SPEED_TIME_WEIGHT) * (results.BytesDownloaded / _speedCalculationBytesUsed);
+                }
+
+                // Save new speed value
+                _networkSpeedBS = (long) ((_networkSpeedBS + results.SpeedBs * weightOfNewResults)
+                    / (weightOfOldResults + weightOfNewResults));
+
+                // Save new values
+                _speedCalculationSecondsUsed = newSpeedCalcSecondsUsed;
                 _speedCalculationBytesUsed = newSpeedCalcBytesUsed;
+
                 Logger.Debug("Detected current overall speed: " + _networkSpeedBS);
             }
-            // change network status if necessary.
-            ChangeNetworkStatusAccordingToDeterminedSpeed();
         }
 
         /// <summary>
         /// Changes the network status if the speed is too low or too high for the current status.
         /// </summary>
-        public void ChangeNetworkStatusAccordingToDeterminedSpeed()
+        /// <param name="o">Ignored</param>
+        public void ChangeNetworkStatusAccordingToDeterminedSpeed(object o)
         {
             long downThreshold = (long) (BYTES_PER_SECOND_ONLINE_THRESHOLD * (1 - THRESHOLD_PERCENT_ANTI_FLAPPING));
             long upThreshold = (long) (BYTES_PER_SECOND_ONLINE_THRESHOLD * (1 + THRESHOLD_PERCENT_ANTI_FLAPPING));

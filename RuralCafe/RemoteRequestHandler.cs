@@ -98,18 +98,19 @@ namespace RuralCafe
         /// </summary>
         public override void HandleRequest()
         {
-            if (!CheckIfBlackListedOrInvalidUri())
-            {
-                DisconnectSocket();
-                return;
-            }
-
-            // create the RCRequest object for this request handler
-            CreateRequest(OriginalRequest);
             // ugly variable
-            bool isStreaming = false;
+            bool shouldDisconnect = false;
+
             try
             {
+                if (!CheckIfBlackListedOrInvalidUri())
+                {
+                    shouldDisconnect = true;
+                    return;
+                }
+
+                // create the RCRequest object for this request handler
+                CreateRequest(OriginalRequest);
                 LogRequest();
 
                 // check for streaming
@@ -117,7 +118,7 @@ namespace RuralCafe
                 if (rcHeaders.IsStreamingTransparently)
                 {
                     // stream the request
-                    isStreaming = true;
+                    shouldDisconnect = true;
                     SelectStreamingMethodAndStream();
                 }
                 else
@@ -139,7 +140,7 @@ namespace RuralCafe
             }
             finally
             {
-                if (isStreaming)
+                if (shouldDisconnect)
                 {
                     DisconnectSocket();
                 }
