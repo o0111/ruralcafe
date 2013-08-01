@@ -189,7 +189,7 @@ namespace RuralCafe
                     // Method 2
 
                     // Method 2 TODO ms constant
-                    bool measuring = NetworkUsageDetector.StartMeasuringIfNotRunningWithCallback(5000,
+                    bool measuring = NetworkUsageDetector.StartMeasuringIfNotRunningWithCallback(
                         Proxy.IncludeDownloadInCalculation);
 
                     Status result = SelectStreamingMethodAndStream(out speedBS, out bytes);

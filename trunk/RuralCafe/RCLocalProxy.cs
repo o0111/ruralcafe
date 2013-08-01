@@ -333,6 +333,7 @@ namespace RuralCafe
         /// <param name="bytes">The bytes downloaded.</param>
         public void IncludeDownloadInCalculation(long speedBS, long bytes)
         {
+            Logger.Debug(String.Format("Speed: {0} for {1} bytes." , speedBS, bytes));
             lock (_speedLockObj)
             {
                 // the bytes used so far are multiplicated with NETWORK_SPEED_REDUCTION_FACTOR
@@ -342,7 +343,7 @@ namespace RuralCafe
                 _networkSpeedBS = (_networkSpeedBS * _speedCalculationBytesUsed + speedBS * bytes)
                     / newSpeedCalcBytesUsed;
                 _speedCalculationBytesUsed = newSpeedCalcBytesUsed;
-                Logger.Debug("Detected speed: " + _networkSpeedBS);
+                Logger.Debug("Detected current overall speed: " + _networkSpeedBS);
             }
         }
 
