@@ -224,7 +224,7 @@ namespace RuralCafe.Util
         private static void Stop()
         {
             // Stop the timer that saves the results each second
-            _partSavingTimer.Change(Timeout.Infinite, Timeout.Infinite);
+            // _partSavingTimer.Change(Timeout.Infinite, Timeout.Infinite);
 
             _running = false;
             _stopwatch.Stop();

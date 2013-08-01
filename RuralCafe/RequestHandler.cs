@@ -218,7 +218,7 @@ namespace RuralCafe
             {
                 return false;
             }
-            return _originalRequest.RawUrl.Equals(((RequestHandler)obj).OriginalRequest.RawUrl);
+            return ItemId.Equals(((RequestHandler)obj).ItemId);
         }
         
         /// <summary>
@@ -227,7 +227,7 @@ namespace RuralCafe
         /// </summary>        
         public override int GetHashCode()
         {
-            return _originalRequest.RawUrl.GetHashCode();
+            return ItemId.GetHashCode();
         }
 
         /// <summary>Checks whether the request is blacklisted by the proxy.</summary>

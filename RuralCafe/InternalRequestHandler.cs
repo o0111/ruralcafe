@@ -222,7 +222,7 @@ namespace RuralCafe
                     long bytesSent = StreamFromCacheToClient(response.StreamFileName);
                     if (bytesSent <= 0)
                     {
-                        SendErrorPage(HttpStatusCode.NotFound, "page does not exist: " + RequestUri);
+                        SendErrorPage(HttpStatusCode.NotFound, "page does not exist: " + _originalRequest.Url);
 
                         DisconnectSocket();
                         return;// RequestHandler.Status.Failed;
