@@ -422,7 +422,7 @@ namespace RuralCafe
                     RequestHandler requestHandler = RequestHandler.PrepareNewRequestHandler(this, context);
 
                     // Start own method StartRequestHandler in the thread, which also in- and decreases _activeRequests
-                    ThreadPool.QueueUserWorkItem(new WaitCallback(requestHandler.HandleRequest), null);
+                    ThreadPool.QueueUserWorkItem(new WaitCallback(StartRequestHandler), requestHandler);
                 }
             }
             catch (SocketException e)
@@ -434,6 +434,27 @@ namespace RuralCafe
                 _logger.Fatal("Exception in StartListener", e);
             }
         }
+
+        /// <summary>
+        /// Invokes the <see cref="RequestHandler.HandleRequest"/> method. While it is running, the number of
+        /// active requests is increased.
+        /// </summary>
+        /// <param name="requestHandler">The request handler of type
+        /// <see cref="RequestHandler"/></param>
+        private void StartRequestHandler(Object requestHandler)
+        {
+            if (!(requestHandler is RequestHandler))
+            {
+                throw new ArgumentException("requestHandler must be of type RequestHandler");
+            }
+            // Increment number of active requests
+            System.Threading.Interlocked.Increment(ref _activeRequests);
+            // Start request handler
+            ((RequestHandler)requestHandler).HandleRequest();
+            // Decrement number of active requests
+            System.Threading.Interlocked.Decrement(ref _activeRequests);
+        }
+
 
         /// <summary>
         /// Starts the dispatcher which requests pages from the remote proxy.

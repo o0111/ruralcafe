@@ -123,6 +123,9 @@ namespace RuralCafe.Util
             // Lock as long as we access static fields.
             lock (_stopwatch)
             {
+                // Save the last chunk
+                SavePartOfMeasurement(null);
+                // Stop measurement
                 long bytesReceivedOld = _bytesReceived;
                 Stop();
                 bytesDownloadedTotal = _bytesReceived - bytesReceivedOld;
