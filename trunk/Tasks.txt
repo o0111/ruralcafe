@@ -1,7 +1,6 @@
 Mayor tasks
 - Inter-Proxy-Protocol
-	- Multiple requests at the same time
-	- Async requests 
+	- Async requests ??
 		- We need a listener for responses from the RP at the LP side
 		- RP requests management (IDs, save from which LP request came, ...)
 	- Cancel request
@@ -12,8 +11,11 @@ Mayor tasks
 		- intelligent eviction, timeout, etc. (also for subcomponents)
 	- Directory hashes - better solution ideas?
 	- Include metadata in cache
-		- (download time, headers?, lastrequesttime, #requests) in a priority queue or something. (For clustering priorization...)
 		- Remove dirty redirect when metadata is included
+		- DB with two tables. Files still in filesystem
+			- headers, statusCode, ...
+			- download time, lastrequesttime, #requests (in a priority queue or something. (For clustering priorization...))
+		- IsCached uses then DB + URL instead of File.Exists()
 	- Cache problems with POST and subsequent requests. E.g. user is logged in but gets old page.
 	  - Per user cache:
 		- User must be logged in into Trotro to do POSTs
@@ -28,10 +30,13 @@ Mayor tasks
 	  -> See if old (GET) redirect doesn't work for other pages, too.
 
 Minor tasks
+- Limit outgoing requests like incoming (_activeRequests)
+- Remove old speed measurement code
+- Queue also streaming requests at the RP ??
+	- Duplicate IsStreaming()-Check at the moment.
+- RequestHandlers are considered equal, if URL is equal. They should not be equal if HTTP method is different or body (for POSTs e.g.) is different.
 - DNS cache hit/miss logging (César: Packet sniffing)
-- Domain name & Search query clustering 
-- Measure download speed correctly (see http://stuff.seans.com/2009/01/05/using-httpwebrequest-for-asynchronous-downloads/ ). Too fast at the moment.
-  - Thread for network usage. Only take current values, if RC is downloading something. Switch Network status on certain thresholds.
+- Domain name & Search query clustering
 - Handle 304 correctly (done for StreamTransparently, missing for DownloadToCache, but it doesn't seem to happen there)
 - When getting file from cache, only read file ONCE! (Do that after cache restructuring)
 - Configure Windows Firewall correct and write an article in the Wiki.
@@ -41,9 +46,10 @@ Minor tasks
 
 Code piece integration
 - Clustering:
-  - Make cache access (cluster, add, remove) synchronized. (Maybe both after restructuring cache, otherwise we might have to do it again.)
+	- Make cache access (cluster, add, remove) synchronized. (Maybe both after restructuring cache, otherwise we might have to do it again.)
 - Link recommendation
 - Crawler
+	- Run crawler button in UI, to build a download a cache based on predefined topics.
 
 Metrics logging
 - Save IP per userId (done)

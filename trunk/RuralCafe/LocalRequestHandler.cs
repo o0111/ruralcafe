@@ -44,7 +44,7 @@ namespace RuralCafe
         /// <summary>
         /// Constructor for a local proxy's request handler.
         /// </summary>
-        /// <pparam name="internalHandler">The internal handler to copy fields from.</pparam>
+        /// <param name="internalHandler">The internal handler to copy fields from.</pparam>
         public LocalRequestHandler(LocalInternalRequestHandler internalHandler)
             : base(internalHandler.Proxy, internalHandler.Context)
         {
@@ -92,16 +92,15 @@ namespace RuralCafe
         /// </summary>
         public override void HandleRequest()
         {
-            if (!CheckIfBlackListedOrInvalidUri())
-            {
-                DisconnectSocket();
-                return;
-            }
-
-            // create the RCRequest object for this request handler
-            CreateRequest(OriginalRequest);
             try
             {
+                if (!CheckIfBlackListedOrInvalidUri())
+                {
+                    return;
+                }
+
+                // create the RCRequest object for this request handler
+                CreateRequest(OriginalRequest);
                 LogRequest();
 
                 // Try to get content from the wiki, if available.
@@ -126,7 +125,6 @@ namespace RuralCafe
                     }
                     SendMessage(wikiContent);
 
-                    DisconnectSocket();
                     return;// Status.Completed;
                 }
 
@@ -144,24 +142,16 @@ namespace RuralCafe
                         string content = Utils.ReadFileAsString(_rcRequest.CacheFileName);
                         if (String.IsNullOrEmpty(content))
                         {
-                            DisconnectSocket();
                             return;// Status.Failed;
                         }
                         content = LinkSuggestionHtmlModifier.IncludeTooltips(content);
                         _clientHttpContext.Response.ContentType = "text/html";
                         SendMessage(content);
-                        DisconnectSocket();
                         return;// Status.Completed;
                     }
 
                     _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName);
-                    if (_rcRequest.FileSize < 0)
-                    {
-                        DisconnectSocket();
-                        return;// Status.Failed;
-                    }
-                    DisconnectSocket();
-                    return;// Status.Completed;
+                    return;
                 }
 
                 // Log query metric for uncached items
@@ -196,7 +186,6 @@ namespace RuralCafe
                         }
                     }
 
-                    DisconnectSocket();
                     return;// Status.Completed?;
                 }
 
@@ -206,7 +195,6 @@ namespace RuralCafe
                     Logger.Debug("package filename for " + RequestUri + " is too long. Aborting.");
                     SendErrorPage(HttpStatusCode.InternalServerError, "package filename for " + RequestUri + " is too long.");
 
-                    DisconnectSocket();
                     return;// Status.Failed;
                 }
 
@@ -237,13 +225,7 @@ namespace RuralCafe
                         "trotro-user.html"
                         + "?t=" + title + "&a=" + id;
                     _clientHttpContext.Response.Redirect(redirectUrl);
-
-                    DisconnectSocket();
-                    return;
-                    //return Status.Completed;
                 }
-                //return Status.Failed;
-
             }
             catch (Exception e)
             {
@@ -259,7 +241,6 @@ namespace RuralCafe
             finally
             {
                 DisconnectSocket();
-
                 LogResponse();
             }
         }
@@ -293,12 +274,11 @@ namespace RuralCafe
             // Only get the results if this thread was measuring.
             if (measuring)
             {
-                long bytesDownloadedByNetworkCard;
-                long speedBS = NetworkUsageDetector.GetMeasuringResults(out bytesDownloadedByNetworkCard);
+                NetworkUsageDetector.NetworkUsageResults results = NetworkUsageDetector.GetMeasuringResults();
                 if (bytesDownloaded > 0)
                 {
                     // If request successful, we save the results
-                    Proxy.IncludeDownloadInCalculation(speedBS, bytesDownloadedByNetworkCard);
+                    Proxy.IncludeDownloadInCalculation(results);
                 }
             }
 
