@@ -71,5 +71,11 @@
     <Setting Name="DNS_CACHE_TTL" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">604800</Value>
     </Setting>
+    <Setting Name="LOCAL_MAX_INFLIGHT_REQUESTS" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5</Value>
+    </Setting>
+    <Setting Name="REMOTE_MAX_INFLIGHT_REQUESTS" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">50</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
