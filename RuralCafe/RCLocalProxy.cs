@@ -206,7 +206,8 @@ namespace RuralCafe
             _random = new Random();
             _averageTimePerRequest = new TimeSpan(0);
 
-            _maxInflightRequests = 5; // XXX: Should be defaulted to something then fluctuate based on connection management
+            // XXX: Should be defaulted to something then fluctuate based on connection management
+            _maxInflightRequests = Properties.Settings.Default.LOCAL_MAX_INFLIGHT_REQUESTS;
 
             _sessionManager = new SessionManager();
 

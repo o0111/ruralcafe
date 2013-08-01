@@ -298,5 +298,29 @@ namespace RuralCafe.Properties {
                 this["DNS_CACHE_TTL"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("5")]
+        public int LOCAL_MAX_INFLIGHT_REQUESTS {
+            get {
+                return ((int)(this["LOCAL_MAX_INFLIGHT_REQUESTS"]));
+            }
+            set {
+                this["LOCAL_MAX_INFLIGHT_REQUESTS"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("50")]
+        public int REMOTE_MAX_INFLIGHT_REQUESTS {
+            get {
+                return ((int)(this["REMOTE_MAX_INFLIGHT_REQUESTS"]));
+            }
+            set {
+                this["REMOTE_MAX_INFLIGHT_REQUESTS"] = value;
+            }
+        }
     }
 }

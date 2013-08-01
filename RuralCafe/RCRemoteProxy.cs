@@ -52,7 +52,8 @@ namespace RuralCafe
             cachePath, packagesPath)
         {
             _userSettings = new Dictionary<IPEndPoint, Dictionary<int, RCUserSettings>>();
-            _maxInflightRequests = 50; // XXX: Should be defaulted to something then fluctuate based on connection management
+            // XXX: Should be defaulted to something then fluctuate based on connection management
+            _maxInflightRequests = Properties.Settings.Default.REMOTE_MAX_INFLIGHT_REQUESTS;
         }
 
         /*
