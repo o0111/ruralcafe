@@ -46,19 +46,24 @@ namespace RuralCafe
         private const string QUEUES_FILENAME = "Queues.json";
         private const int SPEED_ONLINE_THRESHOLD_BS = 32768; // 32 KB/s
         // .. for network speed detection
-        private static readonly TimeSpan NETWORK_DETECTION_INTERVAL = new TimeSpan(0, 15, 0);
         /// <summary>
         /// Each time a new download is considered, the bytes used for calculation
         /// so far are multiplicated with this factor.
         /// </summary>
         private const double NETWORK_SPEED_REDUCTION_FACTOR = 0.95;
+        // FIXME do some tests to find good default value! Customizable!?
+        private const long BYTES_PER_SECOND_ONLINE_THRESHOLD = 10240; // 10 kb/s
+        /// <summary>
+        /// The status will only be changed if up, if we're above THRESHOLD * (1 + THRESHOLD_PERCENT_ANTI_FLAPPING)
+        /// and only down if we're below THRESHOLD * (1 - THRESHOLD_PERCENT_ANTI_FLAPPING)
+        /// </summary>
+        private const double THRESHOLD_PERCENT_ANTI_FLAPPING = 0.1;
         // .. for clustering XXX customizable?
         private static readonly TimeSpan CLUSTERING_INTERVAL = new TimeSpan(0, 30, 0);
         private const int CLUSTERING_K = 20;
         private const bool CLUSTERING_HIERARCHICAL = true;
         private const int CLUSTERING_CAT_NFEATURES = 2;
         private const int CLUSTERING_SUBCAT_NFEATURES = 4;
-
         private const string CLUSTERS_FOLDER = "clusters";
 
         // RuralCafe pages path
@@ -85,10 +90,7 @@ namespace RuralCafe
         /// Object used to lock for network speed calculations.
         /// </summary>
         private object _speedLockObj = new object();
-        /// <summary>
-        /// The timer that determines the speed and changes the network status accordingly.
-        /// </summary>
-        private Timer _changeNetworkStatusTimer;
+
         /// <summary>
         /// The timer that does the clustering.
         /// </summary>
@@ -149,8 +151,7 @@ namespace RuralCafe
             get { return _sessionManager; }
         }
         /// <summary>Detect the network status automatically?
-        /// If yes, the status is first set to online
-        /// and a timer for changing status is started.</summary>
+        /// If yes, the status is first set to online.</summary>
         public bool DetectNetworkStatusAuto
         {
             get { return _detectNetworkStatusAuto; }
@@ -160,23 +161,6 @@ namespace RuralCafe
                 if (_detectNetworkStatusAuto)
                 {
                     NetworkStatus = NetworkStatusCode.Online;
-                    // (Re)start the timer
-                    if(_changeNetworkStatusTimer == null)
-                    {
-                        _changeNetworkStatusTimer
-                            = new Timer(DetectNetworkStatus, null, NETWORK_DETECTION_INTERVAL, NETWORK_DETECTION_INTERVAL);
-                    }
-                    else
-                    {
-                        _changeNetworkStatusTimer.Change(NETWORK_DETECTION_INTERVAL, NETWORK_DETECTION_INTERVAL);
-                    }
-                }
-                else
-                {
-                    if(_changeNetworkStatusTimer != null)
-                    {
-                        _changeNetworkStatusTimer.Change(Timeout.Infinite , Timeout.Infinite);
-                    }
                 }
             }
         }
@@ -312,21 +296,6 @@ namespace RuralCafe
         #region Network status detection
 
         /// <summary>
-        /// Determines the network status. This method is called periodically
-        /// by a timer in a new thread, if detectAuto is enabled.
-        /// </summary>
-        /// <param name="o">Ignored.</param>
-        private void DetectNetworkStatus(object o)
-        {
-            if (NetworkStatus == NetworkStatusCode.Online)
-            {
-                // When online, the system will check speed after each
-            }
-            // TODO do something that makes sense
-            Logger.Info("Detecting network status");
-        }
-
-        /// <summary>
         /// Includes a download into the network speed statistics.
         /// </summary>
         /// <param name="speedBS">The speed of the download.</param>
@@ -344,6 +313,30 @@ namespace RuralCafe
                     / newSpeedCalcBytesUsed;
                 _speedCalculationBytesUsed = newSpeedCalcBytesUsed;
                 Logger.Debug("Detected current overall speed: " + _networkSpeedBS);
+            }
+            // change network status if necessary.
+            ChangeNetworkStatusAccordingToDeterminedSpeed();
+        }
+
+        /// <summary>
+        /// Changes the network status if the speed is too low or too high for the current status.
+        /// </summary>
+        public void ChangeNetworkStatusAccordingToDeterminedSpeed()
+        {
+            long downThreshold = (long) (BYTES_PER_SECOND_ONLINE_THRESHOLD * (1 - THRESHOLD_PERCENT_ANTI_FLAPPING));
+            long upThreshold = (long) (BYTES_PER_SECOND_ONLINE_THRESHOLD * (1 + THRESHOLD_PERCENT_ANTI_FLAPPING));
+
+            if (NetworkStatus == NetworkStatusCode.Online
+                && _networkSpeedBS < downThreshold)
+            {
+                Logger.Info(String.Format("Speed is below {0}, switching to slow mode.", downThreshold));
+                NetworkStatus = NetworkStatusCode.Slow;
+            }
+            else if (NetworkStatus == NetworkStatusCode.Slow
+                && _networkSpeedBS > upThreshold)
+            {
+                Logger.Info(String.Format("Speed is above {0}, switching to online mode.", upThreshold));
+                NetworkStatus = NetworkStatusCode.Online;
             }
         }
 
