@@ -87,14 +87,14 @@ namespace RuralCafe.Util
                         webRequest.IfModifiedSince = DateTime.Parse(value);
                         continue;
                     }
-                    if (key.Equals("Connection"))
+                    else if (key.Equals("Connection"))
                     {
                         if (value.Equals("keep-alive"))
                         {
                             webRequest.KeepAlive = true;
                             continue;
                         }
-                        if (value.Equals("close"))
+                        else if (value.Equals("close"))
                         {
                             webRequest.KeepAlive = false;
                             continue;
@@ -150,6 +150,19 @@ namespace RuralCafe.Util
                     {
                         response.SendChunked = value.Equals("chunked");
                         continue;
+                    }
+                    else if (key.Equals("Connection"))
+                    {
+                        if (value.Equals("keep-alive"))
+                        {
+                            response.KeepAlive = true;
+                            continue;
+                        }
+                        else if (value.Equals("close"))
+                        {
+                            response.KeepAlive = false;
+                            continue;
+                        }
                     }
 
                     try
