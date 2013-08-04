@@ -328,7 +328,9 @@ namespace RuralCafe
         /// <summary>URI of the request.</summary>
         public string RequestUri
         {
-            get { return _rcRequest.Uri; }
+            // If we failed to create a request, _rcRequest will be null
+            // If we have been deserializing from JSON, the context will be null.
+            get { return _rcRequest != null ? _rcRequest.Uri : Context.Request.Url.AbsoluteUri; }
         }
         /// <summary>Anchor text of the request.</summary>
         public string AnchorText
@@ -339,8 +341,10 @@ namespace RuralCafe
         /// <summary>URI of the referrer.</summary>
         public string RefererUri
         {
+            // If we failed to create a request, _rcRequest will be null
+            // If we have been deserializing from JSON, the context will be null.
             set { _rcRequest.RefererUri = value; }
-            get { return _rcRequest.RefererUri; }
+            get { return _rcRequest != null ? _rcRequest.RefererUri : Context.Request.UrlReferrer.AbsoluteUri; }
         }
         /// <summary>File name of the file if the RCRequest is stored in the cache.</summary>
         public string FileName

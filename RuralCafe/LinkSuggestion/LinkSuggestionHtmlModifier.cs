@@ -22,7 +22,8 @@ namespace RuralCafe.LinkSuggestion
             doc.LoadHtml(html);
 
             HtmlNode head = doc.DocumentNode.SelectSingleNode("/html/head");
-            if (head == null)
+            HtmlNode body = doc.DocumentNode.SelectSingleNode("/html/body");
+            if (head == null || body == null)
             {
                 // We haven't sane HTML, just return it as it is.
                 return html;
@@ -49,6 +50,11 @@ namespace RuralCafe.LinkSuggestion
             ourAjaxJs.SetAttributeValue("type", "text/javascript");
             ourAjaxJs.SetAttributeValue("src", "http://www.ruralcafe.net/js/ajax.js");
 
+            // Include the invisible trigger element
+            HtmlNode trigger = doc.CreateElement("div");
+            trigger.SetAttributeValue("id", "rclink-trigger");
+            body.AppendChild(trigger);
+
             HtmlNodeCollection links = doc.DocumentNode.SelectNodes("//a");
             // Modify all links
             int i = 0;
@@ -56,6 +62,7 @@ namespace RuralCafe.LinkSuggestion
             {
                 link.SetAttributeValue("id", "rclink-" + i);
                 link.SetAttributeValue("onmouseover", "showSuggestions(" + i + ")");
+                link.SetAttributeValue("onmouseout", "clearActiveLinkNumber()");
                 i++;
             }
 
