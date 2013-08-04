@@ -406,6 +406,33 @@ namespace RuralCafe
         }
 
         #endregion
+        #region cache database
+
+        // TODO
+        public void AddCacheItem()
+        {
+            //var context = new RCDatabaseEntities();
+
+            //var cacheItem = new GlobalCache();
+
+            //cacheItem.url = "http://bla.com";
+            //cacheItem.httpMethod = "GET";
+            //cacheItem.responseHeaders = "no headers";
+            //cacheItem.statusCode = 200;
+            //cacheItem.filename = "blah";
+
+            //context.GlobalCache.Add(cacheItem);
+            //context.SaveChanges();
+
+            //var query = from gc in context.GlobalCache select gc.url;
+
+            //foreach (string url in query)
+            //{
+            //    Console.WriteLine(url);
+            //}
+        }
+
+        #endregion
         #region analysis
 
         /// <summary>
