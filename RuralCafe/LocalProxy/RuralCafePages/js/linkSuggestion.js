@@ -85,7 +85,6 @@ function showSuggestions0(linknumber) {
 }
 
 function showSuggestionsXML(xmlData, linknumber) {
-    // TODO design nicer
     var rcHtml = "";
     var suggestions = xmlData.firstChild;
     

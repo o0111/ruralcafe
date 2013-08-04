@@ -362,24 +362,9 @@ namespace RuralCafe
         /// <returns>Length of the downloaded file.</returns>
         public long DownloadToCache(bool replace)
         {
-            long dummy;
-            return DownloadToCache(replace, out dummy);
-        }
-
-        /// <summary>
-        /// Streams a request from the server into the cache.
-        /// Used for both local and remote proxy requests.
-        /// </summary>
-        /// <param name="replace">If there is already a file, should it be replaced?</param>
-        /// <param name="speedBS">The speed in byte/s will be stored here.</param>
-        /// <returns>Length of the downloaded file.</returns>
-        public long DownloadToCache(bool replace, out long speedBS)
-        {
             CacheManager cacheManager = _requestHandler.GenericProxy.ProxyCacheManager;
             Byte[] readBuffer = new Byte[4096];
             long bytesDownloaded = 0;
-            // First set speed to 0
-            speedBS = 0;
 
             long fileSize;
             if (!PrepareFileForCreation(replace, out fileSize))
@@ -402,7 +387,7 @@ namespace RuralCafe
                 {
                     // redirected at some point
                     _uriBeforeRedirect = _webRequest.RequestUri.ToString();
-                    
+
                     // leave a 301 at the old cache file location
                     string str = "HTTP/1.1 301 Moved Permanently\r\n" +
                           "Location: " + _webResponse.ResponseUri.ToString() + "\r\n";
@@ -424,10 +409,10 @@ namespace RuralCafe
                 }
 
                 // Add stream content to the cache. 
-                bytesDownloaded = cacheManager.AddCacheItem(_cacheFileName, GenericWebResponse, out speedBS);
+                bytesDownloaded = cacheManager.AddCacheItem(_cacheFileName, GenericWebResponse);
 
                 _requestHandler.Logger.Debug("received: " + Uri + " "
-                    + bytesDownloaded + " bytes at " + speedBS + " byte/s");
+                    + bytesDownloaded + " bytes.");
             }
             catch (Exception e)
             {
@@ -436,7 +421,7 @@ namespace RuralCafe
                 // incomplete, clean up the partial download
                 cacheManager.RemoveCacheItem(_cacheFileName);
                 _requestHandler.Logger.Debug("failed: " + Uri, e);
-                bytesDownloaded = -1; 
+                bytesDownloaded = -1;
             }
 
             return bytesDownloaded;
