@@ -653,6 +653,7 @@ namespace RuralCafe
                     XmlElement elem = xmlDoc.CreateElement("suggestion");
                     suggestionsXml.AppendChild(elem);
                     elem.InnerText = url + i;
+                    elem.SetAttribute("downloadTime", "July 15, 2013");
                 }
             }
 

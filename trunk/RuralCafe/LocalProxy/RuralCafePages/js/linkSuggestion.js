@@ -1,11 +1,31 @@
-var suggestionRequest;	//ajax request for retrieving suggestions
-var rcOpentips = {};    // all tooltips in a dictionary.
-var activeOpentip;      // if != null, this is the currently (or last) visible Opentip
+var timeToShowTooltipMs = 500;
+
+var suggestionRequest;	        //ajax request for retrieving suggestions
+var rcOpentips = {};            // all tooltips in a dictionary.
+var activeOpentip;              // if != null, this is the currently (or last) visible Opentip
+var activeLinkNumber = -1;      // The number of the link where the mouse is over or -1
 
 // TODO if the tooltip is above another link, you cannot click the links in the tooltip.
 
-// shows a popup with 
-function showSuggestions(linknumber) {
+// Saves that the mouse currently isn't above a link
+function clearActiveLinkNumber() {
+    activeLinkNumber = -1;
+}
+
+// Schedules the actual function call after some time.
+// Saves that the mouse is over that element.
+function showSuggestions(linkNumber) {
+    activeLinkNumber = linkNumber;
+    setTimeout(function(){showSuggestions0(linkNumber)}, timeToShowTooltipMs);
+}
+
+// shows a popup with the link suggestions, if the mouse is still over the link
+function showSuggestions0(linknumber) {
+    // Abort if the mouse is not over that element any more.
+    if (activeLinkNumber != linknumber) {
+        return;
+    }
+    
     // check if another one is still visible and hide it then
     if (activeOpentip) {
         if (activeOpentip == rcOpentips[linknumber]) {
@@ -13,11 +33,6 @@ function showSuggestions(linknumber) {
             return;
         }
         activeOpentip.hide();
-        // abort the old request
-        if (suggestionRequest) {
-            // TODO check if there is a problem
-            //suggestionRequest.abort();
-        }
     }
     
     if (rcOpentips[linknumber]) {
@@ -26,13 +41,14 @@ function showSuggestions(linknumber) {
         activeOpentip.show();
     }
     else {
-        // Create new opentip
-        activeOpentip = new Opentip("#rclink-"+linknumber,
-            { target: true, tipJoint: "bottom", hideTrigger: "closeButton", hideOn: "mouseout" });
+        // Create new opentip, invisible until show() is called.
+        activeOpentip = new Opentip("#rclink-trigger",
+            { target: "#rclink-"+linknumber, tipJoint: "bottom", hideTrigger: "closeButton", hideOn: "closeButton" });
         // Save it in the cache
         rcOpentips[linknumber] = activeOpentip;
-        // Show temporary loading message
+        // Show temporary loading message XXX show() ?
         activeOpentip.setContent("Loading link suggestions...");
+        // activeOpentip.show();
         
         // Extract url, anchorText and surrounding text.
         var linkNode = document.getElementById('rclink-'+linknumber);
@@ -76,9 +92,13 @@ function showSuggestionsXML(xmlData, linknumber) {
     if (suggestions.innerHTML == "cached") {
         // The target is cached, hence no suggestions.
         rcHtml = "The target is cached!";
+    } else {
+        rcHtml = "<b>Not available. Try these instead:</b><br><br>"
+        for (var i = 0; i < suggestions.children.length; i++) {
+            rcHtml += '<a href="'+ suggestions.children[i].innerHTML + '">Link ' + i + '</a><br>';
+            rcHtml += suggestions.children[i].getAttribute("downloadTime") + '<br><br>';
+        }
     }
-    for (var i = 0; i < suggestions.children.length; i++) {
-        rcHtml += '<a href="'+ suggestions.children[i].innerHTML + '">Link ' + i + '</a><br>';
-    }
+    
     rcOpentips[linknumber].setContent(rcHtml);
 }

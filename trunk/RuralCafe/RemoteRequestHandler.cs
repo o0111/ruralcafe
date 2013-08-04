@@ -98,17 +98,16 @@ namespace RuralCafe
         /// </summary>
         public override void HandleRequest()
         {
+            if (!CheckIfBlackListedOrInvalidUri())
+            {
+                DisconnectSocket();
+                return;
+            }
+
             // ugly variable
             bool shouldDisconnect = false;
-
             try
             {
-                if (!CheckIfBlackListedOrInvalidUri())
-                {
-                    shouldDisconnect = true;
-                    return;
-                }
-
                 // create the RCRequest object for this request handler
                 CreateRequest(OriginalRequest);
                 LogRequest();
