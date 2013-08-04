@@ -466,34 +466,21 @@ namespace RuralCafe
 
 
         #region streaming
+
         /// <summary>
         /// If the request is cacheable, it is streamed to cache and then to client.
         /// If not it is streamed to the client directly.
         /// </summary>
         /// <returns>The status of the request.</returns>
-        public void SelectStreamingMethodAndStream()
-        {
-            long dummy, bytes;
-            SelectStreamingMethodAndStream(out dummy, out bytes);
-        }
-
-        /// <summary>
-        /// If the request is cacheable, it is streamed to cache and then to client.
-        /// If not it is streamed to the client directly. Speed is measured.
-        /// </summary>
-        /// <param name="speedBS">The speed in byte/s will be stored here.</param>
-        /// <param name="bytes">The number of downloaded bytes will be stored here.</param>
-        /// <returns>The status of the request.</returns>
-        public Status SelectStreamingMethodAndStream(out long speedBS, out long bytes)
+        public Status SelectStreamingMethodAndStream()
         {
             if (IsCacheable())
             {
                 // Stream to cache and client
-                return StreamToCacheAndClient(out speedBS, out bytes);
+                return StreamToCacheAndClient();
             }
             // Otherwise just stream to the client.
-            bytes = StreamTransparently(out speedBS);
-            _rcRequest.FileSize = bytes;
+            _rcRequest.FileSize = StreamTransparently();
             return Status.Completed;
         }
 
@@ -502,9 +489,8 @@ namespace RuralCafe
         /// Measures speed.
         /// XXX: does not have gateway support
         /// </summary>
-        /// <param name="speedBS">The speed in byte/s will be stored here.</param>
         /// <returns></returns>
-        protected long StreamTransparently(out long speedBS)
+        protected long StreamTransparently()
         {
             Logger.Debug("streaming: " + RequestUri + " to client and measuring speed.");
             // Stream parameters, if we have non GET/HEAD
@@ -525,20 +511,14 @@ namespace RuralCafe
             // Copy headers
             HttpUtils.CopyWebResponse(_clientHttpContext.Response, serverResponse);
 
-            // Stream and measure time
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
+            // Stream 
             long length = StreamToClient(serverResponse.GetResponseStream());
-            stopwatch.Stop();
 
             if (serverResponse.ContentLength != -1)
             {
                 // If header is set, this can be more accurate (if GZIP was used).
                 length = serverResponse.ContentLength;
             }
-
-            speedBS = (long)(length / stopwatch.Elapsed.TotalSeconds);
-            Logger.Debug("Streaming download speed: " + speedBS);
             return length;
         }
 
@@ -630,13 +610,11 @@ namespace RuralCafe
         /// XXX: response time could be improved here if it downloads and streams to the client at the same time.
         /// Basically, somehow merge the DownloadtoCache() and StreamfromcachetoClient() methods into this method.
         /// </summary>
-        /// <param name="speedBS">The speed in byte/s will be stored here.</param>
-        /// <param name="bytes">The number of downloaded bytes will be stored here.</param>
         /// <returns>The Status of the request.</returns>
-        protected Status StreamToCacheAndClient(out long speedBS, out long bytes)
+        protected Status StreamToCacheAndClient()
         {
             Logger.Debug("streaming: " + _rcRequest.GenericWebRequest.RequestUri + " to cache and client.");
-            bytes = _rcRequest.DownloadToCache(true, out speedBS);
+            long bytes = _rcRequest.DownloadToCache(true);
             try
             {
                 FileInfo f = new FileInfo(_rcRequest.CacheFileName);

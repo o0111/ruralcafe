@@ -346,12 +346,9 @@ namespace RuralCafe
         /// </summary>
         /// <param name="fileName">The absolute filename of the cache item.</param>
         /// <param name="webResponse">The web response</param>
-        /// <param name="speedBS">The streaming (download) speed will be stored in here.</param>
         /// <returns>The streamed bytes or -1 if failed.</returns>
-        public long AddCacheItem(string fileName, HttpWebResponse webResponse, out long speedBS)
+        public long AddCacheItem(string fileName, HttpWebResponse webResponse)
         {
-            // Speed = 0 at first
-            speedBS = 0;
             FileStream writeFile = Utils.CreateFile(fileName);
             if (writeFile == null)
             {
@@ -360,7 +357,6 @@ namespace RuralCafe
 
             Stream contentStream = webResponse.GetResponseStream();
             Byte[] readBuffer = new Byte[4096];
-            Stopwatch stopwatch = new Stopwatch();
             long bytesDownloaded = 0;
             using (writeFile)
             {
@@ -372,11 +368,7 @@ namespace RuralCafe
                     {
                         // This can be -1, if header is missing
                         bytesDownloaded = webResponse.ContentLength;
-
-                        // Start measuring speed
-                        stopwatch.Start();
                         string content = reader.ReadToEnd();
-                        stopwatch.Stop();
 
                         if (bytesDownloaded <= 0)
                         {
@@ -388,7 +380,6 @@ namespace RuralCafe
                 }
                 else
                 {
-                    stopwatch.Start();
                     // No text. Read buffered.
                     int bytesRead = contentStream.Read(readBuffer, 0, readBuffer.Length);
                     while (bytesRead != 0)
@@ -399,12 +390,8 @@ namespace RuralCafe
                         // Read the next part of the response
                         bytesRead = contentStream.Read(readBuffer, 0, readBuffer.Length);
                     }
-                    stopwatch.Stop();
                 }
             }
-            // Calculate speed
-            speedBS = (long)(bytesDownloaded / stopwatch.Elapsed.TotalSeconds);
-
             return bytesDownloaded;
         }
 

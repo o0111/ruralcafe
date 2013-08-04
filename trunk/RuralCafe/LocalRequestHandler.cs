@@ -168,9 +168,8 @@ namespace RuralCafe
                     bool measuring = Proxy.DetectNetworkStatusAuto &&
                         NetworkUsageDetector.StartMeasuringIfNotRunningWithCallback(Proxy.IncludeDownloadInCalculation);
 
-                    // Measure speed (XXX delete speedBS and bytes as we another way of measuring speed now!)
-                    long speedBS, bytes;
-                    Status result = SelectStreamingMethodAndStream(out speedBS, out bytes);
+                    // Stream
+                    Status result = SelectStreamingMethodAndStream();
 
                     // Only get the results if this thread was measuring.
                     if (measuring)
