@@ -120,6 +120,33 @@
     <Compile Include="CacheManager.cs" />
     <Compile Include="Clusters\Cluster.cs" />
     <Compile Include="Clusters\Doc2Mat.cs" />
+    <Compile Include="Database\GlobalCacheItem.cs">
+      <DependentUpon>RCDatabase.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Database\GlobalCacheRCData.cs">
+      <DependentUpon>RCDatabase.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Database\RCDatabase.Context.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>RCDatabase.Context.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Database\RCDatabase.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>RCDatabase.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Database\RCDatabase.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>RCDatabase.edmx</DependentUpon>
+    </Compile>
+    <Compile Include="Database\UserCacheDomain.cs">
+      <DependentUpon>RCDatabase.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Database\UserCacheItem.cs">
+      <DependentUpon>RCDatabase.tt</DependentUpon>
+    </Compile>
     <Compile Include="Json\HttpWebRequestConverter.cs" />
     <Compile Include="Json\JsonCreationConverter.cs" />
     <Compile Include="Json\LocalRequestHandlerConverter.cs" />
@@ -173,6 +200,26 @@
     </None>
     <None Include="Clusters\doc2mat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <EntityDeploy Include="Database\RCDatabase.edmx">
+      <Generator>EntityModelCodeGenerator</Generator>
+      <LastGenOutput>RCDatabase.Designer.cs</LastGenOutput>
+    </EntityDeploy>
+    <None Include="Database\RCDatabase.Context.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <DependentUpon>RCDatabase.edmx</DependentUpon>
+      <LastGenOutput>RCDatabase.Context.cs</LastGenOutput>
+    </None>
+    <None Include="Database\RCDatabase.db">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Database\RCDatabase.edmx.diagram">
+      <DependentUpon>RCDatabase.edmx</DependentUpon>
+    </None>
+    <None Include="Database\RCDatabase.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <DependentUpon>RCDatabase.edmx</DependentUpon>
+      <LastGenOutput>RCDatabase.cs</LastGenOutput>
     </None>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">

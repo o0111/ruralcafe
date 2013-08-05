@@ -1,4 +1,5 @@
 ﻿using RuralCafe.Clusters;
+using RuralCafe.Database;
 using RuralCafe.Util;
 using System;
 using System.Collections.Generic;
@@ -7,7 +8,10 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Collections.Specialized;
 using System.Text.RegularExpressions;
+using Newtonsoft.Json;
+using RuralCafe.Json;
 
 namespace RuralCafe
 {
@@ -26,7 +30,10 @@ namespace RuralCafe
         private const string MAT_FILE_NAME = "cache.mat";
         private const string CLUSTERS_FILE_NAME = "clusters";
         private const string TREE_FILE_NAME = "tree";
-        public const string CLUSTERS_XML_FILENAME = "clusters.xml";
+        public const string CLUSTERS_XML_FILE_NAME = "clusters.xml";
+        private const string DATABASE_FILE_NAME = "RCDatabase.db";
+        private readonly string EMPTY_DATABASE_FILE_NAME = Directory.GetCurrentDirectory()
+            + Path.DirectorySeparatorChar + "Database" + Path.DirectorySeparatorChar + DATABASE_FILE_NAME;
 
         // Regex's for safe URI replacements
         private static readonly Regex unsafeChars1 = new Regex(@"[^a-z0-9\\\-\.]");
@@ -46,6 +53,8 @@ namespace RuralCafe
         /// The proxy.
         /// </summary>
         private RCProxy _proxy;
+
+        private RCDatabaseEntities _databaseContext;
 
         /// <summary>
         /// The path to the cache.
@@ -87,7 +96,8 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Initializes the cache by making sure that the directory/ies exist(s).
+        /// Initializes the cache by making sure that the directory/ies exist(s)
+        /// and initializing the database.
         /// </summary>
         /// <returns>True or false for success or not.</returns>
         public bool InitializeCache()
@@ -107,7 +117,7 @@ namespace RuralCafe
             {
                 return false;
             }
-            return true;
+            return InitializeDatabase();
         }
 
         /// <summary>
@@ -121,7 +131,7 @@ namespace RuralCafe
             _proxy.Logger.Metric("Cache Items with text/html mimetype: " + TextFiles().Count);
         }
 
-        #region static filepath methods
+        #region (static) filepath methods
 
         /// <summary>
         /// Gets the path of a filename from an URI. Relative to the cache path.
@@ -151,7 +161,8 @@ namespace RuralCafe
             int length = fileName.Length;
             if (length == 0)
             {
-                return "0" + Path.DirectorySeparatorChar.ToString() + "0" + Path.DirectorySeparatorChar.ToString() + fileName;
+                return "0" + Path.DirectorySeparatorChar.ToString() + "0" 
+                    + Path.DirectorySeparatorChar.ToString() + fileName;
             }
 
             value1 = HashString(fileName.Substring(length / 2));
@@ -170,7 +181,8 @@ namespace RuralCafe
             value1 = value1 % hashSpace;
             value2 = value2 % hashSpace;
 
-            string hashedPath = value1.ToString() + Path.DirectorySeparatorChar.ToString() + value2.ToString() + Path.DirectorySeparatorChar.ToString(); // +fileName;
+            string hashedPath = value1.ToString() + Path.DirectorySeparatorChar.ToString()
+                + value2.ToString() + Path.DirectorySeparatorChar.ToString();
             return hashedPath;
         }
         /// <summary>
@@ -194,6 +206,18 @@ namespace RuralCafe
                 value = -2;
             }
             return value;
+        }
+
+        /// <summary>
+        /// Converts an absolute file name of a file in this cache to an URI.
+        /// </summary>
+        /// <param name="absfilepath">The absolute path.</param>
+        /// <returns>The URI.</returns>
+        public string AbsoluteFilePathToUri(string absfilepath)
+        {
+            // We assume the path to be valid and to be in _cachePath
+            // No bounds chechking, etc.
+            return FilePathToUri(absfilepath.Substring(_cachePath.Length));
         }
 
         /// <summary>
@@ -408,28 +432,145 @@ namespace RuralCafe
         #endregion
         #region cache database
 
-        // TODO
-        public void AddCacheItem()
+        /// <summary>
+        /// Checks if there is a database and creates one if there isn't.
+        /// 
+        /// If there was none, the database will be filled with the current cache content.
+        /// </summary>
+        /// <returns>True if successful, false otherwise.</returns>
+        private bool InitializeDatabase()
         {
-            //var context = new RCDatabaseEntities();
+            string dbFile = _proxy.ProxyPath + DATABASE_FILE_NAME;
+            // Create context and modify connection string to point to our DB file.
+            _databaseContext = new RCDatabaseEntities();
+            _databaseContext.Database.Connection.ConnectionString =
+                String.Format("data source=\"{0}\"", dbFile);
 
-            //var cacheItem = new GlobalCache();
+            if (!File.Exists(dbFile))
+            {
+                try
+                {
+                    _proxy.Logger.Debug("No database file found, creating a new one.");
+                    File.Copy(EMPTY_DATABASE_FILE_NAME, dbFile);
+                    // We must fill the database with the current cache content!
+                    FillDatabaseFromCache();
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    _proxy.Logger.Error("Could not create database file.", e);
+                    return false;
+                }
+            }
+            // If it exists, we must test whether it really contains a valid DB
+            return IsValidDatabase();
+        }
 
-            //cacheItem.url = "http://bla.com";
-            //cacheItem.httpMethod = "GET";
-            //cacheItem.responseHeaders = "no headers";
-            //cacheItem.statusCode = 200;
-            //cacheItem.filename = "blah";
+        /// <summary>
+        /// Tests if the existing database file is valid, that means contains the tables and rows we need.
+        /// </summary>
+        /// <returns>True for a valid DB file, false otherwise.</returns>
+        private bool IsValidDatabase()
+        {
+            // http://stackoverflow.com/questions/3528361/is-there-an-way-using-ado-net-to-determine-if-a-table-exists-in-a-database-that
 
-            //context.GlobalCache.Add(cacheItem);
-            //context.SaveChanges();
+            // Loop through all tables and rows and check if they exist.
+            // If a table is missing, delete file and and run return false
+            // If a row is missing, add and fill with default values?
+            var gcis = _databaseContext.Database.SqlQuery<string>(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='GlobalCacheItem'");
+            // TODO
+            return true;
+        }
 
-            //var query = from gc in context.GlobalCache select gc.url;
+        /// <summary>
+        /// Fills the database from the disk contents in the cache.
+        /// Of course, entries will be incomplete, (headers missing, etc.)
+        /// 
+        /// Exceptions will be forwarded.
+        /// </summary>
+        private void FillDatabaseFromCache()
+        {
+            List<string> files = AllFiles();
+            if (files.Count == 0)
+            {
+                // Cache is empty, as it should be.
+                return;
+            }
 
-            //foreach (string url in query)
+            _proxy.Logger.Warn("No database file was found, but the cache is not empty. Filling database with cache data...");
+            // Iterate through all files and fill the database
+            foreach (string file in files)
+            {
+                // We assume it was a GET request with a 200 OK answer.
+                // We cannot recover the headers
+                AddCacheItemToDatabase(AbsoluteFilePathToUri(file), "GET", new NameValueCollection(), 200);
+                // TODO detect 301s?
+            }
+
+            // Save
+            _databaseContext.SaveChanges();
+
+            // Debug: print DB contents with banana
+            //var query = from gc in _databaseContext.GlobalCacheItem where gc.url.Contains("banana") select gc;
+            //foreach (var gci in query)
             //{
-            //    Console.WriteLine(url);
+            //    Console.WriteLine(String.Format("{0} {1} {2}", gci.httpMethod, gci.url, gci.responseHeaders));
             //}
+            //var query2 = from rc in _databaseContext.GlobalCacheRCData where rc.url.Contains("banana") select rc;
+            //foreach (var rci in query2)
+            //{
+            //    Console.WriteLine(String.Format("{0} {1} {2}", rci.httpMethod, rci.url, rci.downloadTime));
+            //}
+        }
+
+        /// <summary>
+        /// Adds a new cache item to the database. Throws an exception if anything goes wrong.
+        /// 
+        /// _databaseContext.SaveChanges() still needs to be called.
+        /// </summary>
+        /// <param name="url">The url.</param>
+        /// <param name="httpMethod">The HTTP method.</param>
+        /// <param name="headers">The headers.</param>
+        /// <param name="statusCode">The status code.</param>
+        public void AddCacheItemToDatabase(string url, string httpMethod,
+            NameValueCollection headers, short statusCode)
+        {
+            string fileName = GetRelativeCacheFileName(url);
+
+            // Use JSON to serialize headers
+            //JsonSerializer serializer = new JsonSerializer();
+            //serializer.Converters.Add(new NameValueCollectionConverter());
+            //serializer.Serialize(headers);
+
+            //using (StreamWriter sw = new StreamWriter(filename))
+            //using (JsonWriter writer = new JsonTextWriter(sw))
+            //{
+            //    serializer.Serialize(writer, _clientRequestQueueMap);
+            //}
+
+            // Create item and save the values.
+            GlobalCacheItem cacheItem = new GlobalCacheItem();
+            cacheItem.url = url;
+            cacheItem.httpMethod = httpMethod;
+            cacheItem.responseHeaders = "no headers"; // TODO JSON(headers)
+            cacheItem.statusCode = statusCode;
+            cacheItem.filename = fileName; // TODO sth. else?
+            // add item
+            _databaseContext.GlobalCacheItem.Add(cacheItem);
+
+            // create rc data item
+            GlobalCacheRCData rcData = new GlobalCacheRCData();
+            rcData.url = url;
+            rcData.httpMethod = httpMethod;
+            // Although this is not really a request, we set the lastRequestTime to now
+            rcData.lastRequestTime = DateTime.Now;
+            // No requests so far
+            rcData.numberOfRequests = 0;
+            // Download time is the lastModified time of the file.
+            rcData.downloadTime = File.GetLastWriteTime(_cachePath + fileName);
+            // add item
+            _databaseContext.GlobalCacheRCData.Add(rcData);
         }
 
         #endregion
@@ -481,7 +622,7 @@ namespace RuralCafe
             string docFileName = _clustersPath + DOC_FILE_NAME;
             string matFileName = _clustersPath + MAT_FILE_NAME;
             string clustersFileName = _clustersPath + CLUSTERS_FILE_NAME;
-            string xmlFileName = _clustersPath + CLUSTERS_XML_FILENAME;
+            string xmlFileName = _clustersPath + CLUSTERS_XML_FILE_NAME;
 
             // get files
             _proxy.Logger.Debug("Clustering: Getting all text files.");

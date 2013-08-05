@@ -1,0 +1,180 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="2.0" xmlns:edmx="http://schemas.microsoft.com/ado/2008/10/edmx">
+  <!-- EF Runtime content -->
+  <edmx:Runtime>
+    <!-- SSDL content -->
+    <edmx:StorageModels>
+      <Schema Namespace="RCDatabaseModel.Store" Alias="Self" Provider="System.Data.SQLite" ProviderManifestToken="ISO8601" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
+        <EntityContainer Name="RCDatabaseModelStoreContainer">
+          <EntitySet Name="GlobalCacheItem" EntityType="RCDatabaseModel.Store.GlobalCacheItem" store:Type="Tables" />
+          <EntitySet Name="GlobalCacheRCData" EntityType="RCDatabaseModel.Store.GlobalCacheRCData" store:Type="Tables" />
+          <EntitySet Name="UserCacheDomain" EntityType="RCDatabaseModel.Store.UserCacheDomain" store:Type="Tables" />
+          <EntitySet Name="UserCacheItem" EntityType="RCDatabaseModel.Store.UserCacheItem" store:Type="Tables" />
+        </EntityContainer>
+        <!--Errors Found During Generation:
+      warning 6035: The relationship 'FK_GlobalCacheRCData_0_0' has columns that are not part of the key of the table on the primary side of the relationship. The relationship was excluded.
+      warning 6035: The relationship 'FK_GlobalCacheRCData_0_1' has columns that are not part of the key of the table on the primary side of the relationship. The relationship was excluded.
+      -->
+        <EntityType Name="GlobalCacheItem">
+          <Key>
+            <PropertyRef Name="httpMethod" />
+            <PropertyRef Name="url" />
+          </Key>
+          <Property Name="httpMethod" Type="nvarchar" Nullable="false" />
+          <Property Name="url" Type="nvarchar" Nullable="false" />
+          <Property Name="responseHeaders" Type="nvarchar" Nullable="false" />
+          <Property Name="filename" Type="nvarchar" Nullable="false" />
+          <Property Name="statusCode" Type="smallint" Nullable="false" />
+        </EntityType>
+        <EntityType Name="GlobalCacheRCData">
+          <Key>
+            <PropertyRef Name="httpMethod" />
+            <PropertyRef Name="url" />
+          </Key>
+          <Property Name="httpMethod" Type="nvarchar" Nullable="false" />
+          <Property Name="url" Type="nvarchar" Nullable="false" />
+          <Property Name="downloadTime" Type="datetime" Nullable="false" />
+          <Property Name="lastRequestTime" Type="datetime" Nullable="false" />
+          <Property Name="numberOfRequests" Type="int" Nullable="false" />
+        </EntityType>
+        <EntityType Name="UserCacheDomain">
+          <Key>
+            <PropertyRef Name="userID" />
+            <PropertyRef Name="domain" />
+          </Key>
+          <Property Name="userID" Type="int" Nullable="false" />
+          <Property Name="domain" Type="nvarchar" Nullable="false" />
+        </EntityType>
+        <EntityType Name="UserCacheItem">
+          <Key>
+            <PropertyRef Name="httpMethod" />
+            <PropertyRef Name="url" />
+          </Key>
+          <Property Name="httpMethod" Type="nvarchar" Nullable="false" />
+          <Property Name="url" Type="nvarchar" Nullable="false" />
+          <Property Name="responseHeaders" Type="nvarchar" Nullable="false" />
+          <Property Name="filename" Type="nvarchar" Nullable="false" />
+          <Property Name="statusCode" Type="smallint" Nullable="false" />
+        </EntityType>
+      </Schema>
+    </edmx:StorageModels>
+    <!-- CSDL content -->
+    <edmx:ConceptualModels>
+      <Schema Namespace="RCDatabaseModel" Alias="Self" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns="http://schemas.microsoft.com/ado/2008/09/edm">
+        <EntityContainer Name="RCDatabaseEntities" annotation:LazyLoadingEnabled="true">
+          <EntitySet Name="GlobalCacheItem" EntityType="RCDatabaseModel.GlobalCacheItem" />
+          <EntitySet Name="GlobalCacheRCData" EntityType="RCDatabaseModel.GlobalCacheRCData" />
+          <EntitySet Name="UserCacheDomain" EntityType="RCDatabaseModel.UserCacheDomain" />
+          <EntitySet Name="UserCacheItem" EntityType="RCDatabaseModel.UserCacheItem" />
+        </EntityContainer>
+        <EntityType Name="GlobalCacheItem">
+          <Key>
+            <PropertyRef Name="httpMethod" />
+            <PropertyRef Name="url" />
+          </Key>
+          <Property Name="httpMethod" Type="String" Nullable="false" MaxLength="2147483647" Unicode="true" FixedLength="false" />
+          <Property Name="url" Type="String" Nullable="false" MaxLength="2147483647" Unicode="true" FixedLength="false" />
+          <Property Name="responseHeaders" Type="String" Nullable="false" MaxLength="2147483647" Unicode="true" FixedLength="false" />
+          <Property Name="filename" Type="String" Nullable="false" MaxLength="2147483647" Unicode="true" FixedLength="false" />
+          <Property Name="statusCode" Type="Int16" Nullable="false" />
+        </EntityType>
+        <EntityType Name="GlobalCacheRCData">
+          <Key>
+            <PropertyRef Name="httpMethod" />
+            <PropertyRef Name="url" />
+          </Key>
+          <Property Name="httpMethod" Type="String" Nullable="false" MaxLength="2147483647" Unicode="true" FixedLength="false" />
+          <Property Name="url" Type="String" Nullable="false" MaxLength="2147483647" Unicode="true" FixedLength="false" />
+          <Property Name="downloadTime" Type="DateTime" Nullable="false" />
+          <Property Name="lastRequestTime" Type="DateTime" Nullable="false" />
+          <Property Name="numberOfRequests" Type="Int32" Nullable="false" />
+        </EntityType>
+        <EntityType Name="UserCacheDomain">
+          <Key>
+            <PropertyRef Name="userID" />
+            <PropertyRef Name="domain" />
+          </Key>
+          <Property Name="userID" Type="Int32" Nullable="false" />
+          <Property Name="domain" Type="String" Nullable="false" MaxLength="2147483647" Unicode="true" FixedLength="false" />
+        </EntityType>
+        <EntityType Name="UserCacheItem">
+          <Key>
+            <PropertyRef Name="httpMethod" />
+            <PropertyRef Name="url" />
+          </Key>
+          <Property Name="httpMethod" Type="String" Nullable="false" MaxLength="2147483647" Unicode="true" FixedLength="false" />
+          <Property Name="url" Type="String" Nullable="false" MaxLength="2147483647" Unicode="true" FixedLength="false" />
+          <Property Name="responseHeaders" Type="String" Nullable="false" MaxLength="2147483647" Unicode="true" FixedLength="false" />
+          <Property Name="filename" Type="String" Nullable="false" MaxLength="2147483647" Unicode="true" FixedLength="false" />
+          <Property Name="statusCode" Type="Int16" Nullable="false" />
+        </EntityType>
+      </Schema>
+    </edmx:ConceptualModels>
+    <!-- C-S mapping content -->
+    <edmx:Mappings>
+      <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2008/09/mapping/cs">
+        <EntityContainerMapping StorageEntityContainer="RCDatabaseModelStoreContainer" CdmEntityContainer="RCDatabaseEntities">
+          <EntitySetMapping Name="GlobalCacheItem">
+            <EntityTypeMapping TypeName="RCDatabaseModel.GlobalCacheItem">
+              <MappingFragment StoreEntitySet="GlobalCacheItem">
+                <ScalarProperty Name="httpMethod" ColumnName="httpMethod" />
+                <ScalarProperty Name="url" ColumnName="url" />
+                <ScalarProperty Name="responseHeaders" ColumnName="responseHeaders" />
+                <ScalarProperty Name="filename" ColumnName="filename" />
+                <ScalarProperty Name="statusCode" ColumnName="statusCode" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="GlobalCacheRCData">
+            <EntityTypeMapping TypeName="RCDatabaseModel.GlobalCacheRCData">
+              <MappingFragment StoreEntitySet="GlobalCacheRCData">
+                <ScalarProperty Name="httpMethod" ColumnName="httpMethod" />
+                <ScalarProperty Name="url" ColumnName="url" />
+                <ScalarProperty Name="downloadTime" ColumnName="downloadTime" />
+                <ScalarProperty Name="lastRequestTime" ColumnName="lastRequestTime" />
+                <ScalarProperty Name="numberOfRequests" ColumnName="numberOfRequests" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="UserCacheDomain">
+            <EntityTypeMapping TypeName="RCDatabaseModel.UserCacheDomain">
+              <MappingFragment StoreEntitySet="UserCacheDomain">
+                <ScalarProperty Name="userID" ColumnName="userID" />
+                <ScalarProperty Name="domain" ColumnName="domain" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="UserCacheItem">
+            <EntityTypeMapping TypeName="RCDatabaseModel.UserCacheItem">
+              <MappingFragment StoreEntitySet="UserCacheItem">
+                <ScalarProperty Name="httpMethod" ColumnName="httpMethod" />
+                <ScalarProperty Name="url" ColumnName="url" />
+                <ScalarProperty Name="responseHeaders" ColumnName="responseHeaders" />
+                <ScalarProperty Name="filename" ColumnName="filename" />
+                <ScalarProperty Name="statusCode" ColumnName="statusCode" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+        </EntityContainerMapping>
+      </Mapping>
+    </edmx:Mappings>
+  </edmx:Runtime>
+  <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <Designer xmlns="http://schemas.microsoft.com/ado/2008/10/edmx">
+    <Connection>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" />
+      </DesignerInfoPropertySet>
+    </Connection>
+    <Options>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="ValidateOnBuild" Value="true" />
+        <DesignerProperty Name="EnablePluralization" Value="False" />
+        <DesignerProperty Name="IncludeForeignKeysInModel" Value="True" />
+        <DesignerProperty Name="CodeGenerationStrategy" Value="None" />
+      </DesignerInfoPropertySet>
+    </Options>
+    <!-- Diagram content (shape and connector positions) -->
+    <Diagrams></Diagrams>
+  </Designer>
+</edmx:Edmx>

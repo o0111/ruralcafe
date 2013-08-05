@@ -132,6 +132,11 @@ namespace RuralCafe
 
         # region Property Accessors
 
+        /// <summary>Path to the proxy folder.</summary>
+        public string ProxyPath
+        {
+            get { return _proxyPath; }
+        }
         /// <summary>Path to the proxy's cache.</summary>
         public string CachePath
         {
