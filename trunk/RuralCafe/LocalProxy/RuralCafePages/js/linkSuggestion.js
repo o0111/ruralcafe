@@ -57,7 +57,9 @@ function showSuggestions0(linknumber) {
         // TODO include surrounding text
         var surroundingText = "";
         var rcRequestURL = "http://www.ruralcafe.net/request/linkSuggestions.xml?"
-            + "url=" + url + "&anchor=" + anchorText + "&text=" + surroundingText;
+            + "url=" + encodeURIComponent(url)
+            + "&anchor=" + encodeURIComponent(anchorText)
+            + "&text=" + encodeURIComponent(surroundingText);
         // Create ajax request to retrieve actual link suggestions
         var request = new ajaxRequest();
 	if (request.overrideMimeType) {
@@ -92,12 +94,35 @@ function showSuggestionsXML(xmlData, linknumber) {
         // The target is cached, hence no suggestions.
         rcHtml = "The target is cached!";
     } else {
-        rcHtml = "<b>Not available. Try these instead:</b><br><br>"
+        // Search box
+        var searchBoxValue = suggestions.getAttribute("anchorText");
+        rcHtml = '<form onsubmit="return rcSearchLocal(' + linknumber + ');" method="get" action="http://ruralcafe.net/result-offline.html">' +
+            '<input id="rcsearch_input' + linknumber + '"   type="text" name="s" value="' + searchBoxValue + '">' +
+            '<input type="submit" value="Search Locally">' +
+            '</form><hr class="rclinksuggestion" />';
+            
+            // var searchStr = document.getElementById('search_input').value;
+            //http://ruralcafe.net/result-offline.html?s=blub
+        
+        // Link suggestions
+        rcHtml += "<b>Not available. Try these instead:</b><br><br>"
         for (var i = 0; i < suggestions.children.length; i++) {
-            rcHtml += '<a href="'+ suggestions.children[i].innerHTML + '">Link ' + i + '</a><br>';
-            rcHtml += suggestions.children[i].getAttribute("downloadTime") + '<br><br>';
+            var url = suggestions.children[i].innerHTML;
+            var title = suggestions.children[i].getAttribute("title");
+            var downloadTime = suggestions.children[i].getAttribute("downloadTime");
+            
+            rcHtml += '<a class="rclinksuggestion" href="'+ url + '">' + title + '</a><br>';
+            rcHtml += downloadTime + '<br><br>';
         }
     }
     
     rcOpentips[linknumber].setContent(rcHtml);
+}
+
+function rcSearchLocal(linknumber) {
+    // TODO if we want this to be opened in another tab we gotta return false and do sth else.
+    // TODO we only see the results frame, not the whole search page    
+    var searchStr = document.getElementById('rcsearch_input' + linknumber).value;
+    alert("http://ruralcafe.net/result-offline.html?s=" + searchStr);
+    return true;
 }

@@ -68,6 +68,5 @@ namespace RuralCafe.LinkSuggestion
 
             return doc.DocumentNode.OuterHtml;
         }
-
     }
 }

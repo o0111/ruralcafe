@@ -634,6 +634,8 @@ namespace RuralCafe
             xmlDoc.AppendChild(xmlDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
             XmlElement suggestionsXml = xmlDoc.CreateElement("suggestions");
             xmlDoc.AppendChild(suggestionsXml);
+            // sent the anchorText right back
+            suggestionsXml.SetAttribute("anchorText", anchorText);
 
             // Make global uri from relative url and referrer
             Uri refUri = new Uri(RefererUri);
@@ -654,6 +656,7 @@ namespace RuralCafe
                     suggestionsXml.AppendChild(elem);
                     elem.InnerText = url + i;
                     elem.SetAttribute("downloadTime", "July 15, 2013");
+                    elem.SetAttribute("title", "Link " + i);
                 }
             }
 
