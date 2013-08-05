@@ -276,3 +276,13 @@
     transform: rotate(360deg);
   }
 }
+
+/* Style for the HTML inside the tooltip. Satia */
+a.rclinksuggestion:link {
+  color:#0000ff;
+  text-decoration:underline;
+}
+
+hr.rclinksuggestion {
+  background-color:#0000ff;
+}
