@@ -100,9 +100,6 @@ function showSuggestionsXML(xmlData, linknumber) {
             '<input id="rcsearch_input' + linknumber + '"   type="text" name="s" value="' + searchBoxValue + '">' +
             '<input type="submit" value="Search Locally">' +
             '</form><hr class="rclinksuggestion" />';
-            
-            // var searchStr = document.getElementById('search_input').value;
-            //http://ruralcafe.net/result-offline.html?s=blub
         
         // Link suggestions
         rcHtml += "<b>Not available. Try these instead:</b><br><br>"

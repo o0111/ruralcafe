@@ -283,7 +283,7 @@ namespace RuralCafe
                 // Level 1
                 try
                 {
-                    xmlAnswer = Cluster.Level1Index(Proxy.ProxyCacheManager.ClustersPath + CacheManager.CLUSTERS_XML_FILENAME, 
+                    xmlAnswer = Cluster.Level1Index(Proxy.ProxyCacheManager.ClustersPath + CacheManager.CLUSTERS_XML_FILE_NAME, 
                         numCategories, numItems);
                 }
                 catch (ArgumentException e)
@@ -296,7 +296,7 @@ namespace RuralCafe
                 // Level 2
                 try
                 {
-                    xmlAnswer = Cluster.Level2Index(Proxy.ProxyCacheManager.ClustersPath + CacheManager.CLUSTERS_XML_FILENAME,
+                    xmlAnswer = Cluster.Level2Index(Proxy.ProxyCacheManager.ClustersPath + CacheManager.CLUSTERS_XML_FILE_NAME,
                         searchString, numCategories, numItems);
                 }
                 catch (ArgumentException e)
@@ -319,7 +319,7 @@ namespace RuralCafe
 
                 try
                 {
-                    xmlAnswer = Cluster.Level3Index(Proxy.ProxyCacheManager.ClustersPath + CacheManager.CLUSTERS_XML_FILENAME,
+                    xmlAnswer = Cluster.Level3Index(Proxy.ProxyCacheManager.ClustersPath + CacheManager.CLUSTERS_XML_FILE_NAME,
                         catId, subCatId, numItems);
                 }
                 catch (ArgumentException e)
