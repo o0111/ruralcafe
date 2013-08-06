@@ -335,8 +335,8 @@ namespace RuralCafe
             // download the page
             // replace for non GET/HEADs
             bool replace = !IsGetOrHeadHeader();
-            long bytesDownloaded = rcRequest.DownloadToCache(replace);
-            if (bytesDownloaded < 0 )
+            // Download!
+            if (!rcRequest.DownloadToCache(replace))
             {
                 Logger.Warn("[depth = " + depth + "] error downloading: " + rcRequest.Uri);
                 return false;
@@ -782,7 +782,7 @@ namespace RuralCafe
                             extractedReferences.AddLast(currUri);
                         }
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
                         // pass
                     }

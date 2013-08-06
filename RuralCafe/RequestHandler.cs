@@ -613,11 +613,11 @@ namespace RuralCafe
         protected Status StreamToCacheAndClient()
         {
             Logger.Debug("streaming: " + _rcRequest.GenericWebRequest.RequestUri + " to cache and client.");
-            long bytes = _rcRequest.DownloadToCache(true);
+            bool downloadSuccessful = _rcRequest.DownloadToCache(true);
             try
             {
                 FileInfo f = new FileInfo(_rcRequest.CacheFileName);
-                if (bytes > -1 && f.Exists)
+                if (downloadSuccessful && f.Exists)
                 {
                     _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName);
                     if (_rcRequest.FileSize < 0)

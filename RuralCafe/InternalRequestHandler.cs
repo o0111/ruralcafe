@@ -296,9 +296,9 @@ namespace RuralCafe
         /// </summary>
         /// <param name="originalResponse">The original HttpWebResponse.</param>
         /// <returns>The generated Response.</returns>
-        public static Response createResponse(HttpWebResponse originalResponse)
+        public Response createResponse(HttpWebResponse originalResponse)
         {
-            string contentType = originalResponse.ContentType;
+            _clientHttpContext.Response.ContentType = originalResponse.ContentType;
             // XXX: additional headers lost ATM
             string message = HttpUtils.StreamContent(originalResponse);
             return new Response(message);

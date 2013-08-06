@@ -34,6 +34,14 @@ namespace RuralCafe
         private const string DATABASE_FILE_NAME = "RCDatabase.db";
         private readonly string EMPTY_DATABASE_FILE_NAME = Directory.GetCurrentDirectory()
             + Path.DirectorySeparatorChar + "Database" + Path.DirectorySeparatorChar + DATABASE_FILE_NAME;
+        // Adapt this if the Database schema changes
+        private readonly Dictionary<string, string[]> DB_SCHEMA = new Dictionary<string, string[]>() 
+            { 
+                { "GlobalCacheItem", new string[] { "httpMethod", "url", "responseHeaders", "filename", "statusCode" } },
+                { "GlobalCacheRCData",  new string[] { "httpMethod", "url", "downloadTime", "lastRequestTime", "numberOfRequests" } },
+                { "UserCacheDomain",  new string[] { "userID", "domain" } },
+                { "UserCacheItem",  new string[] { "httpMethod", "url", "responseHeaders", "filename", "statusCode" } }
+            };
 
         // Regex's for safe URI replacements
         private static readonly Regex unsafeChars1 = new Regex(@"[^a-z0-9\\\-\.]");
@@ -340,7 +348,12 @@ namespace RuralCafe
         }
 
         #endregion
-        #region cache manipulation
+        #region cache interface
+
+        //public bool Add
+
+        #endregion
+        #region cache file manipulation
 
         /// <summary>
         /// Creates a directory for a cache item.
@@ -352,6 +365,7 @@ namespace RuralCafe
             return Utils.CreateDirectoryForFile(fileName);
         }
 
+        // TODO remove this, and add something like add redirCacheItem or addEmptyCacheItem
         /// <summary>
         /// Adds a cache item, and saves a string in it.
         /// </summary>
@@ -370,13 +384,13 @@ namespace RuralCafe
         /// </summary>
         /// <param name="fileName">The absolute filename of the cache item.</param>
         /// <param name="webResponse">The web response</param>
-        /// <returns>The streamed bytes or -1 if failed.</returns>
-        public long AddCacheItem(string fileName, HttpWebResponse webResponse)
+        /// <returns>True for success, false for failure.</returns>
+        public bool AddCacheItem(string fileName, HttpWebResponse webResponse)
         {
             FileStream writeFile = Utils.CreateFile(fileName);
             if (writeFile == null)
             {
-                return -1;
+                return false;
             }
 
             Stream contentStream = webResponse.GetResponseStream();
@@ -416,7 +430,9 @@ namespace RuralCafe
                     }
                 }
             }
-            return bytesDownloaded;
+            _proxy.Logger.Debug("received: " + webResponse.ResponseUri + " "
+                    + bytesDownloaded + " bytes.");
+            return true;
         }
 
         /// <summary>
@@ -431,6 +447,19 @@ namespace RuralCafe
 
         #endregion
         #region cache database
+
+        /// <summary>
+        /// Tries to create a new database by copying the empty one and filling it from the cache.
+        /// Any exceptions are forewarded.
+        /// </summary>
+        private void CreateNewDatabase()
+        {
+            string dbFile = _proxy.ProxyPath + DATABASE_FILE_NAME;
+            _proxy.Logger.Debug("Creating a new database file.");
+            File.Copy(EMPTY_DATABASE_FILE_NAME, dbFile);
+            // We must fill the database with the current cache content!
+            FillDatabaseFromCache();
+        }
 
         /// <summary>
         /// Checks if there is a database and creates one if there isn't.
@@ -448,12 +477,10 @@ namespace RuralCafe
 
             if (!File.Exists(dbFile))
             {
+                _proxy.Logger.Debug("No database file found.");
                 try
                 {
-                    _proxy.Logger.Debug("No database file found, creating a new one.");
-                    File.Copy(EMPTY_DATABASE_FILE_NAME, dbFile);
-                    // We must fill the database with the current cache content!
-                    FillDatabaseFromCache();
+                    CreateNewDatabase();
                     return true;
                 }
                 catch (Exception e)
@@ -462,26 +489,73 @@ namespace RuralCafe
                     return false;
                 }
             }
+
+            bool validDB;
+            try
+            {
+                validDB = CheckDatabaseIntegrityAndRepair();
+            }
+            catch (Exception e)
+            {
+                _proxy.Logger.Warn("Error checking database integrity: ", e);
+                CreateNewDatabase();
+                return true;
+            }
+
             // If it exists, we must test whether it really contains a valid DB
-            return CheckDatabaseIntegrityAndRepair();
+            if (!validDB)
+            {
+                // The database is invalid and we must create a new one
+                try
+                {
+                    File.Delete(dbFile);
+                    CreateNewDatabase();
+                }
+                catch (Exception e)
+                {
+                    _proxy.Logger.Error("Could not create database file.", e);
+                    return false;
+                }
+                
+            }
+            return true;
         }
 
         /// <summary>
         /// Tests if the existing database file is valid, that means contains the tables and rows we need.
         /// 
-        /// Repairs the database if there are rows missing. If that is not possible, false is returned.
+        /// Repairs the database if there are columns missing. If that is not possible, false is returned.
         /// </summary>
         /// <returns>True for a valid DB file, false otherwise.</returns>
         private bool CheckDatabaseIntegrityAndRepair()
         {
-            // http://stackoverflow.com/questions/3528361/is-there-an-way-using-ado-net-to-determine-if-a-table-exists-in-a-database-that
-
-            // Loop through all tables and rows and check if they exist.
-            // If a table is missing, delete file and and run return false
-            // If a row is missing, add and fill with default values?
-            var gcis = _databaseContext.Database.SqlQuery<string>(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='GlobalCacheItem'");
-            // TODO
+            // See if all tables exist
+            IEnumerable<string> names = _databaseContext.Database.SqlQuery<string>(
+                "SELECT name FROM sqlite_master WHERE type='table'");
+            foreach (string tableName in DB_SCHEMA.Keys)
+            {
+                if (!names.Contains(tableName))
+                {
+                    _proxy.Logger.Warn(tableName + " table is missing in the database. Will create a new database.");
+                    return false;
+                }
+                // See if all columns exist
+                string sql = _databaseContext.Database.SqlQuery<string>(
+                    String.Format("SELECT sql FROM sqlite_master WHERE type='table' AND name='{0}'",
+                    tableName)).FirstOrDefault();
+                foreach(string colName in DB_SCHEMA[tableName])
+                {
+                    if (!sql.Contains(colName))
+                    {
+                        // XXX: If we add columns later, we might want to do an
+                        // ALTER TABLE here, instead of returning false.
+                        // Be aware that sqlite is different in regards of adding columns!
+                        _proxy.Logger.Warn(tableName + " table is missing column " +
+                            colName + " in the database. Will create a new database.");
+                        return false;
+                    }
+                }
+            }
             return true;
         }
 
@@ -500,7 +574,7 @@ namespace RuralCafe
                 return;
             }
 
-            _proxy.Logger.Warn("No database file was found, but the cache is not empty. Filling database with cache data...");
+            _proxy.Logger.Warn("Creating new database, but the cache is not empty. Filling database with cache data...");
             // Iterate through all files and fill the database
             foreach (string file in files)
             {
