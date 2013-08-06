@@ -450,7 +450,6 @@ namespace RuralCafe
         /// Creates RCRequest object for the request. Entry point for new RequestHandler objects.
         /// </summary>
         /// <param name="request">The HTTP request.</param>
-        /// <returns><code>True</code>, iff the URI is valid and a request has been created.</returns>
         protected void CreateRequest(HttpListenerRequest request)
         {
             // create the request object

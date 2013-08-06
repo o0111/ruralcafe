@@ -87,6 +87,7 @@ Bugs
   - Login mechanism does not work correct
   - Wait time not visible if title long and takes 2 rows
   - Embed opened pages instead of new tabs. Page inside main frame. At the moment, if you do that, you end up having Trotro inside Trotro ....
+  - Click search results makes links open in the TroTro tab, this is inconsistent with opening in a new tab. 
 - favicon.ico
 - https
   - http://https//twitter.com/search?q=%23lololo bzw.

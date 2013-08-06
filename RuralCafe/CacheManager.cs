@@ -463,14 +463,16 @@ namespace RuralCafe
                 }
             }
             // If it exists, we must test whether it really contains a valid DB
-            return IsValidDatabase();
+            return CheckDatabaseIntegrityAndRepair();
         }
 
         /// <summary>
         /// Tests if the existing database file is valid, that means contains the tables and rows we need.
+        /// 
+        /// Repairs the database if there are rows missing. If that is not possible, false is returned.
         /// </summary>
         /// <returns>True for a valid DB file, false otherwise.</returns>
-        private bool IsValidDatabase()
+        private bool CheckDatabaseIntegrityAndRepair()
         {
             // http://stackoverflow.com/questions/3528361/is-there-an-way-using-ado-net-to-determine-if-a-table-exists-in-a-database-that
 
@@ -505,10 +507,11 @@ namespace RuralCafe
                 // We assume it was a GET request with a 200 OK answer.
                 // We cannot recover the headers
                 AddCacheItemToDatabase(AbsoluteFilePathToUri(file), "GET", new NameValueCollection(), 200);
-                // TODO detect 301s?
+                _proxy.Logger.Debug(String.Format("Adding {0} to the database.", file));
             }
 
             // Save
+            _proxy.Logger.Debug("Saving database.");
             _databaseContext.SaveChanges();
 
             // Debug: print DB contents with banana
@@ -537,23 +540,14 @@ namespace RuralCafe
             NameValueCollection headers, short statusCode)
         {
             string fileName = GetRelativeCacheFileName(url);
-
-            // Use JSON to serialize headers
-            //JsonSerializer serializer = new JsonSerializer();
-            //serializer.Converters.Add(new NameValueCollectionConverter());
-            //serializer.Serialize(headers);
-
-            //using (StreamWriter sw = new StreamWriter(filename))
-            //using (JsonWriter writer = new JsonTextWriter(sw))
-            //{
-            //    serializer.Serialize(writer, _clientRequestQueueMap);
-            //}
+            string headersJson = JsonConvert.SerializeObject(headers,
+                Formatting.None, new NameValueCollectionConverter());
 
             // Create item and save the values.
             GlobalCacheItem cacheItem = new GlobalCacheItem();
             cacheItem.url = url;
             cacheItem.httpMethod = httpMethod;
-            cacheItem.responseHeaders = "no headers"; // TODO JSON(headers)
+            cacheItem.responseHeaders = headersJson;
             cacheItem.statusCode = statusCode;
             cacheItem.filename = fileName; // TODO sth. else?
             // add item

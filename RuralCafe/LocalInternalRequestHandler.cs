@@ -831,6 +831,8 @@ namespace RuralCafe
         /// <returns>The remote proxy's response.</returns>
         public Response DelegateToRemoteProxy()
         {
+            // We need to create the request as this is usually not done for the internal handler
+            CreateRequest(OriginalRequest);
             // Set Proxy for the request
             _rcRequest.SetProxyAndTimeout(Proxy.RemoteProxy, System.Threading.Timeout.Infinite);
             HttpWebResponse response = (HttpWebResponse)_rcRequest.GenericWebRequest.GetResponse();
