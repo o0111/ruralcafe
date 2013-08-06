@@ -19,6 +19,9 @@ function loadResult() {
 		livePageNum = parseInt(path.slice(path.search('lp=')+3,path.search('&'))) || 1;
 		if (searchString != "")
 			showResult('request/search-cache.xml?n='+noi+'&p='+cachePageNum+'&s='+searchString);
+                else
+                        document.getElementById('updateArea').innerHTML="<h2>You did not enter a search query!</h2>";
+
 	}
 	else
 		alert("Your browser does not support javascript");

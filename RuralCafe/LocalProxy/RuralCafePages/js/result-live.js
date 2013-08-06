@@ -19,6 +19,8 @@ function loadLiveResult() {
                 livePageNum = parseInt(path.slice(path.search('lp=')+3,path.search('&'))) || 1;
 		if (searchString != "")
 			showResultl('request/search-live.xml?p='+livePageNum+'&s='+searchString);
+                else
+                        document.getElementById('live_updateArea').innerHTML="";
 	}
 	else
 		alert("Your browser does not support javascript");
