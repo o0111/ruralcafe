@@ -35,7 +35,7 @@ namespace RuralCafe
         /// </summary>
         static LocalInternalRequestHandler()
         {
-             routines.Add("/request/index.xml", new RoutineMethod("ServeRCIndexPage", 		
+            routines.Add("/request/index.xml", new RoutineMethod("ServeRCIndexPage", 		
  	            new string[] { "n", "c", "s" }, new Type[] { typeof(int), typeof(int), typeof(string) }));
             routines.Add("/request/search-live.xml", new RoutineMethod("ServeRCLiveResultPage",
                 new string[] { "p", "s" }, new Type[] { typeof(int), typeof(string) }));
@@ -411,7 +411,7 @@ namespace RuralCafe
                     {
                         // build the actual element
                         XmlElement itemXml = xmlDoc.CreateElement("item");
-                        itemXml.SetAttribute("id", requestHandler.ItemId);
+                        itemXml.SetAttribute("id", requestHandler.RequestId);
                         queueXml.AppendChild(itemXml);
 
                         XmlElement titleXml = xmlDoc.CreateElement("title");
@@ -783,7 +783,7 @@ namespace RuralCafe
             RCSpecificRequestHeaders headers = new RCSpecificRequestHeaders(userId);
             lrh.AddRCSpecificRequestHeaders(headers);
 
-            Proxy.QueueRequest(userId, lrh);
+            Proxy.AddRequest(userId, lrh);
             // Redirect to homepage
             redirectUrl = RC_PAGE;
             _clientHttpContext.Response.Redirect(redirectUrl);
@@ -793,16 +793,19 @@ namespace RuralCafe
         /// <summary>
         /// Removes the request from Ruralcafe's queue.
         /// </summary>
-        public Response RemoveRequest(string itemId)
+        public Response RemoveRequest(string requestId)
         {
-            Proxy.DequeueRequest(UserIDCookieValue, itemId);
-            return new Response();
+            // remove it locally
+            Proxy.RemoveRequest(UserIDCookieValue, requestId);
+
+            // delegate removal at remote proxy to remote proxy
+            return DelegateToRemoteProxy();
         }
 
         /// <summary>
         /// Gets the eta for a request in Ruralcafe's queue.
         /// </summary>
-        public Response ServeETARequest(string itemId)
+        public Response ServeETARequest(string requestId)
         {
             // find the indexer of the matching request
             List<LocalRequestHandler> requestHandlers = Proxy.GetRequests(UserIDCookieValue);
@@ -810,9 +813,8 @@ namespace RuralCafe
             {
                 return new Response("0");
             }
-            // This gets the requestHandler with the same ID, if there is one
-            LocalRequestHandler requestHandler =
-                        requestHandlers.FirstOrDefault(rh => rh.ItemId == itemId);
+            // This gets the requestHandler with the same requestID, if there is one
+            LocalRequestHandler requestHandler = requestHandlers.FirstOrDefault(rh => rh.RequestId == requestId);
             if (requestHandler == null)
             {
                 return new Response("0");

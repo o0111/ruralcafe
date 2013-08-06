@@ -180,7 +180,7 @@ namespace RuralCafe
         /// Handles an RC internal request.
         /// </summary>
         /// <returns>The status.</returns>
-        public override void HandleRequest()
+        public override void HandleRequest(object nullObj)
         {
             Logger.Debug("Processing internal request: " + _originalRequest.Url);
 

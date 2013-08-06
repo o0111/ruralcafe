@@ -49,7 +49,7 @@ namespace RuralCafe
         private string _hashPath;
         // hashPath without the directory seperators
         [JsonProperty]
-        private string _itemId;
+        private string _requestId;
         [JsonProperty]
         private string _cacheFileName;
         [JsonProperty]
@@ -133,9 +133,9 @@ namespace RuralCafe
             get { return _hashPath; }
         }
         /// <summary>The itemId of the object.</summary>
-        public string ItemId
+        public string RequestId
         {
-            get { return _itemId; }
+            get { return _requestId; }
         }
         /// <summary>The file name of the object if it is cached.</summary>
         public string CacheFileName
@@ -236,7 +236,7 @@ namespace RuralCafe
 
             _fileName = CacheManager.UriToFilePath(_webRequest.RequestUri.ToString());
             _hashPath = CacheManager.GetHashPath(_fileName);
-            _itemId = _hashPath.Replace(Path.DirectorySeparatorChar.ToString(), "");
+            _requestId = _hashPath.Replace(Path.DirectorySeparatorChar.ToString(), "");
             _cacheFileName = requestHandler.GenericProxy.CachePath + _hashPath + _fileName;
             _packageFileName = requestHandler.GenericProxy.PackagesPath + _hashPath + _fileName + ".gzip";
             _fileSize = 0;
@@ -360,7 +360,7 @@ namespace RuralCafe
         /// <returns></returns>
         public bool DownloadPackage()
         {
-            _requestHandler.Logger.Debug("downloading: " + _webRequest.RequestUri);
+            _requestHandler.Logger.Debug("downloading from remote proxy: " + _webRequest.RequestUri);
             // Stream parameters, if we have non GET/HEAD
             HttpUtils.SendBody(_webRequest, _body);
 
@@ -418,6 +418,7 @@ namespace RuralCafe
             try
             {
                 _requestHandler.Logger.Debug("downloading: " + _webRequest.RequestUri);
+
                 // Stream parameters, if we have non GET/HEAD
                 HttpUtils.SendBody(_webRequest, _body);
 

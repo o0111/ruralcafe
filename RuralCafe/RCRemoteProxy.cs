@@ -156,25 +156,27 @@ namespace RuralCafe
         /// Adds the request to the global queue and wakes up the dispatcher.
         /// </summary>
         /// <param name="requestHandler">The request handler to queue.</param>
-        public void QueueRequest(RemoteRequestHandler requestHandler)
+        public void AddRequest(RemoteRequestHandler requestHandler)
         {
             // Order is important!
-            requestHandler = (RemoteRequestHandler) QueueRequestGlobalQueue(requestHandler);
+            requestHandler = (RemoteRequestHandler) AddRequestGlobalQueue(requestHandler);
 
             // Notify that a new request has been added. The Dispatcher will wake up if it was waiting.
-            _newRequestEvent.Set();
+            _requestEvent.Set();
         }
 
         /// <summary>
         /// Removes a single request from the queues.
         /// </summary>
         /// <param name="requestHandlerItemId">The item id of the request handlers to dequeue.</param>
-        public void DequeueRequest(string requestHandlerItemId)
+        public void RemoveRequest(string requestHandlerItemId)
         {
             // Order is important!
-            RemoteRequestHandler requestHandler = (RemoteRequestHandler) DequeueRequestGlobalQueue(requestHandlerItemId);
+            RemoteRequestHandler requestHandler = (RemoteRequestHandler) RemoveRequestGlobalQueue(requestHandlerItemId);
             // abort! XXX: no interrupt handling, but better than nothing for now.
-            requestHandler.KillYourself();
+            // XXX: if the request is removed from the queue already, we can't do much to it since we're not storing active requests somewhere right now
+            // XXX: since this interruption doesn't work well anyway we might as well not do anything to requests that are already downloading until it works in its entirety.
+            // requestHandler.KillYourself();
         }
 
         # endregion
