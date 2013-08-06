@@ -335,8 +335,28 @@ namespace RuralCafe
             // download the page
             // replace for non GET/HEADs
             bool replace = !IsGetOrHeadHeader();
-            // Download!
-            if (!rcRequest.DownloadToCache(replace))
+
+            bool success;
+            if (IsGetOrHeadHeader())
+            {
+                // Download!
+                success = rcRequest.DownloadToCache();
+            }
+            else
+            {
+                // We must lock, because there is a small chance another thread also works on
+                // a POST for the same URI.
+                lock (_proxy.ProxyCacheManager.ExternalLockObj)
+                {
+                    // Remove old things
+                    _proxy.ProxyCacheManager.RemoveCacheItem(_rcRequest.GenericWebRequest.Method,
+                        _rcRequest.GenericWebRequest.RequestUri.ToString());
+                    // Download!
+                    success = rcRequest.DownloadToCache();
+                }
+            }
+            
+            if (!success)
             {
                 Logger.Warn("[depth = " + depth + "] error downloading: " + rcRequest.Uri);
                 return false;
@@ -355,7 +375,7 @@ namespace RuralCafe
             {
                 Logger.Debug("Redirected: Also packing old URI with a 301 file.");
                 RCRequest rc301 = new RCRequest(this, (HttpWebRequest)WebRequest.Create(rcRequest.UriBeforeRedirect));
-                rc301.DownloadToCache(replace);
+                rc301.DownloadToCache();
                 _package.Pack(this, rc301, ref _quota);
             }
 
@@ -412,6 +432,8 @@ namespace RuralCafe
 
         /// <summary>
         /// Downloads a set of URIs in series.
+        /// 
+        /// DEPRECATED
         /// </summary>
         /// <param name="parentRequest">Root request.</param>
         /// <param name="children">Children requests to be downloaded.</param>
@@ -454,7 +476,7 @@ namespace RuralCafe
                     } 
                      
                     // download the page
-                    currChild.DownloadToCache(false);
+                    currChild.DownloadToCache();
 
                     if (IsTimedOut())
                     {
@@ -568,7 +590,7 @@ namespace RuralCafe
                     request.GenericWebRequest.Timeout = (int)(endTime.Subtract(currTime)).TotalMilliseconds;
 
                     // download the page
-                    request.DownloadToCache(false);
+                    request.DownloadToCache();
                 }
                 else
                 {

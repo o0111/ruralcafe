@@ -75,6 +75,7 @@ Bugs
 - HttpListenerException (close browser window) uncatched. (Hard to reproduce)
 - http://jsfiddle.net/mpRmV/5/
 - InvalidDataException in GzipWrapper:121  
+- LevelNIndex fails if clustering was aborted. e.g. Clusters.cs: 531
 - Unpack bug !?
 	- http://ros.org/wiki/tf 
 - Trotro

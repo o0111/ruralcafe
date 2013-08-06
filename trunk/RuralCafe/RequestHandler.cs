@@ -612,8 +612,14 @@ namespace RuralCafe
         /// <returns>The Status of the request.</returns>
         protected Status StreamToCacheAndClient()
         {
+            // Delete an old entry, if there is one. We do not care about synchronization here as
+            // We just want new data and if it is some milliseconds old because some other thread streamed the same
+            // URL that does not matter. Also this method is only used for GET/HEAD, so there is no problem.
+            _proxy.ProxyCacheManager.RemoveCacheItem(_rcRequest.GenericWebRequest.Method,
+                _rcRequest.GenericWebRequest.RequestUri.ToString());
+
             Logger.Debug("streaming: " + _rcRequest.GenericWebRequest.RequestUri + " to cache and client.");
-            bool downloadSuccessful = _rcRequest.DownloadToCache(true);
+            bool downloadSuccessful = _rcRequest.DownloadToCache();
             try
             {
                 FileInfo f = new FileInfo(_rcRequest.CacheFileName);

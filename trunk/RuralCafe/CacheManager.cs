@@ -62,7 +62,19 @@ namespace RuralCafe
         /// </summary>
         private RCProxy _proxy;
 
+        /// <summary>
+        /// The database context
+        /// </summary>
         private RCDatabaseEntities _databaseContext;
+
+        /// <summary>
+        /// An object to lock cache access internally.
+        /// </summary>
+        private object _lockObj = new object();
+        /// <summary>
+        /// An object to lock cache access externally.
+        /// </summary>
+        private object _extrenalLockObj = new object();
 
         /// <summary>
         /// The path to the cache.
@@ -77,6 +89,13 @@ namespace RuralCafe
         public string ClustersPath
         {
             get { return _clustersPath; }
+        }
+        /// <summary>
+        /// An object to lock cache access externally in an additional layer.
+        /// </summary>
+        public object ExternalLockObj
+        {
+            get { return _extrenalLockObj; }
         }
 
         /// <summary>
@@ -97,46 +116,9 @@ namespace RuralCafe
         /// <param name="clustersPath">The path to the clusters</param>
         /// <param name="proxy">The proxy.</param>
         public CacheManager(string cachePath, string clustersPath, RCProxy proxy)
+            : this(cachePath, proxy)
         {
-            this._cachePath = cachePath;
             this._clustersPath = clustersPath;
-            this._proxy = proxy;
-        }
-
-        /// <summary>
-        /// Initializes the cache by making sure that the directory/ies exist(s)
-        /// and initializing the database.
-        /// </summary>
-        /// <returns>True or false for success or not.</returns>
-        public bool InitializeCache()
-        {
-            try
-            {
-                if (!Directory.Exists(_cachePath))
-                {
-                    System.IO.Directory.CreateDirectory(_cachePath);
-                }
-                if (!String.IsNullOrEmpty(_clustersPath) && !Directory.Exists(_clustersPath))
-                {
-                    System.IO.Directory.CreateDirectory(_clustersPath);
-                }
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-            return InitializeDatabase();
-        }
-
-        /// <summary>
-        /// Logs the cache metrics.
-        /// </summary>
-        public void LogCacheMetrics()
-        {
-            // XXX when this is done at the same time with Cluto, the clustering fails.
-
-            _proxy.Logger.Metric("Cache Items: " + AllFiles().Count);
-            _proxy.Logger.Metric("Cache Items with text/html mimetype: " + TextFiles().Count);
         }
 
         #region (static) filepath methods
@@ -350,22 +332,127 @@ namespace RuralCafe
         #endregion
         #region cache interface
 
-        //public bool Add
+        /// <summary>
+        /// Initializes the cache by making sure that the directory/ies exist(s)
+        /// and initializing the database.
+        /// </summary>
+        /// <returns>True or false for success or not.</returns>
+        public bool InitializeCache()
+        {
+            try
+            {
+                if (!Directory.Exists(_cachePath))
+                {
+                    System.IO.Directory.CreateDirectory(_cachePath);
+                }
+                if (!String.IsNullOrEmpty(_clustersPath) && !Directory.Exists(_clustersPath))
+                {
+                    System.IO.Directory.CreateDirectory(_clustersPath);
+                }
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+            return InitializeDatabase();
+        }
+
+        /// <summary>
+        /// Logs the cache metrics.
+        /// </summary>
+        public void LogCacheMetrics()
+        {
+            // XXX when this is done at the same time with Cluto, the clustering fails.
+
+            _proxy.Logger.Metric("Cache Items: " + AllFiles().Count);
+            _proxy.Logger.Metric("Cache Items with text/html mimetype: " + TextFiles().Count);
+        }
+
+        /// <summary>
+        /// Checks whether an item is cached. Only the DB is being used,
+        /// the disk contens are not ebing looked at.
+        /// </summary>
+        /// <param name="httpMethod">The used HTTP method.</param>
+        /// <param name="uri">The URI.</param>
+        /// <returns>If the item is cached.</returns>
+        public bool IsCached(string httpMethod, string uri)
+        {
+            return (from gci in _databaseContext.GlobalCacheItem 
+                        where gci.httpMethod.Equals(httpMethod) && gci.url.Equals(uri)
+                        select 1).Count() != 0;
+        }
+
+        /// <summary>
+        /// Adds a cache item. If there is already an entry in the DB, nothing is done
+        /// and true is returned.
+        /// Otherwise a new DB entry will be created and a file will be created.
+        /// </summary>
+        /// <param name="webResponse">The web response.</param>
+        /// <returns>True for success and false for failure.</returns>
+        public bool AddCacheItem(HttpWebResponse webResponse)
+        {
+            string relFileName = GetRelativeCacheFileName(webResponse.ResponseUri.ToString());
+
+            // locked: if exists return else create DB entry
+            lock (_lockObj)
+            {
+                string url = webResponse.ResponseUri.ToString();
+                string httpMethod = webResponse.Method;
+                NameValueCollection headers = webResponse.Headers;
+                short statusCode = (short)webResponse.StatusCode;
+
+                if (IsCached(httpMethod, url))
+                {
+                    _proxy.Logger.Debug("Already exists: " + httpMethod + " "  + url);
+                    return true;
+                }
+
+                // Add database entry.
+                try
+                {
+                    AddCacheItemToDatabase(url, httpMethod, headers, statusCode, relFileName);
+                    _databaseContext.SaveChanges();
+                }
+                catch (Exception e)
+                {
+                    _proxy.Logger.Error("Could not add cache item to the database.", e);
+                    return false;
+                }
+            }
+
+            // Add file to the disk
+            return AddCacheItemToDisk(webResponse);
+        }
+
+        /// <summary>
+        /// Removes an cache item from the DB and the disk.
+        /// </summary>
+        /// <param name="httpMethod">The used HTTP method.</param>
+        /// <param name="uri">The URI.</param>
+        public void RemoveCacheItem(string httpMethod, string uri)
+        {
+            lock(_lockObj)
+            {
+                try
+                {
+                    RemoveCacheItemFromDatabase(httpMethod, uri);
+                    _databaseContext.SaveChanges();
+                }
+                catch (Exception e)
+                {
+                    _proxy.Logger.Error("Could not remove cache item from the database.", e);
+                    return;
+                }
+            }
+
+            // Remove file
+            Utils.DeleteFile(_cachePath + GetRelativeCacheFileName(uri));
+        }
 
         #endregion
         #region cache file manipulation
 
-        /// <summary>
-        /// Creates a directory for a cache item.
-        /// </summary>
-        /// <param name="fileName">The absolute filename of the cache item.</param>
-        /// <returns>True or false for success or failure.</returns>
-        public bool CreateDirectoryForCacheItem(string fileName)
-        {
-            return Utils.CreateDirectoryForFile(fileName);
-        }
-
-        // TODO remove this, and add something like add redirCacheItem or addEmptyCacheItem
+        // TODO remove this, and add something like addRedirCacheItem or addEmptyCacheItem
         /// <summary>
         /// Adds a cache item, and saves a string in it.
         /// </summary>
@@ -373,6 +460,9 @@ namespace RuralCafe
         /// <param name="content">The content to store.</param>
         public void AddCacheItem(string fileName, string content)
         {
+            // XXX Just for debugging
+            Utils.CreateDirectoryForFile(fileName);
+
             using (StreamWriter sw = new StreamWriter(File.Open(fileName, FileMode.Create), Encoding.UTF8))
             {
                 sw.Write(content);
@@ -380,16 +470,18 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Adds a cache item from a web response's content.
+        /// Adds a cache item to the disk from a web response's content.
         /// </summary>
-        /// <param name="fileName">The absolute filename of the cache item.</param>
         /// <param name="webResponse">The web response</param>
         /// <returns>True for success, false for failure.</returns>
-        public bool AddCacheItem(string fileName, HttpWebResponse webResponse)
+        private bool AddCacheItemToDisk(HttpWebResponse webResponse)
         {
+            string fileName = _cachePath + GetRelativeCacheFileName(webResponse.ResponseUri.ToString());
+
             FileStream writeFile = Utils.CreateFile(fileName);
             if (writeFile == null)
             {
+                _proxy.Logger.Error("Could not create file: " + fileName);
                 return false;
             }
 
@@ -440,7 +532,7 @@ namespace RuralCafe
         /// </summary>
         /// <param name="fileName">The absolute filename of the cache item.</param>
         /// <returns>True or false for success or failure.</returns>
-        public bool RemoveCacheItem(string fileName)
+        public bool RemoveCacheItemFromDisk(string fileName)
         {
             return Utils.DeleteFile(fileName);
         }
@@ -580,25 +672,15 @@ namespace RuralCafe
             {
                 // We assume it was a GET request with a 200 OK answer.
                 // We cannot recover the headers
-                AddCacheItemToDatabase(AbsoluteFilePathToUri(file), "GET", new NameValueCollection(), 200);
+                string uri = AbsoluteFilePathToUri(file);
+                string relFileName = file.Substring(_cachePath.Length);
+                AddCacheItemToDatabase(uri, "GET", new NameValueCollection(), 200, relFileName);
                 _proxy.Logger.Debug(String.Format("Adding {0} to the database.", file));
             }
 
             // Save
             _proxy.Logger.Debug("Saving database.");
             _databaseContext.SaveChanges();
-
-            // Debug: print DB contents with banana
-            //var query = from gc in _databaseContext.GlobalCacheItem where gc.url.Contains("banana") select gc;
-            //foreach (var gci in query)
-            //{
-            //    Console.WriteLine(String.Format("{0} {1} {2}", gci.httpMethod, gci.url, gci.responseHeaders));
-            //}
-            //var query2 = from rc in _databaseContext.GlobalCacheRCData where rc.url.Contains("banana") select rc;
-            //foreach (var rci in query2)
-            //{
-            //    Console.WriteLine(String.Format("{0} {1} {2}", rci.httpMethod, rci.url, rci.downloadTime));
-            //}
         }
 
         /// <summary>
@@ -610,12 +692,15 @@ namespace RuralCafe
         /// <param name="httpMethod">The HTTP method.</param>
         /// <param name="headers">The headers.</param>
         /// <param name="statusCode">The status code.</param>
-        public void AddCacheItemToDatabase(string url, string httpMethod,
-            NameValueCollection headers, short statusCode)
+        /// <param name="relFileName">The relative file name.</param>
+        private void AddCacheItemToDatabase(string url, string httpMethod,
+            NameValueCollection headers, short statusCode, string relFileName)
         {
-            string fileName = GetRelativeCacheFileName(url);
             string headersJson = JsonConvert.SerializeObject(headers,
                 Formatting.None, new NameValueCollectionConverter());
+
+            _proxy.Logger.Debug("Adding to database: " + httpMethod+ " "
+                    + url);
 
             // Create item and save the values.
             GlobalCacheItem cacheItem = new GlobalCacheItem();
@@ -623,7 +708,7 @@ namespace RuralCafe
             cacheItem.httpMethod = httpMethod;
             cacheItem.responseHeaders = headersJson;
             cacheItem.statusCode = statusCode;
-            cacheItem.filename = fileName; // TODO sth. else?
+            cacheItem.filename = relFileName; // TODO sth. else?
             // add item
             _databaseContext.GlobalCacheItem.Add(cacheItem);
 
@@ -636,9 +721,35 @@ namespace RuralCafe
             // No requests so far
             rcData.numberOfRequests = 0;
             // Download time is the lastModified time of the file.
-            rcData.downloadTime = File.GetLastWriteTime(_cachePath + fileName);
+            rcData.downloadTime = File.GetLastWriteTime(_cachePath + relFileName);
             // add item
             _databaseContext.GlobalCacheRCData.Add(rcData);
+        }
+
+        /// <summary>
+        /// Removes an cache item from both DB tables.
+        /// 
+        /// _databaseContext.SaveChanges() still needs to be called.
+        /// </summary>
+        /// <param name="httpMethod">The used HTTP method.</param>
+        /// <param name="uri">The URI.</param>
+        private void RemoveCacheItemFromDatabase(string httpMethod, string uri)
+        {
+            IQueryable<GlobalCacheItem> gciQuery = from gci in _databaseContext.GlobalCacheItem 
+                        where gci.httpMethod.Equals(httpMethod) && gci.url.Equals(uri)
+                        select gci;
+            foreach(GlobalCacheItem gci in gciQuery)
+            {
+                _databaseContext.GlobalCacheItem.Remove(gci);
+            }
+
+            IQueryable<GlobalCacheRCData> rcQuery = from rci in _databaseContext.GlobalCacheRCData
+                                                  where rci.httpMethod.Equals(httpMethod) && rci.url.Equals(uri)
+                                                  select rci;
+            foreach (GlobalCacheRCData rci in rcQuery)
+            {
+                _databaseContext.GlobalCacheRCData.Remove(rci);
+            }
         }
 
         #endregion
@@ -706,10 +817,10 @@ namespace RuralCafe
                 return;
             }
             // List all Text files XXX Debug
-            foreach(string textFile in textFiles)
-            {
-                _proxy.Logger.Debug("Clustering uses file: " + textFile);
-            }
+            //foreach(string textFile in textFiles)
+            //{
+            //    _proxy.Logger.Debug("Clustering uses file: " + textFile);
+            //}
 
             // files2doc
             _proxy.Logger.Debug("Clustering: Creating docfile.");

@@ -130,10 +130,6 @@ namespace RuralCafe
             //string archive = reader.ReadToEnd();
 
             // create directory if it doesn't exist
-            if (!Utils.CreateDirectoryForFile(outputFile))
-            {
-                return false;
-            }
             FileStream outputFileFs = Utils.CreateFile(outputFile);
             if (outputFileFs == null)
             {

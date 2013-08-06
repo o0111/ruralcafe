@@ -189,7 +189,7 @@ namespace RuralCafe
                     return;// Status.Completed?;
                 }
 
-                // if we're not online, let's check if the packe file name is not too long
+                // if we're not online, let's check if the package file name is not too long
                 if (!Utils.IsNotTooLongFileName(PackageFileName))
                 {
                     Logger.Debug("package filename for " + RequestUri + " is too long. Aborting.");
@@ -267,9 +267,11 @@ namespace RuralCafe
 
             // download the request file as a package
             Logger.Debug("dispatching to remote proxy: " + RequestUri);
-            RCRequest.CacheFileName = PackageFileName;
+
+
+            // RCRequest.CacheFileName = PackageFileName;
             RequestStatus = RequestHandler.Status.Downloading;
-            bool downloadSuccessful = RCRequest.DownloadToCache(true);
+            bool downloadSuccessful = RCRequest.DownloadPackage();
 
             // Only get the results if this thread was measuring.
             if (measuring)

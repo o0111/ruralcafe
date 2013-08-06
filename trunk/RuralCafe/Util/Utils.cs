@@ -304,12 +304,16 @@ namespace RuralCafe.Util
         }
 
         /// <summary>
-        /// Creates a file.
+        /// Creates a file. If it existed, it will be written to at the beginning.
         /// </summary>
         /// <param name="fileName">The name of the file.</param>
         /// <returns>Returns the FileStream for the created file.</returns>
         public static FileStream CreateFile(string fileName)
         {
+            if (!CreateDirectoryForFile(fileName))
+            {
+                return null;
+            }
             FileStream fs;
             try
             {

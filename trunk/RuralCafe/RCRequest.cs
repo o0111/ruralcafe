@@ -309,6 +309,7 @@ namespace RuralCafe
             }
         }
 
+        // XXX delete
         /// <summary>
         /// Makes preparations for a file to be created.
         /// 
@@ -317,65 +318,101 @@ namespace RuralCafe
         /// <param name="replace">Whether the file should be replaced, if it exists.</param>
         /// <param name="proceedDownload"></param>
         /// <returns>True, if the download should proceed, false if not.</returns>
-        private bool PrepareFileForCreation(bool replace)
+        //private bool PrepareFileForCreation(bool replace)
+        //{
+        //    CacheManager cacheManager = _requestHandler.GenericProxy.ProxyCacheManager;
+        //    // XXX: should also check for cache expiration
+        //    // check for 0 size file to re-download
+        //    long fileSize = cacheManager.CacheItemBytes(_cacheFileName);
+        //    if (fileSize > 0)
+        //    {
+        //        // File exists
+        //        if (replace)
+        //        {
+        //            if (!cacheManager.RemoveCacheItem(_cacheFileName))
+        //            {
+        //                // Old file couldn't be removed.
+        //                throw new Exception("Could not remove old cache file.");
+        //            }
+        //        }
+        //        else
+        //        {
+        //            // We don't replace so we're done.
+        //            return false;
+        //        }
+        //    }
+        //    else
+        //    {
+        //        // File does not exist
+        //        // create directory if it doesn't exist
+        //        if (!cacheManager.CreateDirectoryForCacheItem(_cacheFileName))
+        //        {
+        //            // Directory couldn't be created.
+        //            throw new Exception("Could not create directory for file.");
+        //        }
+        //    }
+        //    return true;
+        //}
+
+        /// <summary>
+        /// Downloads a package from the remote proxy.
+        /// </summary>
+        /// <returns></returns>
+        public bool DownloadPackage()
         {
-            CacheManager cacheManager = _requestHandler.GenericProxy.ProxyCacheManager;
-            // XXX: should also check for cache expiration
-            // check for 0 size file to re-download
-            long fileSize = cacheManager.CacheItemBytes(_cacheFileName);
-            if (fileSize > 0)
+            _requestHandler.Logger.Debug("downloading: " + _webRequest.RequestUri);
+            // Stream parameters, if we have non GET/HEAD
+            HttpUtils.SendBody(_webRequest, _body);
+
+            // get the web response for the web request
+            _webResponse = (HttpWebResponse)_webRequest.GetResponse();
+            _requestHandler.Logger.Debug("Received header: " + _webRequest.RequestUri);
+
+            FileStream writeFile = Utils.CreateFile(PackageFileName);
+            if (writeFile == null)
             {
-                // File exists
-                if (replace)
+                _requestHandler.Logger.Warn("Could not create package file: " + PackageFileName);
+                return false;
+            }
+
+            Stream contentStream = _webResponse.GetResponseStream();
+            Byte[] readBuffer = new Byte[4096];
+            long bytesDownloaded = 0;
+            using (writeFile)
+            {
+                // No text. Read buffered.
+                int bytesRead = contentStream.Read(readBuffer, 0, readBuffer.Length);
+                while (bytesRead != 0)
                 {
-                    if (!cacheManager.RemoveCacheItem(_cacheFileName))
-                    {
-                        // Old file couldn't be removed.
-                        throw new Exception("Could not remove old cache file.");
-                    }
-                }
-                else
-                {
-                    // We don't replace so we're done.
-                    return false;
+                    writeFile.Write(readBuffer, 0, bytesRead);
+                    bytesDownloaded += bytesRead;
+
+                    // Read the next part of the response
+                    bytesRead = contentStream.Read(readBuffer, 0, readBuffer.Length);
                 }
             }
-            else
-            {
-                // File does not exist
-                // create directory if it doesn't exist
-                if (!cacheManager.CreateDirectoryForCacheItem(_cacheFileName))
-                {
-                    // Directory couldn't be created.
-                    throw new Exception("Could not create directory for file.");
-                }
-            }
+            _requestHandler.Logger.Debug("received: " + _webResponse.ResponseUri + " "
+                    + bytesDownloaded + " bytes.");
             return true;
         }
 
         /// <summary>
         /// Streams a request from the server into the cache.
         /// Used for both local and remote proxy requests.
+        /// 
+        /// If you want to replace existing files, delete them first.
+        /// If you want to make sure they are mot added again in the meantime,
+        /// use a lock, e.g. the cache managers external lock.
         /// </summary>
-        /// <param name="replace">If there is already a file, should it be replaced?</param>
         /// <returns>True for success, false for failure.</returns>
-        public bool DownloadToCache(bool replace)
+        public bool DownloadToCache()
         {
             CacheManager cacheManager = _requestHandler.GenericProxy.ProxyCacheManager;
-            Byte[] readBuffer = new Byte[4096];
-
-            try
+            if(cacheManager.IsCached(_webRequest.Method, _webRequest.RequestUri.ToString()))
             {
-                if (!PrepareFileForCreation(replace))
-                {
-                    // We are not replacing and the file exists, so we're done
-                    return true;
-                }
-            }
-            catch (Exception e)
-            {
-                _requestHandler.Logger.Debug("failed: " + Uri, e);
-                return false;
+                _requestHandler.Logger.Debug("Already exists: " +
+                    _webRequest.Method + " " + _webRequest.RequestUri);
+                return true;
             }
 
             try
@@ -397,6 +434,7 @@ namespace RuralCafe
                     string str = "HTTP/1.1 301 Moved Permanently\r\n" +
                           "Location: " + _webResponse.ResponseUri.ToString() + "\r\n";
 
+                    // FIXME
                     cacheManager.AddCacheItem(_cacheFileName, str);
 
                     // have to save to the new cache file location
@@ -405,31 +443,28 @@ namespace RuralCafe
                     _hashPath = CacheManager.GetHashPath(_fileName);
                     _cacheFileName = _requestHandler.GenericProxy.CachePath + _hashPath + _fileName;
 
-                    // Prepare new filepath for creation
-                    try
+                    if (cacheManager.IsCached(_webResponse.Method, _webResponse.ResponseUri.ToString()))
                     {
-                        if (!PrepareFileForCreation(replace))
-                        {
-                            // We are not replacing and the file exists, so we're done
-                            return true;
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        _requestHandler.Logger.Debug("failed: " + Uri, e);
-                        return false;
+                        _requestHandler.Logger.Debug("Already exists: " +
+                            _webResponse.Method + " " + _webResponse.ResponseUri);
+                        return true;
                     }
                 }
 
                 // Add stream content to the cache. 
-                cacheManager.AddCacheItem(_cacheFileName, GenericWebResponse);
+                if (!cacheManager.AddCacheItem(GenericWebResponse))
+                {
+                    // clean up the (partial) download
+                    cacheManager.RemoveCacheItemFromDisk(_cacheFileName);
+                    _requestHandler.Logger.Debug("failed: " + Uri);
+                    return false;
+                }
             }
             catch (Exception e)
             {
-                // XXX: not handled well
-                // timed out
-                // incomplete, clean up the partial download
-                cacheManager.RemoveCacheItem(_cacheFileName);
+                // timed out or some other error
+                // clean up the (partial) download
+                cacheManager.RemoveCacheItemFromDisk(_cacheFileName);
                 _requestHandler.Logger.Debug("failed: " + Uri, e);
                 return false;
             }
