@@ -127,8 +127,9 @@ namespace RuralCafe
         /// <summary>
         /// Unpacks the package contents and indexes them.
         /// </summary>
-        /// <param name="indexPath">Path to the index.</param>
         /// <param name="requestHandler">Calling handler for this method.</param>
+        /// <param name="headers">The rc specific headers.</param>
+        /// <param name="indexWrapper">The index wrapper.</param>
         /// <returns>Total unpacked content size.</returns>
         public static long Unpack(LocalRequestHandler requestHandler, RCSpecificResponseHeaders headers,
             IndexWrapper indexWrapper)
@@ -210,13 +211,7 @@ namespace RuralCafe
                 {
                     return unpackedBytes;
                 }
-
-                // create directory if it doesn't exist
-                if (!Utils.CreateDirectoryForFile(cacheFileName))
-                {
-                    return unpackedBytes;
-                }
-
+                
                 // create the file if it doesn't exist
                 FileStream currFileFS = Utils.CreateFile(cacheFileName);
                 if (currFileFS == null)
