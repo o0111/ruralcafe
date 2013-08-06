@@ -79,12 +79,11 @@ Bugs
 - Unpack bug !?
 	- http://ros.org/wiki/tf 
 - Trotro
-  - needs F5 to show page is ready sometimes
-  - always opens in first tab!
-  - Way too many ETA requests!
+  - needs F5 to show page is ready sometimes (can't reproduce this...)
+  - always opens in first tab! 
   - Login mechanism does not work correct
-  - Embed opened pages instead of new tabs. Page inside main frame. At the moment, if you do that, you end up having Trotro inside Trotro ....
-  - Click search results makes links open in the TroTro tab, this is inconsistent with opening in a new tab. 
+  - Embed opened pages instead of new tabs. Page inside main frame. At the moment, if you do that, you end up having Trotro inside Trotro .... (not sure we can fix this one.)
+  - Click search results makes links open in the TroTro tab, this is inconsistent with opening in a new tab. (fixed for cached results, the problem with new results is that it gets redirected to the queue. this should be changed so the RCproxy filters out live results that are actually cached)
 - favicon.ico
 - https
   - http://https//twitter.com/search?q=%23lololo bzw.

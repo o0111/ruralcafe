@@ -82,8 +82,8 @@ namespace RuralCafe
         /// </summary>
         public const string STATE_FILENAME = "State.json";
 
-        // notifies that a new request has arrived
-        protected AutoResetEvent _newRequestEvent;
+        // notifies that a new request has arrived or a request has completed
+        protected AutoResetEvent _requestEvent;
 
         /// <summary>
         /// The gatewayProxy
@@ -98,12 +98,12 @@ namespace RuralCafe
         protected string _packagesCachePath;
         protected string _name;
         protected CacheManager _cacheManager;
+        protected int _maxThreads = 1000; // XXX: probably don't want to hard-code this as the number of port threads should be proportional to line speed.
 
         /// <summary>
         /// The network status
         /// </summary>
         private NetworkStatusCode _networkStatus;
-        protected int _activeRequests;
         
         // bandwidth measurement
         // lock object
@@ -123,12 +123,17 @@ namespace RuralCafe
         /// The id of the next request.
         /// </summary>
         [JsonProperty]
-        protected long _nextRequestId = 1;
+        protected long _nextHandlerId = 1;
 
         /// <summary>
         /// A big queue for lining up requests
         /// </summary>
-        protected List<RequestHandler> _globalRequestQueue = new List<RequestHandler>();
+        protected List<RequestHandler> _globalRequests = new List<RequestHandler>();
+
+        /// <summary>
+        /// A list of the active requests
+        /// </summary>
+        protected Dictionary<string, RequestHandler> _activeRequests = new Dictionary<string, RequestHandler>();
 
         # region Property Accessors
 
@@ -163,12 +168,24 @@ namespace RuralCafe
             get { return _networkStatus; }
             set { _networkStatus = value; }
         }
+        /// <summary>The maximum number of threads in the threadpool.</summary>
+        public int MaxThreads
+        {
+            get { return _maxThreads; }
+            set { _maxThreads = value; }
+        }
         /// <summary>The maximum number of inflight requests.</summary>
         public int MaxInflightRequests
         {
             get { return _maxInflightRequests; }
             set { _maxInflightRequests = value; }
         }
+        /// <summary>The maximum number of inflight requests.</summary>
+        public int NumInflightRequests
+        {
+            get { return _activeRequests.Count; }
+        }
+
         /// <summary>The logger.</summary>
         public ILog Logger 
         {
@@ -195,7 +212,7 @@ namespace RuralCafe
             _proxyPath = proxyPath;
 
             // no pending requests
-            _newRequestEvent = new AutoResetEvent(false);
+            _requestEvent = new AutoResetEvent(false);
 
             //create and initialize the logger
             _logger = LogManager.GetLogger(this.GetType());
@@ -371,9 +388,9 @@ namespace RuralCafe
         /// Increments the value of next request ID by one and returns the old value.
         /// </summary>
         /// <returns>The old value.</returns>
-        public long GetAndIncrementNextRequestID()
+        public long GetAndIncrementNextHandlerID()
         {
-            return System.Threading.Interlocked.Increment(ref _nextRequestId) - 1;
+            return System.Threading.Interlocked.Increment(ref _nextHandlerId) - 1;
         }
 
         /// <summary>
@@ -385,11 +402,11 @@ namespace RuralCafe
             RequestHandler requestHandler = null;
 
             // lock to make sure nothing is added or removed
-            lock (_globalRequestQueue)
+            lock (_globalRequests)
             {
-                if (_globalRequestQueue.Count > 0)
+                if (_globalRequests.Count > 0)
                 {
-                    requestHandler = _globalRequestQueue[0];
+                    requestHandler = _globalRequests[0];
                 }
             }
             return requestHandler;
@@ -412,14 +429,6 @@ namespace RuralCafe
                 // loop and listen for the next connection request
                 while (true)
                 {
-                    if (_activeRequests >= Properties.Settings.Default.LOCAL_MAXIMUM_ACTIVE_REQUESTS)
-                    {
-                        _logger.Debug("Waiting. Active Requests: " + _activeRequests);
-                        while (_activeRequests >= Properties.Settings.Default.LOCAL_MAXIMUM_ACTIVE_REQUESTS)
-                        {
-                            Thread.Sleep(100);
-                        }
-                    }
                     // accept connections on the proxy port (blocks)
                     HttpListenerContext context = listener.GetContext();
 
@@ -427,7 +436,7 @@ namespace RuralCafe
                     RequestHandler requestHandler = RequestHandler.PrepareNewRequestHandler(this, context);
 
                     // Start own method StartRequestHandler in the thread, which also in- and decreases _activeRequests
-                    ThreadPool.QueueUserWorkItem(new WaitCallback(StartRequestHandler), requestHandler);
+                    ThreadPool.QueueUserWorkItem(new WaitCallback(requestHandler.HandleRequest), null);
                 }
             }
             catch (SocketException e)
@@ -439,7 +448,7 @@ namespace RuralCafe
                 _logger.Fatal("Exception in StartListener", e);
             }
         }
-
+        /*
         /// <summary>
         /// Invokes the <see cref="RequestHandler.HandleRequest"/> method. While it is running, the number of
         /// active requests is increased.
@@ -453,12 +462,12 @@ namespace RuralCafe
                 throw new ArgumentException("requestHandler must be of type RequestHandler");
             }
             // Increment number of active requests
-            System.Threading.Interlocked.Increment(ref _activeRequests);
+            //System.Threading.Interlocked.Increment(ref _activeRequests);
             // Start request handler
             ((RequestHandler)requestHandler).HandleRequest();
             // Decrement number of active requests
-            System.Threading.Interlocked.Decrement(ref _activeRequests);
-        }
+            //System.Threading.Interlocked.Decrement(ref _activeRequests);
+        }*/
 
 
         /// <summary>
@@ -467,11 +476,11 @@ namespace RuralCafe
         /// </summary>
         public void StartDispatcher()
         {
+            ThreadPool.SetMaxThreads(MaxThreads, MaxThreads);
+            /*
             int workerThreads;
             int portThreads;
-
-            // XXX: probably don't want to hard-code this as the number of port threads should be proportional to line speed.
-            ThreadPool.SetMaxThreads(MaxInflightRequests, MaxInflightRequests);
+             
             ThreadPool.GetMaxThreads(out workerThreads, out portThreads);
             Console.WriteLine("\nMaximum worker threads: \t{0}" +
                 "\nMaximum completion port threads: {1}",
@@ -480,40 +489,58 @@ namespace RuralCafe
             Console.WriteLine("\nAvailable worker threads: \t{0}" +
                 "\nAvailable completion port threads: {1}\n",
                 workerThreads, portThreads);
-
+            */
             _logger.Info("Started Dispatcher");
 
             // go through the outstanding requests forever
             while (true)
             {
+                // check whether we have another request and are allowed to handle another request
                 RequestHandler requestHandler = GetFirstGlobalRequest();
-                if (_name == REMOTE_PROXY_NAME && requestHandler != null ||
-                    (NetworkStatus == NetworkStatusCode.Slow && requestHandler != null))
+                if (requestHandler != null || NumInflightRequests >= MaxInflightRequests)
                 {
-                    if (requestHandler.RCRequest != null && requestHandler.RequestStatus != RequestHandler.Status.Pending)
+                    if (_name == REMOTE_PROXY_NAME || (_name == LOCAL_PROXY_NAME && NetworkStatus == NetworkStatusCode.Slow))
                     {
-                        // skip requests in global queue that are not pending, probably requeued from log
-                        lock (_globalRequestQueue)
+                        // RCRequest should never be null
+                        if (requestHandler.RCRequest == null)
                         {
-                            _globalRequestQueue.RemoveAt(0);
+                            _logger.Error("RCRequest is null!");
+                            continue;
                         }
-                        continue;
-                    }
-                    // Queue the request as a thread
-                    ThreadPool.QueueUserWorkItem(new WaitCallback(requestHandler.DispatchRequest), null);
 
-                    // Remove from queue, as request is finished
-                    lock (_globalRequestQueue)
-                    {
-                        _globalRequestQueue.RemoveAt(0);
+                        // Going to process this, remove from incoming request queue
+                        RemoveRequestGlobalQueue(requestHandler.RequestId);
+
+                        // skip requests in global queue that are not pending, probably requeued from log
+                        if (requestHandler.RequestStatus == RequestHandler.Status.Pending)
+                        {
+                            // Assign a dispatcher to the request
+                            ThreadPool.QueueUserWorkItem(new WaitCallback(requestHandler.DispatchRequest), null);
+                        }
                     }
                 }
                 else
                 {
                     // wait for an add event
-                    _newRequestEvent.WaitOne();
+                    _requestEvent.WaitOne();
                 }
             }
+        }
+
+        /// <summary>
+        /// Add active request
+        /// </summary>
+        public void AddActiveRequest(RequestHandler requestHandler)
+        {
+            _activeRequests.Add(requestHandler.RequestId, requestHandler);
+        }
+
+        /// <summary>
+        /// Remove active request
+        /// </summary>
+        public void RemoveActiveRequest(RequestHandler requestHandler)
+        {
+            _activeRequests.Remove(requestHandler.RequestId);
         }
 
         /// <summary>
@@ -522,13 +549,13 @@ namespace RuralCafe
         /// <param name="requestHandler">The request handler to queue.</param>
         /// <returns>The request handler in the queue.
         /// Either the parameter or an already exiting equivalent RH in the queue.</returns>
-        protected RequestHandler QueueRequestGlobalQueue(RequestHandler requestHandler)
+        protected RequestHandler AddRequestGlobalQueue(RequestHandler requestHandler)
         {
             // add the request to the global queue
-            lock (_globalRequestQueue)
+            lock (_globalRequests)
             {
                 // queue new request
-                _globalRequestQueue.Add(requestHandler);
+                _globalRequests.Add(requestHandler);
 
                 return requestHandler;
             }
@@ -537,22 +564,21 @@ namespace RuralCafe
         /// <summary>
         /// Removes a single request from global queue.
         /// </summary>
-        /// <param name="requestHandlerItemId">The item id of the request handlers to dequeue.</param>
-        protected RequestHandler DequeueRequestGlobalQueue(string requestHandlerItemId)
+        /// <param name="requestId">The item id of the request handlers to dequeue.</param>
+        protected RequestHandler RemoveRequestGlobalQueue(string requestId)
         {
             // remove the request from the global queue
-            lock (_globalRequestQueue)
+            lock (_globalRequests)
             {
                 // This gets the requestHandler with the same ID, if there is one
-                RequestHandler requestHandler =
-                    _globalRequestQueue.FirstOrDefault(rh => rh.ItemId == requestHandlerItemId);
+                RequestHandler requestHandler = _globalRequests.FirstOrDefault(rh => rh.RequestId == requestId);
                 if (requestHandler != null)
                 {
-                    // check to see if this URI is requested more than once
-                    // if not, remove it
-                    if (requestHandler.OutstandingRequests == 1)
+                    // check if remote proxy or
+                    // if this URI is requested only once, remove it
+                    if (_name == REMOTE_PROXY_NAME || requestHandler.OutstandingRequests == 1)
                     {
-                        _globalRequestQueue.Remove(requestHandler);
+                        _globalRequests.Remove(requestHandler);
                         return requestHandler;
                     }
                 }
@@ -574,7 +600,7 @@ namespace RuralCafe
             using (StreamWriter sw = new StreamWriter(filename))
             using (JsonWriter writer = new JsonTextWriter(sw))
             {
-                // All fiels marked with [JsonProperty] will be serialized
+                // All fields marked with [JsonProperty] will be serialized
                 serializer.Serialize(writer, this);
             }
             _logger.Info("Serialized state.");

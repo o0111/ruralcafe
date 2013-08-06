@@ -90,7 +90,7 @@ namespace RuralCafe
         /// Main logic of RuralCafe LPRequestHandler.
         /// Called by Go() in the base RequestHandler class.
         /// </summary>
-        public override void HandleRequest()
+        public override void HandleRequest(object nullObj)
         {
             if (!CheckIfBlackListedOrInvalidUri())
             {
@@ -168,8 +168,7 @@ namespace RuralCafe
                     bool measuring = Proxy.DetectNetworkStatusAuto &&
                         NetworkUsageDetector.StartMeasuringIfNotRunningWithCallback(Proxy.IncludeDownloadInCalculation);
 
-                    // Stream
-                    Status result = SelectStreamingMethodAndStream();
+                    Status result = SelectMethodAndStream();
 
                     // Only get the results if this thread was measuring.
                     if (measuring)
@@ -265,13 +264,22 @@ namespace RuralCafe
             // Try to start measuring the speed, but only if detect auto is enabled
             bool measuring = Proxy.DetectNetworkStatusAuto && NetworkUsageDetector.StartMeasuringIfNotRunning();
 
-            // download the request file as a package
-            Logger.Debug("dispatching to remote proxy: " + RequestUri);
-
-
             // RCRequest.CacheFileName = PackageFileName;
+
+            // wait for admission control
+            while (_proxy.NumInflightRequests >= _proxy.MaxInflightRequests)
+            {
+                Thread.Sleep(100);
+            }
+            // add to active set of connections
+            _proxy.AddActiveRequest(this);
+
+            // download the request file as a package
             RequestStatus = RequestHandler.Status.Downloading;
             bool downloadSuccessful = RCRequest.DownloadPackage();
+            
+            // remove from active set of connections
+            _proxy.RemoveActiveRequest(this);
 
             // Only get the results if this thread was measuring.
             if (measuring)

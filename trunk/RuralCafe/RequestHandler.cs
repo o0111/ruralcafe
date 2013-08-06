@@ -149,7 +149,7 @@ namespace RuralCafe
         
         // ID
         [JsonProperty]
-        protected long _requestId;
+        protected long _handlerId;
         // number of outstanding requests for this object
         [JsonProperty]
         protected int _outstandingRequests;
@@ -198,7 +198,7 @@ namespace RuralCafe
         protected RequestHandler(RCProxy proxy)
         {
             _proxy = proxy;
-            _requestId = _proxy.GetAndIncrementNextRequestID();
+            _handlerId = _proxy.GetAndIncrementNextHandlerID();
             _creationTime = Environment.TickCount;
         }
 
@@ -218,7 +218,7 @@ namespace RuralCafe
             {
                 return false;
             }
-            return ItemId.Equals(((RequestHandler)obj).ItemId);
+            return RequestId.Equals(((RequestHandler)obj).RequestId);
         }
         
         /// <summary>
@@ -227,7 +227,7 @@ namespace RuralCafe
         /// </summary>        
         public override int GetHashCode()
         {
-            return ItemId.GetHashCode();
+            return RequestId.GetHashCode();
         }
 
         /// <summary>Checks whether the request is blacklisted by the proxy.</summary>
@@ -237,10 +237,15 @@ namespace RuralCafe
         }
 
         #region Property Accessors
-        /// <summary>Unique Item ID</summary>
-        public string ItemId
+        /// <summary>Handler ID</summary>
+        public long HandlerId
         {
-            get { return _rcRequest.ItemId; }
+            get { return _handlerId; }
+        }
+        /// <summary>Unique Request ID</summary>
+        public string RequestId
+        {
+            get { return _rcRequest.RequestId; }
         }
         // accessors for the underlying RCRequest
         /// <summary>Outstanding requests for this URI, i.e. the total number of times it appears in the user queues.</summary>
@@ -458,7 +463,7 @@ namespace RuralCafe
         }
 
         /// <summary>Abstract method for proxies to handle requests.</summary>
-        public abstract void HandleRequest();
+        public abstract void HandleRequest(object nullObj);
 
         /// <summary>Abstract method for handlers to issue requests.</summary>
         public abstract void DispatchRequest(object nullObj);
@@ -471,16 +476,34 @@ namespace RuralCafe
         /// If not it is streamed to the client directly.
         /// </summary>
         /// <returns>The status of the request.</returns>
-        public Status SelectStreamingMethodAndStream()
+        public Status SelectMethodAndStream()
         {
+            Status result = Status.Failed;
+            
+            // Check for admission control
+            while (_proxy.NumInflightRequests >= _proxy.MaxInflightRequests)
+            {
+                Thread.Sleep(100);
+            }
+            // add to active set of connections
+            _proxy.AddActiveRequest(this);
+
             if (IsCacheable())
             {
                 // Stream to cache and client
-                return StreamToCacheAndClient();
+                result = StreamToCacheAndClient();
             }
-            // Otherwise just stream to the client.
-            _rcRequest.FileSize = StreamTransparently();
-            return Status.Completed;
+            else
+            {
+                // Otherwise just stream to the client.
+                _rcRequest.FileSize = StreamTransparently();
+                result = Status.Completed;
+            }
+
+            //remove from active set of connections
+            _proxy.RemoveActiveRequest(this);
+
+            return result;
         }
 
         /// <summary>
@@ -876,7 +899,7 @@ namespace RuralCafe
         /// </summary>
         public void LogRequest()
         {
-            string str = "ID " + _requestId + " " + Context.Request.RemoteEndPoint.Address +
+            string str = "ID " + _handlerId + " " + Context.Request.RemoteEndPoint.Address +
                          " " + _rcRequest.GenericWebRequest.Method + " " + RequestUri +
                          " REFERER " + RefererUri + " " + 
                          RequestStatus + " " + _rcRequest.FileSize;
@@ -888,7 +911,7 @@ namespace RuralCafe
         /// </summary>
         public void LogResponse()
         {
-            string str = "ID " + _requestId + " RSP " + RequestUri + " " + 
+            string str = "ID " + _handlerId + " RSP " + RequestUri + " " + 
                         RequestStatus + " " + _rcRequest.FileSize;
             Logger.Info(str);
         }

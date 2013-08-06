@@ -96,7 +96,7 @@ namespace RuralCafe
         /// Main logic of RuralCafe RPRequestHandler.
         /// Called by Go() in the base RequestHandler class.
         /// </summary>
-        public override void HandleRequest()
+        public override void HandleRequest(object nullObj)
         {
             if (!CheckIfBlackListedOrInvalidUri())
             {
@@ -118,12 +118,12 @@ namespace RuralCafe
                 {
                     // stream the request
                     shouldDisconnect = true;
-                    SelectStreamingMethodAndStream();
+                    SelectMethodAndStream();
                 }
                 else
                 {
                     // queue the request
-                    ((RCRemoteProxy)_proxy).QueueRequest(this);
+                    ((RCRemoteProxy)_proxy).AddRequest(this);
                 }
             }
             catch (Exception e)
@@ -132,7 +132,7 @@ namespace RuralCafe
                 String errmsg = "error handling request: ";
                 if (_originalRequest != null)
                 {
-                    errmsg += " " + _originalRequest.RawUrl.ToString(); ;
+                    errmsg += " " + _originalRequest.RawUrl.ToString();
                 }
                 Logger.Warn(errmsg, e);
                 SendErrorPage(HttpStatusCode.InternalServerError, errmsg);
@@ -168,14 +168,16 @@ namespace RuralCafe
                 // Use default when nothing is set
                 richness = Properties.Settings.Default.DEFAULT_RICHNESS;
             }
-            
+
             // download the package and return it to local proxy
+            Logger.Debug("dispatching to content servers: " + RequestUri);
             if (RecursivelyDownloadPage(RCRequest, richness, 0))
             {
                 RCRequest.FileSize = SendResponsePackage();
             }
 
             DisconnectSocket();
+
             // thread dies upon return
         }
 
@@ -320,6 +322,21 @@ namespace RuralCafe
                 return false;
             }
 
+            /*
+            // Check for admission control
+            // XXX: its not clear whether this should be done at the remote proxy at all.
+            // XXX: we're architecturally basically assuming that we're limited by threads and the remote proxy
+            // XXX: if we do decide to do this, we'll have to decide do it either per incoming active request or actually count all spawned asset/recurisve requests
+            while (_proxy.NumInflightRequests >= _proxy.MaxInflightRequests)
+            {
+                Thread.Sleep(100);
+            }
+            // add
+            _proxy.AddActiveRequest(this);
+             // remove
+            _proxy.RemoveActiveRequest(this);
+            */
+
             // reduce the timer
             DateTime currTime = DateTime.Now;
             DateTime endTime = StartTime.AddMilliseconds(RequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT);
@@ -331,7 +348,7 @@ namespace RuralCafe
             {
                 RCRequest.GenericWebRequest.Timeout = 0;
             }
-                     
+
             // download the page
             // replace for non GET/HEADs
             bool replace = !IsGetOrHeadHeader();
@@ -351,6 +368,7 @@ namespace RuralCafe
                     // Remove old things
                     _proxy.ProxyCacheManager.RemoveCacheItem(_rcRequest.GenericWebRequest.Method,
                         _rcRequest.GenericWebRequest.RequestUri.ToString());
+
                     // Download!
                     success = rcRequest.DownloadToCache();
                 }

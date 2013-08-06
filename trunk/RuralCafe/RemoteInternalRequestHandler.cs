@@ -87,7 +87,7 @@ namespace RuralCafe
         /// </summary>
         public Response RemoveRequest(string itemId)
         {
-            Proxy.DequeueRequest(itemId);
+            Proxy.RemoveRequest(itemId);
             return new Response("Removed request.");
         }
 

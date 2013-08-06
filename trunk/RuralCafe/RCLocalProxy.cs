@@ -108,7 +108,7 @@ namespace RuralCafe
         private Timer _clusteringTimer;
 
         // dictionary of lists of requests made by each client
-        private Dictionary<int, List<LocalRequestHandler>> _clientRequestQueueMap;
+        private Dictionary<int, List<LocalRequestHandler>> _clientRequestsMap;
         // dictionary of requests without a user. They await to be "added" via Trotro by a specific user
         private IntKeyedCollection<LocalRequestHandler> _requestsWithoutUser;
         // Random for the keys of the above Dictionary
@@ -211,10 +211,9 @@ namespace RuralCafe
             : base(LOCAL_PROXY_NAME, listenAddress, listenPort, proxyPath,
             cachePath, packagesPath)
         {
-            _activeRequests = 0;
             _uiPagesPath = proxyPath + "RuralCafePages" + Path.DirectorySeparatorChar;
             _wikiDumpPath = wikiDumpPath;
-            _clientRequestQueueMap = new Dictionary<int, List<LocalRequestHandler>>();
+            _clientRequestsMap = new Dictionary<int, List<LocalRequestHandler>>();
             _requestsWithoutUser = new IntKeyedCollection<LocalRequestHandler>();
             _random = new Random();
             _averageTimePerRequest = new TimeSpan(0);
@@ -401,14 +400,14 @@ namespace RuralCafe
         /// </summary>
         /// <param name="userId">The user's id.</param>
         /// <param name="requestHandler">The request handler to queue.</param>
-        public void QueueRequest(int userId, LocalRequestHandler requestHandler)
+        public void AddRequest(int userId, LocalRequestHandler requestHandler)
         {
             // Order is important!
-            requestHandler = (LocalRequestHandler) QueueRequestGlobalQueue(requestHandler);
-            QueueRequestUserQueue(userId, requestHandler);
+            requestHandler = (LocalRequestHandler) AddRequestGlobalQueue(requestHandler);
+            AddRequestUserQueue(userId, requestHandler);
 
             // Notify that a new request has been added. The Dispatcher will wake up if it was waiting.
-            _newRequestEvent.Set();
+            _requestEvent.Set();
         }
 
         /// <summary>
@@ -416,22 +415,22 @@ namespace RuralCafe
         /// </summary>
         /// <param name="userId">The user's id.</param>
         /// <param name="requestHandler">The request handler to queue.</param>
-        private void QueueRequestUserQueue(int userId, LocalRequestHandler requestHandler)
+        private void AddRequestUserQueue(int userId, LocalRequestHandler requestHandler)
         {
             List<LocalRequestHandler> requestHandlers = null;
             // add client queue, if it does not exist yet
-            lock (_clientRequestQueueMap)
+            lock (_clientRequestsMap)
             {
-                if (_clientRequestQueueMap.ContainsKey(userId))
+                if (_clientRequestsMap.ContainsKey(userId))
                 {
                     // get the queue of client requests
-                    requestHandlers = _clientRequestQueueMap[userId];
+                    requestHandlers = _clientRequestsMap[userId];
                 }
                 else
                 {
                     // create the queue of client requests
                     requestHandlers = new List<LocalRequestHandler>();
-                    _clientRequestQueueMap.Add(userId, requestHandlers);
+                    _clientRequestsMap.Add(userId, requestHandlers);
                 }
             }
 
@@ -449,11 +448,11 @@ namespace RuralCafe
         /// </summary>
         /// <param name="userId">The userId of the client.</param>
         /// <param name="requestHandlerItemId">The item id of the request handlers to dequeue.</param>
-        public void DequeueRequest(int userId, string requestHandlerItemId)
+        public void RemoveRequest(int userId, string requestHandlerItemId)
         {
             // Order is important!
-            DequeueRequestGlobalQueue(requestHandlerItemId);
-            DequeueRequestUserQueue(userId, requestHandlerItemId);
+            RemoveRequestGlobalQueue(requestHandlerItemId);
+            RemoveRequestUserQueue(userId, requestHandlerItemId);
         }
 
         /// <summary>
@@ -461,18 +460,18 @@ namespace RuralCafe
         /// </summary>
         /// <param name="userId">The userId of the client.</param>
         /// <param name="requestHandlerItemId">The item id of the request handlers to dequeue.</param>
-        private void DequeueRequestUserQueue(int userId, string requestHandlerItemId)
+        private void RemoveRequestUserQueue(int userId, string requestHandlerItemId)
         {
             // remove the request from the client's queue
             // don't need to lock the _clientRequestQueueMap for reading
-            if (_clientRequestQueueMap.ContainsKey(userId))
+            if (_clientRequestsMap.ContainsKey(userId))
             {
-                List<LocalRequestHandler> requestHandlers = _clientRequestQueueMap[userId];
+                List<LocalRequestHandler> requestHandlers = _clientRequestsMap[userId];
                 lock (requestHandlers)
                 {
                     // This gets the requestHandler with the same ID, if there is one
                     LocalRequestHandler requestHandler =
-                        requestHandlers.FirstOrDefault(rh => rh.ItemId == requestHandlerItemId);
+                        requestHandlers.FirstOrDefault(rh => rh.RequestId == requestHandlerItemId);
                     if (requestHandler != null)
                     {
                         requestHandler.OutstandingRequests--;
@@ -487,11 +486,11 @@ namespace RuralCafe
         /// </summary>
         private void FillGlobalQueueFromClientQueues()
         {
-            lock (_globalRequestQueue)
+            lock (_globalRequests)
             {
                 // Empty glocal Request queue first
-                _globalRequestQueue.Clear();
-                foreach (List<LocalRequestHandler> requestHandlers in _clientRequestQueueMap.Values)
+                _globalRequests.Clear();
+                foreach (List<LocalRequestHandler> requestHandlers in _clientRequestsMap.Values)
                 {
                     lock (requestHandlers)
                     {
@@ -502,26 +501,26 @@ namespace RuralCafe
                             if (requestHandler.RequestStatus == RequestHandler.Status.Downloading ||
                                 requestHandler.RequestStatus == RequestHandler.Status.Pending)
                             {
-                                int index = _globalRequestQueue.IndexOf(requestHandler);
+                                int index = _globalRequests.IndexOf(requestHandler);
                                 // if it already exists..
                                 if (index != -1)
                                 {
                                     // ..replace in user queue
-                                    requestHandlers[i] = (LocalRequestHandler) _globalRequestQueue[index];
+                                    requestHandlers[i] = (LocalRequestHandler) _globalRequests[index];
                                 }
                                 else
                                 {
                                     // Set status to pending (if it was being downloaded while the shutdown)
                                     requestHandler.RequestStatus = RequestHandler.Status.Pending;
                                     // queue new request
-                                    _globalRequestQueue.Add(requestHandler);
+                                    _globalRequests.Add(requestHandler);
                                 }
                             }
                         }
                     }
                 }
                 // Sort the queue chronologically.
-                _globalRequestQueue.Sort((x, y) => 
+                _globalRequests.Sort((x, y) => 
                     x.CreationTime > y.CreationTime ? 1 : 
                     (x.CreationTime == y.CreationTime ? 0 : -1));
             }
@@ -535,11 +534,11 @@ namespace RuralCafe
         public List<LocalRequestHandler> GetRequests(int userId)
         {
             List<LocalRequestHandler> requestHandlers = null;
-            lock (_clientRequestQueueMap)
+            lock (_clientRequestsMap)
             {
-                if (_clientRequestQueueMap.ContainsKey(userId))
+                if (_clientRequestsMap.ContainsKey(userId))
                 {
-                    requestHandlers = _clientRequestQueueMap[userId];
+                    requestHandlers = _clientRequestsMap[userId];
                 }
             }
             return requestHandlers;
@@ -598,7 +597,7 @@ namespace RuralCafe
             using (StreamWriter sw = new StreamWriter(filename))
             using (JsonWriter writer = new JsonTextWriter(sw))
             {
-                serializer.Serialize(writer, _clientRequestQueueMap);
+                serializer.Serialize(writer, _clientRequestsMap);
             }
             _logger.Info("Serialized queues.");
         }
@@ -620,7 +619,7 @@ namespace RuralCafe
             // Deserialize
             try
             {
-                _clientRequestQueueMap = JsonConvert.
+                _clientRequestsMap = JsonConvert.
                     DeserializeObject<Dictionary<int, List<LocalRequestHandler>>>(fileContent, 
                     new LocalRequestHandlerConverter(this));
                 // Restore the global Queue
@@ -665,7 +664,7 @@ namespace RuralCafe
         /// <returns>ETA in seconds.</returns>
         public int ETA(LocalRequestHandler requestHandler)
         {
-            int requestPosition = _globalRequestQueue.IndexOf(requestHandler);
+            int requestPosition = _globalRequests.IndexOf(requestHandler);
 
             if (requestPosition == -1)
             {
@@ -675,7 +674,7 @@ namespace RuralCafe
 
             // Determine the time the first request is already running
             double secondsFirstRequestRunning = _averageTimePerRequest.TotalSeconds;
-            LocalRequestHandler firstHandler = (LocalRequestHandler) _globalRequestQueue[0];
+            LocalRequestHandler firstHandler = (LocalRequestHandler) _globalRequests[0];
             if(firstHandler != null)
             {
                 secondsFirstRequestRunning = (DateTime.Now - firstHandler.StartTime).TotalSeconds;
@@ -702,12 +701,12 @@ namespace RuralCafe
         public int NumQueuedRequests(int userId)
         {
             int count = 0;
-            lock (_clientRequestQueueMap)
+            lock (_clientRequestsMap)
             {
-                if (_clientRequestQueueMap.ContainsKey(userId))
+                if (_clientRequestsMap.ContainsKey(userId))
                 {
                     // don't bother locking client requests since it can't be deleted while holding the previous lock
-                    List<LocalRequestHandler> requestHandlers = _clientRequestQueueMap[userId];
+                    List<LocalRequestHandler> requestHandlers = _clientRequestsMap[userId];
                     count = requestHandlers.Count;
                 }
             }
@@ -723,12 +722,12 @@ namespace RuralCafe
         public int NumFinishedRequests(int userId)
         {
             int count = 0;
-            lock (_clientRequestQueueMap)
+            lock (_clientRequestsMap)
             {
-                if (_clientRequestQueueMap.ContainsKey(userId))
+                if (_clientRequestsMap.ContainsKey(userId))
                 {
                     // don't bother locking client requests since it can't be deleted while holding the previous lock
-                    List<LocalRequestHandler> requestHandlers = _clientRequestQueueMap[userId];
+                    List<LocalRequestHandler> requestHandlers = _clientRequestsMap[userId];
                     foreach (LocalRequestHandler requestHandler in requestHandlers)
                     {
                         if (requestHandler.RequestStatus == RequestHandler.Status.Completed ||
