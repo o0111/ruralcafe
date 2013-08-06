@@ -147,6 +147,9 @@ function itemHTML(index){
 	var itemStatus=results[index].getElementsByTagName('status')[0].firstChild.nodeValue;
 	var itemSize=results[index].getElementsByTagName('size')[0].firstChild.nodeValue;	
 	var itemhtml="";
+        // make sure it fits on display
+        if (itemTitle.length > 25)
+                itemTitle=itemTitle.slice(0, 25);
 	if (itemStatus=="Completed")
 		itemhtml= '<div id="'+itemId+'" class="complete_item"><div class="cancel_btn" onclick="removeRequest('+itemId+');"></div><span class="open_btn"  onclick="openPage(\''+itemURL+'\');"><span class="item_title">'+itemTitle+'</span><span class="status '+itemStatus+'" id="status_'+itemId+'">'+itemStatus+'</span></span><div class="queue_detail">'+itemTitle+'<br/><br/><span id="url_'+itemId+'"><a href='+itemURL+' target="_newtab">'+itemURL+'</a></span>';
 	else
@@ -301,5 +304,9 @@ function startAnimation(){
 //stop animation for the arrow
 function stopAnimation(){
 	window.clearInterval(animInterval);
-	//document.getElementById("download_animation").style.display='none';
+	window.setTimeout(killArrow, 5000);
+}
+
+function killArrow(){
+	document.getElementById("download_animation").style.display='none';
 }

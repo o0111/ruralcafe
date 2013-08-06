@@ -37,9 +37,9 @@ namespace RuralCafe
         {
              routines.Add("/request/index.xml", new RoutineMethod("ServeRCIndexPage", 		
  	            new string[] { "n", "c", "s" }, new Type[] { typeof(int), typeof(int), typeof(string) }));
-            routines.Add("/request/search.xml", new RoutineMethod("ServeRCRemoteResultPage",
+            routines.Add("/request/search-live.xml", new RoutineMethod("ServeRCLiveResultPage",
                 new string[] { "p", "s" }, new Type[] { typeof(int), typeof(string) }));
-            routines.Add("/request/result.xml", new RoutineMethod("ServeRCResultPage",
+            routines.Add("/request/search-cache.xml", new RoutineMethod("ServeRCCacheResultPage",
                 new string[] { "n", "p", "s" }, new Type[] { typeof(int), typeof(int), typeof(string) }));
             routines.Add("/request/queue.xml", new RoutineMethod("ServeRCQueuePage",
                 new string[] { "v" }, new Type[] { typeof(string) }));
@@ -456,7 +456,7 @@ namespace RuralCafe
         /// 
         /// This gets the results from the cache.
         /// </summary>
-        public Response ServeRCResultPage(int numItemsPerPage, int pageNumber, string queryString)
+        public Response ServeRCCacheResultPage(int numItemsPerPage, int pageNumber, string queryString)
         {
             if (pageNumber == 1)
             {
@@ -551,7 +551,7 @@ namespace RuralCafe
         /// 
         /// This gets the results from google, always the same amount of results google gets, usually 10.
         /// </summary>
-        public Response ServeRCRemoteResultPage(int pageNumber, string queryString)
+        public Response ServeRCLiveResultPage(int pageNumber, string queryString)
         {
             XmlDocument xmlDoc = new XmlDocument();
             xmlDoc.AppendChild(xmlDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));

@@ -8,7 +8,7 @@
 </script>
 <script type="text/javascript" src="js/ajax.js">
 </script>
-<script type="text/javascript" src="js/result.js">
+<script type="text/javascript" src="js/result-cache.js">
 </script>
 <script type="text/javascript" src="js/result-live.js">
 </script>
@@ -16,17 +16,19 @@
 
 <body>
 <div class="result_page">
-<div id="live">
-<p id="live_count"></p>
-<div id="live_updateArea">
-<h2>Live search results are being fetched from the internet... </br>Please wait </h2><img src="img/loader.gif" /></div>
-<p id="live_nav"></p>
-</div>
-<div id="local">
-<p id="count"></p>
-<div id="updateArea"></div>
-<p id="nav"></p>
-</div>
+  <div id="live">
+    <p id="live_count"></p>
+    <div id="live_updateArea">
+      <h2>Live search results are being fetched from the internet... </br>Please wait </h2><img src="img/loader.gif" />
+    </div>
+    <p id="live_nav"></p>
+  </div>
+  <div id="local">
+    <p id="count"></p>
+    <div id="updateArea">
+    </div>
+    <p id="nav"></p>
+  </div>
 </div>
 </body>
 </html>

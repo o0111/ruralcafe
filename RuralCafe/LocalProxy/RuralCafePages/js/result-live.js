@@ -3,7 +3,8 @@
 var xmlDocl = 0;	//xml file for search results
 var xhttpl = 0;		//ajax request for retrieving search results
 var noil=10; 		//number of items per page
-var pageNuml=1; 	//the initial page number, if there are multiple pages 
+var cachePageNum=1;             //the initial page number, if there are multiple pages
+var livePageNum=1;              //the initial live page number, if there are multiple pages
 var searchString="";//the search query string
 var nop=10; 		//maximum number of links to results pages shown on each page
 
@@ -13,9 +14,11 @@ function loadLiveResult() {
 		var path = window.location.href;
 		searchString = path.slice(path.search('s=')+2);
 		//change here now no p is passed
-		pageNuml = parseInt(path.slice(path.search('p=')+2,path.search('&'))) || 1;
+                cachePageNum = parseInt(path.slice(path.search('cp=')+3,path.search('&'))) || 1;
+                path = path.slice(path.search('&')+1);
+                livePageNum = parseInt(path.slice(path.search('lp=')+3,path.search('&'))) || 1;
 		if (searchString != "")
-			showResultl('request/search.xml?p='+pageNuml+'&s='+searchString);
+			showResultl('request/search-live.xml?p='+livePageNum+'&s='+searchString);
 	}
 	else
 		alert("Your browser does not support javascript");
@@ -68,20 +71,25 @@ function showXMLl(){
 function changelive_nav(total,startpage){
 	if (total>noil){//results does not fit into one page
 		var html="";
-		var startNum=pageNuml-Math.floor(nop/2);
+		var startNum=livePageNum-Math.floor(nop/2);
 		var totalPage=Math.ceil(total/noil);
+                var displayTargetPage="";
+                if(document.getElementById('updateArea'))
+                        displayTargetPage="result-cached.html";
+                else
+                        displayTargetPage="result-online.html";
 		if (startNum<1)
 			startNum=1;
 		for (var i=startNum;i<Math.min(nop+startNum,totalPage+1);i++){
-			if (i!=pageNuml)
-				html+=' <a href="result-online.html?p='+i+'&s='+searchString+'">'+i+'</a> ';
+			if (i!=livePageNum)
+				html+=' <a href="'+displayTargetPage+'?cp='+cachePageNum+'&lp='+i+'&s='+searchString+'">'+i+'</a> ';
 			else
 				html+=' '+i+' ';
 		}
-		if (pageNuml!=1)
-			html='<a href="result-online.html?p='+(pageNuml-1)+'&s='+searchString+'">Previous</a> &nbsp; &nbsp; &nbsp; &nbsp; '+html;
-		if (pageNuml!=totalPage)
-			html+='&nbsp; &nbsp; &nbsp; &nbsp;  <a href="result-online.html?p='+(pageNuml+1)+'&s='+searchString+'">Next</a>';
+		if (livePageNum!=1)
+			html='<a href="'+displayTargetPage+'?cp='+cachePageNum+'&lp='+(livePageNum-1)+'&s='+searchString+'">Previous</a> &nbsp; &nbsp; &nbsp; &nbsp; '+html;
+		if (livePageNum!=totalPage)
+			html+='&nbsp; &nbsp; &nbsp; &nbsp;  <a href="'+displayTargetPage+'?cp='+cachePageNum+'&lp='+(livePageNum+1)+'&s='+searchString+'">Next</a>';
 		document.getElementById('live_nav').innerHTML=html;
 	}
 }
