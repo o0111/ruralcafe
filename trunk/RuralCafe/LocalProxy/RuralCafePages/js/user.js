@@ -148,11 +148,13 @@ function itemHTML(index){
 	var itemSize=results[index].getElementsByTagName('size')[0].firstChild.nodeValue;	
 	var itemhtml="";
         // make sure it fits on display
-        if (itemTitle.length > 25)
-                itemTitle=itemTitle.slice(0, 25);
+        if (itemTitle.length > 20)
+                itemTitle=itemTitle.slice(0, 20);
 	if (itemStatus=="Completed")
 		itemhtml= '<div id="'+itemId+'" class="complete_item"><div class="cancel_btn" onclick="removeRequest('+itemId+');"></div><span class="open_btn"  onclick="openPage(\''+itemURL+'\');"><span class="item_title">'+itemTitle+'</span><span class="status '+itemStatus+'" id="status_'+itemId+'">'+itemStatus+'</span></span><div class="queue_detail">'+itemTitle+'<br/><br/><span id="url_'+itemId+'"><a href='+itemURL+' target="_newtab">'+itemURL+'</a></span>';
-	else
+	else if (itemStatus=="Downloading")
+		itemhtml= '<div id="'+itemId+'" class="queue_item"><div class="cancel_btn" onclick="removeRequest('+itemId+');"></div><span class="item_title">'+itemTitle+'</span><span class="status '+itemStatus+'" id="status_'+itemId+'"><img src="img/downloading.gif"/> '+itemStatus+'</span><div class="queue_detail">'+itemTitle+'<br/><br/><span id="url_'+itemId+'">'+itemURL+'</span>';
+        else
 		itemhtml= '<div id="'+itemId+'" class="queue_item"><div class="cancel_btn" onclick="removeRequest('+itemId+');"></div><span class="item_title">'+itemTitle+'</span><span class="status '+itemStatus+'" id="status_'+itemId+'">'+itemStatus+'</span><div class="queue_detail">'+itemTitle+'<br/><br/><span id="url_'+itemId+'">'+itemURL+'</span>';
 	if (itemStatus!="Pending")
 		itemhtml+='<br/><br/>Size: '+itemSize;
@@ -172,15 +174,15 @@ function openPage(url){
 var interval;	//interval for checking request status and EST
 var itemIds;	//an array of ids of the items in user queue
 
-//start checking for request status and ETS every second
+//start checking for request status and ETS every ten seconds
 function startCountDown(id){
 	itemIds.push(id);
 	if (!interval) {
-        interval = window.setInterval('getEST()', 1000);
+        interval = window.setInterval('getEST()', 10000);
     }
 }
 
-//retriev and display the request status and updating EST
+//retrieve and display the request status and updating EST
 function getEST(){
 	for (var j=0;j<itemIds.length;j++){
 		var index=j;
@@ -195,10 +197,10 @@ function getEST(){
 							if (est!='0' && est!='-1'){
 								var statusspan=document.getElementById('status_'+itemIds[index]);
 								if (statusspan){
-									if(statusspan.innerHTML.startsWith('Downloading')) {
-										statusspan.innerHTML = 'Downloading<br><img src="img/downloading.gif" /> ';
+									if(statusspan.innerHTML.indexOf('Downloading') != -1) {
+										statusspan.innerHTML = '<img src="img/downloading.gif"/> ';
 									} else {
-										statusspan.innerHTML = 'Pending<br>';
+										statusspan.innerHTML = 'Pending';
 									}
 									statusspan.innerHTML  += est.replace(/</g,'&lt;').replace(/>/g,'&gt;');
 								}
@@ -253,7 +255,7 @@ function isCountDown(itemId) {
 	return -1;
 }
 
-//sroll the bar to the right, show the next item
+//scroll the bar to the right, show the next item
 function scrollRight(){
 	var parentNode=document.getElementById('update_area');	
 	stopCountDown(isCountDown(parentNode.firstChild.id));
@@ -269,7 +271,7 @@ function scrollRight(){
 	return false;
 }
 
-//sroll the bar to the left, show the previous item
+//scroll the bar to the left, show the previous item
 function scrollLeft(){
 	var parentNode=document.getElementById('update_area');
 	stopCountDown(isCountDown(parentNode.lastChild.id));
