@@ -311,32 +311,32 @@ namespace RuralCafe
 
         /// <summary>
         /// Makes preparations for a file to be created.
+        /// 
+        /// Throws an exception if anything goes wrong.
         /// </summary>
         /// <param name="replace">Whether the file should be replaced, if it exists.</param>
-        /// <param name="fileSizeReturnValue">The size of the file or -1 if something goes wrong.
-        /// The return value of DownloadToCache if we do return false here.</param>
+        /// <param name="proceedDownload"></param>
         /// <returns>True, if the download should proceed, false if not.</returns>
-        private bool PrepareFileForCreation(bool replace, out long fileSizeReturnValue)
+        private bool PrepareFileForCreation(bool replace)
         {
             CacheManager cacheManager = _requestHandler.GenericProxy.ProxyCacheManager;
             // XXX: should also check for cache expiration
             // check for 0 size file to re-download
-            fileSizeReturnValue = cacheManager.CacheItemBytes(_cacheFileName);
-            if (fileSizeReturnValue > 0)
+            long fileSize = cacheManager.CacheItemBytes(_cacheFileName);
+            if (fileSize > 0)
             {
+                // File exists
                 if (replace)
                 {
                     if (!cacheManager.RemoveCacheItem(_cacheFileName))
                     {
                         // Old file couldn't be removed.
-                        fileSizeReturnValue = -1;
-                        return false;
+                        throw new Exception("Could not remove old cache file.");
                     }
                 }
                 else
                 {
                     // We don't replace so we're done.
-                    //_requestHandler.LogDebug("exists: " + cacheFileName + " " + fileSize + " bytes");
                     return false;
                 }
             }
@@ -347,8 +347,7 @@ namespace RuralCafe
                 if (!cacheManager.CreateDirectoryForCacheItem(_cacheFileName))
                 {
                     // Directory couldn't be created.
-                    fileSizeReturnValue = -1;
-                    return false;
+                    throw new Exception("Could not create directory for file.");
                 }
             }
             return true;
@@ -359,18 +358,24 @@ namespace RuralCafe
         /// Used for both local and remote proxy requests.
         /// </summary>
         /// <param name="replace">If there is already a file, should it be replaced?</param>
-        /// <returns>Length of the downloaded file.</returns>
-        public long DownloadToCache(bool replace)
+        /// <returns>True for success, false for failure.</returns>
+        public bool DownloadToCache(bool replace)
         {
             CacheManager cacheManager = _requestHandler.GenericProxy.ProxyCacheManager;
             Byte[] readBuffer = new Byte[4096];
-            long bytesDownloaded = 0;
 
-            long fileSize;
-            if (!PrepareFileForCreation(replace, out fileSize))
+            try
             {
-                // Either file exists and we're not replacing or an error.
-                return fileSize;
+                if (!PrepareFileForCreation(replace))
+                {
+                    // We are not replacing and the file exists, so we're done
+                    return true;
+                }
+            }
+            catch (Exception e)
+            {
+                _requestHandler.Logger.Debug("failed: " + Uri, e);
+                return false;
             }
 
             try
@@ -401,18 +406,23 @@ namespace RuralCafe
                     _cacheFileName = _requestHandler.GenericProxy.CachePath + _hashPath + _fileName;
 
                     // Prepare new filepath for creation
-                    if (!PrepareFileForCreation(replace, out fileSize))
+                    try
                     {
-                        // Either file exists and we're not replacing or an error.
-                        return fileSize;
+                        if (!PrepareFileForCreation(replace))
+                        {
+                            // We are not replacing and the file exists, so we're done
+                            return true;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        _requestHandler.Logger.Debug("failed: " + Uri, e);
+                        return false;
                     }
                 }
 
                 // Add stream content to the cache. 
-                bytesDownloaded = cacheManager.AddCacheItem(_cacheFileName, GenericWebResponse);
-
-                _requestHandler.Logger.Debug("received: " + Uri + " "
-                    + bytesDownloaded + " bytes.");
+                cacheManager.AddCacheItem(_cacheFileName, GenericWebResponse);
             }
             catch (Exception e)
             {
@@ -421,10 +431,10 @@ namespace RuralCafe
                 // incomplete, clean up the partial download
                 cacheManager.RemoveCacheItem(_cacheFileName);
                 _requestHandler.Logger.Debug("failed: " + Uri, e);
-                bytesDownloaded = -1;
+                return false;
             }
 
-            return bytesDownloaded;
+            return true;
         }
     }
 }

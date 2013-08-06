@@ -269,13 +269,13 @@ namespace RuralCafe
             Logger.Debug("dispatching to remote proxy: " + RequestUri);
             RCRequest.CacheFileName = PackageFileName;
             RequestStatus = RequestHandler.Status.Downloading;
-            long bytesDownloaded = RCRequest.DownloadToCache(true);
+            bool downloadSuccessful = RCRequest.DownloadToCache(true);
 
             // Only get the results if this thread was measuring.
             if (measuring)
             {
                 NetworkUsageDetector.NetworkUsageResults results = NetworkUsageDetector.GetMeasuringResults();
-                if (bytesDownloaded > 0)
+                if (downloadSuccessful)
                 {
                     // If request successful, we save the results
                     Proxy.IncludeDownloadInCalculation(results);
@@ -283,7 +283,7 @@ namespace RuralCafe
             }
 
             // check results and unpack
-            if (bytesDownloaded > 0)
+            if (downloadSuccessful)
             {
                 RCSpecificResponseHeaders headers = GetRCSpecificResponseHeaders();
 
