@@ -31,7 +31,7 @@ Mayor tasks
 
 Minor tasks
 - Limit outgoing requests like incoming (_activeRequests)
-- Remove old speed measurement code
+- Do not delegate remove if request is undispatched or finished 
 - Queue also streaming requests at the RP ??
 	- Duplicate IsStreaming()-Check at the moment.
 - RequestHandlers are considered equal, if URL is equal. They should not be equal if HTTP method is different or body (for POSTs e.g.) is different.
