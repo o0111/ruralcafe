@@ -123,11 +123,11 @@ namespace RuralCafe
         /// </summary>
         /// <param name="uri">The URI.</param>
         /// <returns>Retalive cache file name.</returns>
-        public static string GetRelativeCacheFileName(string uri)
+        public static string GetRelativeCacheFileName(string uri, string httpMethod)
         {
             string fileName = UriToFilePath(uri);
             string hashPath = GetHashPath(fileName);
-            return hashPath + fileName;
+            return httpMethod + Path.DirectorySeparatorChar + hashPath + fileName;
         }
 
         /// <summary>
@@ -213,8 +213,8 @@ namespace RuralCafe
         public static string FilePathToUri(string relfilepath)
         {
             string uri = relfilepath;
-            // Remove the 2 hash dirs from path
-            for (int i = 0; i < 2; i++)
+            // Remove the httpMethod dir and the 2 hash dirs from path
+            for (int i = 0; i < 3; i++)
             {
                 int startIndex = uri.IndexOf(Path.DirectorySeparatorChar);
                 if (startIndex != -1)
@@ -386,7 +386,7 @@ namespace RuralCafe
         public bool AddCacheItemForExistingFile(string url, string httpMethod,
             NameValueCollection headers, short statusCode)
         {
-            string relFileName = GetRelativeCacheFileName(url);
+            string relFileName = GetRelativeCacheFileName(url, httpMethod);
 
             // locked: if exists return else create DB entry
             lock (_lockObj)
@@ -462,7 +462,7 @@ namespace RuralCafe
             }
 
             // Remove file
-            Utils.DeleteFile(_cachePath + GetRelativeCacheFileName(uri));
+            Utils.DeleteFile(_cachePath + GetRelativeCacheFileName(uri, httpMethod));
         }
 
         #endregion
@@ -495,7 +495,8 @@ namespace RuralCafe
         /// <returns>True for success, false for failure.</returns>
         private bool AddCacheItemToDisk(HttpWebResponse webResponse)
         {
-            string fileName = _cachePath + GetRelativeCacheFileName(webResponse.ResponseUri.ToString());
+            string fileName = _cachePath + GetRelativeCacheFileName(webResponse.ResponseUri.ToString(),
+                webResponse.Method);
 
             FileStream writeFile = Utils.CreateFile(fileName);
             if (writeFile == null)

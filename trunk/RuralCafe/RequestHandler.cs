@@ -351,24 +351,6 @@ namespace RuralCafe
             set { _rcRequest.RefererUri = value; }
             get { return _rcRequest != null ? _rcRequest.RefererUri : Context.Request.UrlReferrer.AbsoluteUri; }
         }
-        /// <summary>File name of the file if the RCRequest is stored in the cache.</summary>
-        public string FileName
-        {
-            set { _rcRequest.FileName = value; }
-            get { return _rcRequest.FileName; }
-        }
-        /// <summary>Hashed base name of the file if the RCRequest is stored in the cache.</summary>
-        public string HashPath
-        {
-            set { _rcRequest.HashPath = value; }
-            get { return _rcRequest.HashPath; }
-        }
-        /// <summary>Name of the file if the RCRequest is stored in the cache.</summary>
-        public string CacheFileName
-        {
-            set { _rcRequest.CacheFileName = value; }
-            get { return _rcRequest.CacheFileName; }
-        }
 
         #endregion
 

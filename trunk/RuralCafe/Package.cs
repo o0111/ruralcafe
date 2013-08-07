@@ -24,6 +24,7 @@ using System.IO.Compression;
 using System.Net;
 using RuralCafe.Lucenenet;
 using RuralCafe.Util;
+using System.Collections.Specialized;
 
 namespace RuralCafe
 {
@@ -128,14 +129,14 @@ namespace RuralCafe
         /// Unpacks the package contents and indexes them.
         /// </summary>
         /// <param name="requestHandler">Calling handler for this method.</param>
-        /// <param name="headers">The rc specific headers.</param>
+        /// <param name="rcheaders">The rc specific headers.</param>
         /// <param name="indexWrapper">The index wrapper.</param>
         /// <returns>Total unpacked content size.</returns>
-        public static long Unpack(LocalRequestHandler requestHandler, RCSpecificResponseHeaders headers,
+        public static long Unpack(LocalRequestHandler requestHandler, RCSpecificResponseHeaders rcheaders,
             IndexWrapper indexWrapper)
         {
-            long packageIndexSize = headers.RCPackageIndexSize;
-            long packageContentSize = headers.RCPackageContentSize;
+            long packageIndexSize = rcheaders.RCPackageIndexSize;
+            long packageContentSize = rcheaders.RCPackageContentSize;
             if (packageIndexSize == 0 || packageContentSize == 0)
             {
                 // This is an internal error that should not happen!
@@ -164,8 +165,7 @@ namespace RuralCafe
             long bytesReadOfCurrFile = 0;
             long unpackedBytes = 0;
             Byte[] buffer = new Byte[1024];
-            string currUri = "";
-            long currFileSize = 0;
+
             foreach (string entry in packageContentArr)
             {
                 int lastSpaceIndex = entry.LastIndexOf(' ');
@@ -174,8 +174,13 @@ namespace RuralCafe
                     requestHandler.Logger.Error("unparseable entry: " + entry);
                     return unpackedBytes;
                 }
-                currUri = entry.Substring(0, lastSpaceIndex);
+                string currUri = entry.Substring(0, lastSpaceIndex);
+                // FIXME use actual values, not dummy data
+                string httpMethod = "GET";
+                NameValueCollection headers = new NameValueCollection(); // Use JSON to deserialize
+                short statusCode = 200;
 
+                long currFileSize;
                 try
                 {
                     currFileSize = Int64.Parse(entry.Substring(lastSpaceIndex + 1));
@@ -192,7 +197,8 @@ namespace RuralCafe
                     return unpackedBytes;
                 }
 
-                string cacheFileName = requestHandler.Proxy.CachePath + CacheManager.GetRelativeCacheFileName(currUri);
+                string cacheFileName = requestHandler.Proxy.CachePath +
+                    CacheManager.GetRelativeCacheFileName(currUri, httpMethod);
 
                 unpackedBytes += currFileSize;
 
@@ -202,14 +208,13 @@ namespace RuralCafe
                     requestHandler.Logger.Warn("problem unpacking, filename too long for uri: " + currUri);
                     return unpackedBytes;
                 }
-                // make sure the file doesn't already exist for indexing purposes only
-                FileInfo ftest = new FileInfo(cacheFileName);
-                bool existed = ftest.Exists;
-
-                // try to delete the old version
-                if (!Utils.DeleteFile(cacheFileName))
+                // make sure the file doesn't already exist for indexing and DB purposes
+                bool existed = requestHandler.Proxy.ProxyCacheManager.IsCached(httpMethod, currUri);
+                if (existed)
                 {
-                    return unpackedBytes;
+                    // Remove if it existed.
+                    // FIXME do a replace instead!!! Otherwise the rc data would be lost.
+                    requestHandler.Proxy.ProxyCacheManager.RemoveCacheItem(httpMethod, currUri);
                 }
                 
                 // create the file if it doesn't exist
@@ -263,21 +268,36 @@ namespace RuralCafe
                     // ran out of bytes for this file
                     requestHandler.Logger.Error("unexpected package size: " + cacheFileName +
                         "(" + bytesReadOfCurrFile + " / " + currFileSize + ")");
-                    return unpackedBytes * -1;
+                    return -1;
                 }
 
                 currFileFS.Close();
 
+                // Add Database entry
+                if (!requestHandler.Proxy.ProxyCacheManager.AddCacheItemForExistingFile(currUri, httpMethod,
+                    headers, statusCode))
+                {
+                    // Adding to the DB failed
+                    // Clean up: delete file and return (do not add to lucene)
+                    Utils.DeleteFile(cacheFileName);
+                    return -1;
+                }
+
                 // add the file to Lucene
+                // TODO isParseable() should be changed to if headers["Content-Type"].Contains("htm") e.g.
                 if (Utils.IsParseable(cacheFileName))
                 {
                     if (!existed)
                     {
+                        // XXX reading the file we just wrote. Could also stream it int
+                        // local variable, that would be faster
                         string document = Utils.ReadFileAsString(cacheFileName);
                         string title = HtmlUtils.GetPageTitleFromHTML(document);
                         // Use whole file, so we can also find results with tags, etc.
                         string content = document;
-                        // XXX: Why always with "Content-Type: text/html" ???
+                        // XXX: Use actual headers here
+                        // XXX: Although I don't know why we even have headers in Lucene.
+                        // XXX: Would make more sence to have httpMethod in Lucene instead.
                         indexWrapper.IndexDocument("Content-Type: text/html", currUri, title, content);
                     }
                 }
