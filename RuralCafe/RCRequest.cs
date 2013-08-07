@@ -309,51 +309,6 @@ namespace RuralCafe
             }
         }
 
-        // XXX delete
-        /// <summary>
-        /// Makes preparations for a file to be created.
-        /// 
-        /// Throws an exception if anything goes wrong.
-        /// </summary>
-        /// <param name="replace">Whether the file should be replaced, if it exists.</param>
-        /// <param name="proceedDownload"></param>
-        /// <returns>True, if the download should proceed, false if not.</returns>
-        //private bool PrepareFileForCreation(bool replace)
-        //{
-        //    CacheManager cacheManager = _requestHandler.GenericProxy.ProxyCacheManager;
-        //    // XXX: should also check for cache expiration
-        //    // check for 0 size file to re-download
-        //    long fileSize = cacheManager.CacheItemBytes(_cacheFileName);
-        //    if (fileSize > 0)
-        //    {
-        //        // File exists
-        //        if (replace)
-        //        {
-        //            if (!cacheManager.RemoveCacheItem(_cacheFileName))
-        //            {
-        //                // Old file couldn't be removed.
-        //                throw new Exception("Could not remove old cache file.");
-        //            }
-        //        }
-        //        else
-        //        {
-        //            // We don't replace so we're done.
-        //            return false;
-        //        }
-        //    }
-        //    else
-        //    {
-        //        // File does not exist
-        //        // create directory if it doesn't exist
-        //        if (!cacheManager.CreateDirectoryForCacheItem(_cacheFileName))
-        //        {
-        //            // Directory couldn't be created.
-        //            throw new Exception("Could not create directory for file.");
-        //        }
-        //    }
-        //    return true;
-        //}
-
         /// <summary>
         /// Downloads a package from the remote proxy.
         /// </summary>
@@ -435,8 +390,15 @@ namespace RuralCafe
                     string str = "HTTP/1.1 301 Moved Permanently\r\n" +
                           "Location: " + _webResponse.ResponseUri.ToString() + "\r\n";
 
-                    // FIXME
-                    cacheManager.AddCacheItem(_cacheFileName, str);
+                    // Write the str in a file and save also a 301 entry in the database
+                    // with corresponding header.
+                    cacheManager.CreateFileAndWrite(_cacheFileName, str);
+                    NameValueCollection redirHeaders = new NameValueCollection()
+                    {
+                        { "Location", _webResponse.ResponseUri.ToString() },
+                    };
+                    cacheManager.AddCacheItemForExistingFile(_uriBeforeRedirect, _webRequest.Method,
+                        redirHeaders, 301);
 
                     // have to save to the new cache file location
                     string uri = _webResponse.ResponseUri.ToString();
