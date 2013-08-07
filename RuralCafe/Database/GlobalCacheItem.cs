@@ -14,10 +14,12 @@ namespace RuralCafe.Database
     
     public partial class GlobalCacheItem
     {
-        public string httpMethod { get; set; }
         public string url { get; set; }
+        public string httpMethod { get; set; }
         public string responseHeaders { get; set; }
-        public string filename { get; set; }
         public short statusCode { get; set; }
+        public string filename { get; set; }
+    
+        public virtual GlobalCacheRCData GlobalCacheRCData { get; set; }
     }
 }

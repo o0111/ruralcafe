@@ -31,7 +31,7 @@ namespace RuralCafe
         private const string CLUSTERS_FILE_NAME = "clusters";
         private const string TREE_FILE_NAME = "tree";
         public const string CLUSTERS_XML_FILE_NAME = "clusters.xml";
-        private const string DATABASE_FILE_NAME = "RCDatabase.db";
+        private const string DATABASE_FILE_NAME = "RCDatabase.sdf";
         private readonly string EMPTY_DATABASE_FILE_NAME = Directory.GetCurrentDirectory()
             + Path.DirectorySeparatorChar + "Database" + Path.DirectorySeparatorChar + DATABASE_FILE_NAME;
         // Adapt this if the Database schema changes
@@ -377,9 +377,17 @@ namespace RuralCafe
         /// <returns>If the item is cached.</returns>
         public bool IsCached(string httpMethod, string uri)
         {
-            return (from gci in _databaseContext.GlobalCacheItem 
+            // FIXME
+            try
+            {
+                return (from gci in _databaseContext.GlobalCacheItem
                         where gci.httpMethod.Equals(httpMethod) && gci.url.Equals(uri)
                         select 1).Count() != 0;
+            }
+            catch (Exception)
+            {
+                return true;
+            }
         }
 
         /// <summary>
@@ -622,32 +630,32 @@ namespace RuralCafe
         private bool CheckDatabaseIntegrityAndRepair()
         {
             // See if all tables exist
-            IEnumerable<string> names = _databaseContext.Database.SqlQuery<string>(
-                "SELECT name FROM sqlite_master WHERE type='table'");
-            foreach (string tableName in DB_SCHEMA.Keys)
-            {
-                if (!names.Contains(tableName))
-                {
-                    _proxy.Logger.Warn(tableName + " table is missing in the database. Will create a new database.");
-                    return false;
-                }
-                // See if all columns exist
-                string sql = _databaseContext.Database.SqlQuery<string>(
-                    String.Format("SELECT sql FROM sqlite_master WHERE type='table' AND name='{0}'",
-                    tableName)).FirstOrDefault();
-                foreach(string colName in DB_SCHEMA[tableName])
-                {
-                    if (!sql.Contains(colName))
-                    {
-                        // XXX: If we add columns later, we might want to do an
-                        // ALTER TABLE here, instead of returning false.
-                        // Be aware that sqlite is different in regards of adding columns!
-                        _proxy.Logger.Warn(tableName + " table is missing column " +
-                            colName + " in the database. Will create a new database.");
-                        return false;
-                    }
-                }
-            }
+            //IEnumerable<string> names = _databaseContext.Database.SqlQuery<string>(
+            //    "SELECT name FROM sqlite_master WHERE type='table'");
+            //foreach (string tableName in DB_SCHEMA.Keys)
+            //{
+            //    if (!names.Contains(tableName))
+            //    {
+            //        _proxy.Logger.Warn(tableName + " table is missing in the database. Will create a new database.");
+            //        return false;
+            //    }
+            //    // See if all columns exist
+            //    string sql = _databaseContext.Database.SqlQuery<string>(
+            //        String.Format("SELECT sql FROM sqlite_master WHERE type='table' AND name='{0}'",
+            //        tableName)).FirstOrDefault();
+            //    foreach(string colName in DB_SCHEMA[tableName])
+            //    {
+            //        if (!sql.Contains(colName))
+            //        {
+            //            // XXX: If we add columns later, we might want to do an
+            //            // ALTER TABLE here, instead of returning false.
+            //            // Be aware that sqlite is different in regards of adding columns!
+            //            _proxy.Logger.Warn(tableName + " table is missing column " +
+            //                colName + " in the database. Will create a new database.");
+            //            return false;
+            //        }
+            //    }
+            //}
             return true;
         }
 
@@ -720,8 +728,9 @@ namespace RuralCafe
             rcData.lastRequestTime = DateTime.Now;
             // No requests so far
             rcData.numberOfRequests = 0;
-            // Download time is the lastModified time of the file.
-            rcData.downloadTime = File.GetLastWriteTime(_cachePath + relFileName);
+            // Download time is the lastModified time of the file, if it already exists. Otherwise now
+            rcData.downloadTime = File.Exists(_cachePath + relFileName) ?
+                File.GetLastWriteTime(_cachePath + relFileName) : DateTime.Now;
             // add item
             _databaseContext.GlobalCacheRCData.Add(rcData);
         }
