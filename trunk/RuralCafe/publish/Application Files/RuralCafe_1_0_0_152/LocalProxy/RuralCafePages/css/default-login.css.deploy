@@ -1,0 +1,343 @@
+*{
+	padding:0;
+	margin:0;
+}
+
+
+body{
+	font-family: Verdana ,Arial, sans-serif;
+	font-size:12px;
+	margin: 0;
+	overflow: hidden;/*Disable scrollbars. Set to "scroll" to enable*/
+	overflow-x:scroll;
+	height: 100%;
+	max-height: 100%; 
+	color:#222;
+	height:100%;
+}
+
+.online_status, a:link{
+	color:#2bb600;
+}
+.cached_status, a:visited{
+	color:#1e7e00;
+}
+
+#search_div{
+	position: absolute; 
+	top: 0; 
+	left: 0; 
+	width: 100%; 
+	height: 60px; /*Height of top frame div*/
+	background-color: #DCE4E4;
+	border-bottom: solid 1px #C8D5D5;
+	min-width:700px;
+}
+
+
+#queue_div{
+	position: absolute; 
+	top: auto;
+	bottom: 0;
+	width: 100%; 
+	height: 65px; /*Height of bottom frame div*/
+	background-color: #DCE4E4;
+	border-top: solid 1px #C8D5D5;
+	min-width:700px;
+}
+
+#main_div{
+	z-index:-1;
+	position: fixed; 
+	top: 60px; /*Set top value to HeightOfTopFrameDiv*/
+	left: 0;
+	right: 0;
+	bottom: 65px; /*Set bottom value to HeightOfBottomFrameDiv*/
+	background: #ffffff;
+}
+
+#main_frame{
+	width:100%;
+	height:100%;
+	border:0;
+}
+
+#trotro_icon{
+	height:55px;
+	border-right: solid 1px #C8D5D5;
+}
+
+a img{
+	border:0;
+}
+
+#logo{
+	float:left;
+}
+
+#search_box{
+	margin-top:5px;
+	float:left;
+}
+
+#search_input{
+	margin-left:10px;
+	height:45px;
+	border:solid 1px #C8D5D5;
+	font-size:24px;
+	width:14em;
+	float:left;
+}
+
+#search_btn{
+	padding-right:90px;
+	padding-top:6px;
+	color:#ddd;
+	font-size:12px;
+	font-weight:bold;
+	width:185px;
+	height:45px;
+	margin-left:10px;
+	background-image:url(../img/search_btn.png);
+	border:0;
+}
+	
+#search_btn:hover{
+	background-image:url(../img/search_btn_hover.png);
+	border:0;
+	cursor:pointer;
+}
+
+#right_box{
+	position:absolute;
+	right:0;
+	top:5;
+	height:55px;
+	width:120px;
+	color:#999;
+}
+
+
+
+#internet_signin{
+	padding: 15px 10px;
+	border-right:solid 1px #C8D5D5;
+	color:#333;
+	float:left;
+}
+
+#close_box{
+	float:left;
+	width:30px;
+	height:30px;
+	margin-left:10px;
+	margin-top:12px;
+	background-image:url(../img/close_btn.png);
+	cursor:pointer;
+}
+
+#close_box:hover{
+	background-image:url(../img/close_btn_hover.png);
+}
+
+#queue_box{
+	height:50px;
+	padding:5px;
+	color:#444;
+	font-size:11px;
+}
+
+	
+#control_frame{
+	padding:5px;
+	height:50px;
+}
+
+/* These styles create the dropdown menus. */
+#optionbar li {
+   list-style: none;
+   float: right; }
+   
+#optionbar li a {
+   background-color: #5d6262;
+   color: #fff;
+}
+
+#optionbar li ul {
+   display: none; 
+   width: 18em; /* Width to help Opera out */
+   background-color: #5d6262;}
+   
+#optionbar li:hover ul, #optionbar li.hover ul {
+   display: block;
+   position: absolute;
+   right:5px;
+   bottom:58px;
+   margin: 0;
+   padding: 0; }
+   
+#optionbar li:hover li, #optionbar li.hover li {
+   float: none; }
+   
+#optionbar li:hover a, #optionbar li.hover a {
+   background-color: #5d6262;
+   border-bottom: 1px solid #C8D5D5;
+}
+   
+#optionbar li li a:hover {
+   background-color: #4ace21; 
+   color: #000;}
+   
+/* ~~ The navigation list styles (can be removed if you choose to use a premade flyout menu like Spry) ~~ */
+ul.nav {
+	list-style: none;
+	padding:0px;
+}
+
+ul.nav a, ul.nav a:visited { /* grouping these selectors makes sure that your links retain their button look even after being visited */
+   	padding: 4px 12px;
+	display: block; /* this gives the link block properties causing it to fill the whole LI containing it. This causes the entire area to react to a mouse click. */
+	text-decoration: none;
+}
+
+#option_icon{
+	height:45px;
+	border-left:1px solid #C8D5D5;
+}
+
+#left_btn, #right_btn{
+	float:left;
+	width:30px;
+	height:50px;
+	background-repeat:no-repeat;
+	text-align:center;
+	padding: 13px 0;
+	text-decoration:none;
+	color:#fff;
+}
+
+
+#left_btn{
+	background-image:url(../img/left_btn.png);
+}
+
+#right_btn{
+	background-image:url(../img/right_btn.png);
+}
+
+#right_btn:hover{
+	background-image:url(../img/right_btn_hover.png);
+}
+
+#left_btn:hover{
+	background-image:url(../img/left_btn_hover.png);
+}
+
+
+
+#queue_box .cancel_btn{
+	display:block;
+	float:right;
+	width:15px;
+	height:15px;
+	margin-top:10px;
+	margin-right:5px;
+	background-image:url(../img/cancel_btn.png);
+}
+
+#queue_box .cancel_btn:hover{
+	background-image:url(../img/cancel_btn_hover.png);
+}
+
+#queue_box .item_title{
+	display:block;
+	overflow:hidden;
+}
+
+#queue_box .status{
+	display:block;
+	margin-top:0px;
+	font-weight:bold;
+}
+
+#queue_box .Pending{
+	color:#999;
+}
+
+#queue_box .Failed{
+	color:#630;
+}
+
+#queue_box .Downloading{
+	color:#2bb600;
+}
+
+#queue_box .Completed{
+	color:#000;
+}
+
+#queue_box .queue_item, #queue_box .complete_item{
+	overflow:hidden;
+	float:left;
+	height:40px;
+	width: 10%;
+	padding:5px;
+	background-repeat:repeat-x;
+}
+
+#queue_box .queue_item{
+	background-image:url(../img/item-bg.png);
+	border: solid 1px #C8D5D5;
+}
+
+#queue_box .complete_item{
+	background-image:url(../img/item-bg-cmp.png);
+	border:solid 1px #83887f;
+	color:#103717;
+}
+
+#queue_box .queue_detail{
+	position:absolute;
+	bottom:65px;
+	width:10%;
+	background:white;
+	border: double 4px #C8D5D5;
+	padding:5px;
+	display:none;
+	word-wrap: break-word; 
+	word-break: normal; 
+}
+
+#queue_box .queue_item:hover div.queue_detail, #queue_box .complete_item:hover div.queue_detail{
+	display:block;
+}
+
+#queue_box .queue_item:hover{
+	cursor:pointer;
+	background-color:#cbd2d3;
+	border-color:#a6b3b3;
+}
+
+#queue_box .complete_item:hover{
+	cursor:pointer;
+	background-image:url(../img/item-bg-cmph.png);
+	border-color:#50554c;
+}
+
+
+#queue_div #download_animation{
+	position:absolute;
+	display:none;
+	bottom:65px;
+	top:auto;
+	left:30px;
+	width:80px;
+	height:120px;
+	background-image:url(../img/download_icon.png);
+}
+
+.nav_btn{
+	width:30px;
+	height:50px;
+	float:left;
+}

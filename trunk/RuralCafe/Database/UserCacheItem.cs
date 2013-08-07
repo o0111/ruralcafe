@@ -14,10 +14,10 @@ namespace RuralCafe.Database
     
     public partial class UserCacheItem
     {
-        public string httpMethod { get; set; }
         public string url { get; set; }
+        public string httpMethod { get; set; }
         public string responseHeaders { get; set; }
+        public Nullable<short> statusCode { get; set; }
         public string filename { get; set; }
-        public short statusCode { get; set; }
     }
 }

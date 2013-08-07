@@ -4,35 +4,35 @@
   <edmx:Runtime>
     <!-- SSDL content -->
     <edmx:StorageModels>
-      <Schema Namespace="RCDatabaseModel.Store" Alias="Self" Provider="System.Data.SQLite" ProviderManifestToken="ISO8601" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
+      <Schema Namespace="RCDatabaseModel.Store" Alias="Self" Provider="System.Data.SqlServerCe.4.0" ProviderManifestToken="4.0" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
         <EntityContainer Name="RCDatabaseModelStoreContainer">
           <EntitySet Name="GlobalCacheItem" EntityType="RCDatabaseModel.Store.GlobalCacheItem" store:Type="Tables" />
           <EntitySet Name="GlobalCacheRCData" EntityType="RCDatabaseModel.Store.GlobalCacheRCData" store:Type="Tables" />
           <EntitySet Name="UserCacheDomain" EntityType="RCDatabaseModel.Store.UserCacheDomain" store:Type="Tables" />
           <EntitySet Name="UserCacheItem" EntityType="RCDatabaseModel.Store.UserCacheItem" store:Type="Tables" />
+          <AssociationSet Name="rcdata-fk" Association="RCDatabaseModel.Store.rcdata-fk">
+            <End Role="GlobalCacheItem" EntitySet="GlobalCacheItem" />
+            <End Role="GlobalCacheRCData" EntitySet="GlobalCacheRCData" />
+          </AssociationSet>
         </EntityContainer>
-        <!--Errors Found During Generation:
-      warning 6035: The relationship 'FK_GlobalCacheRCData_0_0' has columns that are not part of the key of the table on the primary side of the relationship. The relationship was excluded.
-      warning 6035: The relationship 'FK_GlobalCacheRCData_0_1' has columns that are not part of the key of the table on the primary side of the relationship. The relationship was excluded.
-      -->
         <EntityType Name="GlobalCacheItem">
           <Key>
-            <PropertyRef Name="httpMethod" />
             <PropertyRef Name="url" />
+            <PropertyRef Name="httpMethod" />
           </Key>
-          <Property Name="httpMethod" Type="nvarchar" Nullable="false" />
-          <Property Name="url" Type="nvarchar" Nullable="false" />
-          <Property Name="responseHeaders" Type="nvarchar" Nullable="false" />
-          <Property Name="filename" Type="nvarchar" Nullable="false" />
+          <Property Name="url" Type="nvarchar" Nullable="false" MaxLength="2000" />
+          <Property Name="httpMethod" Type="nvarchar" Nullable="false" MaxLength="100" />
+          <Property Name="responseHeaders" Type="ntext" Nullable="false" />
           <Property Name="statusCode" Type="smallint" Nullable="false" />
+          <Property Name="filename" Type="nvarchar" MaxLength="260" />
         </EntityType>
         <EntityType Name="GlobalCacheRCData">
           <Key>
-            <PropertyRef Name="httpMethod" />
             <PropertyRef Name="url" />
+            <PropertyRef Name="httpMethod" />
           </Key>
-          <Property Name="httpMethod" Type="nvarchar" Nullable="false" />
-          <Property Name="url" Type="nvarchar" Nullable="false" />
+          <Property Name="url" Type="nvarchar" Nullable="false" MaxLength="2000" />
+          <Property Name="httpMethod" Type="nvarchar" Nullable="false" MaxLength="100" />
           <Property Name="downloadTime" Type="datetime" Nullable="false" />
           <Property Name="lastRequestTime" Type="datetime" Nullable="false" />
           <Property Name="numberOfRequests" Type="int" Nullable="false" />
@@ -43,19 +43,35 @@
             <PropertyRef Name="domain" />
           </Key>
           <Property Name="userID" Type="int" Nullable="false" />
-          <Property Name="domain" Type="nvarchar" Nullable="false" />
+          <Property Name="domain" Type="nvarchar" Nullable="false" MaxLength="400" />
         </EntityType>
         <EntityType Name="UserCacheItem">
           <Key>
-            <PropertyRef Name="httpMethod" />
             <PropertyRef Name="url" />
+            <PropertyRef Name="httpMethod" />
           </Key>
-          <Property Name="httpMethod" Type="nvarchar" Nullable="false" />
-          <Property Name="url" Type="nvarchar" Nullable="false" />
-          <Property Name="responseHeaders" Type="nvarchar" Nullable="false" />
-          <Property Name="filename" Type="nvarchar" Nullable="false" />
-          <Property Name="statusCode" Type="smallint" Nullable="false" />
+          <Property Name="url" Type="nvarchar" Nullable="false" MaxLength="2000" />
+          <Property Name="httpMethod" Type="nvarchar" Nullable="false" MaxLength="100" />
+          <Property Name="responseHeaders" Type="ntext" />
+          <Property Name="statusCode" Type="smallint" />
+          <Property Name="filename" Type="nvarchar" MaxLength="260" />
         </EntityType>
+        <Association Name="rcdata-fk">
+          <End Role="GlobalCacheItem" Type="RCDatabaseModel.Store.GlobalCacheItem" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="GlobalCacheRCData" Type="RCDatabaseModel.Store.GlobalCacheRCData" Multiplicity="0..1" />
+          <ReferentialConstraint>
+            <Principal Role="GlobalCacheItem">
+              <PropertyRef Name="url" />
+              <PropertyRef Name="httpMethod" />
+            </Principal>
+            <Dependent Role="GlobalCacheRCData">
+              <PropertyRef Name="url" />
+              <PropertyRef Name="httpMethod" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
       </Schema>
     </edmx:StorageModels>
     <!-- CSDL content -->
@@ -66,28 +82,34 @@
           <EntitySet Name="GlobalCacheRCData" EntityType="RCDatabaseModel.GlobalCacheRCData" />
           <EntitySet Name="UserCacheDomain" EntityType="RCDatabaseModel.UserCacheDomain" />
           <EntitySet Name="UserCacheItem" EntityType="RCDatabaseModel.UserCacheItem" />
+          <AssociationSet Name="rcdata_fk" Association="RCDatabaseModel.rcdata_fk">
+            <End Role="GlobalCacheItem" EntitySet="GlobalCacheItem" />
+            <End Role="GlobalCacheRCData" EntitySet="GlobalCacheRCData" />
+          </AssociationSet>
         </EntityContainer>
         <EntityType Name="GlobalCacheItem">
           <Key>
-            <PropertyRef Name="httpMethod" />
             <PropertyRef Name="url" />
+            <PropertyRef Name="httpMethod" />
           </Key>
-          <Property Name="httpMethod" Type="String" Nullable="false" MaxLength="2147483647" Unicode="true" FixedLength="false" />
-          <Property Name="url" Type="String" Nullable="false" MaxLength="2147483647" Unicode="true" FixedLength="false" />
-          <Property Name="responseHeaders" Type="String" Nullable="false" MaxLength="2147483647" Unicode="true" FixedLength="false" />
-          <Property Name="filename" Type="String" Nullable="false" MaxLength="2147483647" Unicode="true" FixedLength="false" />
+          <Property Name="url" Type="String" Nullable="false" MaxLength="2000" Unicode="true" FixedLength="false" />
+          <Property Name="httpMethod" Type="String" Nullable="false" MaxLength="100" Unicode="true" FixedLength="false" />
+          <Property Name="responseHeaders" Type="String" Nullable="false" MaxLength="Max" Unicode="true" FixedLength="false" />
           <Property Name="statusCode" Type="Int16" Nullable="false" />
+          <Property Name="filename" Type="String" MaxLength="260" Unicode="true" FixedLength="false" />
+          <NavigationProperty Name="GlobalCacheRCData" Relationship="RCDatabaseModel.rcdata_fk" FromRole="GlobalCacheItem" ToRole="GlobalCacheRCData" />
         </EntityType>
         <EntityType Name="GlobalCacheRCData">
           <Key>
-            <PropertyRef Name="httpMethod" />
             <PropertyRef Name="url" />
+            <PropertyRef Name="httpMethod" />
           </Key>
-          <Property Name="httpMethod" Type="String" Nullable="false" MaxLength="2147483647" Unicode="true" FixedLength="false" />
-          <Property Name="url" Type="String" Nullable="false" MaxLength="2147483647" Unicode="true" FixedLength="false" />
-          <Property Name="downloadTime" Type="DateTime" Nullable="false" />
-          <Property Name="lastRequestTime" Type="DateTime" Nullable="false" />
+          <Property Name="url" Type="String" Nullable="false" MaxLength="2000" Unicode="true" FixedLength="false" />
+          <Property Name="httpMethod" Type="String" Nullable="false" MaxLength="100" Unicode="true" FixedLength="false" />
+          <Property Name="downloadTime" Type="DateTime" Nullable="false" Precision="3" />
+          <Property Name="lastRequestTime" Type="DateTime" Nullable="false" Precision="3" />
           <Property Name="numberOfRequests" Type="Int32" Nullable="false" />
+          <NavigationProperty Name="GlobalCacheItem" Relationship="RCDatabaseModel.rcdata_fk" FromRole="GlobalCacheRCData" ToRole="GlobalCacheItem" />
         </EntityType>
         <EntityType Name="UserCacheDomain">
           <Key>
@@ -95,19 +117,35 @@
             <PropertyRef Name="domain" />
           </Key>
           <Property Name="userID" Type="Int32" Nullable="false" />
-          <Property Name="domain" Type="String" Nullable="false" MaxLength="2147483647" Unicode="true" FixedLength="false" />
+          <Property Name="domain" Type="String" Nullable="false" MaxLength="400" Unicode="true" FixedLength="false" />
         </EntityType>
         <EntityType Name="UserCacheItem">
           <Key>
-            <PropertyRef Name="httpMethod" />
             <PropertyRef Name="url" />
+            <PropertyRef Name="httpMethod" />
           </Key>
-          <Property Name="httpMethod" Type="String" Nullable="false" MaxLength="2147483647" Unicode="true" FixedLength="false" />
-          <Property Name="url" Type="String" Nullable="false" MaxLength="2147483647" Unicode="true" FixedLength="false" />
-          <Property Name="responseHeaders" Type="String" Nullable="false" MaxLength="2147483647" Unicode="true" FixedLength="false" />
-          <Property Name="filename" Type="String" Nullable="false" MaxLength="2147483647" Unicode="true" FixedLength="false" />
-          <Property Name="statusCode" Type="Int16" Nullable="false" />
+          <Property Name="url" Type="String" Nullable="false" MaxLength="2000" Unicode="true" FixedLength="false" />
+          <Property Name="httpMethod" Type="String" Nullable="false" MaxLength="100" Unicode="true" FixedLength="false" />
+          <Property Name="responseHeaders" Type="String" MaxLength="Max" Unicode="true" FixedLength="false" />
+          <Property Name="statusCode" Type="Int16" />
+          <Property Name="filename" Type="String" MaxLength="260" Unicode="true" FixedLength="false" />
         </EntityType>
+        <Association Name="rcdata_fk">
+          <End Role="GlobalCacheItem" Type="RCDatabaseModel.GlobalCacheItem" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="GlobalCacheRCData" Type="RCDatabaseModel.GlobalCacheRCData" Multiplicity="0..1" />
+          <ReferentialConstraint>
+            <Principal Role="GlobalCacheItem">
+              <PropertyRef Name="url" />
+              <PropertyRef Name="httpMethod" />
+            </Principal>
+            <Dependent Role="GlobalCacheRCData">
+              <PropertyRef Name="url" />
+              <PropertyRef Name="httpMethod" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -117,19 +155,19 @@
           <EntitySetMapping Name="GlobalCacheItem">
             <EntityTypeMapping TypeName="RCDatabaseModel.GlobalCacheItem">
               <MappingFragment StoreEntitySet="GlobalCacheItem">
-                <ScalarProperty Name="httpMethod" ColumnName="httpMethod" />
                 <ScalarProperty Name="url" ColumnName="url" />
+                <ScalarProperty Name="httpMethod" ColumnName="httpMethod" />
                 <ScalarProperty Name="responseHeaders" ColumnName="responseHeaders" />
-                <ScalarProperty Name="filename" ColumnName="filename" />
                 <ScalarProperty Name="statusCode" ColumnName="statusCode" />
+                <ScalarProperty Name="filename" ColumnName="filename" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
           <EntitySetMapping Name="GlobalCacheRCData">
             <EntityTypeMapping TypeName="RCDatabaseModel.GlobalCacheRCData">
               <MappingFragment StoreEntitySet="GlobalCacheRCData">
-                <ScalarProperty Name="httpMethod" ColumnName="httpMethod" />
                 <ScalarProperty Name="url" ColumnName="url" />
+                <ScalarProperty Name="httpMethod" ColumnName="httpMethod" />
                 <ScalarProperty Name="downloadTime" ColumnName="downloadTime" />
                 <ScalarProperty Name="lastRequestTime" ColumnName="lastRequestTime" />
                 <ScalarProperty Name="numberOfRequests" ColumnName="numberOfRequests" />
@@ -147,11 +185,11 @@
           <EntitySetMapping Name="UserCacheItem">
             <EntityTypeMapping TypeName="RCDatabaseModel.UserCacheItem">
               <MappingFragment StoreEntitySet="UserCacheItem">
-                <ScalarProperty Name="httpMethod" ColumnName="httpMethod" />
                 <ScalarProperty Name="url" ColumnName="url" />
+                <ScalarProperty Name="httpMethod" ColumnName="httpMethod" />
                 <ScalarProperty Name="responseHeaders" ColumnName="responseHeaders" />
-                <ScalarProperty Name="filename" ColumnName="filename" />
                 <ScalarProperty Name="statusCode" ColumnName="statusCode" />
+                <ScalarProperty Name="filename" ColumnName="filename" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>

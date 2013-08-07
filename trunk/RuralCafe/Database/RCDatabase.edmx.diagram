@@ -4,11 +4,12 @@
   <edmx:Designer xmlns="http://schemas.microsoft.com/ado/2008/10/edmx">
     <!-- Diagram content (shape and connector positions) -->
     <edmx:Diagrams>
-      <Diagram DiagramId="d21c2fcb1e684b5a81b70bc8ff33a0b1" Name="Diagram1">
-        <EntityTypeShape EntityType="RCDatabaseModel.GlobalCacheItem" Width="1.5" PointX="0.75" PointY="0.75" IsExpanded="true" />
-        <EntityTypeShape EntityType="RCDatabaseModel.GlobalCacheRCData" Width="1.5" PointX="2.75" PointY="0.75" IsExpanded="true" />
-        <EntityTypeShape EntityType="RCDatabaseModel.UserCacheDomain" Width="1.5" PointX="0.75" PointY="3.75" IsExpanded="true" />
-        <EntityTypeShape EntityType="RCDatabaseModel.UserCacheItem" Width="1.5" PointX="2.75" PointY="3.75" IsExpanded="true" />
+      <Diagram DiagramId="c4a66ea268f44253ad04dff62db65347" Name="Diagram1">
+        <EntityTypeShape EntityType="RCDatabaseModel.GlobalCacheItem" Width="1.5" PointX="0.75" PointY="0.875" IsExpanded="true" />
+        <EntityTypeShape EntityType="RCDatabaseModel.GlobalCacheRCData" Width="1.5" PointX="4.25" PointY="0.875" IsExpanded="true" />
+        <EntityTypeShape EntityType="RCDatabaseModel.UserCacheDomain" Width="1.5" PointX="0.75" PointY="4.75" IsExpanded="true" />
+        <EntityTypeShape EntityType="RCDatabaseModel.UserCacheItem" Width="1.5" PointX="2.75" PointY="4.75" IsExpanded="true" />
+        <AssociationConnector Association="RCDatabaseModel.rcdata_fk" ManuallyRouted="false" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

@@ -1,0 +1,482 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=windows-1252">
+  <title>Laura Dan Li</title>
+  <meta name="keywords"
+  content="laura dan li, programming portfolio, interactive game, motion tracking, human computer interaction, interactivity, computer science student, dan li, laura li, li dan">
+  <meta name="description"
+  content="Laura Dan Li: personal programming portfolio, including individual and group projects on interactive applications, games, interface design.">
+  <link href="css/sample_web_page.css" rel="stylesheet" type="text/css" media="all">
+  <script type="text/javascript" src="js/ufo3_12.js">
+ </script>
+    <script type="text/javascript" src="js/loadprgnpage.js">
+  </script>
+  <script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-18902281-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+</head>
+
+<body>
+
+<div id="skip-nav" class="reveal">
+<a href="#media">Skip to main content</a> </div>
+
+<div id="maincontainer">
+<!-- the header -->
+
+<div id="header">
+<img alt="title image" src="img/title.jpg"> 
+
+<div id="title">
+<h1>Laura Dan Li</h1>
+
+<h2>programming portfolio</h2>
+</div>
+</div>
+<!-- the content -->
+
+<div id="content">
+
+<div id="menu">
+  <a id="home" title="multimedia portfolio" href="index.html"></a>
+  <a id="programming" title="programming portfolio" href="programming.html" class="current">programming<br /><span class="smallcap">interactive apps I made</span></a>
+  <a id="art" title="art portfolio" href="art.html">visual art<br /><span class="smallcap">my art pieces</span></a>
+  <a id="resume"  title="laura's resume" href="resume.html">resume<br /><span class="smallcap">work experience</span></a>
+  <a id="contact"  title="contact laura" href="feedback.html">contact<br /><span class="smallcap">info & contact form</span></a>
+</div>
+
+<div id="media">
+
+<div id="updateArea">
+<p>2007 ~ 2009</p>
+<ol>
+  <li><a href="#sm1205">VJ Performance and Motion Tracking Game: Interactive
+    Application (Group Work)</a></li>
+  <li><a href="#sm26070">Flying Pig: Flash Game</a></li>
+  <li><a href="#sm26071">Journey to the Sun: Flash Game (Group Work)</a></li>
+</ol>
+
+<p>2009 ~ 2010</p>
+<ol>
+  <li><a href="#cs2303">Maze Generator: Win32 Game</a></li>
+  <li><a href="#cs3483">Hand Controlled Interface: Interface Design</a></li>
+  <li><a href="#cs34831">Browser OL: Interface Design (Group Work)</a></li>
+  <li><a href="#sm3601">2 Legends: Board Game</a></li>
+  <li><a href="#sm36030">Gesture-driven Sound Player: Interactive
+    Application</a></li>
+  <li><a href="#sm36031">Natural Painter: Interactive Application</a></li>
+  <li><a href="#sm36032">Plant : Interactive Application</a></li>
+  <li><a href="#cs3343">After School: Web Application (Group Work)</a></li>
+  <li><a href="#cs4182">Box 2 Box: OpenGL Game</a></li>
+</ol>
+<p>2010 ~ 2011</p>
+<ol>
+  <li><a href="#sm3607">Pitapat: Android App
+</a></li>
+  <li><a href="#sm4280">The Chess Paradox: 3D Game</a></li>
+  <li><a href="#cs4280">Cinema Ticketing System: Web Application (Group Work)</a></li>
+  <li><a href="#sm4601">InfoPlanet: Final Year Project</a></li>
+</ol>
+<p>2011 ~ 2012</p>
+<ol>
+	<li><a href="#hcde518">Easyconnect: UX Design, Prototype (Group Work)
+	</a></li>
+  <li><a href="#hcde598">Automobile Navigation System: UX Design, Prototype (Current)</a></li>
+</ol>
+<div id="sm1205">
+<p><a href="#ufoPlayer" alt="video of VJ performance" onClick="playUFO('sm1205','http://www.youtube.com/v/Lis9Mu0tmnM');">
+<img alt="photo of my teammates" src="image/sm1205.jpg" height="200"
+width="300">
+</a></p>
+
+<h2><a href="#ufoPlayer" alt="video of VJ performance" onClick="playUFO('sm1205','http://www.youtube.com/v/Lis9Mu0tmnM');">VJ Performance and Motion Tracking Game: Interactive Application (Group
+Work)</a></h2>
+
+<h4>semester B, 2007/2008</h4>
+
+<p>This record is comprised to document the creative projects I have involved
+in during semester B, 2008. They include:</p>
+
+<p>Video Jockey Performance: We build a Chinese Zheng and two Chinese swords as
+electric instruments to create instant video effects;</p>
+
+<p>Motion Tracking Game: A simple motion tracking game for participants to
+fight bugs on the screen.</p>
+
+<p class="downloadButton"><a href="doc/sm1205.pdf">VJ Project Report</a></p>
+<p class="alignR"><a href="#menu" alt="back to top">back to top</a></p>
+</div>
+
+<div id="sm26070">
+<p><a href="#ufoPlayer" alt="video of VJ performance" onClick="playUFO('sm26070','games/a2_51158141.swf');">
+<img alt="screenshot" src="image/sm2607_0.jpg" height="200" width="300">
+</a></p>
+
+<h2><a href="#ufoPlayer" alt="video of VJ performance" onClick="playUFO('sm26070','games/a2_51158141.swf');">
+Flying Pig: Flash Game
+</a></h2>
+
+<h4>semester B, 2008/2009</h4>
+
+<p>Flying Pig is a refreshing game whose style is humor and cute. It is a
+shooting game without endless stupid enemies and bloody scenes. Your mission is
+to help the two friends, pig and angle to create a star shower as gorgeous as
+possible. In order to pass the level, brain work is required rather than good
+aiming. </p>
+
+<p>This is probably the very first finished game written by me.</p>
+
+<p class="downloadButton"><a href="doc/sm2607_0.pdf">Flying Pig User
+Manual</a></p>
+<p class="alignR"><a href="#menu" alt="back to top">back to top</a></p>
+
+</div>
+
+<div id="sm26071">
+
+<p><a href="#ufoPlayer" alt="J2S game" onClick="playUFO('sm26070','games/a3_5115816551158141_Cheat.swf');">
+<img alt="screenshot" src="image/sm2607_1.jpg" height="200" width="300"></a></p>
+<h2><a href="#ufoPlayer" alt="J2S game" onClick="playUFO('sm26071','games/a3_5115816551158141_Cheat.swf');">
+Journey to the Sun: Flash Game (Group Work)</a></h2>
+
+<h4>semester B, 2008/2009</h4>
+
+<p>J2S is a game that is in traditional Chinese style, written by Ivan and me.
+We have a great concept conceived, but the game play turns out to be a little
+sucks. So I attach a cheat version here, in which you need only to press the up
+button to go to next level, and down to go to the previous one. Hope this will
+make you happy to look at different levels without the need to win.</p>
+
+<p>Your mission is to help the ghost in the ball/shell to reach the sun in the
+sky, thus it can be bleached and reborn.</p>
+
+<p class="downloadButton"><a href="doc/sm2607_1.pdf">J2S Report</a></p>
+<p class="alignR"><a href="#menu" alt="back to top">back to top</a></p>
+
+</div>
+
+<div id="cs2303">
+<p><img alt="screenshot" src="image/cs2303.jpg" height="200" width="300"></p>
+
+<h2>Maze Generator: Win32 Game</h2>
+
+<h4>semester A, 2009/2010</h4>
+
+<p>This is a maze generator, in which the player challenges herself/himself by
+solving mazes that have up to 99*99 grids. It is actually a simple application
+using Disjoint Set as data structure to generate maze within O(log(n)) time. If
+you want to play it, you can download it from the link below. Use the keyboard
+to enter the number of columns and rows you want to have and up, down, right,
+left keys to play. Allergo library is used to create the GUI of this game.</p>
+
+<p class="downloadButton"><a href="games/mazegenerator.zip">Maze Generator
+Source Code</a></p>
+<p class="alignR"><a href="#menu" alt="back to top">back to top</a></p>
+
+</div>
+
+<div id="cs3483">
+<p><img alt="screenshot" src="image/cs3483.jpg" height="200" width="300"></p>
+
+<h2>Hand Controlled Interface: Interface Design</h2>
+
+<h4>semester A, 2009/2010</h4>
+
+<p>This is a processing program that allows a user to browse an image
+collection and apply various manipulations on an image using hand detection and
+keyboard operations. A haarcascade classifier which is trained using OpenCV
+utilities is used.</p>
+
+<p class="downloadButton"><a href="doc/cs3483.pdf">Processing Demo</a></p>
+<p class="alignR"><a href="#menu" alt="back to top">back to top</a></p>
+</div>
+
+<div id="cs34831">
+<p><img alt="screenshot" src="image/cs3483_1.jpg" height="200" width="300"></p>
+
+<h2>Browser OL: Interface Design (Group Work)</h2>
+
+<h4>semester A, 2009/2010</h4>
+
+<p>The objective of this project is to design a suitable browser interface for
+office ladies (age ranging from 18 to 45). The general design idea is to cater
+for the OL's preferences of nice appearance, simple to use, intimate feedback
+and strong secrecy.</p>
+
+<p>We strictly follow different guidelines and rules for interface design and
+adopt alternative modality of interaction in our project. By detecting the
+environment color, the distance of the user and faces, we provide special
+caring tools for office ladies. I was involved in every design phase and
+responsible for implementing the demo program using Processing.</p>
+<p></p>
+<p> </p>
+<p> </p>
+<p> </p>
+<p class="downloadButton"><a href="doc/cs3483_1.pdf">Browser Ol Report</a></p>
+<p class="alignR"><a href="#menu" alt="back to top">back to top</a></p>
+</div>
+
+<div id="sm3601">
+<p><img alt="photo of the game pieces" src="image/sm3601_1.JPG"
+height="200" width="300"></p></p>
+
+<h2>2 Legends: Board Game</h2>
+
+<h4>semester A, 2009/2010</h4>
+
+<p>2 Legends is not a computer game but a broad game designed, and finally made
+by me. I design the game mechanism, story and graphics all by myself. And the
+final product has gone through several iterations of test play. I will not post
+the game manual or any of the game design documents here. Because it is so
+complete that people can go directly to manufacture and sell this game.</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p class="alignR"><a href="#menu" alt="back to top">back to top</a></p>
+</div>
+
+<div id="sm36030">
+<p><a href="#ufoPlayer" alt="video of VJ performance" onClick="playUFO('sm36030','games/sm3603_51158141_assgn1.swf');">
+<img alt="screenshot" src="image/sm3603_0.jpg" height="200" width="300"></a></p>
+
+<h2>
+<a href="#ufoPlayer" alt="video of VJ performance" onClick="playUFO('sm36030','games/sm3603_51158141_assgn1.swf');">
+Gesture-driven Sound Player: Interactive Application</a></h2>
+<h4>semester B, 2009/2010</h4>
+
+<p>In this application, user uses his/her mouse gesture that is similar to a
+conductor of an orchestra to control the music player. For example, he can let
+a band start playing music by move mouse up first, and then down. The program
+will recognize the gesture of mouse and map it to different control. Besides,
+user can add self-defined gesture to the database. Detailed control of this
+program is described in the document below. You may need to look at it before
+you use the program.</p>
+
+<p>The program might not be able to play sound on some version of IE.</p>
+
+<p class="downloadButton"><a href="doc/sm3603_0.pdf">Sound Player User
+Manual</a></p>
+<p class="alignR"><a href="#menu" alt="back to top">back to top</a></p>
+</div>
+
+<div id="sm36031">
+<p><img alt="screenshot" src="image/sm3603_1.jpg" height="200" width="300"></p>
+
+<h2>Natural Painter: Interactive Application</h2>
+
+<h4>semester B, 2009/2010</h4>
+
+<p>The demo program is aim to provide an alternative for drawing control. It
+captures the user motion from the camera and uses it to select among different
+drawing tools and indicating the start and end of applying tools. User also
+uses a real object to position the drawing tools, which is done by tracking the
+color of the object on the frame. The color used to paint can also be obtained
+from a real object in the environment. The resulting control of this program is
+all natural. But currently it has the weakness of limited precision and
+lighting and background dependent.</p>
+
+<p>User manual can be viewed from the link below:</p>
+
+<p class="downloadButton"><a href="doc/sm3603_1.pdf">Download
+Documentation</a></p>
+<p class="alignR"><a href="#menu" alt="back to top">back to top</a></p>
+</div>
+
+<div id="sm36032">
+<p><img alt="screeenshot" src="image/sm3603_2.jpg" height="200" width="300"></p>
+
+<h2>Plant: Interactive Application</h2>
+
+<h4>semester B, 2009/2010</h4>
+
+<p>Plant is an interesting interface/application that I created based on FLAR
+tool kit and papervisiond3D library. User can use two printed markers to
+control the menu selection and place different virtual objects around. The
+apple tree marker can be used to select menu by tilting and rotation. The other
+is to locate the virtual objects in an arbitrary position. </p>
+
+<p>Documentation including user control and insights:</p>
+
+<p class="downloadButton"><a href="doc/sm3603_2.pdf">Natural Painter
+Report</a></p>
+
+<p class="alignR"><a href="#menu" alt="back to top">back to top</a></p>
+</div>
+
+<div id="cs3343">
+<p><img alt="screenshot of the web application" src="image/cs3343.jpg"
+height="200" width="300"></p>
+
+<h2>After School: Web Application (Group Work)</h2>
+
+<h4>semester B, 2009/2010</h4>
+
+<p>After School is a web application for children to communicate with drawings.
+It is more like a virtual community for kids, where they can draw online and
+share their drawings with their friends. This is a group project of the
+software engineering class. If you want to have a look at it, visit the link
+below (might be removed):</p>
+
+<p class="downloadButton"><a
+href="http://www4.u-file.net/sd2/afterschool.html">After School Website</a></p>
+<p class="alignR"><a href="#menu" alt="back to top">back to top</a></p>
+</div>
+
+<div id="cs4182">
+<p><a href="#ufoPlayer" alt="video of VJ performance" onClick="playUFO('cs4182','http://www.youtube.com/v/xKp-c9FE0WE');">
+<img alt="screeenshot" src="image/cs4182.jpg" height="200" width="300"></a></p>
+
+<h2><a href="#ufoPlayer" alt="video of VJ performance" onClick="playUFO('cs4182','http://www.youtube.com/v/xKp-c9FE0WE');">
+Box 2 Box: OpenGL Game</a></h2>
+<h4>semester B, 2009/2010</h4>
+
+<p>Box 2 Box is a simple 3D game, an OpenGL program with a virtual room and a
+character, Sponge Bob. His goal is to change the dull boxes around him all into
+his friends. Because I wrote it just to get familiar with OpenGL and it is
+written within a week, so there is actually no end of the game. You can find
+the program and its source code in the link below. The game control is stated
+in the readme.txt file</p>
+
+<p class="downloadButton"><a href="games/box2box.zip">B2B Program Code</a></p>
+<p class="alignR"><a href="#menu" alt="back to top">back to top</a></p>
+</div>
+
+
+
+<div id="sm3607">
+<p><img alt="screenshot of pitapat" src="image/sm3607a.jpg"
+height="200" width="300"></p>
+
+<p><img alt="another screenshot of pitapat" src="image/sm3607b.jpg"
+height="200" width="300"></p>
+
+<h2>Pitapat: Android App</h2>
+
+<h4>semester A, 2010/2011</h4>
+
+<p align="left">In Pitapat, you build your own robot from the very basic  blocks and cells and control the driver to defend your neighborhood. Sensors  add exciting game control possibilities to the Android platform. Touch and drag  to add building blogs and attach weapons on them. But be careful not to let  your robot collapse. The phone orientation determines the orientation of  gravity in the robot builder. While you are during a fight, rotation of the  phone also drives the robot forward or backward, just like the turning of the  wheel of a car; everything is designed to make the players feel themselves like  real robot drivers and add to tensions.</p>
+<p align="left">Pitapat uses andengine as game engine. It is one of my  Android apps written and designed during the learning of Android API.</p>
+<p>&nbsp;</p>
+<p class="alignR"><a href="#menu" alt="back to top">back to top</a></p>
+</div>
+
+
+
+
+<div id="sm4280">
+<p><img alt="screenshot of the web application" src="image/sm4280.jpg"
+height="200" width="300"></p>
+
+<h2><a href="games/chessparadox.exe">The Chess Paradox: 3D Game</a></h2>
+
+<h4>semester B, 2010/2011</h4>
+
+<p>The Chess Paradox is an interactive artwork as well as a 3D game. Player will find himself in a perception puzzle. S/he is re-entering the same scene over and over again by climbing leddars. The sense of distortion is enhanced by continuing a logical game, chess playing. The paradox is a result of players' inability to interpret the spatial structure of the chess scene.</p>
+<p>Use mouse and up, down, right, left keys to control the game, and Space key to restart.</p>
+
+<p class="downloadButton"><a href="games/chessparadox.exe">Download Game</a></p>
+<p class="downloadButton"></p>
+<p class="alignR"><a href="#menu" alt="back to top">back to top</a></p>
+</div>
+
+
+
+
+<div id="cs4280">
+<p><img alt="screenshot of the web application" src="image/cs4280.jpg"
+height="200" width="300"></p>
+
+<h2>Cinema Ticketing System: Web Application (Group Work)</h2>
+
+<h4>semester B, 2010/2011</h4>
+
+<p>Our ticketing  system is a complete, robust and user friendly ticketing system for movie theater  chains. Customers can purchase the tickets as members or non-members. And  ticket officers and managers can use it to manage seat plans, shows, purchases  and refunding easily. It also supports error handling, concurrent processing,  authorization and security.</p>
+<p>The project  follows MVC model 2 design pattern and is implemented using JSP, Servlet and  Java Beans.</p>
+<p class="downloadButton"><a href="image/diagrams.jpg">Framework and ER Diagram</a></p>
+<p class="downloadButton"></p>
+<p class="alignR"><a href="#menu" alt="back to top">back to top</a></p>
+</div>
+
+
+<div id="sm4601">
+<p><img alt="screenshot of the web application" src="image/draft2.jpg"
+height="200" width="300"></p>
+
+<h2>InfoPlanet: Final Year Project</h2>
+
+<h4>2010/2011</h4>
+
+<p align="left">InfoPlanet visualizes a semantic web that  results from users searching on a specific term. This technique helps people  explore a dictionary of semantic relationships and discover a set of terms  related to their search term. The objectives of the project include the  adaptation of suitable ontology to support modeling of general concepts on the  web and make those concepts suitable for visual display, the storage and  retrieval of those interactively updated concepts based on semantic analytics,  and the design of an optimized user interface that enables serendipity and  exploration of search terms.</p><p>
+  InfoPlanet derives ontological and knowledge  base information from WordNet, a lexical database, and ConceptNet, a  commonsense reasoning system, and integrates its own rules to store  interconnected concepts. These concepts can be retrieved interactively to a  meta-search module to provide interpretation of what the user is looking for  and prediction of what the user might be interested in. It also collects user  interaction data and gradually learns the semantic relationships among  interconnected concepts.</p><p>
+  Semantic search involves contextual meaning  of words and complex motivations of web users, and thus constantly needs  verification or clarification from users. Visualization of search query may  help to minimize users' effort in such a process. In InfoPlanet, concepts and  relationships are shown in a composite graph that combines a space tree with a  radial graph. Using InfoPlanet makes searches more effective and enhances the  knowledge base of InfoPlanet through successful searches.</p>
+<p>&nbsp;</p>
+
+<p class="downloadButton"><a href="http://sweb.cityu.edu.hk/danli3/portfolio/blog.html">Project Blog</a></p>
+<br>
+<p class="downloadButton"><a href="http://144.214.121.62/infoplanet/">Project Website</a></p>
+<p class="downloadButton"></p>
+<p class="alignR"><a href="#menu" alt="back to top">back to top</a></p>
+</div>
+
+
+<div id="hcde518">
+<p>
+<a href="#ufoPlayer" title="click to see the prototype" alt="click to view the prototype" onClick="playUFO('hcde518','games/prototype_v3.swf');">
+<img alt="screenshot of the web application" src="image/hcde518.jpg"
+height="200" width="300"></a></p>
+
+<h2>Easyconnect: UX Design, Prototype (Group Work)</h2>
+
+<h4>fall quarter, 2011/2012</h4>
+
+<p>Keeping in touch with friends and family members is  important. There is no single best way to stay connected. Finding the time in  our busy lives can make communication difficult. Sometimes a phone call or a  video chat is ideal. Other times email or a text message is more convenient.  Choosing from an increasing number of technologies that attempt to help people  stay in touch can be overwhelming. </p><p>
+  In our user research, people frequently cited the inability  to identify when was a good time to contact their friends and family as the  main challenge preventing synchronous communication. Due to the inability to  identify these windows of opportunity, they were more likely to engage in  asynchronous forms of communication, such as email and Facebook. However, they  felt that synchronous interactions were more meaningful. Video chat was cited  as one of the experiences that made them feel most connected as there are  visual cues in face and body language; however, the challenges presented by  unstable connections and poor video quality prevents most people from using  video chat.</p>
+<p>
+  How can we create an entertainment and communication system  for the home to increase a sense of connectedness through a fusion of real-time  (synchronous) and non-real-time (asynchronous) interactions with friends and  family living outside the home?</p>
+<p class="downloadButton"><a href="doc/hcde518.pdf" alt="design specification">Design Specification</a></p>
+<p class="alignR"><a href="#menu" alt="back to top">back to top</a></p>
+</div>
+
+<div id="hcde598">
+<p><img alt="screenshot of the web application" src="image/hcde598.jpg"
+height="200" width="300"></p>
+
+<h2>Automobile Navigation System: UX Design, Prototype (Current)</h2>
+
+<h4>winter quarter, 2011/2012</h4>
+
+<p><strong>Team</strong>: Hang Yu &amp; Laura Li&nbsp;<br>
+  <strong>Captive Audience</strong>: Drivers Captor: Automobile&nbsp;<br>
+  <strong>Goals</strong>: Less distraction, Less map reading, Quick and easy destination setup</p>
+<p align="left">Have you ever fussed with a GPS system that keeps giving you confusing and annoying instructions? Or perhaps you don&rsquo;t even use your GPS very often for this very reason. Here is your solution. The Seamless Navigation System (SNAV) is designed to give directions to drivers with less distraction, less map reading, and quick and easy destination setup, so you can stop fussing with your GPS and get to your destination.</p>
+<p align="left"> <strong>Design principles:</strong>&nbsp;<br>
+  The basic design principle of&nbsp;SNAV&nbsp;is to create a seamless navigation system. This&nbsp;can be&nbsp;achieved, according to our&nbsp;ethnographic and theoretical research, through reducing cognitive workloads and employing direct manipulation. The level of directness is the distance between the domain object, which is&nbsp;the navigation of&nbsp;the car, and the instrument that operates on it, which can either be physical or UI components.&nbsp;In our case,&nbsp;we try to take advantage of&nbsp;multiple input modalities, including visual signals, graphical UI, and&nbsp;voice guidance, to increase usability and reinforce the meanings of representations of system states. Conscious actions&nbsp;can be&nbsp;transformed into subconscious operations through repeating the actions and finally learning to do it without too much thinking. We also recognize the importance of system transparency through a competitive research on similar GPS systems.&nbsp;&nbsp;"[Transparency] would say that there is nothing in the state of the system that cannot be inferred from the display. If there are any modes, then these must have a visual indication; if there are any differences in behavior between the displayed shapes, then there must be some corresponding visual difference." </p>
+<p class="downloadButton"><a href="doc/hcde598.pdf" alt="design wireframes">Design Wireframes</a></p>
+<p class="downloadButton"><a href="http://sweb.cityu.edu.hk/danli3/portfolio/programming.html#hcde598" alt="design process">Design Process</a></p>
+<p class="alignR"><a href="#menu" alt="back to top">back to top</a></p>
+</div>
+
+</div>
+</div>
+
+<div id="credit">
+Copyright &#169; Laura Li. All Rights Reserved.
+<a href="mailto:tobelaura@gmail.com">tobelaura@gmail.com</a></div>
+</div>
+<!-- the footer -->
+
+<div id="footer">
+<img alt="footer image" src="img/foot.jpg"> </div>
+</div>
+</body>
+</html>
