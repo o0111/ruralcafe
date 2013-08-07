@@ -393,7 +393,6 @@ namespace RuralCafe
             {
                 Logger.Debug("Redirected: Also packing old URI with a 301 file.");
                 RCRequest rc301 = new RCRequest(this, (HttpWebRequest)WebRequest.Create(rcRequest.UriBeforeRedirect));
-                rc301.DownloadToCache();
                 _package.Pack(this, rc301, ref _quota);
             }
 

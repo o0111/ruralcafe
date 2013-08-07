@@ -79,6 +79,7 @@ Bugs
 - Unpack bug !?
 	- http://ros.org/wiki/tf 
 - Trotro
+  - When clicking next on either local or google results, the other results should not be loaded again.
   - needs F5 to show page is ready sometimes (can't reproduce this...)
   - always opens in first tab! 
   - Login mechanism does not work correct

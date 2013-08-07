@@ -63,11 +63,6 @@ namespace RuralCafe
         private RCProxy _proxy;
 
         /// <summary>
-        /// The database context
-        /// </summary>
-        private RCDatabaseEntities _databaseContext;
-
-        /// <summary>
         /// An object to lock cache access internally.
         /// </summary>
         private object _lockObj = new object();
@@ -377,17 +372,46 @@ namespace RuralCafe
         /// <returns>If the item is cached.</returns>
         public bool IsCached(string httpMethod, string uri)
         {
-            // FIXME
-            try
+            return IsCached(httpMethod, uri, GetNewDatabaseContext());
+        }
+
+        /// <summary>
+        /// Adds a cache item to the database. The file is assumed to exist already.
+        /// </summary>
+        /// <param name="url">The URL.</param>
+        /// <param name="httpMethod">The HTTP Method.</param>
+        /// <param name="headers">The headers.</param>
+        /// <param name="statusCode">The status code.</param>
+        /// <returns>True for success and false for failure.</returns>
+        public bool AddCacheItemForExistingFile(string url, string httpMethod,
+            NameValueCollection headers, short statusCode)
+        {
+            string relFileName = GetRelativeCacheFileName(url);
+
+            // locked: if exists return else create DB entry
+            lock (_lockObj)
             {
-                return (from gci in _databaseContext.GlobalCacheItem
-                        where gci.httpMethod.Equals(httpMethod) && gci.url.Equals(uri)
-                        select 1).Count() != 0;
+                RCDatabaseEntities databaseContext = GetNewDatabaseContext();
+
+                if (IsCached(httpMethod, url, databaseContext))
+                {
+                    _proxy.Logger.Debug("Already exists: " + httpMethod + " " + url);
+                    return true;
+                }
+
+                // Add database entry.
+                try
+                {
+                    AddCacheItemToDatabase(url, httpMethod, headers, statusCode, relFileName, databaseContext);
+                    databaseContext.SaveChanges();
+                }
+                catch (Exception e)
+                {
+                    _proxy.Logger.Error("Could not add cache item to the database.", e);
+                    return false;
+                }
             }
-            catch (Exception)
-            {
-                return true;
-            }
+            return true;
         }
 
         /// <summary>
@@ -399,35 +423,18 @@ namespace RuralCafe
         /// <returns>True for success and false for failure.</returns>
         public bool AddCacheItem(HttpWebResponse webResponse)
         {
-            string relFileName = GetRelativeCacheFileName(webResponse.ResponseUri.ToString());
+            string url = webResponse.ResponseUri.ToString();
+            string httpMethod = webResponse.Method;
+            NameValueCollection headers = webResponse.Headers;
+            short statusCode = (short)webResponse.StatusCode;
 
-            // locked: if exists return else create DB entry
-            lock (_lockObj)
+            // Add file to the database
+            // calling "for existing file" is a bit misleading, as the file
+            // actually does not exist yet.
+            if (!AddCacheItemForExistingFile(url, httpMethod, headers, statusCode))
             {
-                string url = webResponse.ResponseUri.ToString();
-                string httpMethod = webResponse.Method;
-                NameValueCollection headers = webResponse.Headers;
-                short statusCode = (short)webResponse.StatusCode;
-
-                if (IsCached(httpMethod, url))
-                {
-                    _proxy.Logger.Debug("Already exists: " + httpMethod + " "  + url);
-                    return true;
-                }
-
-                // Add database entry.
-                try
-                {
-                    AddCacheItemToDatabase(url, httpMethod, headers, statusCode, relFileName);
-                    _databaseContext.SaveChanges();
-                }
-                catch (Exception e)
-                {
-                    _proxy.Logger.Error("Could not add cache item to the database.", e);
-                    return false;
-                }
+                return false;
             }
-
             // Add file to the disk
             return AddCacheItemToDisk(webResponse);
         }
@@ -441,10 +448,11 @@ namespace RuralCafe
         {
             lock(_lockObj)
             {
+                RCDatabaseEntities databaseContext = GetNewDatabaseContext();
                 try
                 {
-                    RemoveCacheItemFromDatabase(httpMethod, uri);
-                    _databaseContext.SaveChanges();
+                    RemoveCacheItemFromDatabase(httpMethod, uri, databaseContext);
+                    databaseContext.SaveChanges();
                 }
                 catch (Exception e)
                 {
@@ -460,17 +468,20 @@ namespace RuralCafe
         #endregion
         #region cache file manipulation
 
-        // TODO remove this, and add something like addRedirCacheItem or addEmptyCacheItem
         /// <summary>
-        /// Adds a cache item, and saves a string in it.
+        /// Adds a file and writes content into it.
+        /// 
+        /// This method should be used, when a file a created prior to adding it to the
+        /// database, e.g. for 301s or when Unpacking. Then, AddCacheItemForExistingFile should
+        /// be called later.
+        /// 
+        /// When a WebResponse for the content is available, this method should not be used!
         /// </summary>
         /// <param name="fileName">The absolute filename of the cache item.</param>
         /// <param name="content">The content to store.</param>
-        public void AddCacheItem(string fileName, string content)
+        public void CreateFileAndWrite(string fileName, string content)
         {
-            // XXX Just for debugging
             Utils.CreateDirectoryForFile(fileName);
-
             using (StreamWriter sw = new StreamWriter(File.Open(fileName, FileMode.Create), Encoding.UTF8))
             {
                 sw.Write(content);
@@ -548,6 +559,15 @@ namespace RuralCafe
         #endregion
         #region cache database
 
+        private RCDatabaseEntities GetNewDatabaseContext()
+        {
+            // Create context and modify connection string to point to our DB file.
+            RCDatabaseEntities result = new RCDatabaseEntities();
+            result.Database.Connection.ConnectionString =
+                String.Format("data source=\"{0}\"", _proxy.ProxyPath + DATABASE_FILE_NAME);
+            return result;
+        }
+
         /// <summary>
         /// Tries to create a new database by copying the empty one and filling it from the cache.
         /// Any exceptions are forewarded.
@@ -570,11 +590,6 @@ namespace RuralCafe
         private bool InitializeDatabase()
         {
             string dbFile = _proxy.ProxyPath + DATABASE_FILE_NAME;
-            // Create context and modify connection string to point to our DB file.
-            _databaseContext = new RCDatabaseEntities();
-            _databaseContext.Database.Connection.ConnectionString =
-                String.Format("data source=\"{0}\"", dbFile);
-
             if (!File.Exists(dbFile))
             {
                 _proxy.Logger.Debug("No database file found.");
@@ -629,33 +644,34 @@ namespace RuralCafe
         /// <returns>True for a valid DB file, false otherwise.</returns>
         private bool CheckDatabaseIntegrityAndRepair()
         {
+            RCDatabaseEntities databaseContext = GetNewDatabaseContext();
             // See if all tables exist
-            //IEnumerable<string> names = _databaseContext.Database.SqlQuery<string>(
-            //    "SELECT name FROM sqlite_master WHERE type='table'");
-            //foreach (string tableName in DB_SCHEMA.Keys)
-            //{
-            //    if (!names.Contains(tableName))
-            //    {
-            //        _proxy.Logger.Warn(tableName + " table is missing in the database. Will create a new database.");
-            //        return false;
-            //    }
-            //    // See if all columns exist
-            //    string sql = _databaseContext.Database.SqlQuery<string>(
-            //        String.Format("SELECT sql FROM sqlite_master WHERE type='table' AND name='{0}'",
-            //        tableName)).FirstOrDefault();
-            //    foreach(string colName in DB_SCHEMA[tableName])
-            //    {
-            //        if (!sql.Contains(colName))
-            //        {
-            //            // XXX: If we add columns later, we might want to do an
-            //            // ALTER TABLE here, instead of returning false.
-            //            // Be aware that sqlite is different in regards of adding columns!
-            //            _proxy.Logger.Warn(tableName + " table is missing column " +
-            //                colName + " in the database. Will create a new database.");
-            //            return false;
-            //        }
-            //    }
-            //}
+            IEnumerable<string> tableNames = databaseContext.Database.SqlQuery<string>(
+                "SELECT table_name FROM information_schema.tables WHERE table_type <> 'VIEW'");
+            foreach (string tableName in DB_SCHEMA.Keys)
+            {
+                if (!tableNames.Contains(tableName))
+                {
+                    _proxy.Logger.Warn(tableName + " table is missing in the database. Will create a new database.");
+                    return false;
+                }
+                // See if all columns exist
+                IEnumerable<string> colNames = databaseContext.Database.SqlQuery<string>(
+                    String.Format("SELECT column_name FROM information_schema.columns WHERE table_name='{0}'",
+                    tableName));
+                foreach(string colName in DB_SCHEMA[tableName])
+                {
+                    if (!colNames.Contains(colName))
+                    {
+                        // XXX: If we add columns later, we might want to do an
+                        // ALTER TABLE here, instead of returning false.
+                        // Be aware that sqlite is different in regards of adding columns!
+                        _proxy.Logger.Warn(tableName + " table is missing column " +
+                            colName + " in the database. Will create a new database.");
+                        return false;
+                    }
+                }
+            }
             return true;
         }
 
@@ -675,6 +691,7 @@ namespace RuralCafe
             }
 
             _proxy.Logger.Warn("Creating new database, but the cache is not empty. Filling database with cache data...");
+            RCDatabaseEntities databaseContext = GetNewDatabaseContext();
             // Iterate through all files and fill the database
             foreach (string file in files)
             {
@@ -682,27 +699,28 @@ namespace RuralCafe
                 // We cannot recover the headers
                 string uri = AbsoluteFilePathToUri(file);
                 string relFileName = file.Substring(_cachePath.Length);
-                AddCacheItemToDatabase(uri, "GET", new NameValueCollection(), 200, relFileName);
+                AddCacheItemToDatabase(uri, "GET", new NameValueCollection(), 200, relFileName, databaseContext);
                 _proxy.Logger.Debug(String.Format("Adding {0} to the database.", file));
             }
 
             // Save
             _proxy.Logger.Debug("Saving database.");
-            _databaseContext.SaveChanges();
+            databaseContext.SaveChanges();
         }
 
         /// <summary>
         /// Adds a new cache item to the database. Throws an exception if anything goes wrong.
         /// 
-        /// _databaseContext.SaveChanges() still needs to be called.
+        /// databaseContext.SaveChanges() still needs to be called.
         /// </summary>
         /// <param name="url">The url.</param>
         /// <param name="httpMethod">The HTTP method.</param>
         /// <param name="headers">The headers.</param>
         /// <param name="statusCode">The status code.</param>
         /// <param name="relFileName">The relative file name.</param>
+        /// <param name="databaseContext">The database context</param>
         private void AddCacheItemToDatabase(string url, string httpMethod,
-            NameValueCollection headers, short statusCode, string relFileName)
+            NameValueCollection headers, short statusCode, string relFileName, RCDatabaseEntities databaseContext)
         {
             string headersJson = JsonConvert.SerializeObject(headers,
                 Formatting.None, new NameValueCollectionConverter());
@@ -718,7 +736,7 @@ namespace RuralCafe
             cacheItem.statusCode = statusCode;
             cacheItem.filename = relFileName; // TODO sth. else?
             // add item
-            _databaseContext.GlobalCacheItem.Add(cacheItem);
+            databaseContext.GlobalCacheItem.Add(cacheItem);
 
             // create rc data item
             GlobalCacheRCData rcData = new GlobalCacheRCData();
@@ -732,33 +750,49 @@ namespace RuralCafe
             rcData.downloadTime = File.Exists(_cachePath + relFileName) ?
                 File.GetLastWriteTime(_cachePath + relFileName) : DateTime.Now;
             // add item
-            _databaseContext.GlobalCacheRCData.Add(rcData);
+            databaseContext.GlobalCacheRCData.Add(rcData);
         }
 
         /// <summary>
         /// Removes an cache item from both DB tables.
         /// 
-        /// _databaseContext.SaveChanges() still needs to be called.
+        /// databaseContext.SaveChanges() still needs to be called.
         /// </summary>
         /// <param name="httpMethod">The used HTTP method.</param>
         /// <param name="uri">The URI.</param>
-        private void RemoveCacheItemFromDatabase(string httpMethod, string uri)
+        /// <param name="databaseContext">The database context</param>
+        private void RemoveCacheItemFromDatabase(string httpMethod, string uri, RCDatabaseEntities databaseContext)
         {
-            IQueryable<GlobalCacheItem> gciQuery = from gci in _databaseContext.GlobalCacheItem 
+            IQueryable<GlobalCacheItem> gciQuery = from gci in databaseContext.GlobalCacheItem 
                         where gci.httpMethod.Equals(httpMethod) && gci.url.Equals(uri)
                         select gci;
             foreach(GlobalCacheItem gci in gciQuery)
             {
-                _databaseContext.GlobalCacheItem.Remove(gci);
+                databaseContext.GlobalCacheItem.Remove(gci);
             }
 
-            IQueryable<GlobalCacheRCData> rcQuery = from rci in _databaseContext.GlobalCacheRCData
+            IQueryable<GlobalCacheRCData> rcQuery = from rci in databaseContext.GlobalCacheRCData
                                                   where rci.httpMethod.Equals(httpMethod) && rci.url.Equals(uri)
                                                   select rci;
             foreach (GlobalCacheRCData rci in rcQuery)
             {
-                _databaseContext.GlobalCacheRCData.Remove(rci);
+                databaseContext.GlobalCacheRCData.Remove(rci);
             }
+        }
+
+        /// <summary>
+        /// Checks whether an item is cached. Only the DB is being used,
+        /// the disk contens are not ebing looked at.
+        /// </summary>
+        /// <param name="httpMethod">The used HTTP method.</param>
+        /// <param name="uri">The URI.</param>
+        /// <param name="databaseContext">The database context.</param>
+        /// <returns>If the item is cached.</returns>
+        private bool IsCached(string httpMethod, string uri, RCDatabaseEntities databaseContext)
+        {
+            return (from gci in databaseContext.GlobalCacheItem
+                    where gci.httpMethod.Equals(httpMethod) && gci.url.Equals(uri)
+                    select 1).Count() != 0;
         }
 
         #endregion

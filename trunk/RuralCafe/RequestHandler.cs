@@ -568,6 +568,7 @@ namespace RuralCafe
                 return -1;
             }
 
+            // FIXME why does that fail now?
             // XXX: We're reading the content so we can redirect if there is a 301 in the file.
             // As soon as metadata will be included somehow, this won't be necessary any more.
             // Then remove this! Reading the file twice is bad!
