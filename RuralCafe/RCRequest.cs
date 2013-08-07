@@ -43,10 +43,6 @@ namespace RuralCafe
         private string _contentSnippet;
         [JsonProperty]
         private string _refererUri;
-        [JsonProperty]
-        private string _fileName;
-        [JsonProperty]
-        private string _hashPath;
         // hashPath without the directory seperators
         [JsonProperty]
         private string _requestId;
@@ -115,22 +111,10 @@ namespace RuralCafe
             get { return _refererUri; }
         }
         /// <summary>The file name of the object.</summary>
-        public string FileName
-        {
-            set { _fileName = value; }
-            get { return _fileName; }
-        }
-        /// <summary>The file name of the object.</summary>
         public string PackageFileName
         {
             set { _packageFileName = value; }
             get { return _packageFileName; }
-        }
-        /// <summary>The hashed file name of the object.</summary>
-        public string HashPath
-        {
-            set { _hashPath = value; }
-            get { return _hashPath; }
         }
         /// <summary>The itemId of the object.</summary>
         public string RequestId
@@ -140,7 +124,6 @@ namespace RuralCafe
         /// <summary>The file name of the object if it is cached.</summary>
         public string CacheFileName
         {
-            set { _cacheFileName = value; }
             get { return _cacheFileName; }
         }
         /// <summary>The status of this request.</summary>
@@ -234,11 +217,15 @@ namespace RuralCafe
             _webRequest.Referer = _refererUri;
             _body = body;
 
-            _fileName = CacheManager.UriToFilePath(_webRequest.RequestUri.ToString());
-            _hashPath = CacheManager.GetHashPath(_fileName);
-            _requestId = _hashPath.Replace(Path.DirectorySeparatorChar.ToString(), "");
-            _cacheFileName = requestHandler.GenericProxy.CachePath + _hashPath + _fileName;
-            _packageFileName = requestHandler.GenericProxy.PackagesPath + _hashPath + _fileName + ".gzip";
+            string fileName = CacheManager.UriToFilePath(_webRequest.RequestUri.ToString());
+            string hashPath = CacheManager.GetHashPath(fileName);
+            _requestId = hashPath.Replace(Path.DirectorySeparatorChar.ToString(), "");
+
+            // Cache file name like ./GET/2876/627/...
+            _cacheFileName = requestHandler.GenericProxy.CachePath + request.Method
+                + Path.DirectorySeparatorChar + hashPath + fileName;
+
+            _packageFileName = requestHandler.GenericProxy.PackagesPath + hashPath + fileName + ".gzip";
             _fileSize = 0;
 
             _requestHandler = requestHandler;
@@ -402,14 +389,13 @@ namespace RuralCafe
 
                     // have to save to the new cache file location
                     string uri = _webResponse.ResponseUri.ToString();
-                    _fileName = CacheManager.UriToFilePath(uri);
-                    _hashPath = CacheManager.GetHashPath(_fileName);
-                    _cacheFileName = _requestHandler.GenericProxy.CachePath + _hashPath + _fileName;
+                    _cacheFileName = _requestHandler.GenericProxy.CachePath +
+                        CacheManager.GetRelativeCacheFileName(uri, _webResponse.Method);
 
-                    if (cacheManager.IsCached(_webResponse.Method, _webResponse.ResponseUri.ToString()))
+                    if (cacheManager.IsCached(_webResponse.Method, uri))
                     {
                         _requestHandler.Logger.Debug("Already exists: " +
-                            _webResponse.Method + " " + _webResponse.ResponseUri);
+                            _webResponse.Method + " " + uri);
                         return true;
                     }
                 }

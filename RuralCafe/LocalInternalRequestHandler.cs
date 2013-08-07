@@ -642,8 +642,7 @@ namespace RuralCafe
             Uri targetUri = new Uri(refUri, url);
 
             // Test if url is cached.
-            string filePath = Proxy.CachePath + CacheManager.GetRelativeCacheFileName(targetUri.AbsoluteUri);
-            if (IsCached(filePath))
+            if (Proxy.ProxyCacheManager.IsCached("GET", targetUri.ToString()))
             {
                 suggestionsXml.InnerText = LINK_SUGGESTIONS_CACHED_TEXT;
             }

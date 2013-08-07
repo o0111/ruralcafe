@@ -158,7 +158,9 @@ namespace RuralCafe.Lucenenet
                 Document doc = searcher.Doc(docId);
 
                 // Read the whole file from the cache to find the content snippet.
-                string filepath = CacheManager.GetRelativeCacheFileName(doc.Get("uri"));
+                // XXX: Maybe we should include the httpMethod also into lucene
+                // and not just assume, that this is a GET
+                string filepath = CacheManager.GetRelativeCacheFileName(doc.Get("uri"), "GET");
                 string documentContent = Utils.ReadFileAsString(cachePath + filepath);
 
                 // Remove unusable stuff.
