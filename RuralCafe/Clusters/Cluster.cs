@@ -19,23 +19,23 @@ namespace RuralCafe.Clusters
     public static class Cluster
     {
         // XML name constants
-        public const string CLUSTERS_XML_NAME = "clusters";
-        public const string CLUSTERS_NUMBEROFCLUSTERS_XML_NAME = "numberOfClusters";
-        public const string CLUSTERS_HIERARCHICAL_XML_NAME = "hierarchical";
-        public const string PARENT_CLUSTER_XML_NAME = "category";
-        public const string CLUSTER_XML_NAME = "subcategory";
-        public const string CLUSTER_ID_XML_NAME = "id";
-        public const string CLUSTER_FEATURES_XML_NAME = "title";
-        public const string CLUSTER_SIZE_XML_NAME = "size";
-        public const string CLUSTER_FEATURES_JOIN_STRING = ", ";
-        public const string ITEM_XML_NAME = "item";
-        public const string ITEM_URL_XML_NAME = "url";
-        public const string ITEM_TITLE_XML_NAME = "title";
-        public const string ITEM_SNIPPET_XML_NAME = "snippet";
-        public const string INDEX_CATEGORIES_XML_NAME = "categories";
-        public const string INDEX_LEVEL_XML_NAME = "level";
-        public const string INDEX_ONLY_LEAF_CHILDS_TITLE = "Other";
-        public const string INDEX_ONLY_LEAF_CHILDS_TROTRO_ID = "null";
+        private const string CLUSTERS_XML_NAME = "clusters";
+        private const string CLUSTERS_NUMBEROFCLUSTERS_XML_NAME = "numberOfClusters";
+        private const string CLUSTERS_HIERARCHICAL_XML_NAME = "hierarchical";
+        private const string PARENT_CLUSTER_XML_NAME = "category";
+        private const string CLUSTER_XML_NAME = "subcategory";
+        private const string CLUSTER_ID_XML_NAME = "id";
+        private const string CLUSTER_FEATURES_XML_NAME = "title";
+        private const string CLUSTER_SIZE_XML_NAME = "size";
+        private const string CLUSTER_FEATURES_JOIN_STRING = ", ";
+        private const string ITEM_XML_NAME = "item";
+        private const string ITEM_URL_XML_NAME = "url";
+        private const string ITEM_TITLE_XML_NAME = "title";
+        private const string ITEM_SNIPPET_XML_NAME = "snippet";
+        private const string INDEX_CATEGORIES_XML_NAME = "categories";
+        private const string INDEX_LEVEL_XML_NAME = "level";
+        private const string INDEX_ONLY_LEAF_CHILDS_TITLE = "Other";
+        private const string INDEX_ONLY_LEAF_CHILDS_TROTRO_ID = "null";
 
         /// Regex's for docfile creation replacement
         private static readonly Regex newlineRegex = new Regex(@"\r\n|\n|\r");
@@ -47,6 +47,7 @@ namespace RuralCafe.Clusters
         private static readonly string VCLUSTERS_PATH =
             Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar +
             "Clusters" + Path.DirectorySeparatorChar + "vcluster.exe";
+
         /// <summary>
         /// Path to dict.txt
         /// </summary>
@@ -54,22 +55,42 @@ namespace RuralCafe.Clusters
             Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar +
             "Clusters" + Path.DirectorySeparatorChar + "dict.txt";
         /// <summary>
+        /// Path to blacklist.txt
+        /// </summary>
+        private static readonly string BLACKLIST_PATH =
+            Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar +
+            "Clusters" + Path.DirectorySeparatorChar + "blacklist.txt";
+        /// <summary>
+        /// <summary>
         /// A dictionary of the english language. Used as a whitelist for the clustering.
         /// </summary>
         private static HashSet<string> _dictionary = new HashSet<string>();
+        /// <summary>
+        /// The blacklist words for clustering.
+        /// </summary>
+        private static HashSet<string> _blacklist = new HashSet<string>();
 
         /// <summary>
-        /// Static Constructor. Fills the _dictionary.
+        /// Static Constructor. Fills _dictionary and _blacklist.
         /// </summary>
         static Cluster()
         {
-            FileInfo f = new FileInfo(DICT_PATH);
-            using (FileStream fs = f.Open(FileMode.Open, FileAccess.Read))
+            FileInfo dict = new FileInfo(DICT_PATH);
+            using (FileStream fs = dict.Open(FileMode.Open, FileAccess.Read))
             using (StreamReader r = new StreamReader(fs))
             {
                 while (!r.EndOfStream)
                 {
                     _dictionary.Add(r.ReadLine());
+                }
+            }
+            FileInfo bl = new FileInfo(BLACKLIST_PATH);
+            using (FileStream fs = bl.Open(FileMode.Open, FileAccess.Read))
+            using (StreamReader r = new StreamReader(fs))
+            {
+                while (!r.EndOfStream)
+                {
+                    _blacklist.Add(r.ReadLine());
                 }
             }
         }
@@ -111,15 +132,13 @@ namespace RuralCafe.Clusters
                     string[] words = content.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
                     foreach (string word in words)
                     {
-                        if (_dictionary.Contains(word.ToLower()))
+                        // Use all words in the dictionary that are not blacklisted
+                        if (_dictionary.Contains(word.ToLower()) && !_blacklist.Contains(word.ToLower()))
                         {
                             builder.Append(word).Append(' ');
                         }
                     }
                     content = builder.ToString();
-                    // Remove words not starting with a alphabetic char and URLs (not necessary if dict is used)
-                    // content = wordsStartingInvalidRegex.Replace(content, "");
-                    // content = httpStartingRegex.Replace(content, "");
 
                     // Write content in a new line to docfile
                     docFileWriter.WriteLine(content);

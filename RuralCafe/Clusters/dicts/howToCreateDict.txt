@@ -1,0 +1,5 @@
+http://jasonschaefer.com/creating-a-custom-wordlist-for-john-the-ripper/
+
+cat /usr/share/dict/american-english* >> custom-wordlist (or different)
+tr A-Z a-z < custom-wordlist > custom-wordlist_lowercase
+sort -u custom-wordlist_lowercase > custom-wordlist_lowercase_nodups

@@ -326,8 +326,7 @@ namespace RuralCafe
         /// <summary>
         /// Includes a download into the network speed statistics.
         /// </summary>
-        /// <param name="speedBS">The speed of the download.</param>
-        /// <param name="bytes">The bytes downloaded.</param>
+        /// <param name="results">The speed results.</param>
         public void IncludeDownloadInCalculation(NetworkUsageDetector.NetworkUsageResults results)
         {
             Logger.Debug(String.Format("Speed: {0} for {1} bytes in {2:0.00} seconds.",
@@ -381,13 +380,15 @@ namespace RuralCafe
             if (NetworkStatus == NetworkStatusCode.Online
                 && _networkSpeedBS < downThreshold)
             {
-                Logger.Info(String.Format("Speed is below {0}, switching to slow mode.", downThreshold));
+                Logger.Metric(String.Format("Speed is {0}, that is below {1}, switching to slow mode.",
+                    _networkSpeedBS, downThreshold));
                 NetworkStatus = NetworkStatusCode.Slow;
             }
             else if (NetworkStatus == NetworkStatusCode.Slow
                 && _networkSpeedBS > upThreshold)
             {
-                Logger.Info(String.Format("Speed is above {0}, switching to online mode.", upThreshold));
+                Logger.Metric(String.Format("Speed is {0}, that is above {1}, switching to online mode.",
+                    _networkSpeedBS,  upThreshold));
                 NetworkStatus = NetworkStatusCode.Online;
             }
         }
