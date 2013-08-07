@@ -1,11 +1,9 @@
-var timeToShowTooltipMs = 500;
+var timeToShowTooltipMs = 250;
 
 var suggestionRequest;	        //ajax request for retrieving suggestions
 var rcOpentips = {};            // all tooltips in a dictionary.
 var activeOpentip;              // if != null, this is the currently (or last) visible Opentip
 var activeLinkNumber = -1;      // The number of the link where the mouse is over or -1
-
-// TODO if the tooltip is above another link, you cannot click the links in the tooltip.
 
 // Saves that the mouse currently isn't above a link
 function clearActiveLinkNumber() {
@@ -43,7 +41,9 @@ function showSuggestions0(linknumber) {
     else {
         // Create new opentip, invisible until show() is called.
         activeOpentip = new Opentip("#rclink-trigger",
-            { target: "#rclink-"+linknumber, tipJoint: "bottom", hideTrigger: "closeButton", hideOn: "closeButton" });
+            { target: "#rclink-"+linknumber, tipJoint: "bottom",
+            hideTrigger: "closeButton", hideOn: "closeButton"
+            });
         // Save it in the cache
         rcOpentips[linknumber] = activeOpentip;
         // Show temporary loading message XXX show() ?
@@ -96,7 +96,7 @@ function showSuggestionsXML(xmlData, linknumber) {
     } else {
         // Search box
         var searchBoxValue = suggestions.getAttribute("anchorText");
-        rcHtml = '<form onsubmit="return rcSearchLocal(' + linknumber + ');" method="get" action="http://ruralcafe.net/result-offline.html">' +
+        rcHtml = '<form method="get" action="http://ruralcafe.net/result-offline.html">' +
             '<input id="rcsearch_input' + linknumber + '"   type="text" name="s" value="' + searchBoxValue + '">' +
             '<input type="submit" value="Search Locally">' +
             '</form><hr class="rclinksuggestion" />';
@@ -114,12 +114,4 @@ function showSuggestionsXML(xmlData, linknumber) {
     }
     
     rcOpentips[linknumber].setContent(rcHtml);
-}
-
-function rcSearchLocal(linknumber) {
-    // TODO if we want this to be opened in another tab we gotta return false and do sth else.
-    // TODO we only see the results frame, not the whole search page    
-    var searchStr = document.getElementById('rcsearch_input' + linknumber).value;
-    alert("http://ruralcafe.net/result-offline.html?s=" + searchStr);
-    return true;
 }

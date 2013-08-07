@@ -136,8 +136,8 @@ namespace RuralCafe
                     Proxy.Logger.QueryMetric(Proxy.SessionManager.GetUserId(ClientIP),
                         true, RefererUri, RequestUri);
 
-                    // Include link suggestions if we're offline for html pages
-                    if (Proxy.NetworkStatus == RCLocalProxy.NetworkStatusCode.Offline
+                    // Include link suggestions if we're not online for html pages
+                    if (Proxy.NetworkStatus != RCLocalProxy.NetworkStatusCode.Online
                         && Utils.GetContentTypeOfFile(_rcRequest.CacheFileName).Equals("text/html"))
                     {
                         string content = Utils.ReadFileAsString(_rcRequest.CacheFileName);

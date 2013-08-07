@@ -10,7 +10,7 @@ using System.Text;
 namespace RuralCafe.Json
 {
     /// <summary>
-    /// A converter that treats NameValueCollections as Dictionaries. Only for serialization.
+    /// A converter that treats NameValueCollections as Dictionaries.
     /// </summary>
     public class NameValueCollectionConverter : JsonConverter
     {
@@ -25,24 +25,26 @@ namespace RuralCafe.Json
         }
 
         /// <summary>
-        /// This class is only for serialization.
+        /// Reads the JSON.
         /// </summary>
         /// <param name="reader"></param>
         /// <param name="objectType"></param>
         /// <param name="existingValue"></param>
         /// <param name="serializer"></param>
-        /// <returns></returns>
+        /// <returns>The NameValueCollection.</returns>
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            throw new NotImplementedException();
+            JObject jObject = JObject.Load(reader);
+            Dictionary<string, string[]> dict = jObject.ToObject<Dictionary<string, string[]>>();
+            return Utils.DictionaryToNVC(dict);
         }
 
         /// <summary>
         /// Writes the JSON.
         /// </summary>
-        /// <param name="writer">The JSON writer</param>
+        /// <param name="writer">The JSON writer.</param>
         /// <param name="value">The object to convert.</param>
-        /// <param name="serializer">The serializer</param>
+        /// <param name="serializer">The serializer.</param>
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
             NameValueCollection nvc = (NameValueCollection) value;

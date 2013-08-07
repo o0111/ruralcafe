@@ -25,6 +25,8 @@ using System.Net;
 using RuralCafe.Lucenenet;
 using RuralCafe.Util;
 using System.Collections.Specialized;
+using Newtonsoft.Json;
+using RuralCafe.Json;
 
 namespace RuralCafe
 {
@@ -177,7 +179,9 @@ namespace RuralCafe
                 string currUri = entry.Substring(0, lastSpaceIndex);
                 // FIXME use actual values, not dummy data
                 string httpMethod = "GET";
-                NameValueCollection headers = new NameValueCollection(); // Use JSON to deserialize
+                string headersJson = "{}";
+                NameValueCollection headers = JsonConvert.DeserializeObject<NameValueCollection>(headersJson,
+                    new NameValueCollectionConverter());
                 short statusCode = 200;
 
                 long currFileSize;
@@ -289,16 +293,16 @@ namespace RuralCafe
                 {
                     if (!existed)
                     {
-                        // XXX reading the file we just wrote. Could also stream it int
+                        // XXX reading the file we just wrote. Could also stream it in
                         // local variable, that would be faster
                         string document = Utils.ReadFileAsString(cacheFileName);
                         string title = HtmlUtils.GetPageTitleFromHTML(document);
-                        // Use whole file, so we can also find results with tags, etc.
-                        string content = document;
+
+                        // Use whole document, so we can also find results with tags, etc.
                         // XXX: Use actual headers here
                         // XXX: Although I don't know why we even have headers in Lucene.
                         // XXX: Would make more sence to have httpMethod in Lucene instead.
-                        indexWrapper.IndexDocument("Content-Type: text/html", currUri, title, content);
+                        indexWrapper.IndexDocument("Content-Type: text/html", currUri, title, document);
                     }
                 }
             }
