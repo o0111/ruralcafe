@@ -104,11 +104,10 @@ namespace RuralCafe.Lucenenet
         /// <summary>
         /// Adds a document to the index.
         /// </summary>
-        /// <param name="headers">HTTP response headers.</param>
         /// <param name="uri">URI of the page.</param>
         /// <param name="title">Title of the page.</param>
         /// <param name="content">The page contents.</param>
-        public void IndexDocument(string headers, string uri, string title, string content)
+        public void IndexDocument(string uri, string title, string content)
         {
             // remove the document if it exists in the index to prevent duplicates
             //DeleteDocument(indexPath, Uri);
@@ -117,7 +116,6 @@ namespace RuralCafe.Lucenenet
 
             Document doc = new Document();
             doc.Add(new Field("uri", uri, Field.Store.YES, Field.Index.NOT_ANALYZED));
-            doc.Add(new Field("headers", headers, Field.Store.YES, Field.Index.NOT_ANALYZED));
             doc.Add(new Field("title", title, Field.Store.YES, Field.Index.ANALYZED));
             doc.Add(new Field("content", content, Field.Store.NO, Field.Index.ANALYZED));
             writer.AddDocument(doc);

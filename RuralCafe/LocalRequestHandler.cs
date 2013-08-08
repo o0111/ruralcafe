@@ -138,7 +138,8 @@ namespace RuralCafe
 
                     // Include link suggestions if we're not online for html pages
                     if (Proxy.NetworkStatus != RCLocalProxy.NetworkStatusCode.Online
-                        && Utils.GetContentTypeOfFile(_rcRequest.CacheFileName).Equals("text/html"))
+                        && Proxy.ProxyCacheManager.IsHTMLFile(_rcRequest.GenericWebRequest.Method,
+                        _rcRequest.Uri))
                     {
                         string content = Utils.ReadFileAsString(_rcRequest.CacheFileName);
                         if (String.IsNullOrEmpty(content))
@@ -151,7 +152,7 @@ namespace RuralCafe
                         return;// Status.Completed;
                     }
 
-                    _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName);
+                    _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName, true);
                     return;
                 }
 

@@ -376,6 +376,23 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// Checks if the cache item is a text file.
+        /// </summary>
+        /// <param name="httpMethod">The HTTP method</param>
+        /// <param name="uri">The URI.</param>
+        /// <returns>True, if the content-type is "text/html" and false otherwise or if there is no such cache item.</returns>
+        public bool IsHTMLFile(string httpMethod, string uri)
+        {
+            GlobalCacheItem gci = GetGlobalCacheItem(httpMethod, uri);
+            if (gci == null)
+            {
+                // This hould not happen
+                return false;
+            }
+            return gci.responseHeaders.Contains("\"Content-Type\":[\"text/html");
+        }
+
+        /// <summary>
         /// Gets the global cache item for the specified HTTP method and URI, if it exists,
         /// and null otherwise.
         /// </summary>
@@ -854,6 +871,8 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// Gets all files that exist in the directory.
+        /// The database is NOT used.
         /// </summary>
         /// <returns>A list of filenames of all files in the cache.</returns>
         public List<string> AllFiles()
@@ -862,12 +881,28 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// Gets all files that have Content-Type: text/html or text/plain
+        /// The database IS used.
         /// </summary>
-        /// <returns>A list of filenames of files with content type="text/html" in the cache.</returns>
+        /// <returns>A list of filenames of all text files in the cache.</returns>
         public List<string> TextFiles()
         {
-            return Directory.EnumerateFiles(_cachePath, "*", SearchOption.AllDirectories)
-                .Where(filename => Utils.GetContentTypeOfFile(filename).Equals("text/html")).ToList();
+            // Old version without DB
+            //List<string> dirResults = Directory.EnumerateFiles(_cachePath, "*", SearchOption.AllDirectories)
+            //    .Where(filename => new string[] { "text/html", "text/plain" }.
+            //        Contains(Utils.GetContentTypeOfFile(filename))).ToList();
+
+            // Request all filenames where the header has the specified content type. Contains looks dirty
+            // as we save the headers in JSON format. This is faster as deserializing before testing,
+            // as SQL can do it for as.
+            RCDatabaseEntities databaseContext = GetNewDatabaseContext();
+            List<string> dbResults = (from gci in databaseContext.GlobalCacheItem
+                                      where gci.responseHeaders.Contains("\"Content-Type\":[\"text/html") ||
+                                        gci.responseHeaders.Contains("\"Content-Type\":[\"text/plain")
+                                      select gci.filename).ToList();
+            // Convert relative to global filenames (extra step as the above is converted into SQL, where this
+            // cannot be done)
+            return (from relFile in dbResults select _cachePath + relFile).ToList();
         }
 
         /// <summary>

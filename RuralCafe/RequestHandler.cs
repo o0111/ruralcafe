@@ -31,6 +31,8 @@ using log4net;
 using RuralCafe.Util;
 using Newtonsoft.Json;
 using System.Diagnostics;
+using RuralCafe.Database;
+using RuralCafe.Json;
 
 namespace RuralCafe
 {
@@ -527,11 +529,14 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Stream the file from the cache to the client. Also sets Content-type accordingly.
+        /// Stream the file from the cache to the client. Also modifies the response
+        /// according to the DB data.
         /// </summary>
         /// <param name="fileName">Name of the file to stream to the client.</param>
+        /// <param name="takeDBData">If the headers and status code from the DB should be used.
+        /// This should be true for cache files and false for RC page files (e.g. trotro.html)</param>
         /// <returns>Bytes streamed from the cache to the client.</returns>
-        protected long StreamFromCacheToClient(string fileName)
+        protected long StreamFromCacheToClient(string fileName, bool takeDBData)
         {
             // make sure the file exists.
             FileInfo f;
@@ -550,21 +555,24 @@ namespace RuralCafe
                 return -1;
             }
 
-            // FIXME why does that fail now?
-            // XXX: We're reading the content so we can redirect if there is a 301 in the file.
-            // As soon as metadata will be included somehow, this won't be necessary any more.
-            // Then remove this! Reading the file twice is bad!
-            string content = Utils.ReadFileAsString(fileName);
-            Match match = REDIR_REGEX.Match(content);
-            if (match.Success)
+            if (takeDBData)
             {
-                _clientHttpContext.Response.Redirect(match.Groups["uri"].Value);
-                SendMessage(content);
-                return content.Length;
+                // Modify the webresponse
+                GlobalCacheItem gci = _proxy.ProxyCacheManager.GetGlobalCacheItem(_originalRequest.HttpMethod,
+                    _originalRequest.RawUrl);
+                if (gci == null)
+                {
+                    Logger.Warn("problem getting db info: " + fileName);
+                    return -1;
+                }
+                _clientHttpContext.Response.StatusCode = gci.statusCode;
+                NameValueCollection headers = JsonConvert.DeserializeObject<NameValueCollection>(gci.responseHeaders,
+                        new NameValueCollectionConverter());
+                HttpUtils.IntegrateHeadersIntoWebResponse(_clientHttpContext.Response,headers);
+                // Set content-type (not done by method above)
+                _clientHttpContext.Response.ContentType = headers["Content-Type"];
+                // Do not set content length or content encoding here
             }
-
-            // try getting the content type from the file extension
-            _clientHttpContext.Response.ContentType = Utils.GetContentTypeOfFile(fileName);
 
             // Stream file to client
             FileStream fs = null;
@@ -631,7 +639,7 @@ namespace RuralCafe
                 FileInfo f = new FileInfo(_rcRequest.CacheFileName);
                 if (downloadSuccessful && f.Exists)
                 {
-                    _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName);
+                    _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName, true);
                     if (_rcRequest.FileSize < 0)
                     {
                         return Status.Failed;
