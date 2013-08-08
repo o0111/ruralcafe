@@ -217,7 +217,7 @@ namespace RuralCafe
                 }
                 else if (response.StreamFileName != null)
                 {
-                    long bytesSent = StreamFromCacheToClient(response.StreamFileName);
+                    long bytesSent = StreamFromCacheToClient(response.StreamFileName, false);
                     if (bytesSent <= 0)
                     {
                         SendErrorPage(HttpStatusCode.NotFound, "page does not exist: " + _originalRequest.Url);

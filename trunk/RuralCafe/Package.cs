@@ -165,7 +165,8 @@ namespace RuralCafe
                         rcRequest.Uri);
                     if (cacheItem == null)
                     {
-                        // FIXME error handling
+                        // This should generally not happen.
+                        // XXX: A warning log message would be good here.
                         continue;
                     }
 
@@ -204,6 +205,7 @@ namespace RuralCafe
             if (packageIndexSize == 0 || packageContentSize == 0)
             {
                 // This is an internal error that should not happen!
+                requestHandler.Logger.Warn("problem unpacking: package index or content size is 0.");
                 return 0;
             }
             
@@ -215,8 +217,19 @@ namespace RuralCafe
 
             // read the package index
             Byte[] packageIndexBuffer = new Byte[packageIndexSize];
-            // XXX: this is potentially buggy, Read reads UP TO the given size.
-            packageFs.Read(packageIndexBuffer, 0, (int)packageIndexSize);
+            int bytesOfIndexRead = 0;
+            while (bytesOfIndexRead != packageIndexSize)
+            {
+                int read = packageFs.Read(packageIndexBuffer,
+                    bytesOfIndexRead, (int)(packageIndexSize - bytesOfIndexRead));
+                if(read == 0)
+                {
+                    // This should not happen
+                    requestHandler.Logger.Warn("problem unpacking: could not read index.");
+                    return 0;
+                }
+                bytesOfIndexRead += read;
+            }
 
             // split the big package file into pieces
             string[] stringSeparator = new string[] { "\r\n" };
@@ -304,7 +317,7 @@ namespace RuralCafe
                 }
                 else
                 {
-                    bytesRead = packageFs.Read(buffer, 0, 1024);
+                    bytesRead = packageFs.Read(buffer, 0, buffer.Length);
                 }
 
                 // reset for current file
@@ -331,7 +344,7 @@ namespace RuralCafe
                         // update bytesReadOfCurrFile
                         bytesReadOfCurrFile += bytesRead;
 
-                        bytesRead = packageFs.Read(buffer, 0, 1024);
+                        bytesRead = packageFs.Read(buffer, 0, buffer.Length);
                     }
                 }
 
@@ -367,9 +380,7 @@ namespace RuralCafe
                         string title = HtmlUtils.GetPageTitleFromHTML(document);
 
                         // Use whole document, so we can also find results with tags, etc.
-                        // XXX: Use actual headers here
-                        // XXX: Although I don't know why we even have headers in Lucene.
-                        indexWrapper.IndexDocument("Content-Type: text/html", currUri, title, document);
+                        indexWrapper.IndexDocument(currUri, title, document);
                     }
                 }
             }
