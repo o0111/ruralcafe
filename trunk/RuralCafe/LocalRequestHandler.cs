@@ -164,9 +164,9 @@ namespace RuralCafe
                 {
                     // We're streaming through the remote proxy.
                     SetStreamToRemoteProxy();
-                    // Try to start measuring the speed, but only if detect auto is enabled
-                    bool measuring = Proxy.DetectNetworkStatusAuto &&
-                        NetworkUsageDetector.StartMeasuringIfNotRunningWithCallback(Proxy.IncludeDownloadInCalculation);
+                    // Try to start measuring the speed
+                    bool measuring = NetworkUsageDetector.
+                        StartMeasuringIfNotRunningWithCallback(Proxy.IncludeDownloadInCalculation);
 
                     Status result = SelectMethodAndStream();
 
@@ -185,7 +185,7 @@ namespace RuralCafe
                         }
                     }
 
-                    return;// Status.Completed?;
+                    return;
                 }
 
                 // if we're not online, let's check if the package file name is not too long
@@ -261,10 +261,8 @@ namespace RuralCafe
                 _rcRequest.SetProxyAndTimeout(Proxy.GatewayProxy, System.Threading.Timeout.Infinite);
             }
 
-            // Try to start measuring the speed, but only if detect auto is enabled
-            bool measuring = Proxy.DetectNetworkStatusAuto && NetworkUsageDetector.StartMeasuringIfNotRunning();
-
-            // RCRequest.CacheFileName = PackageFileName;
+            // Try to start measuring the speed
+            bool measuring = NetworkUsageDetector.StartMeasuringIfNotRunning();
 
             // wait for admission control
             while (_proxy.NumInflightRequests >= _proxy.MaxInflightRequests)
