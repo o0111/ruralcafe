@@ -376,6 +376,36 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// Gets the global cache item for the specified HTTP method and URI, if it exists,
+        /// and null otherwise.
+        /// </summary>
+        /// <param name="httpMethod">The HTTP method.</param>
+        /// <param name="uri">The URI.</param>
+        /// <returns>The global cache item or null.</returns>
+        public GlobalCacheItem GetGlobalCacheItem(string httpMethod, string uri)
+        {
+            RCDatabaseEntities databaseContext = GetNewDatabaseContext();
+            return (from gci in databaseContext.GlobalCacheItem
+                    where gci.httpMethod.Equals(httpMethod) && gci.url.Equals(uri)
+                    select gci).FirstOrDefault();
+        }
+
+        /// <summary>
+        /// Gets the global cache RC data item for the specified HTTP method and URI, if it exists,
+        /// and null otherwise.
+        /// </summary>
+        /// <param name="httpMethod">The HTTP method.</param>
+        /// <param name="uri">The URI.</param>
+        /// <returns>The global cache RC data item or null.</returns>
+        public GlobalCacheRCData GetGlobalCacheRCData(string httpMethod, string uri)
+        {
+            RCDatabaseEntities databaseContext = GetNewDatabaseContext();
+            return (from gcrc in databaseContext.GlobalCacheRCData
+                    where gcrc.httpMethod.Equals(httpMethod) && gcrc.url.Equals(uri)
+                    select gcrc).FirstOrDefault();
+        }
+
+        /// <summary>
         /// Adds a cache item to the database. The file is assumed to exist already.
         /// </summary>
         /// <param name="url">The URL.</param>
@@ -397,6 +427,14 @@ namespace RuralCafe
                 {
                     _proxy.Logger.Debug("Already exists: " + httpMethod + " " + url);
                     return true;
+                }
+
+                // If the headers do not contain "Content-Type", which should practically not happen,
+                // (but servers are actually not required to send it) we set it to the default:
+                // "application/octet-stream"
+                if (headers["Content-Type"] == null)
+                {
+                    headers["Content-Type"] = "application/octet-stream";
                 }
 
                 // Add database entry.
@@ -558,7 +596,7 @@ namespace RuralCafe
         }
 
         #endregion
-        #region cache database
+        #region private cache database methods
 
         private RCDatabaseEntities GetNewDatabaseContext()
         {
@@ -697,10 +735,16 @@ namespace RuralCafe
             foreach (string file in files)
             {
                 // We assume it was a GET request with a 200 OK answer.
-                // We cannot recover the headers
+                // We cannot recover the headers, but we look at the file to determine its content-type,
+                // as we always want this header!
+                NameValueCollection headers = new NameValueCollection()
+                {
+                    { "Content-Type", Utils.GetContentTypeOfFile(file)}
+                };
+
                 string uri = AbsoluteFilePathToUri(file);
                 string relFileName = file.Substring(_cachePath.Length);
-                AddCacheItemToDatabase(uri, "GET", new NameValueCollection(), 200, relFileName, databaseContext);
+                AddCacheItemToDatabase(uri, "GET", headers, 200, relFileName, databaseContext);
                 _proxy.Logger.Debug(String.Format("Adding {0} to the database.", file));
             }
 

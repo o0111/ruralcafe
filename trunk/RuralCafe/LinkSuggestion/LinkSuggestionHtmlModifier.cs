@@ -56,14 +56,17 @@ namespace RuralCafe.LinkSuggestion
             body.AppendChild(trigger);
 
             HtmlNodeCollection links = doc.DocumentNode.SelectNodes("//a");
-            // Modify all links
-            int i = 0;
-            foreach(HtmlNode link in links)
+            if (links != null)
             {
-                link.SetAttributeValue("id", "rclink-" + i);
-                link.SetAttributeValue("onmouseover", "showSuggestions(" + i + ")");
-                link.SetAttributeValue("onmouseout", "clearActiveLinkNumber()");
-                i++;
+                // Modify all links
+                int i = 0;
+                foreach (HtmlNode link in links)
+                {
+                    link.SetAttributeValue("id", "rclink-" + i);
+                    link.SetAttributeValue("onmouseover", "showSuggestions(" + i + ")");
+                    link.SetAttributeValue("onmouseout", "clearActiveLinkNumber()");
+                    i++;
+                }
             }
 
             return doc.DocumentNode.OuterHtml;
