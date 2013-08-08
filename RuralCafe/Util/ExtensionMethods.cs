@@ -21,7 +21,7 @@ namespace RuralCafe.Util
         /// <param name="o">The object to log</param>
         public static void Metric(this ILog logger, object o)
         {
-            logger.Debug(METRIC + " " + o);
+            logger.Info(METRIC + " " + o);
         }
 
         /// <summary>
@@ -32,7 +32,7 @@ namespace RuralCafe.Util
         /// <param name="o">The object to log</param>
         public static void Metric(this ILog logger, int userId, object o)
         {
-            logger.Debug(METRIC + " User: " + (userId != -1 ? "" + userId : "None") + " " + o);
+            logger.Info(METRIC + " User: " + (userId != -1 ? "" + userId : "None") + " " + o);
         }
 
         /// <summary>

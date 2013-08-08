@@ -97,7 +97,8 @@ namespace RuralCafe
         /// </summary>
         private object _speedLockObj = new object();
         /// <summary>
-        /// The timer that determines the speed and changes the network status accordingly.
+        /// The timer that prints the speed and, if (_detectNetworkStatusAuto)
+        /// changes the network status accordingly.
         /// </summary>
         private Timer _changeNetworkStatusTimer;
         /// <summary>
@@ -162,8 +163,7 @@ namespace RuralCafe
             get { return _sessionManager; }
         }
         /// <summary>Detect the network status automatically?
-        /// If yes, the status is first set to online 
-        /// and a timer for changing status is started.</summary>
+        /// If yes, the status is first set to online.</summary>
         public bool DetectNetworkStatusAuto
         {
             get { return _detectNetworkStatusAuto; }
@@ -172,24 +172,8 @@ namespace RuralCafe
                 _detectNetworkStatusAuto = value;
                 if (_detectNetworkStatusAuto)
                 {
+                    // Always start online if detect auto is on
                     NetworkStatus = NetworkStatusCode.Online;
-                    // (Re)start the timer
-                    if (_changeNetworkStatusTimer == null)
-                    {
-                        _changeNetworkStatusTimer
-                            = new Timer(ChangeNetworkStatusAccordingToDeterminedSpeed, null, NETWORK_DETECTION_INTERVAL, NETWORK_DETECTION_INTERVAL);
-                    }
-                    else
-                    {
-                        _changeNetworkStatusTimer.Change(NETWORK_DETECTION_INTERVAL, NETWORK_DETECTION_INTERVAL);
-                    }
-                }
-                else
-                {
-                    if (_changeNetworkStatusTimer != null)
-                    {
-                        _changeNetworkStatusTimer.Change(Timeout.Infinite, Timeout.Infinite);
-                    }
                 }
             }
         }
@@ -240,6 +224,12 @@ namespace RuralCafe
             DeserializeQueue();
             // Tell the program to serialize the queue before shutdown
             Program.AddShutDownDelegate(SerializeQueue);
+
+            // Start the timer that logs the network speed and if auto-change is enabled
+            // also changes the network status accordingly.
+            _changeNetworkStatusTimer
+                           = new Timer(LogSpeedAndChangeNetworkStatusAccordingly,
+                               null, NETWORK_DETECTION_INTERVAL, NETWORK_DETECTION_INTERVAL);
         }
 
         /// <summary>
@@ -299,27 +289,6 @@ namespace RuralCafe
             ProxyCacheManager.CreateClusters(CLUSTERING_K, CLUSTERING_CAT_NFEATURES, CLUSTERING_SUBCAT_NFEATURES,
                 CLUSTERING_HIERARCHICAL);
         }
-
-        /*
-        /// <summary>
-        /// Invokes the <see cref="RequestHandler.Go"/> method. While it is running, the number of
-        /// active requests is increased.
-        /// </summary>
-        /// <param name="requestHandler">The local or internal local request handler of type
-        /// <see cref="RequestHandler"/></param>
-        private void StartRequestHandler(Object requestHandler)
-        {
-            if (!(requestHandler is RequestHandler))
-            {
-                throw new ArgumentException("requestHandler must be of type RequestHandler");
-            }
-            // Increment number of active requests
-            System.Threading.Interlocked.Increment(ref _activeRequests);
-            // Start request handler
-            ((RequestHandler)requestHandler).Go(null);
-            // Decrement number of active requests
-            System.Threading.Interlocked.Decrement(ref _activeRequests);
-        }*/
         
         #region Network status detection
 
@@ -364,32 +333,40 @@ namespace RuralCafe
                 _speedCalculationSecondsUsed = newSpeedCalcSecondsUsed;
                 _speedCalculationBytesUsed = newSpeedCalcBytesUsed;
 
-                Logger.Debug("Detected current overall speed: " + _networkSpeedBS);
+                Logger.Debug("Detected current overall speed: " + _networkSpeedBS + " bytes/s.");
             }
         }
 
         /// <summary>
-        /// Changes the network status if the speed is too low or too high for the current status.
+        /// Logs the speed.
+        /// 
+        /// If _detectNetworkStatusAuto: Changes the network status
+        /// if the speed is too low or too high for the current status.
         /// </summary>
         /// <param name="o">Ignored</param>
-        public void ChangeNetworkStatusAccordingToDeterminedSpeed(object o)
+        public void LogSpeedAndChangeNetworkStatusAccordingly(object o)
         {
-            long downThreshold = (long) (BYTES_PER_SECOND_ONLINE_THRESHOLD * (1 - THRESHOLD_PERCENT_ANTI_FLAPPING));
-            long upThreshold = (long) (BYTES_PER_SECOND_ONLINE_THRESHOLD * (1 + THRESHOLD_PERCENT_ANTI_FLAPPING));
+            Logger.Metric("Current network speed is: " + _networkSpeedBS + " bytes/s.");
 
-            if (NetworkStatus == NetworkStatusCode.Online
-                && _networkSpeedBS < downThreshold)
+            if (_detectNetworkStatusAuto)
             {
-                Logger.Metric(String.Format("Speed is {0}, that is below {1}, switching to slow mode.",
-                    _networkSpeedBS, downThreshold));
-                NetworkStatus = NetworkStatusCode.Slow;
-            }
-            else if (NetworkStatus == NetworkStatusCode.Slow
-                && _networkSpeedBS > upThreshold)
-            {
-                Logger.Metric(String.Format("Speed is {0}, that is above {1}, switching to online mode.",
-                    _networkSpeedBS,  upThreshold));
-                NetworkStatus = NetworkStatusCode.Online;
+                long downThreshold = (long)(BYTES_PER_SECOND_ONLINE_THRESHOLD * (1 - THRESHOLD_PERCENT_ANTI_FLAPPING));
+                long upThreshold = (long)(BYTES_PER_SECOND_ONLINE_THRESHOLD * (1 + THRESHOLD_PERCENT_ANTI_FLAPPING));
+
+                if (NetworkStatus == NetworkStatusCode.Online
+                    && _networkSpeedBS < downThreshold)
+                {
+                    Logger.Metric(String.Format("Speed is {0}, that is below {1}, switching to slow mode.",
+                        _networkSpeedBS, downThreshold));
+                    NetworkStatus = NetworkStatusCode.Slow;
+                }
+                else if (NetworkStatus == NetworkStatusCode.Slow
+                    && _networkSpeedBS > upThreshold)
+                {
+                    Logger.Metric(String.Format("Speed is {0}, that is above {1}, switching to online mode.",
+                        _networkSpeedBS, upThreshold));
+                    NetworkStatus = NetworkStatusCode.Online;
+                }
             }
         }
 
