@@ -630,8 +630,13 @@ namespace RuralCafe
         public long SendResponsePackage()
         {
             // build the package index
-            if (!BuildPackageIndex())
+            try
             {
+                _package.BuildPackageIndex(PackageFileName, Proxy.ProxyCacheManager);
+            }
+            catch (Exception e)
+            {
+                Logger.Warn("Could not create package file: ", e);
                 return -1;
             }
 
@@ -652,50 +657,7 @@ namespace RuralCafe
             return StreamToClient(ms);
         }
 
-        /// <summary>
-        /// Combines all of the URIs in the package into a package index file.
-        /// </summary>
-        /// <returns>True or false for success or failure.</returns>
-        bool BuildPackageIndex()
-        {
-            _package.ContentSize = 0;
-            try
-            {
-                if (!Utils.CreateDirectoryForFile(PackageFileName))
-                {
-                    return false;
-                }
-                if (!Utils.DeleteFile(PackageFileName))
-                {
-                    return false;
-                }
-
-                TextWriter tw = new StreamWriter(PackageFileName);
-
-                // create the package index file
-                foreach (RCRequest rcRequest in _package.RCRequests)
-                {
-                    tw.WriteLine(rcRequest.Uri + " " + rcRequest.FileSize.ToString());
-                    _package.ContentSize += rcRequest.FileSize;
-                }
-
-                tw.Close();
-
-                // calculate the index size
-                _package.IndexSize = Utils.GetFileSize(PackageFileName);
-                if (_package.IndexSize < 0)
-                {
-                    Logger.Warn("problem getting file info: " + PackageFileName);
-                }
-            }
-            catch (Exception e)
-            {
-                Logger.Error("problem creating package file: " + PackageFileName, e);
-                return false;
-            }
-
-            return true;
-        }
+        
 
         #endregion
         #region Remote Proxy Specific Helper Functions

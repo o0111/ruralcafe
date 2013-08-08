@@ -256,7 +256,8 @@ namespace RuralCafe
             return this.Uri.Equals(other.Uri) && this._webRequest.Method.Equals(other._webRequest.Method)
                 && this.Body == other.Body;
         }
-        /// <summary>Override object hash code for request matching.</summary>
+        /// <summary>Override object hash code for request matching.
+        /// XXX Body can be null!</summary>
         public override int GetHashCode()
         {
             return Uri.GetHashCode() * _webRequest.Method.GetHashCode() * Body.GetHashCode();
@@ -383,6 +384,8 @@ namespace RuralCafe
                     NameValueCollection redirHeaders = new NameValueCollection()
                     {
                         { "Location", _webResponse.ResponseUri.ToString() },
+                        // We need to include content-type, as we always want that header!
+                        { "Content-Type", "text/plain"}
                     };
                     cacheManager.AddCacheItemForExistingFile(_uriBeforeRedirect, _webRequest.Method,
                         redirHeaders, 301);

@@ -27,6 +27,7 @@ using RuralCafe.Util;
 using System.Collections.Specialized;
 using Newtonsoft.Json;
 using RuralCafe.Json;
+using RuralCafe.Database;
 
 namespace RuralCafe
 {
@@ -38,15 +39,16 @@ namespace RuralCafe
         private LinkedList<RCRequest> _rcRequests;
         private long _contentSize;
         private long _indexSize;
+        private string _packageFileName;
 
         /// <summary>
         /// Constructor for a RuralCafe package.
         /// </summary>
         public Package()
         {
-            _rcRequests = new LinkedList<RCRequest>();
-            _contentSize = 0;
-            _indexSize = 0;
+            this._rcRequests = new LinkedList<RCRequest>();
+            this._contentSize = 0;
+            this._indexSize = 0;
         }
 
         /// <summary>Size of the package contents.</summary>
@@ -65,6 +67,13 @@ namespace RuralCafe
         public LinkedList<RCRequest> RCRequests
         {
             get { return _rcRequests; }
+        }
+        /// <summary>
+        /// The package file name.
+        /// </summary>
+        public string PackageFileName
+        {
+            get { return _packageFileName; }
         }
 
         /// <summary>
@@ -128,6 +137,59 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// Combines all of the URIs in the package into a package index file.
+        /// 
+        /// Throws an exception if anything goes wrong.
+        /// </summary>
+        /// <param name="packageFileName">The filename of the package file to create.</param>
+        /// <param name="cacheManager">The cache manager to retrieve DB data.</param>
+        public void BuildPackageIndex(string packageFileName, CacheManager cacheManager)
+        {
+            _packageFileName = packageFileName;
+            _contentSize = 0;
+            if (!Utils.CreateDirectoryForFile(_packageFileName))
+            {
+                throw new IOException("Could not create directory for package file.");
+            }
+            if (!Utils.DeleteFile(_packageFileName))
+            {
+                throw new IOException("Could not create delete old package file.");
+            }
+
+            using (TextWriter tw = new StreamWriter(_packageFileName))
+            {
+                // create the package index file
+                foreach (RCRequest rcRequest in _rcRequests)
+                {
+                    GlobalCacheItem cacheItem = cacheManager.GetGlobalCacheItem(rcRequest.GenericWebRequest.Method,
+                        rcRequest.Uri);
+                    if (cacheItem == null)
+                    {
+                        // FIXME error handling
+                        continue;
+                    }
+
+                    // Index format is 2 lines:
+                    // <httpMethod> <statusCode> <fileSize> <URL> (Url is last, as it can have spaces)
+                    // <headers>
+                    tw.WriteLine(String.Format("{0} {1} {2} {3}",
+                        cacheItem.httpMethod, (short)cacheItem.statusCode,
+                        rcRequest.FileSize, rcRequest.Uri));
+                    tw.WriteLine(cacheItem.responseHeaders);
+
+                    _contentSize += rcRequest.FileSize;
+                }
+            }
+
+            // calculate the index size
+            _indexSize = Utils.GetFileSize(_packageFileName);
+            if (_indexSize < 0)
+            {
+                throw new IOException("Problem getting file info for package file.");
+            }
+        }
+
+        /// <summary>
         /// Unpacks the package contents and indexes them.
         /// </summary>
         /// <param name="requestHandler">Calling handler for this method.</param>
@@ -153,6 +215,7 @@ namespace RuralCafe
 
             // read the package index
             Byte[] packageIndexBuffer = new Byte[packageIndexSize];
+            // XXX: this is potentially buggy, Read reads UP TO the given size.
             packageFs.Read(packageIndexBuffer, 0, (int)packageIndexSize);
 
             // split the big package file into pieces
@@ -168,32 +231,37 @@ namespace RuralCafe
             long unpackedBytes = 0;
             Byte[] buffer = new Byte[1024];
 
-            foreach (string entry in packageContentArr)
+            for (int i = 0; i < packageContentArr.Length; i += 2)
             {
-                int lastSpaceIndex = entry.LastIndexOf(' ');
-                if (lastSpaceIndex < 0)
+                // Index format is 2 lines:
+                // <httpMethod> <statusCode> <fileSize> <URL> (Url is last, as it can have spaces)
+                // <headers> (JSON)
+                string[] firstLineArray = packageContentArr[i].Split(new string[]{" "}, 4, StringSplitOptions.None);
+
+                if (firstLineArray.Length != 4)
                 {
-                    requestHandler.Logger.Error("unparseable entry: " + entry);
+                    requestHandler.Logger.Error("unparseable entry: " + packageContentArr[i]);
                     return unpackedBytes;
                 }
-                string currUri = entry.Substring(0, lastSpaceIndex);
-                // FIXME use actual values, not dummy data
-                string httpMethod = "GET";
-                string headersJson = "{}";
-                NameValueCollection headers = JsonConvert.DeserializeObject<NameValueCollection>(headersJson,
-                    new NameValueCollectionConverter());
-                short statusCode = 200;
-
+                string httpMethod = firstLineArray[0];
+                short statusCode;
                 long currFileSize;
                 try
                 {
-                    currFileSize = Int64.Parse(entry.Substring(lastSpaceIndex + 1));
+                    statusCode = Int16.Parse(firstLineArray[1]);
+                    currFileSize = Int64.Parse(firstLineArray[2]);
                 }
                 catch (Exception e)
                 {
-                    requestHandler.Logger.Warn("problem unpacking: " + entry, e);
+                    requestHandler.Logger.Warn("problem unpacking: " + packageContentArr[i], e);
                     return unpackedBytes;
                 }
+
+                string currUri = firstLineArray[3];
+
+                string headersJson = packageContentArr[i + 1];
+                NameValueCollection headers = JsonConvert.DeserializeObject<NameValueCollection>(headersJson,
+                    new NameValueCollectionConverter());
 
                 if (!HttpUtils.IsValidUri(currUri))
                 {
@@ -287,9 +355,9 @@ namespace RuralCafe
                     return -1;
                 }
 
-                // add the file to Lucene
-                // TODO isParseable() should be changed to if headers["Content-Type"].Contains("htm") e.g.
-                if (Utils.IsParseable(cacheFileName))
+                // add the file to Lucene, if it is a text or HTML file
+                // We have made sure the content-type header is always present in the DB!
+                if (headers["Content-Type"].Contains("text/html") || headers["Content-Type"].Contains("text/plain"))
                 {
                     if (!existed)
                     {
@@ -301,7 +369,6 @@ namespace RuralCafe
                         // Use whole document, so we can also find results with tags, etc.
                         // XXX: Use actual headers here
                         // XXX: Although I don't know why we even have headers in Lucene.
-                        // XXX: Would make more sence to have httpMethod in Lucene instead.
                         indexWrapper.IndexDocument("Content-Type: text/html", currUri, title, document);
                     }
                 }

@@ -228,18 +228,6 @@ namespace RuralCafe.Util
             return contentType;
         }
 
-        // XXX: Currently only based on file ending.
-        // XXX: text content (xml, too) should be indexable
-        /// <summary>
-        /// Checks if the URI is parseable by RuralCafe.
-        /// </summary>
-        /// <param name="cacheFileName">The filename of the cached file.</param>
-        /// <returns>True or false for parseable or not.</returns>
-        public static bool IsParseable(string cacheFileName)
-        {
-            return GetContentTypeOfFile(cacheFileName).Contains("htm");
-        }
-
         #endregion
         #region file utils
 
