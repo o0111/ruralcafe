@@ -33,6 +33,7 @@ using System.Xml;
 using RuralCafe.Util;
 using Newtonsoft.Json;
 using RuralCafe.LinkSuggestion;
+using RuralCafe.Database;
 
 namespace RuralCafe
 {
@@ -130,7 +131,7 @@ namespace RuralCafe
                 }
 
                 // Check if this request is cacheable
-                if (IsCacheable() && IsCached(_rcRequest.CacheFileName))
+                if (IsCacheable() && Proxy.ProxyCacheManager.IsCached(_rcRequest.GenericWebRequest))
                 {
                     // Log query metric
                     Proxy.Logger.QueryMetric(Proxy.SessionManager.GetUserId(ClientIP),
@@ -147,9 +148,21 @@ namespace RuralCafe
                             return;// Status.Failed;
                         }
                         content = LinkSuggestionHtmlModifier.IncludeTooltips(content);
-                        _clientHttpContext.Response.ContentType = "text/html";
+
+                        // Modify the webresponse
+                        GlobalCacheItem gci = _proxy.ProxyCacheManager.GetGlobalCacheItem(_originalRequest.HttpMethod,
+                            _originalRequest.RawUrl);
+                        if (gci == null)
+                        {
+                            string message = "problem getting db info: " + _rcRequest.CacheFileName;
+                            Logger.Warn(message);
+                            SendErrorPage(HttpStatusCode.InternalServerError, message);
+                            return;
+                        }
+                        ModifyWebResponse(gci);
+
                         SendMessage(content);
-                        return;// Status.Completed;
+                        return;
                     }
 
                     _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName, true);

@@ -349,29 +349,17 @@ namespace RuralCafe
                 RCRequest.GenericWebRequest.Timeout = 0;
             }
 
-            // download the page
-            // replace for non GET/HEADs
-            bool replace = !IsGetOrHeadHeader();
-
+            // Only download for POST/... or not already existing items
             bool success;
-            if (IsGetOrHeadHeader())
+            if (!IsGetOrHeadHeader() || !_proxy.ProxyCacheManager.IsCached(rcRequest.GenericWebRequest))
             {
                 // Download!
                 success = rcRequest.DownloadToCache();
             }
             else
             {
-                // We must lock, because there is a small chance another thread also works on
-                // a POST for the same URI.
-                lock (_proxy.ProxyCacheManager.ExternalLockObj)
-                {
-                    // Remove old things
-                    _proxy.ProxyCacheManager.RemoveCacheItem(_rcRequest.GenericWebRequest.Method,
-                        _rcRequest.GenericWebRequest.RequestUri.ToString());
-
-                    // Download!
-                    success = rcRequest.DownloadToCache();
-                }
+                success = true;
+                Logger.Debug("Already existed: " + rcRequest.Uri);
             }
             
             if (!success)
@@ -606,8 +594,12 @@ namespace RuralCafe
                 {
                     request.GenericWebRequest.Timeout = (int)(endTime.Subtract(currTime)).TotalMilliseconds;
 
-                    // download the page
-                    request.DownloadToCache();
+                    // download the page, if it does not exist already
+                    if (!_proxy.ProxyCacheManager.IsCached(request.GenericWebRequest))
+                    {
+                        // Download!
+                        request.DownloadToCache();
+                    }
                 }
                 else
                 {
