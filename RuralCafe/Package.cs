@@ -293,16 +293,15 @@ namespace RuralCafe
                     requestHandler.Logger.Warn("problem unpacking, filename too long for uri: " + currUri);
                     return unpackedBytes;
                 }
-                // make sure the file doesn't already exist for indexing and DB purposes
+                // check if the file exists in order not to add a duplicated to the lucene index
                 bool existed = requestHandler.Proxy.ProxyCacheManager.IsCached(httpMethod, currUri);
+
                 if (existed)
                 {
-                    // Remove if it existed.
-                    // FIXME do a replace instead!!! Otherwise the rc data would be lost.
-                    requestHandler.Proxy.ProxyCacheManager.RemoveCacheItem(httpMethod, currUri);
+                    // We override the file, if it exists
+                    Utils.DeleteFile(cacheFileName);
                 }
-                
-                // create the file if it doesn't exist
+                // (re)create the file
                 FileStream currFileFS = Utils.CreateFile(cacheFileName);
                 if (currFileFS == null)
                 {

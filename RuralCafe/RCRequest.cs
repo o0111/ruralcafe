@@ -343,15 +343,13 @@ namespace RuralCafe
         /// Streams a request from the server into the cache.
         /// Used for both local and remote proxy requests.
         /// 
-        /// If you want to replace existing files, delete them first.
-        /// If you want to make sure they are mot added again in the meantime,
-        /// use a lock, e.g. the cache managers external lock.
+        /// Replaces existing files.
         /// </summary>
         /// <returns>True for success, false for failure.</returns>
         public bool DownloadToCache()
         {
             CacheManager cacheManager = _requestHandler.GenericProxy.ProxyCacheManager;
-            if(cacheManager.IsCached(_webRequest.Method, _webRequest.RequestUri.ToString()))
+            if(cacheManager.IsCached(_webRequest))
             {
                 _requestHandler.Logger.Debug("Already exists: " +
                     _webRequest.Method + " " + _webRequest.RequestUri);
@@ -395,7 +393,7 @@ namespace RuralCafe
                     _cacheFileName = _requestHandler.GenericProxy.CachePath +
                         CacheManager.GetRelativeCacheFileName(uri, _webResponse.Method);
 
-                    if (cacheManager.IsCached(_webResponse.Method, uri))
+                    if (cacheManager.IsCached(_webResponse))
                     {
                         _requestHandler.Logger.Debug("Already exists: " +
                             _webResponse.Method + " " + uri);

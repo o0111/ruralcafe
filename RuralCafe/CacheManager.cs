@@ -12,6 +12,7 @@ using System.Collections.Specialized;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using RuralCafe.Json;
+using System.Threading;
 
 namespace RuralCafe
 {
@@ -65,11 +66,7 @@ namespace RuralCafe
         /// <summary>
         /// An object to lock cache access internally.
         /// </summary>
-        private object _lockObj = new object();
-        /// <summary>
-        /// An object to lock cache access externally.
-        /// </summary>
-        private object _extrenalLockObj = new object();
+        private ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
 
         /// <summary>
         /// The path to the cache.
@@ -84,13 +81,6 @@ namespace RuralCafe
         public string ClustersPath
         {
             get { return _clustersPath; }
-        }
-        /// <summary>
-        /// An object to lock cache access externally in an additional layer.
-        /// </summary>
-        public object ExternalLockObj
-        {
-            get { return _extrenalLockObj; }
         }
 
         /// <summary>
@@ -357,10 +347,38 @@ namespace RuralCafe
         /// </summary>
         public void LogCacheMetrics()
         {
-            // XXX when this is done at the same time with Cluto, the clustering fails.
+            _lock.EnterReadLock();
+            try
+            {
+                _proxy.Logger.Metric("Cache Items: " + AllFiles().Count);
+                _proxy.Logger.Metric("Cache Items with text/html mimetype: " + TextFiles().Count);
+            }
+            finally
+            {
+                _lock.ExitReadLock();
+            }
+        }
 
-            _proxy.Logger.Metric("Cache Items: " + AllFiles().Count);
-            _proxy.Logger.Metric("Cache Items with text/html mimetype: " + TextFiles().Count);
+        /// <summary>
+        /// Checks whether an item is cached. Only the DB is being used,
+        /// the disk contens are not ebing looked at.
+        /// </summary>
+        /// <param name="request">The web request.</param>
+        /// <returns>If the item is cached.</returns>
+        public bool IsCached(HttpWebRequest request)
+        {
+            return IsCached(request.Method, request.RequestUri.ToString());
+        }
+
+        /// <summary>
+        /// Checks whether an item is cached. Only the DB is being used,
+        /// the disk contens are not ebing looked at.
+        /// </summary>
+        /// <param name="response">The web response.</param>
+        /// <returns>If the item is cached.</returns>
+        public bool IsCached(HttpWebResponse response)
+        {
+            return IsCached(response.Method, response.ResponseUri.ToString());
         }
 
         /// <summary>
@@ -372,7 +390,15 @@ namespace RuralCafe
         /// <returns>If the item is cached.</returns>
         public bool IsCached(string httpMethod, string uri)
         {
-            return IsCached(httpMethod, uri, GetNewDatabaseContext());
+            _lock.EnterReadLock();
+            try
+            {
+                return IsCached(httpMethod, uri, GetNewDatabaseContext());
+            }
+            finally
+            {
+                _lock.ExitReadLock();
+            }
         }
 
         /// <summary>
@@ -383,28 +409,55 @@ namespace RuralCafe
         /// <returns>True, if the content-type is "text/html" and false otherwise or if there is no such cache item.</returns>
         public bool IsHTMLFile(string httpMethod, string uri)
         {
-            GlobalCacheItem gci = GetGlobalCacheItem(httpMethod, uri);
-            if (gci == null)
+            _lock.EnterReadLock();
+            try
             {
-                // This hould not happen
-                return false;
+                // Be sure to call the private method! Otherwise this would count as a request.
+                GlobalCacheItem gci = GetGlobalCacheItem(httpMethod, uri, GetNewDatabaseContext());
+                if (gci == null)
+                {
+                    // This hould not happen
+                    return false;
+                }
+                return gci.responseHeaders.Contains("\"Content-Type\":[\"text/html");
             }
-            return gci.responseHeaders.Contains("\"Content-Type\":[\"text/html");
+            finally
+            {
+                _lock.ExitReadLock();
+            }
         }
 
         /// <summary>
         /// Gets the global cache item for the specified HTTP method and URI, if it exists,
         /// and null otherwise.
+        /// 
+        /// Also, the lastRequestTime is set to now and the number of requests is incremented.
         /// </summary>
         /// <param name="httpMethod">The HTTP method.</param>
         /// <param name="uri">The URI.</param>
         /// <returns>The global cache item or null.</returns>
         public GlobalCacheItem GetGlobalCacheItem(string httpMethod, string uri)
         {
-            RCDatabaseEntities databaseContext = GetNewDatabaseContext();
-            return (from gci in databaseContext.GlobalCacheItem
-                    where gci.httpMethod.Equals(httpMethod) && gci.url.Equals(uri)
-                    select gci).FirstOrDefault();
+            _lock.EnterWriteLock();
+            try
+            {
+                RCDatabaseEntities databaseContext = GetNewDatabaseContext();
+                GlobalCacheItem result = GetGlobalCacheItem(httpMethod, uri, databaseContext);
+                if (result != null)
+                {
+                    _proxy.Logger.Debug(String.Format("Updating request time and number of requests of {0} {1}",
+                        httpMethod, uri));
+                    // Modify the RC data and save
+                    result.GlobalCacheRCData.lastRequestTime = DateTime.Now;
+                    result.GlobalCacheRCData.numberOfRequests++;
+                    databaseContext.SaveChanges();
+                }
+                return result;
+            }
+            finally
+            {
+                _lock.ExitWriteLock();
+            }
         }
 
         /// <summary>
@@ -416,14 +469,21 @@ namespace RuralCafe
         /// <returns>The global cache RC data item or null.</returns>
         public GlobalCacheRCData GetGlobalCacheRCData(string httpMethod, string uri)
         {
-            RCDatabaseEntities databaseContext = GetNewDatabaseContext();
-            return (from gcrc in databaseContext.GlobalCacheRCData
-                    where gcrc.httpMethod.Equals(httpMethod) && gcrc.url.Equals(uri)
-                    select gcrc).FirstOrDefault();
+            _lock.EnterReadLock();
+            try
+            {
+                return GetGlobalCacheRCData(httpMethod, uri, GetNewDatabaseContext());
+            }
+            finally
+            {
+                _lock.ExitReadLock();
+            }
         }
 
         /// <summary>
-        /// Adds a cache item to the database. The file is assumed to exist already.
+        /// Adds a cache item to the database. The file is assumed to exist already. If that item exists
+        /// already in the DB, it will be replaced with the new headers and statusCode, and the RC data will
+        /// be updated.
         /// </summary>
         /// <param name="url">The URL.</param>
         /// <param name="httpMethod">The HTTP Method.</param>
@@ -434,18 +494,11 @@ namespace RuralCafe
             NameValueCollection headers, short statusCode)
         {
             string relFileName = GetRelativeCacheFileName(url, httpMethod);
+            RCDatabaseEntities databaseContext = GetNewDatabaseContext();
 
-            // locked: if exists return else create DB entry
-            lock (_lockObj)
+            _lock.EnterWriteLock();
+            try
             {
-                RCDatabaseEntities databaseContext = GetNewDatabaseContext();
-
-                if (IsCached(httpMethod, url, databaseContext))
-                {
-                    _proxy.Logger.Debug("Already exists: " + httpMethod + " " + url);
-                    return true;
-                }
-
                 // If the headers do not contain "Content-Type", which should practically not happen,
                 // (but servers are actually not required to send it) we set it to the default:
                 // "application/octet-stream"
@@ -454,25 +507,46 @@ namespace RuralCafe
                     headers["Content-Type"] = "application/octet-stream";
                 }
 
-                // Add database entry.
-                try
+                GlobalCacheItem existingCacheItem = GetGlobalCacheItem(httpMethod, url, databaseContext);
+
+                if (existingCacheItem == null)
                 {
-                    AddCacheItemToDatabase(url, httpMethod, headers, statusCode, relFileName, databaseContext);
-                    databaseContext.SaveChanges();
+                    // Add database entry.
+                    try
+                    {
+                        AddCacheItemToDatabase(url, httpMethod, headers, statusCode, relFileName, databaseContext);
+                        databaseContext.SaveChanges();
+                    }
+                    catch (Exception e)
+                    {
+                        _proxy.Logger.Error("Could not add cache item to the database.", e);
+                        return false;
+                    }
                 }
-                catch (Exception e)
+                else
                 {
-                    _proxy.Logger.Error("Could not add cache item to the database.", e);
-                    return false;
+                    // Update database entry.
+                    try
+                    {
+                        UpdateCacheItemInDatabase(existingCacheItem, headers, statusCode, relFileName, databaseContext);
+                        databaseContext.SaveChanges();
+                    }
+                    catch (Exception e)
+                    {
+                        _proxy.Logger.Error("Could not add cache item to the database.", e);
+                        return false;
+                    }
                 }
+            }
+            finally
+            {
+                _lock.ExitWriteLock();
             }
             return true;
         }
 
         /// <summary>
-        /// Adds a cache item. If there is already an entry in the DB, nothing is done
-        /// and true is returned.
-        /// Otherwise a new DB entry will be created and a file will be created.
+        /// Adds a cache item, also replacing if there is already one.
         /// </summary>
         /// <param name="webResponse">The web response.</param>
         /// <returns>True for success and false for failure.</returns>
@@ -501,20 +575,23 @@ namespace RuralCafe
         /// <param name="uri">The URI.</param>
         public void RemoveCacheItem(string httpMethod, string uri)
         {
-            lock(_lockObj)
+            RCDatabaseEntities databaseContext = GetNewDatabaseContext();
+            _lock.EnterWriteLock();
+            try
             {
-                RCDatabaseEntities databaseContext = GetNewDatabaseContext();
-                try
-                {
-                    RemoveCacheItemFromDatabase(httpMethod, uri, databaseContext);
-                    databaseContext.SaveChanges();
-                }
-                catch (Exception e)
-                {
-                    _proxy.Logger.Error("Could not remove cache item from the database.", e);
-                    return;
-                }
+                RemoveCacheItemFromDatabase(httpMethod, uri, databaseContext);
+                databaseContext.SaveChanges();
             }
+            catch (Exception e)
+            {
+                _proxy.Logger.Error("Could not remove cache item from the database.", e);
+                return;
+            }
+            finally
+            {
+                _lock.ExitWriteLock();
+            }
+            
 
             // Remove file
             Utils.DeleteFile(_cachePath + GetRelativeCacheFileName(uri, httpMethod));
@@ -771,6 +848,40 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// Updates a cache item in the database. Throws an exception if anything goes wrong.
+        /// 
+        /// databaseContext.SaveChanges() still needs to be called.
+        /// </summary>
+        /// <param name="existingCacheItem">The existing global cache item.</param>
+        /// <param name="headers">the new headers</param>
+        /// <param name="statusCode">The new status code.</param>
+        /// <param name="relFileName">The relative file name.</param>
+        /// <param name="databaseContext">The database context.</param>
+        private void UpdateCacheItemInDatabase(GlobalCacheItem existingCacheItem, NameValueCollection headers,
+            short statusCode, string relFileName, RCDatabaseEntities databaseContext)
+        {
+            string headersJson = JsonConvert.SerializeObject(headers,
+                Formatting.None, new NameValueCollectionConverter());
+
+            _proxy.Logger.Debug("Updating in database: " + existingCacheItem.httpMethod + " "
+                    + existingCacheItem.url);
+
+            // Update non-RC data
+            existingCacheItem.responseHeaders = headersJson;
+            existingCacheItem.statusCode = statusCode;
+
+            // Update RC data
+            GlobalCacheRCData rcData = existingCacheItem.GlobalCacheRCData;
+            // Although this is not really a request, we set the lastRequestTime to now
+            rcData.lastRequestTime = DateTime.Now;
+            // One request more
+            rcData.numberOfRequests++;
+            // Download time is the lastModified time of the file, if it already exists. Otherwise now
+            rcData.downloadTime = File.Exists(_cachePath + relFileName) ?
+                File.GetLastWriteTime(_cachePath + relFileName) : DateTime.Now;
+        }
+
+        /// <summary>
         /// Adds a new cache item to the database. Throws an exception if anything goes wrong.
         /// 
         /// databaseContext.SaveChanges() still needs to be called.
@@ -780,7 +891,7 @@ namespace RuralCafe
         /// <param name="headers">The headers.</param>
         /// <param name="statusCode">The status code.</param>
         /// <param name="relFileName">The relative file name.</param>
-        /// <param name="databaseContext">The database context</param>
+        /// <param name="databaseContext">The database context.</param>
         private void AddCacheItemToDatabase(string url, string httpMethod,
             NameValueCollection headers, short statusCode, string relFileName, RCDatabaseEntities databaseContext)
         {
@@ -857,25 +968,45 @@ namespace RuralCafe
                     select 1).Count() != 0;
         }
 
-        #endregion
-        #region analysis
+        /// <summary>
+        /// Gets the global cache item for the specified HTTP method and URI, if it exists,
+        /// and null otherwise.
+        /// </summary>
+        /// <param name="httpMethod">The HTTP method.</param>
+        /// <param name="uri">The URI.</param>
+        /// <param name="databaseContext">The database context.</param>
+        /// <returns>The global cache item or null.</returns>
+        private GlobalCacheItem GetGlobalCacheItem(string httpMethod, string uri, RCDatabaseEntities databaseContext)
+        {
+            return (from gci in databaseContext.GlobalCacheItem
+                    where gci.httpMethod.Equals(httpMethod) && gci.url.Equals(uri)
+                    select gci).FirstOrDefault();
+        }
 
         /// <summary>
-        /// The file size of a cache item.
+        /// Gets the global cache RC data item for the specified HTTP method and URI, if it exists,
+        /// and null otherwise.
         /// </summary>
-        /// <param name="fileName">The filename.</param>
-        /// <returns>The filesize.</returns>
-        public long CacheItemBytes(string fileName)
+        /// <param name="httpMethod">The HTTP method.</param>
+        /// <param name="uri">The URI.</param>
+        /// <param name="databaseContext">The database context.</param>
+        /// <returns>The global cache RC data item or null.</returns>
+        private GlobalCacheRCData GetGlobalCacheRCData(string httpMethod, string uri, RCDatabaseEntities databaseContext)
         {
-            return Utils.GetFileSize(fileName);
+            return (from gcrc in databaseContext.GlobalCacheRCData
+                    where gcrc.httpMethod.Equals(httpMethod) && gcrc.url.Equals(uri)
+                    select gcrc).FirstOrDefault();
         }
+
+        #endregion
+        #region analysis
 
         /// <summary>
         /// Gets all files that exist in the directory.
         /// The database is NOT used.
         /// </summary>
         /// <returns>A list of filenames of all files in the cache.</returns>
-        public List<string> AllFiles()
+        private List<string> AllFiles()
         {
             return Directory.EnumerateFiles(_cachePath, "*", SearchOption.AllDirectories).ToList();
         }
@@ -885,7 +1016,7 @@ namespace RuralCafe
         /// The database IS used.
         /// </summary>
         /// <returns>A list of filenames of all text files in the cache.</returns>
-        public List<string> TextFiles()
+        private List<string> TextFiles()
         {
             // Old version without DB
             //List<string> dirResults = Directory.EnumerateFiles(_cachePath, "*", SearchOption.AllDirectories)
@@ -926,39 +1057,51 @@ namespace RuralCafe
             string clustersFileName = _clustersPath + CLUSTERS_FILE_NAME;
             string xmlFileName = _clustersPath + CLUSTERS_XML_FILE_NAME;
 
-            // get files
-            _proxy.Logger.Debug("Clustering: Getting all text files.");
-            stopwatch.Start();
-            List<string> textFiles = TextFiles();
-            stopwatch.Stop();
-            Console.WriteLine(stopwatch.Elapsed.TotalSeconds + "s");
+            List<string> textFiles;
 
-            // Abort if we're having less than 2 text files
-            if (textFiles.Count < 2)
-            {
-                _proxy.Logger.Debug("Clustering: Less than 2 text files, aborting.");
-                return;
-            }
-            // List all Text files XXX Debug
-            //foreach(string textFile in textFiles)
-            //{
-            //    _proxy.Logger.Debug("Clustering uses file: " + textFile);
-            //}
-
-            // files2doc
-            _proxy.Logger.Debug("Clustering: Creating docfile.");
-            stopwatch.Restart();
+            // Lock
+            _lock.EnterReadLock();
             try
             {
-                Cluster.CreateDocFile(textFiles, docFileName);
+                // get files
+                _proxy.Logger.Debug("Clustering: Getting all text files.");
+                stopwatch.Start();
+                textFiles = TextFiles();
+                stopwatch.Stop();
+                Console.WriteLine(stopwatch.Elapsed.TotalSeconds + "s");
+
+                // Abort if we're having less than 2 text files
+                if (textFiles.Count < 2)
+                {
+                    _proxy.Logger.Debug("Clustering: Less than 2 text files, aborting.");
+                    return;
+                }
+                // List all Text files XXX Debug
+                //foreach(string textFile in textFiles)
+                //{
+                //    _proxy.Logger.Debug("Clustering uses file: " + textFile);
+                //}
+
+                // files2doc
+                _proxy.Logger.Debug("Clustering: Creating docfile.");
+                stopwatch.Restart();
+                try
+                {
+                    Cluster.CreateDocFile(textFiles, docFileName);
+                }
+                catch (IOException e)
+                {
+                    _proxy.Logger.Error("Clustering: DocFile creation failed.", e);
+                    return;
+                }
+                stopwatch.Stop();
+                Console.WriteLine(stopwatch.Elapsed.TotalSeconds + "s");
             }
-            catch (IOException e)
+            finally
             {
-                _proxy.Logger.Error("Clustering: DocFile creation failed.", e);
-                return;
+                // We have the docfile and can release the lock
+                _lock.ExitReadLock();
             }
-            stopwatch.Stop();
-            Console.WriteLine(stopwatch.Elapsed.TotalSeconds + "s");
 
             // doc2mat
             _proxy.Logger.Debug("Clustering: Doc2Mat.");

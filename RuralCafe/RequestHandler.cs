@@ -529,6 +529,21 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// Modifies the web response to include a global cache item's headers and status code.
+        /// </summary>
+        /// <param name="gci"></param>
+        protected void ModifyWebResponse(GlobalCacheItem gci)
+        {
+            _clientHttpContext.Response.StatusCode = gci.statusCode;
+            NameValueCollection headers = JsonConvert.DeserializeObject<NameValueCollection>(gci.responseHeaders,
+                    new NameValueCollectionConverter());
+            HttpUtils.IntegrateHeadersIntoWebResponse(_clientHttpContext.Response, headers);
+            // Set content-type (not done by method above)
+            _clientHttpContext.Response.ContentType = headers["Content-Type"];
+            // Do not set content length or content encoding here
+        }
+
+        /// <summary>
         /// Stream the file from the cache to the client. Also modifies the response
         /// according to the DB data.
         /// </summary>
@@ -565,13 +580,7 @@ namespace RuralCafe
                     Logger.Warn("problem getting db info: " + fileName);
                     return -1;
                 }
-                _clientHttpContext.Response.StatusCode = gci.statusCode;
-                NameValueCollection headers = JsonConvert.DeserializeObject<NameValueCollection>(gci.responseHeaders,
-                        new NameValueCollectionConverter());
-                HttpUtils.IntegrateHeadersIntoWebResponse(_clientHttpContext.Response,headers);
-                // Set content-type (not done by method above)
-                _clientHttpContext.Response.ContentType = headers["Content-Type"];
-                // Do not set content length or content encoding here
+                ModifyWebResponse(gci);
             }
 
             // Stream file to client
@@ -626,13 +635,8 @@ namespace RuralCafe
         /// <returns>The Status of the request.</returns>
         protected Status StreamToCacheAndClient()
         {
-            // Delete an old entry, if there is one. We do not care about synchronization here as
-            // We just want new data and if it is some milliseconds old because some other thread streamed the same
-            // URL that does not matter. Also this method is only used for GET/HEAD, so there is no problem.
-            _proxy.ProxyCacheManager.RemoveCacheItem(_rcRequest.GenericWebRequest.Method,
-                _rcRequest.GenericWebRequest.RequestUri.ToString());
-
             Logger.Debug("streaming: " + _rcRequest.GenericWebRequest.RequestUri + " to cache and client.");
+            // Download, which potentially also replaces
             bool downloadSuccessful = _rcRequest.DownloadToCache();
             try
             {
@@ -796,35 +800,6 @@ namespace RuralCafe
         protected bool IsCacheable()
         {
             return IsGetOrHeadHeader() && Utils.IsNotTooLongFileName(_rcRequest.CacheFileName);
-        }
-
-        /// <summary>
-        /// Checks if the file is cached.
-        /// </summary>
-        /// <param name="fileName">Name of the file to check.</param>
-        /// <returns>True if cached, false if not.</returns>
-        protected bool IsCached(string fileName)
-        {
-            if (fileName == null || fileName.Equals("") || !Utils.IsNotTooLongFileName(fileName))
-            {
-                return false;
-            }
-
-            try
-            {
-                FileInfo f = new FileInfo(fileName);
-                if (f.Exists)
-                {
-                    return true;
-                }
-            }
-            catch (Exception e)
-            {
-                Logger.Warn("Error getting file info", e);
-                return false;
-            }
-
-            return false;
         }
 
         /// <summary>
