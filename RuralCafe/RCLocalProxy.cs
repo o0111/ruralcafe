@@ -156,6 +156,7 @@ namespace RuralCafe
         public IndexWrapper IndexWrapper
         {
             get { return _indexWrapper; }
+            set { _indexWrapper = value; }
         }
         /// <summary>The session manager.</summary>
         public SessionManager SessionManager
@@ -186,6 +187,7 @@ namespace RuralCafe
         /// <param name="listenAddress">Address to listen for requests on.</param>
         /// <param name="listenPort">Port to listen for requests on.</param>
         /// <param name="proxyPath">Path to the proxy's executable.</param>
+        /// <param name="maxCacheSize">The max cache size in bytes.</param>
         /// <param name="indexPath">Path to the proxy's index.</param>
         /// <param name="cachePath">Path to the proxy's cache.</param>
         /// <param name="wikiDumpPath">Path to the wiki dump file.</param>
@@ -208,9 +210,14 @@ namespace RuralCafe
             _sessionManager = new SessionManager();
 
             _wikiWrapper = new WikiWrapper(wikiDumpPath);
-            _indexWrapper = new IndexWrapper(indexPath);
-            // initialize the index
-            _indexWrapper.EnsureIndexExists();
+
+            // The index might have been initialized by the cache when creating a new DB
+            if (_indexWrapper == null)
+            {
+                _indexWrapper = new IndexWrapper(indexPath);
+                // initialize the index
+                _indexWrapper.EnsureIndexExists();
+            }
 
             bool success = false;
             // initialize the wiki index
@@ -237,6 +244,7 @@ namespace RuralCafe
         /// The cache manager is initialized with a clusters path.
         /// </summary>
         /// <param name="cachePath">Path of the cache.</param>
+        /// <param name="maxCacheSize">The max cache size in bytes.</param>
         /// <returns>True or false for success or not.</returns>
         protected override bool InitializeCache(long maxCacheSize, string cachePath)
         {

@@ -10,9 +10,17 @@
           <EntitySet Name="GlobalCacheRCData" EntityType="RCDatabaseModel.Store.GlobalCacheRCData" store:Type="Tables" />
           <EntitySet Name="UserCacheDomain" EntityType="RCDatabaseModel.Store.UserCacheDomain" store:Type="Tables" />
           <EntitySet Name="UserCacheItem" EntityType="RCDatabaseModel.Store.UserCacheItem" store:Type="Tables" />
-          <AssociationSet Name="rcdata-fk" Association="RCDatabaseModel.Store.rcdata-fk">
-            <End Role="GlobalCacheItem" EntitySet="GlobalCacheItem" />
+          <AssociationSet Name="rc2-fk" Association="RCDatabaseModel.Store.rc2-fk">
             <End Role="GlobalCacheRCData" EntitySet="GlobalCacheRCData" />
+            <End Role="UserCacheItem" EntitySet="UserCacheItem" />
+          </AssociationSet>
+          <AssociationSet Name="rc-fk" Association="RCDatabaseModel.Store.rc-fk">
+            <End Role="GlobalCacheRCData" EntitySet="GlobalCacheRCData" />
+            <End Role="GlobalCacheItem" EntitySet="GlobalCacheItem" />
+          </AssociationSet>
+          <AssociationSet Name="ucd-fk" Association="RCDatabaseModel.Store.ucd-fk">
+            <End Role="UserCacheDomain" EntitySet="UserCacheDomain" />
+            <End Role="UserCacheItem" EntitySet="UserCacheItem" />
           </AssociationSet>
         </EntityContainer>
         <EntityType Name="GlobalCacheItem">
@@ -48,28 +56,64 @@
         </EntityType>
         <EntityType Name="UserCacheItem">
           <Key>
+            <PropertyRef Name="userID" />
+            <PropertyRef Name="domain" />
             <PropertyRef Name="url" />
             <PropertyRef Name="httpMethod" />
           </Key>
+          <Property Name="userID" Type="int" Nullable="false" />
+          <Property Name="domain" Type="nvarchar" Nullable="false" MaxLength="400" />
           <Property Name="url" Type="nvarchar" Nullable="false" MaxLength="2000" />
           <Property Name="httpMethod" Type="nvarchar" Nullable="false" MaxLength="100" />
-          <Property Name="responseHeaders" Type="ntext" />
-          <Property Name="statusCode" Type="smallint" />
+          <Property Name="responseHeaders" Type="ntext" Nullable="false" />
+          <Property Name="statusCode" Type="smallint" Nullable="false" />
           <Property Name="filename" Type="nvarchar" MaxLength="260" />
         </EntityType>
-        <Association Name="rcdata-fk">
-          <End Role="GlobalCacheItem" Type="RCDatabaseModel.Store.GlobalCacheItem" Multiplicity="1">
+        <Association Name="rc2-fk">
+          <End Role="GlobalCacheRCData" Type="RCDatabaseModel.Store.GlobalCacheRCData" Multiplicity="1">
             <OnDelete Action="Cascade" />
           </End>
-          <End Role="GlobalCacheRCData" Type="RCDatabaseModel.Store.GlobalCacheRCData" Multiplicity="0..1" />
+          <End Role="UserCacheItem" Type="RCDatabaseModel.Store.UserCacheItem" Multiplicity="*" />
           <ReferentialConstraint>
-            <Principal Role="GlobalCacheItem">
+            <Principal Role="GlobalCacheRCData">
               <PropertyRef Name="url" />
               <PropertyRef Name="httpMethod" />
             </Principal>
-            <Dependent Role="GlobalCacheRCData">
+            <Dependent Role="UserCacheItem">
               <PropertyRef Name="url" />
               <PropertyRef Name="httpMethod" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="rc-fk">
+          <End Role="GlobalCacheRCData" Type="RCDatabaseModel.Store.GlobalCacheRCData" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="GlobalCacheItem" Type="RCDatabaseModel.Store.GlobalCacheItem" Multiplicity="0..1" />
+          <ReferentialConstraint>
+            <Principal Role="GlobalCacheRCData">
+              <PropertyRef Name="url" />
+              <PropertyRef Name="httpMethod" />
+            </Principal>
+            <Dependent Role="GlobalCacheItem">
+              <PropertyRef Name="url" />
+              <PropertyRef Name="httpMethod" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="ucd-fk">
+          <End Role="UserCacheDomain" Type="RCDatabaseModel.Store.UserCacheDomain" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="UserCacheItem" Type="RCDatabaseModel.Store.UserCacheItem" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="UserCacheDomain">
+              <PropertyRef Name="userID" />
+              <PropertyRef Name="domain" />
+            </Principal>
+            <Dependent Role="UserCacheItem">
+              <PropertyRef Name="userID" />
+              <PropertyRef Name="domain" />
             </Dependent>
           </ReferentialConstraint>
         </Association>
@@ -82,9 +126,17 @@
           <EntitySet Name="GlobalCacheRCData" EntityType="RCDatabaseModel.GlobalCacheRCData" />
           <EntitySet Name="UserCacheDomain" EntityType="RCDatabaseModel.UserCacheDomain" />
           <EntitySet Name="UserCacheItem" EntityType="RCDatabaseModel.UserCacheItem" />
-          <AssociationSet Name="rcdata_fk" Association="RCDatabaseModel.rcdata_fk">
-            <End Role="GlobalCacheItem" EntitySet="GlobalCacheItem" />
+          <AssociationSet Name="rc2_fk" Association="RCDatabaseModel.rc2_fk">
             <End Role="GlobalCacheRCData" EntitySet="GlobalCacheRCData" />
+            <End Role="UserCacheItem" EntitySet="UserCacheItem" />
+          </AssociationSet>
+          <AssociationSet Name="ucd_fk" Association="RCDatabaseModel.ucd_fk">
+            <End Role="UserCacheDomain" EntitySet="UserCacheDomain" />
+            <End Role="UserCacheItem" EntitySet="UserCacheItem" />
+          </AssociationSet>
+          <AssociationSet Name="rc_fk" Association="RCDatabaseModel.rc_fk">
+            <End Role="GlobalCacheRCData" EntitySet="GlobalCacheRCData" />
+            <End Role="GlobalCacheItem" EntitySet="GlobalCacheItem" />
           </AssociationSet>
         </EntityContainer>
         <EntityType Name="GlobalCacheItem">
@@ -97,8 +149,8 @@
           <Property Name="responseHeaders" Type="String" Nullable="false" MaxLength="Max" Unicode="true" FixedLength="false" />
           <Property Name="statusCode" Type="Int16" Nullable="false" />
           <Property Name="filename" Type="String" MaxLength="260" Unicode="true" FixedLength="false" Nullable="false" />
-          <NavigationProperty Name="GlobalCacheRCData" Relationship="RCDatabaseModel.rcdata_fk" FromRole="GlobalCacheItem" ToRole="GlobalCacheRCData" />
           <Property Type="Int64" Name="filesize" Nullable="false" />
+          <NavigationProperty Name="GlobalCacheRCData" Relationship="RCDatabaseModel.rc_fk" FromRole="GlobalCacheItem" ToRole="GlobalCacheRCData" />
         </EntityType>
         <EntityType Name="GlobalCacheRCData">
           <Key>
@@ -110,7 +162,8 @@
           <Property Name="downloadTime" Type="DateTime" Nullable="false" Precision="3" />
           <Property Name="lastRequestTime" Type="DateTime" Nullable="false" Precision="3" />
           <Property Name="numberOfRequests" Type="Int32" Nullable="false" />
-          <NavigationProperty Name="GlobalCacheItem" Relationship="RCDatabaseModel.rcdata_fk" FromRole="GlobalCacheRCData" ToRole="GlobalCacheItem" />
+          <NavigationProperty Name="UserCacheItems" Relationship="RCDatabaseModel.rc2_fk" FromRole="GlobalCacheRCData" ToRole="UserCacheItem" />
+          <NavigationProperty Name="GlobalCacheItem" Relationship="RCDatabaseModel.rc_fk" FromRole="GlobalCacheRCData" ToRole="GlobalCacheItem" />
         </EntityType>
         <EntityType Name="UserCacheDomain">
           <Key>
@@ -119,29 +172,68 @@
           </Key>
           <Property Name="userID" Type="Int32" Nullable="false" />
           <Property Name="domain" Type="String" Nullable="false" MaxLength="400" Unicode="true" FixedLength="false" />
+          <NavigationProperty Name="UserCacheItems" Relationship="RCDatabaseModel.ucd_fk" FromRole="UserCacheDomain" ToRole="UserCacheItem" />
         </EntityType>
         <EntityType Name="UserCacheItem">
           <Key>
             <PropertyRef Name="url" />
             <PropertyRef Name="httpMethod" />
+            <PropertyRef Name="userID" />
+            <PropertyRef Name="domain" />
           </Key>
           <Property Name="url" Type="String" Nullable="false" MaxLength="2000" Unicode="true" FixedLength="false" />
           <Property Name="httpMethod" Type="String" Nullable="false" MaxLength="100" Unicode="true" FixedLength="false" />
-          <Property Name="responseHeaders" Type="String" MaxLength="Max" Unicode="true" FixedLength="false" />
-          <Property Name="statusCode" Type="Int16" />
+          <Property Name="responseHeaders" Type="String" MaxLength="Max" Unicode="true" FixedLength="false" Nullable="false" />
+          <Property Name="statusCode" Type="Int16" Nullable="false" />
           <Property Name="filename" Type="String" MaxLength="260" Unicode="true" FixedLength="false" />
+          <Property Type="Int32" Name="userID" Nullable="false" />
+          <Property Type="String" Name="domain" Nullable="false" MaxLength="400" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="GlobalCacheRCData" Relationship="RCDatabaseModel.rc2_fk" FromRole="UserCacheItem" ToRole="GlobalCacheRCData" />
+          <NavigationProperty Name="UserCacheDomain" Relationship="RCDatabaseModel.ucd_fk" FromRole="UserCacheItem" ToRole="UserCacheDomain" />
         </EntityType>
-        <Association Name="rcdata_fk">
-          <End Role="GlobalCacheItem" Type="RCDatabaseModel.GlobalCacheItem" Multiplicity="1">
+        <Association Name="rc2_fk">
+          <End Type="RCDatabaseModel.GlobalCacheRCData" Role="GlobalCacheRCData" Multiplicity="1">
             <OnDelete Action="Cascade" />
           </End>
-          <End Role="GlobalCacheRCData" Type="RCDatabaseModel.GlobalCacheRCData" Multiplicity="0..1" />
+          <End Type="RCDatabaseModel.UserCacheItem" Role="UserCacheItem" Multiplicity="*" />
           <ReferentialConstraint>
-            <Principal Role="GlobalCacheItem">
+            <Principal Role="GlobalCacheRCData">
               <PropertyRef Name="url" />
               <PropertyRef Name="httpMethod" />
             </Principal>
-            <Dependent Role="GlobalCacheRCData">
+            <Dependent Role="UserCacheItem">
+              <PropertyRef Name="url" />
+              <PropertyRef Name="httpMethod" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="ucd_fk">
+          <End Type="RCDatabaseModel.UserCacheDomain" Role="UserCacheDomain" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Type="RCDatabaseModel.UserCacheItem" Role="UserCacheItem" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="UserCacheDomain">
+              <PropertyRef Name="userID" />
+              <PropertyRef Name="domain" />
+            </Principal>
+            <Dependent Role="UserCacheItem">
+              <PropertyRef Name="userID" />
+              <PropertyRef Name="domain" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="rc_fk">
+          <End Type="RCDatabaseModel.GlobalCacheRCData" Role="GlobalCacheRCData" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Type="RCDatabaseModel.GlobalCacheItem" Role="GlobalCacheItem" Multiplicity="0..1" />
+          <ReferentialConstraint>
+            <Principal Role="GlobalCacheRCData">
+              <PropertyRef Name="url" />
+              <PropertyRef Name="httpMethod" />
+            </Principal>
+            <Dependent Role="GlobalCacheItem">
               <PropertyRef Name="url" />
               <PropertyRef Name="httpMethod" />
             </Dependent>
@@ -187,6 +279,8 @@
           <EntitySetMapping Name="UserCacheItem">
             <EntityTypeMapping TypeName="RCDatabaseModel.UserCacheItem">
               <MappingFragment StoreEntitySet="UserCacheItem">
+                <ScalarProperty Name="domain" ColumnName="domain" />
+                <ScalarProperty Name="userID" ColumnName="userID" />
                 <ScalarProperty Name="url" ColumnName="url" />
                 <ScalarProperty Name="httpMethod" ColumnName="httpMethod" />
                 <ScalarProperty Name="responseHeaders" ColumnName="responseHeaders" />

@@ -14,7 +14,14 @@ namespace RuralCafe.Database
     
     public partial class UserCacheDomain
     {
+        public UserCacheDomain()
+        {
+            this.UserCacheItems = new HashSet<UserCacheItem>();
+        }
+    
         public int userID { get; set; }
         public string domain { get; set; }
+    
+        public virtual ICollection<UserCacheItem> UserCacheItems { get; set; }
     }
 }
