@@ -200,10 +200,11 @@ namespace RuralCafe
         /// <param name="listenAddress">Address the proxy listens on.</param>
         /// <param name="listenPort">Port the proxy listens on.</param>
         /// <param name="proxyPath">Directory path the proxy is running in.</param>
+        /// <param name="maxCacheSize">The max cache size in bytes.</param>
         /// <param name="cachePath">Path to the proxy's cache</param>
         /// <param name="packageCachePath">Path to the proxy's packages</param>
         protected RCProxy(string name, IPAddress listenAddress, int listenPort, 
-            string proxyPath, string cachePath, string packageCachePath)
+            string proxyPath, long maxCacheSize, string cachePath, string packageCachePath)
         {
             _name = name;
             // setup proxy listener variables
@@ -220,7 +221,7 @@ namespace RuralCafe
             bool success = false;
 
             // initialize the cache directory
-            success = InitializeCache(cachePath);
+            success = InitializeCache(maxCacheSize, cachePath);
             if (!success)
             {
                 _logger.Warn("Error initializing the " + name + " cache.");
@@ -243,10 +244,11 @@ namespace RuralCafe
         /// Initializes the cache by making sure that the directory exists.
         /// </summary>
         /// <param name="cachePath">Path of the cache.</param>
+        /// <param name="maxCacheSize">The max cache size in bytes.</param>
         /// <returns>True or false for success or not.</returns>
-        protected virtual bool InitializeCache(string cachePath)
+        protected virtual bool InitializeCache(long maxCacheSize, string cachePath)
         {
-            _cacheManager = new CacheManager(cachePath, this);
+            _cacheManager = new CacheManager(this, maxCacheSize, cachePath);
             return _cacheManager.InitializeCache();
         }
 

@@ -322,5 +322,29 @@ namespace RuralCafe.Properties {
                 this["REMOTE_MAX_INFLIGHT_REQUESTS"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("2048")]
+        public int LOCAL_MAX_CACHE_SIZE_MIB {
+            get {
+                return ((int)(this["LOCAL_MAX_CACHE_SIZE_MIB"]));
+            }
+            set {
+                this["LOCAL_MAX_CACHE_SIZE_MIB"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("4096")]
+        public int REMOTE_MAX_CACHE_SIZE_MIB {
+            get {
+                return ((int)(this["REMOTE_MAX_CACHE_SIZE_MIB"]));
+            }
+            set {
+                this["REMOTE_MAX_CACHE_SIZE_MIB"] = value;
+            }
+        }
     }
 }

@@ -209,7 +209,8 @@ namespace RuralCafe
         {
             // create the proxy
             RCLocalProxy localProxy = new RCLocalProxy(IPAddress.Parse(Properties.Settings.Default.LOCAL_PROXY_IP_ADDRESS),
-                Properties.Settings.Default.LOCAL_PROXY_LISTEN_PORT, LOCAL_PROXY_PATH, INDEX_PATH, LOCAL_CACHE_PATH,
+                Properties.Settings.Default.LOCAL_PROXY_LISTEN_PORT, LOCAL_PROXY_PATH, INDEX_PATH,
+                ((long)(Properties.Settings.Default.LOCAL_MAX_CACHE_SIZE_MIB)) * 1024 * 1024, LOCAL_CACHE_PATH,
                 WIKI_DUMP_FILE, PACKAGE_PATH);
 
             // set the remote proxy
@@ -263,7 +264,8 @@ namespace RuralCafe
             // create the proxy
             RCRemoteProxy remoteProxy = new RCRemoteProxy(IPAddress.Parse(Properties.Settings.Default.REMOTE_PROXY_IP_ADDRESS),
                 Properties.Settings.Default.REMOTE_PROXY_LISTEN_PORT,
-                REMOTE_PROXY_PATH, REMOTE_CACHE_PATH, PACKAGE_PATH);
+                REMOTE_PROXY_PATH, ((long)(Properties.Settings.Default.REMOTE_MAX_CACHE_SIZE_MIB)) * 1024 * 1024,
+                REMOTE_CACHE_PATH, PACKAGE_PATH);
 
             /*
             // XXX: buggy...

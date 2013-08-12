@@ -10,8 +10,14 @@ using System.Windows.Forms;
 
 namespace RuralCafe
 {
+    /// <summary>
+    /// The settings form shown on start up.
+    /// </summary>
     public partial class SettingsForm : Form
     {
+        /// <summary>
+        /// A new Settings form
+        /// </summary>
         public SettingsForm()
         {
             InitializeComponent();
@@ -25,7 +31,7 @@ namespace RuralCafe
         private void SettingsForm_Load(object sender, EventArgs e)
         {
             // Give all fields the current setting values. Do NOT do this in 
-            // InitializeComponent, because the Designer thinks it can delete if for
+            // InitializeComponent, because the Designer thinks it can delete it for
             // empty default settings and produce buggy code for ComboBoxes and other stuff.
             this.textBox1.Text = Properties.Settings.Default.LOCAL_PROXY_IP_ADDRESS;
             this.textBox3.Text = Properties.Settings.Default.LOCAL_CACHE_PATH;
@@ -46,6 +52,8 @@ namespace RuralCafe
             this.numericUpDown6.Value = Properties.Settings.Default.DEFAULT_DEPTH;
             this.numericUpDown7.Value = Properties.Settings.Default.DEFAULT_QUOTA;
             this.numericUpDown8.Value = Properties.Settings.Default.DNS_CACHE_TTL;
+            this.numericUpDown9.Value = Properties.Settings.Default.LOCAL_MAX_CACHE_SIZE_MIB;
+            this.numericUpDown10.Value = Properties.Settings.Default.REMOTE_MAX_CACHE_SIZE_MIB;
             this.comboBox1.DataSource = Enum.GetValues(typeof(RCLocalProxy.NetworkStatusCode));
             this.comboBox2.DataSource = Enum.GetValues(typeof(RequestHandler.Richness));
             this.comboBox3.DataSource = Enum.GetValues(typeof(LogLevel));
@@ -103,6 +111,8 @@ namespace RuralCafe
             Properties.Settings.Default.DEFAULT_DEPTH = (int)this.numericUpDown6.Value;
             Properties.Settings.Default.DEFAULT_QUOTA = (int)this.numericUpDown7.Value;
             Properties.Settings.Default.DNS_CACHE_TTL = (int)this.numericUpDown8.Value;
+            Properties.Settings.Default.LOCAL_MAX_CACHE_SIZE_MIB = (int)this.numericUpDown9.Value;
+            Properties.Settings.Default.REMOTE_MAX_CACHE_SIZE_MIB = (int)this.numericUpDown10.Value;
             Properties.Settings.Default.DETECT_NETWORK_AUTO = this.checkBox1.Checked;
             Properties.Settings.Default.NETWORK_STATUS = (RCLocalProxy.NetworkStatusCode)this.comboBox1.SelectedItem;
             Properties.Settings.Default.DEFAULT_RICHNESS = (RequestHandler.Richness)this.comboBox2.SelectedItem;
@@ -121,26 +131,6 @@ namespace RuralCafe
             this.Close();
         }
 
-        private void label21_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void comboBox3_SelectedIndexChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label22_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void comboBox4_SelectedIndexChanged(object sender, EventArgs e)
-        {
-
-        }
-
         /// <summary>
         /// When detect network auto is (un)checked.
         /// </summary>
@@ -150,11 +140,6 @@ namespace RuralCafe
         {
             // Enable or disable the network status combo box.
             this.comboBox1.Enabled = !this.checkBox1.Checked;
-        }
-
-        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
-        {
-
         }
     }
 }

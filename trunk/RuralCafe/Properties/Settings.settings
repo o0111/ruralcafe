@@ -77,5 +77,11 @@
     <Setting Name="REMOTE_MAX_INFLIGHT_REQUESTS" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">50</Value>
     </Setting>
+    <Setting Name="LOCAL_MAX_CACHE_SIZE_MIB" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">2048</Value>
+    </Setting>
+    <Setting Name="REMOTE_MAX_CACHE_SIZE_MIB" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">4096</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
