@@ -83,6 +83,10 @@ namespace RuralCafe
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
+            this.numericUpDown9 = new System.Windows.Forms.NumericUpDown();
+            this.label24 = new System.Windows.Forms.Label();
+            this.numericUpDown10 = new System.Windows.Forms.NumericUpDown();
+            this.label25 = new System.Windows.Forms.Label();
             this.panel1.SuspendLayout();
             this.groupBox5.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown8)).BeginInit();
@@ -97,6 +101,8 @@ namespace RuralCafe
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown4)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown9)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown10)).BeginInit();
             this.SuspendLayout();
             // 
             // panel1
@@ -110,14 +116,14 @@ namespace RuralCafe
             this.panel1.Controls.Add(this.groupBox1);
             this.panel1.Location = new System.Drawing.Point(13, 13);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(687, 517);
+            this.panel1.Size = new System.Drawing.Size(687, 536);
             this.panel1.TabIndex = 0;
             // 
             // groupBox5
             // 
             this.groupBox5.Controls.Add(this.numericUpDown8);
             this.groupBox5.Controls.Add(this.label23);
-            this.groupBox5.Location = new System.Drawing.Point(4, 430);
+            this.groupBox5.Location = new System.Drawing.Point(4, 450);
             this.groupBox5.Name = "groupBox5";
             this.groupBox5.Size = new System.Drawing.Size(666, 48);
             this.groupBox5.TabIndex = 6;
@@ -148,7 +154,7 @@ namespace RuralCafe
             // button2
             // 
             this.button2.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.button2.Location = new System.Drawing.Point(595, 487);
+            this.button2.Location = new System.Drawing.Point(596, 504);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(75, 23);
             this.button2.TabIndex = 5;
@@ -158,7 +164,7 @@ namespace RuralCafe
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(514, 487);
+            this.button1.Location = new System.Drawing.Point(515, 504);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 4;
@@ -180,9 +186,9 @@ namespace RuralCafe
             this.groupBox4.Controls.Add(this.label12);
             this.groupBox4.Controls.Add(this.label18);
             this.groupBox4.Controls.Add(this.label17);
-            this.groupBox4.Location = new System.Drawing.Point(4, 310);
+            this.groupBox4.Location = new System.Drawing.Point(4, 343);
             this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(666, 114);
+            this.groupBox4.Size = new System.Drawing.Size(666, 101);
             this.groupBox4.TabIndex = 3;
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Shared";
@@ -205,7 +211,6 @@ namespace RuralCafe
             this.label22.Size = new System.Drawing.Size(111, 13);
             this.label22.TabIndex = 28;
             this.label22.Text = "Detect network status";
-            this.label22.Click += new System.EventHandler(this.label22_Click);
             // 
             // comboBox3
             // 
@@ -215,7 +220,6 @@ namespace RuralCafe
             this.comboBox3.Name = "comboBox3";
             this.comboBox3.Size = new System.Drawing.Size(184, 21);
             this.comboBox3.TabIndex = 27;
-            this.comboBox3.SelectedIndexChanged += new System.EventHandler(this.comboBox3_SelectedIndexChanged);
             // 
             // label21
             // 
@@ -225,7 +229,6 @@ namespace RuralCafe
             this.label21.Size = new System.Drawing.Size(50, 13);
             this.label21.TabIndex = 26;
             this.label21.Text = "Log level";
-            this.label21.Click += new System.EventHandler(this.label21_Click);
             // 
             // comboBox2
             // 
@@ -244,7 +247,6 @@ namespace RuralCafe
             this.comboBox1.Name = "comboBox1";
             this.comboBox1.Size = new System.Drawing.Size(181, 21);
             this.comboBox1.TabIndex = 24;
-            this.comboBox1.SelectedIndexChanged += new System.EventHandler(this.comboBox1_SelectedIndexChanged);
             // 
             // numericUpDown7
             // 
@@ -316,16 +318,16 @@ namespace RuralCafe
             this.groupBox3.Controls.Add(this.textBox9);
             this.groupBox3.Controls.Add(this.label8);
             this.groupBox3.Controls.Add(this.label9);
-            this.groupBox3.Location = new System.Drawing.Point(4, 219);
+            this.groupBox3.Location = new System.Drawing.Point(4, 264);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(666, 85);
+            this.groupBox3.Size = new System.Drawing.Size(666, 73);
             this.groupBox3.TabIndex = 2;
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Gateway Proxy";
             // 
             // numericUpDown2
             // 
-            this.numericUpDown2.Location = new System.Drawing.Point(138, 41);
+            this.numericUpDown2.Location = new System.Drawing.Point(138, 45);
             this.numericUpDown2.Maximum = new decimal(new int[] {
             65535,
             0,
@@ -337,7 +339,7 @@ namespace RuralCafe
             // 
             // textBox10
             // 
-            this.textBox10.Location = new System.Drawing.Point(461, 40);
+            this.textBox10.Location = new System.Drawing.Point(461, 44);
             this.textBox10.Name = "textBox10";
             this.textBox10.Size = new System.Drawing.Size(183, 20);
             this.textBox10.TabIndex = 13;
@@ -345,7 +347,7 @@ namespace RuralCafe
             // 
             // textBox11
             // 
-            this.textBox11.Location = new System.Drawing.Point(461, 14);
+            this.textBox11.Location = new System.Drawing.Point(461, 18);
             this.textBox11.Name = "textBox11";
             this.textBox11.Size = new System.Drawing.Size(183, 20);
             this.textBox11.TabIndex = 12;
@@ -353,7 +355,7 @@ namespace RuralCafe
             // label10
             // 
             this.label10.AutoSize = true;
-            this.label10.Location = new System.Drawing.Point(329, 43);
+            this.label10.Location = new System.Drawing.Point(329, 47);
             this.label10.Name = "label10";
             this.label10.Size = new System.Drawing.Size(53, 13);
             this.label10.TabIndex = 11;
@@ -362,7 +364,7 @@ namespace RuralCafe
             // label11
             // 
             this.label11.AutoSize = true;
-            this.label11.Location = new System.Drawing.Point(329, 17);
+            this.label11.Location = new System.Drawing.Point(329, 21);
             this.label11.Name = "label11";
             this.label11.Size = new System.Drawing.Size(55, 13);
             this.label11.TabIndex = 10;
@@ -370,7 +372,7 @@ namespace RuralCafe
             // 
             // textBox9
             // 
-            this.textBox9.Location = new System.Drawing.Point(138, 14);
+            this.textBox9.Location = new System.Drawing.Point(138, 18);
             this.textBox9.Name = "textBox9";
             this.textBox9.Size = new System.Drawing.Size(183, 20);
             this.textBox9.TabIndex = 8;
@@ -378,7 +380,7 @@ namespace RuralCafe
             // label8
             // 
             this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(6, 43);
+            this.label8.Location = new System.Drawing.Point(6, 47);
             this.label8.Name = "label8";
             this.label8.Size = new System.Drawing.Size(26, 13);
             this.label8.TabIndex = 7;
@@ -387,7 +389,7 @@ namespace RuralCafe
             // label9
             // 
             this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(6, 17);
+            this.label9.Location = new System.Drawing.Point(6, 21);
             this.label9.Name = "label9";
             this.label9.Size = new System.Drawing.Size(57, 13);
             this.label9.TabIndex = 6;
@@ -395,7 +397,9 @@ namespace RuralCafe
             // 
             // groupBox2
             // 
+            this.groupBox2.Controls.Add(this.numericUpDown10);
             this.groupBox2.Controls.Add(this.numericUpDown5);
+            this.groupBox2.Controls.Add(this.label25);
             this.groupBox2.Controls.Add(this.numericUpDown3);
             this.groupBox2.Controls.Add(this.label19);
             this.groupBox2.Controls.Add(this.textBox7);
@@ -403,9 +407,9 @@ namespace RuralCafe
             this.groupBox2.Controls.Add(this.label5);
             this.groupBox2.Controls.Add(this.textBox5);
             this.groupBox2.Controls.Add(this.label4);
-            this.groupBox2.Location = new System.Drawing.Point(4, 135);
+            this.groupBox2.Location = new System.Drawing.Point(4, 161);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(666, 78);
+            this.groupBox2.Size = new System.Drawing.Size(666, 97);
             this.groupBox2.TabIndex = 1;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Remote Proxy";
@@ -486,6 +490,8 @@ namespace RuralCafe
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.numericUpDown9);
+            this.groupBox1.Controls.Add(this.label24);
             this.groupBox1.Controls.Add(this.numericUpDown4);
             this.groupBox1.Controls.Add(this.numericUpDown1);
             this.groupBox1.Controls.Add(this.textBox20);
@@ -504,7 +510,7 @@ namespace RuralCafe
             this.groupBox1.Controls.Add(this.label1);
             this.groupBox1.Location = new System.Drawing.Point(4, 4);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(666, 125);
+            this.groupBox1.Size = new System.Drawing.Size(666, 151);
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Local Proxy";
@@ -647,13 +653,55 @@ namespace RuralCafe
             this.label1.TabIndex = 1;
             this.label1.Text = "IP address";
             // 
+            // numericUpDown9
+            // 
+            this.numericUpDown9.Location = new System.Drawing.Point(140, 121);
+            this.numericUpDown9.Maximum = new decimal(new int[] {
+            2147483647,
+            0,
+            0,
+            0});
+            this.numericUpDown9.Name = "numericUpDown9";
+            this.numericUpDown9.Size = new System.Drawing.Size(182, 20);
+            this.numericUpDown9.TabIndex = 21;
+            // 
+            // label24
+            // 
+            this.label24.AutoSize = true;
+            this.label24.Location = new System.Drawing.Point(5, 124);
+            this.label24.Name = "label24";
+            this.label24.Size = new System.Drawing.Size(108, 13);
+            this.label24.TabIndex = 20;
+            this.label24.Text = "Max cache size (MiB)";
+            // 
+            // numericUpDown10
+            // 
+            this.numericUpDown10.Location = new System.Drawing.Point(138, 67);
+            this.numericUpDown10.Maximum = new decimal(new int[] {
+            2147483647,
+            0,
+            0,
+            0});
+            this.numericUpDown10.Name = "numericUpDown10";
+            this.numericUpDown10.Size = new System.Drawing.Size(182, 20);
+            this.numericUpDown10.TabIndex = 23;
+            // 
+            // label25
+            // 
+            this.label25.AutoSize = true;
+            this.label25.Location = new System.Drawing.Point(3, 70);
+            this.label25.Name = "label25";
+            this.label25.Size = new System.Drawing.Size(108, 13);
+            this.label25.TabIndex = 22;
+            this.label25.Text = "Max cache size (MiB)";
+            // 
             // SettingsForm
             // 
             this.AcceptButton = this.button1;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.button2;
-            this.ClientSize = new System.Drawing.Size(716, 537);
+            this.ClientSize = new System.Drawing.Size(716, 559);
             this.Controls.Add(this.panel1);
             this.Name = "SettingsForm";
             this.Text = "RuralCafe Settings";
@@ -677,6 +725,8 @@ namespace RuralCafe
             this.groupBox1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown4)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown9)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown10)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -737,5 +787,9 @@ namespace RuralCafe
         private System.Windows.Forms.GroupBox groupBox5;
         private System.Windows.Forms.NumericUpDown numericUpDown8;
         private System.Windows.Forms.Label label23;
+        private System.Windows.Forms.NumericUpDown numericUpDown9;
+        private System.Windows.Forms.Label label24;
+        private System.Windows.Forms.NumericUpDown numericUpDown10;
+        private System.Windows.Forms.Label label25;
     }
 }

@@ -191,9 +191,9 @@ namespace RuralCafe
         /// <param name="wikiDumpPath">Path to the wiki dump file.</param>
         /// <param name="packagesPath">Path to the downloaded packages.</param>
         public RCLocalProxy(IPAddress listenAddress, int listenPort, string proxyPath, string indexPath,
-            string cachePath, string wikiDumpPath, string packagesPath)
+            long maxCacheSize, string cachePath, string wikiDumpPath, string packagesPath)
             : base(LOCAL_PROXY_NAME, listenAddress, listenPort, proxyPath,
-            cachePath, packagesPath)
+            maxCacheSize, cachePath, packagesPath)
         {
             _uiPagesPath = proxyPath + "RuralCafePages" + Path.DirectorySeparatorChar;
             _wikiDumpPath = wikiDumpPath;
@@ -238,9 +238,10 @@ namespace RuralCafe
         /// </summary>
         /// <param name="cachePath">Path of the cache.</param>
         /// <returns>True or false for success or not.</returns>
-        protected override bool InitializeCache(string cachePath)
+        protected override bool InitializeCache(long maxCacheSize, string cachePath)
         {
-            _cacheManager = new CacheManager(cachePath, _proxyPath + CLUSTERS_FOLDER + Path.DirectorySeparatorChar, this);
+            _cacheManager = new CacheManager(this, maxCacheSize, cachePath, 
+                _proxyPath + CLUSTERS_FOLDER + Path.DirectorySeparatorChar);
             return _cacheManager.InitializeCache();
         }
 

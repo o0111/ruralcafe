@@ -46,10 +46,10 @@ namespace RuralCafe
         /// <param name="proxyPath">Path to the proxy's executable.</param>
         /// <param name="cachePath">Path to the proxy's cache.</param>
         /// <param name="packagesPath">Path to the proxy's packages</param>
-        public RCRemoteProxy(IPAddress listenAddress, int listenPort, string proxyPath, 
-            string cachePath, string packagesPath)
+        public RCRemoteProxy(IPAddress listenAddress, int listenPort, string proxyPath,
+            long maxCacheSize, string cachePath, string packagesPath)
             : base(REMOTE_PROXY_NAME, listenAddress, listenPort, proxyPath, 
-            cachePath, packagesPath)
+            maxCacheSize, cachePath, packagesPath)
         {
             _userSettings = new Dictionary<IPEndPoint, Dictionary<int, RCUserSettings>>();
             // XXX: Should be defaulted to something then fluctuate based on connection management
