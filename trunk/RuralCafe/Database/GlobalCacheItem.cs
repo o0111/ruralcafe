@@ -19,6 +19,7 @@ namespace RuralCafe.Database
         public string responseHeaders { get; set; }
         public short statusCode { get; set; }
         public string filename { get; set; }
+        public long filesize { get; set; }
     
         public virtual GlobalCacheRCData GlobalCacheRCData { get; set; }
     }

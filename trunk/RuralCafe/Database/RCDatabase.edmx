@@ -4,7 +4,7 @@
   <edmx:Runtime>
     <!-- SSDL content -->
     <edmx:StorageModels>
-      <Schema Namespace="RCDatabaseModel.Store" Alias="Self" Provider="System.Data.SqlServerCe.4.0" ProviderManifestToken="4.0" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
+    <Schema Namespace="RCDatabaseModel.Store" Alias="Self" Provider="System.Data.SqlServerCe.4.0" ProviderManifestToken="4.0" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
         <EntityContainer Name="RCDatabaseModelStoreContainer">
           <EntitySet Name="GlobalCacheItem" EntityType="RCDatabaseModel.Store.GlobalCacheItem" store:Type="Tables" />
           <EntitySet Name="GlobalCacheRCData" EntityType="RCDatabaseModel.Store.GlobalCacheRCData" store:Type="Tables" />
@@ -24,7 +24,8 @@
           <Property Name="httpMethod" Type="nvarchar" Nullable="false" MaxLength="100" />
           <Property Name="responseHeaders" Type="ntext" Nullable="false" />
           <Property Name="statusCode" Type="smallint" Nullable="false" />
-          <Property Name="filename" Type="nvarchar" MaxLength="260" />
+          <Property Name="filename" Type="nvarchar" Nullable="false" MaxLength="260" />
+          <Property Name="filesize" Type="bigint" Nullable="false" />
         </EntityType>
         <EntityType Name="GlobalCacheRCData">
           <Key>
@@ -72,8 +73,7 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-      </Schema>
-    </edmx:StorageModels>
+      </Schema></edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
       <Schema Namespace="RCDatabaseModel" Alias="Self" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns="http://schemas.microsoft.com/ado/2008/09/edm">
@@ -96,8 +96,9 @@
           <Property Name="httpMethod" Type="String" Nullable="false" MaxLength="100" Unicode="true" FixedLength="false" />
           <Property Name="responseHeaders" Type="String" Nullable="false" MaxLength="Max" Unicode="true" FixedLength="false" />
           <Property Name="statusCode" Type="Int16" Nullable="false" />
-          <Property Name="filename" Type="String" MaxLength="260" Unicode="true" FixedLength="false" />
+          <Property Name="filename" Type="String" MaxLength="260" Unicode="true" FixedLength="false" Nullable="false" />
           <NavigationProperty Name="GlobalCacheRCData" Relationship="RCDatabaseModel.rcdata_fk" FromRole="GlobalCacheItem" ToRole="GlobalCacheRCData" />
+          <Property Type="Int64" Name="filesize" Nullable="false" />
         </EntityType>
         <EntityType Name="GlobalCacheRCData">
           <Key>
@@ -155,6 +156,7 @@
           <EntitySetMapping Name="GlobalCacheItem">
             <EntityTypeMapping TypeName="RCDatabaseModel.GlobalCacheItem">
               <MappingFragment StoreEntitySet="GlobalCacheItem">
+                <ScalarProperty Name="filesize" ColumnName="filesize" />
                 <ScalarProperty Name="url" ColumnName="url" />
                 <ScalarProperty Name="httpMethod" ColumnName="httpMethod" />
                 <ScalarProperty Name="responseHeaders" ColumnName="responseHeaders" />

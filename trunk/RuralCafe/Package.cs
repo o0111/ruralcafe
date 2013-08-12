@@ -184,7 +184,7 @@ namespace RuralCafe
 
             // calculate the index size
             _indexSize = Utils.GetFileSize(_packageFileName);
-            if (_indexSize < 0)
+            if (_indexSize <= 0)
             {
                 throw new IOException("Problem getting file info for package file.");
             }
@@ -367,20 +367,18 @@ namespace RuralCafe
                     return -1;
                 }
 
-                // add the file to Lucene, if it is a text or HTML file
+                // add the file to Lucene, if it is a GET text or HTML file, that not existed before.
                 // We have made sure the content-type header is always present in the DB!
-                if (headers["Content-Type"].Contains("text/html") || headers["Content-Type"].Contains("text/plain"))
+                if (!existed && httpMethod.Equals("GET") &&
+                    (headers["Content-Type"].Contains("text/html") || headers["Content-Type"].Contains("text/plain")))
                 {
-                    if (!existed)
-                    {
-                        // XXX reading the file we just wrote. Could also stream it in
-                        // local variable, that would be faster
-                        string document = Utils.ReadFileAsString(cacheFileName);
-                        string title = HtmlUtils.GetPageTitleFromHTML(document);
+                    // XXX reading the file we just wrote. Could also stream it in
+                    // local variable, that would be faster
+                    string document = Utils.ReadFileAsString(cacheFileName);
+                    string title = HtmlUtils.GetPageTitleFromHTML(document);
 
-                        // Use whole document, so we can also find results with tags, etc.
-                        indexWrapper.IndexDocument(currUri, title, document);
-                    }
+                    // Use whole document, so we can also find results with tags, etc.
+                    indexWrapper.IndexDocument(currUri, title, document);
                 }
             }
             if (packageFs != null)

@@ -323,7 +323,7 @@ namespace RuralCafe.Util
         /// Helper function to get the file size on disk of a page.
         /// </summary>
         /// <param name="fileName">Name of the file.</param>
-        /// <returns>-1 for non-existent file.</returns>
+        /// <returns>-1 for non-existent file. Otherwise the file size.</returns>
         public static long GetFileSize(string fileName)
         {
             FileInfo f;
@@ -335,18 +335,12 @@ namespace RuralCafe.Util
                 {
                     return -1;
                 }
-
-                if (f.Length >= 0)
-                {
-                    return f.Length;
-                }
+                return f.Length;
             }
             catch (Exception)
             {
                 return -1;
             }
-
-            return -1;
         }
 
         /// <summary>
