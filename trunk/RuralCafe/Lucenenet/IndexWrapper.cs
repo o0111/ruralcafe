@@ -93,12 +93,12 @@ namespace RuralCafe.Lucenenet
         /// To be used for cache coherence/maintainence.
         /// Unused. Untested.
         /// </summary>
-        /// <param name="Uri">The uri to delete from the index.</param>
-        public void DeleteDocument(string Uri)
+        /// <param name="uri">The uri to delete from the index.</param>
+        public void DeleteDocument(string uri)
         {
             Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(_indexPath));
             IndexReader indexReader = IndexReader.Open(directory, false);
-            indexReader.DeleteDocuments(new Term("uri", Uri));
+            indexReader.DeleteDocuments(new Term("uri", uri));
         }
 
         /// <summary>
@@ -109,9 +109,6 @@ namespace RuralCafe.Lucenenet
         /// <param name="content">The page contents.</param>
         public void IndexDocument(string uri, string title, string content)
         {
-            // remove the document if it exists in the index to prevent duplicates
-            //DeleteDocument(indexPath, Uri);
-
             IndexWriter writer = new IndexWriter(_indexPath, _analyzer, false);
 
             Document doc = new Document();

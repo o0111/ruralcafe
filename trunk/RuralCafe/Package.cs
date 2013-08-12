@@ -195,10 +195,8 @@ namespace RuralCafe
         /// </summary>
         /// <param name="requestHandler">Calling handler for this method.</param>
         /// <param name="rcheaders">The rc specific headers.</param>
-        /// <param name="indexWrapper">The index wrapper.</param>
         /// <returns>Total unpacked content size.</returns>
-        public static long Unpack(LocalRequestHandler requestHandler, RCSpecificResponseHeaders rcheaders,
-            IndexWrapper indexWrapper)
+        public static long Unpack(LocalRequestHandler requestHandler, RCSpecificResponseHeaders rcheaders)
         {
             long packageIndexSize = rcheaders.RCPackageIndexSize;
             long packageContentSize = rcheaders.RCPackageContentSize;
@@ -293,10 +291,8 @@ namespace RuralCafe
                     requestHandler.Logger.Warn("problem unpacking, filename too long for uri: " + currUri);
                     return unpackedBytes;
                 }
-                // check if the file exists in order not to add a duplicated to the lucene index
-                bool existed = requestHandler.Proxy.ProxyCacheManager.IsCached(httpMethod, currUri);
 
-                if (existed)
+                if (requestHandler.Proxy.ProxyCacheManager.IsCached(httpMethod, currUri))
                 {
                     // We override the file, if it exists
                     Utils.DeleteFile(cacheFileName);
@@ -365,20 +361,6 @@ namespace RuralCafe
                     // Clean up: delete file and return (do not add to lucene)
                     Utils.DeleteFile(cacheFileName);
                     return -1;
-                }
-
-                // add the file to Lucene, if it is a GET text or HTML file, that not existed before.
-                // We have made sure the content-type header is always present in the DB!
-                if (!existed && httpMethod.Equals("GET") &&
-                    (headers["Content-Type"].Contains("text/html") || headers["Content-Type"].Contains("text/plain")))
-                {
-                    // XXX reading the file we just wrote. Could also stream it in
-                    // local variable, that would be faster
-                    string document = Utils.ReadFileAsString(cacheFileName);
-                    string title = HtmlUtils.GetPageTitleFromHTML(document);
-
-                    // Use whole document, so we can also find results with tags, etc.
-                    indexWrapper.IndexDocument(currUri, title, document);
                 }
             }
             if (packageFs != null)

@@ -17,7 +17,12 @@ namespace RuralCafe.Database
         public string url { get; set; }
         public string httpMethod { get; set; }
         public string responseHeaders { get; set; }
-        public Nullable<short> statusCode { get; set; }
+        public short statusCode { get; set; }
         public string filename { get; set; }
+        public int userID { get; set; }
+        public string domain { get; set; }
+    
+        public virtual GlobalCacheRCData GlobalCacheRCData { get; set; }
+        public virtual UserCacheDomain UserCacheDomain { get; set; }
     }
 }

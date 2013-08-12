@@ -310,7 +310,7 @@ namespace RuralCafe
             {
                 RCSpecificResponseHeaders headers = GetRCSpecificResponseHeaders();
 
-                long unpackedBytes = Package.Unpack(this, headers, ((RCLocalProxy)_proxy).IndexWrapper);
+                long unpackedBytes = Package.Unpack(this, headers);
                 if (unpackedBytes > 0)
                 {
                     Logger.Debug("unpacked: " + RequestUri);

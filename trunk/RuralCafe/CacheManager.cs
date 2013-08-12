@@ -14,6 +14,7 @@ using Newtonsoft.Json;
 using RuralCafe.Json;
 using System.Threading;
 using System.Reflection;
+using RuralCafe.Lucenenet;
 
 namespace RuralCafe
 {
@@ -42,7 +43,7 @@ namespace RuralCafe
                 { "GlobalCacheItem", new string[] { "httpMethod", "url", "responseHeaders", "filename", "statusCode", "filesize" } },
                 { "GlobalCacheRCData",  new string[] { "httpMethod", "url", "downloadTime", "lastRequestTime", "numberOfRequests" } },
                 { "UserCacheDomain",  new string[] { "userID", "domain" } },
-                { "UserCacheItem",  new string[] { "httpMethod", "url", "responseHeaders", "filename", "statusCode" } }
+                { "UserCacheItem",  new string[] { "httpMethod", "url", "responseHeaders", "filename", "statusCode", "userID", "domain" } }
             };
 
         // Regex's for safe URI replacements
@@ -624,37 +625,6 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Removes an cache item from the DB and the disk.
-        /// 
-        /// Unused.
-        /// </summary>
-        /// <param name="httpMethod">The used HTTP method.</param>
-        /// <param name="uri">The URI.</param>
-        public void RemoveCacheItem(string httpMethod, string uri)
-        {
-            RCDatabaseEntities databaseContext = GetNewDatabaseContext();
-            _lock.EnterWriteLock();
-            try
-            {
-                RemoveCacheItemFromDatabase(httpMethod, uri, databaseContext);
-                databaseContext.SaveChanges();
-            }
-            catch (Exception e)
-            {
-                _proxy.Logger.Error("Could not remove cache item from the database.", e);
-                return;
-            }
-            finally
-            {
-                _lock.ExitWriteLock();
-            }
-
-
-            // Remove file
-            Utils.DeleteFile(_cachePath + GetRelativeCacheFileName(uri, httpMethod));
-        }
-
-        /// <summary>
         /// Removes a cache item and deletes the file. This method is used internally, when evicting.
         /// </summary>
         /// <param name="cacheItem">The cache item.</param>
@@ -665,8 +635,22 @@ namespace RuralCafe
                 cacheItem.httpMethod, cacheItem.url, cacheItem.GlobalCacheRCData.lastRequestTime));
             // Remove file
             Utils.DeleteFile(_cachePath + GetRelativeCacheFileName(cacheItem.url, cacheItem.httpMethod));
-            // Remove DB entry
+            // Remove cache item entry
             databaseContext.GlobalCacheItem.Remove(cacheItem);
+
+            // TODO remove from lucene
+            // If we're on the local proxy, we want to add text documents to the Lucene index.
+            if (_proxy is RCLocalProxy && cacheItem.httpMethod.Equals("GET") &&
+                (cacheItem.responseHeaders.Contains("\"Content-Type\":[\"text/html") ||
+                cacheItem.responseHeaders.Contains("\"Content-Type\":[\"text/plain")))
+            {
+                // remove the file from Lucene, if it is a GET text or HTML file.
+                // We have made sure the content-type header is always present in the DB!
+                ((RCLocalProxy)_proxy).IndexWrapper.DeleteDocument(cacheItem.url);
+            }
+
+            // TODO Test if rc data is still there
+            var x = GetGlobalCacheRCData(cacheItem.httpMethod, cacheItem.url, databaseContext);
         }
 
         /// <summary>
@@ -1054,6 +1038,36 @@ namespace RuralCafe
             _proxy.Logger.Debug("Adding to database: " + httpMethod + " "
                     + url);
 
+            // Check if the RC data still exists (this means the file has been cached previsouly and was evicted)
+            GlobalCacheRCData rcData = GetGlobalCacheRCData(httpMethod, url, databaseContext);
+            if (rcData == null)
+            {
+                // create a new rc data item
+                rcData = new GlobalCacheRCData();
+                // Save the rc values
+                rcData.url = url;
+                rcData.httpMethod = httpMethod;
+                // Although this is not really a request, we set the lastRequestTime to now
+                rcData.lastRequestTime = DateTime.Now;
+                // No requests so far
+                rcData.numberOfRequests = 0;
+                // Download time is the lastModified time of the file, if it already exists. Otherwise now
+                rcData.downloadTime = File.Exists(_cachePath + relFileName) ?
+                    File.GetLastWriteTime(_cachePath + relFileName) : DateTime.Now;
+                // add item
+                databaseContext.GlobalCacheRCData.Add(rcData);
+            }
+            else
+            {
+                // Although this is not really a request, we set the lastRequestTime to now
+                rcData.lastRequestTime = DateTime.Now;
+                // One request more
+                rcData.numberOfRequests++;
+                // Download time is the lastModified time of the file, if it already exists. Otherwise now
+                rcData.downloadTime = File.Exists(_cachePath + relFileName) ?
+                    File.GetLastWriteTime(_cachePath + relFileName) : DateTime.Now;
+            }
+
             // Create item and save the values.
             GlobalCacheItem cacheItem = new GlobalCacheItem();
             cacheItem.url = url;
@@ -1065,46 +1079,32 @@ namespace RuralCafe
             // add item
             databaseContext.GlobalCacheItem.Add(cacheItem);
 
-            // create rc data item
-            GlobalCacheRCData rcData = new GlobalCacheRCData();
-            rcData.url = url;
-            rcData.httpMethod = httpMethod;
-            // Although this is not really a request, we set the lastRequestTime to now
-            rcData.lastRequestTime = DateTime.Now;
-            // No requests so far
-            rcData.numberOfRequests = 0;
-            // Download time is the lastModified time of the file, if it already exists. Otherwise now
-            rcData.downloadTime = File.Exists(_cachePath + relFileName) ?
-                File.GetLastWriteTime(_cachePath + relFileName) : DateTime.Now;
-            // add item
-            databaseContext.GlobalCacheRCData.Add(rcData);
-        }
-
-        /// <summary>
-        /// Removes an cache item from both DB tables.
-        /// 
-        /// databaseContext.SaveChanges() still needs to be called.
-        /// </summary>
-        /// <param name="httpMethod">The used HTTP method.</param>
-        /// <param name="uri">The URI.</param>
-        /// <param name="databaseContext">The database context</param>
-        private void RemoveCacheItemFromDatabase(string httpMethod, string uri, RCDatabaseEntities databaseContext)
-        {
-            IQueryable<GlobalCacheItem> gciQuery = from gci in databaseContext.GlobalCacheItem
-                                                   where gci.httpMethod.Equals(httpMethod) && gci.url.Equals(uri)
-                                                   select gci;
-            foreach (GlobalCacheItem gci in gciQuery)
+            // If we're on the local proxy, we want to add text documents to the Lucene index.
+            if (_proxy is RCLocalProxy && httpMethod.Equals("GET") &&
+                (headers["Content-Type"].Contains("text/html") || headers["Content-Type"].Contains("text/plain")))
             {
-                databaseContext.GlobalCacheItem.Remove(gci);
-            }
+                RCLocalProxy proxy = ((RCLocalProxy)_proxy);
+                // The index might not have been initialized...
+                if (proxy.IndexWrapper == null)
+                {
+                    // FIXME We should not use the Program var here.
+                    // But when we're creating the DB, this gets called in the RCProxy constructor
+                    // before the RCLocalProxy constructor. We should find a way to have the index created
+                    // before the cache for the LP
+                    proxy.IndexWrapper = new IndexWrapper(Program.INDEX_PATH);
+                    // initialize the index
+                    proxy.IndexWrapper.EnsureIndexExists();
+                }
 
-            // FIXME this might be unnecessary!
-            IQueryable<GlobalCacheRCData> rcQuery = from rci in databaseContext.GlobalCacheRCData
-                                                    where rci.httpMethod.Equals(httpMethod) && rci.url.Equals(uri)
-                                                    select rci;
-            foreach (GlobalCacheRCData rci in rcQuery)
-            {
-                databaseContext.GlobalCacheRCData.Remove(rci);
+                // add the file to Lucene, if it is a GET text or HTML file.
+                // We have made sure the content-type header is always present in the DB!
+                
+                // XXX reading the file we just wrote. Not perfect.
+                string document = Utils.ReadFileAsString(_cachePath + relFileName);
+                string title = HtmlUtils.GetPageTitleFromHTML(document);
+
+                // Use whole document, so we can also find results with tags, etc.
+                proxy.IndexWrapper.IndexDocument(url, title, document);
             }
         }
 

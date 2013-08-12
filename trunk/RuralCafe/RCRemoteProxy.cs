@@ -44,6 +44,7 @@ namespace RuralCafe
         /// <param name="listenAddress">Address to listen for requests on.</param>
         /// <param name="listenPort">Port to listen for requests on.</param>
         /// <param name="proxyPath">Path to the proxy's executable.</param>
+        /// <param name="maxCacheSize">The max cache size in bytes.</param>
         /// <param name="cachePath">Path to the proxy's cache.</param>
         /// <param name="packagesPath">Path to the proxy's packages</param>
         public RCRemoteProxy(IPAddress listenAddress, int listenPort, string proxyPath,
