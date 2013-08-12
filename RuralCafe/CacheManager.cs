@@ -38,7 +38,7 @@ namespace RuralCafe
         // Adapt this if the Database schema changes
         private readonly Dictionary<string, string[]> DB_SCHEMA = new Dictionary<string, string[]>() 
             { 
-                { "GlobalCacheItem", new string[] { "httpMethod", "url", "responseHeaders", "filename", "statusCode" } },
+                { "GlobalCacheItem", new string[] { "httpMethod", "url", "responseHeaders", "filename", "statusCode", "filesize" } },
                 { "GlobalCacheRCData",  new string[] { "httpMethod", "url", "downloadTime", "lastRequestTime", "numberOfRequests" } },
                 { "UserCacheDomain",  new string[] { "userID", "domain" } },
                 { "UserCacheItem",  new string[] { "httpMethod", "url", "responseHeaders", "filename", "statusCode" } }
@@ -557,15 +557,14 @@ namespace RuralCafe
             NameValueCollection headers = webResponse.Headers;
             short statusCode = (short)webResponse.StatusCode;
 
-            // Add file to the database
-            // calling "for existing file" is a bit misleading, as the file
-            // actually does not exist yet.
-            if (!AddCacheItemForExistingFile(url, httpMethod, headers, statusCode))
+            
+            // Add file to the disk
+            if (!AddCacheItemToDisk(webResponse))
             {
                 return false;
             }
-            // Add file to the disk
-            return AddCacheItemToDisk(webResponse);
+            // Add file to the database
+            return AddCacheItemForExistingFile(url, httpMethod, headers, statusCode);
         }
 
         /// <summary>
@@ -599,6 +598,23 @@ namespace RuralCafe
 
         #endregion
         #region cache file manipulation
+
+        /// <summary>
+        /// Gets the file size of a cache item.
+        /// 
+        /// Throws an exception, if the file does not exist.
+        /// </summary>
+        /// <param name="relName">The relative cache file name.</param>
+        /// <returns>The file size in bytes.</returns>
+        public long CacheItemFileSize(string relName)
+        {
+            long result = Utils.GetFileSize(_cachePath + relName);
+            if (result == -1)
+            {
+                throw new Exception("File does not exist.");
+            }
+            return result;
+        }
 
         /// <summary>
         /// Adds a file and writes content into it.
@@ -692,6 +708,10 @@ namespace RuralCafe
         #endregion
         #region private cache database methods
 
+        /// <summary>
+        /// Gets a new database context. This context must not be shared among threads!
+        /// </summary>
+        /// <returns>A new database context.</returns>
         private RCDatabaseEntities GetNewDatabaseContext()
         {
             // Create context and modify connection string to point to our DB file.
@@ -869,6 +889,7 @@ namespace RuralCafe
             // Update non-RC data
             existingCacheItem.responseHeaders = headersJson;
             existingCacheItem.statusCode = statusCode;
+            existingCacheItem.filesize = CacheItemFileSize(relFileName);
 
             // Update RC data
             GlobalCacheRCData rcData = existingCacheItem.GlobalCacheRCData;
@@ -908,6 +929,7 @@ namespace RuralCafe
             cacheItem.responseHeaders = headersJson;
             cacheItem.statusCode = statusCode;
             cacheItem.filename = relFileName; // TODO sth. else?
+            cacheItem.filesize = CacheItemFileSize(relFileName);
             // add item
             databaseContext.GlobalCacheItem.Add(cacheItem);
 

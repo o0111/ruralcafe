@@ -275,14 +275,15 @@ namespace RuralCafe
                 _rcRequest.SetProxyAndTimeout(Proxy.GatewayProxy, System.Threading.Timeout.Infinite);
             }
 
-            // Try to start measuring the speed
-            bool measuring = NetworkUsageDetector.StartMeasuringIfNotRunning();
-
             // wait for admission control
             while (_proxy.NumInflightRequests >= _proxy.MaxInflightRequests)
             {
                 Thread.Sleep(100);
             }
+
+            // Try to start measuring the speed
+            bool measuring = NetworkUsageDetector.StartMeasuringIfNotRunning();
+
             // add to active set of connections
             _proxy.AddActiveRequest(this);
 

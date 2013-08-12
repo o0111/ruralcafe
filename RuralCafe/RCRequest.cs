@@ -349,12 +349,6 @@ namespace RuralCafe
         public bool DownloadToCache()
         {
             CacheManager cacheManager = _requestHandler.GenericProxy.ProxyCacheManager;
-            if(cacheManager.IsCached(_webRequest))
-            {
-                _requestHandler.Logger.Debug("Already exists: " +
-                    _webRequest.Method + " " + _webRequest.RequestUri);
-                return true;
-            }
 
             try
             {
