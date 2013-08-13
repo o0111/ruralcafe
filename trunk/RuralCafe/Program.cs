@@ -37,6 +37,7 @@ namespace RuralCafe
     /// <summary>
     /// The entry point static class for Rural Cafe.
     /// </summary>
+    [Guid("97E8E8E6-FF51-4468-8DDE-CBD8F32BF3A4")]
     public static class Program
     {
         /// <summary>

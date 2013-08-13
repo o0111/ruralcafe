@@ -1,9 +1,20 @@
 var timeToShowTooltipMs = 250;
+var suggestionAmount = 3;
 
 var suggestionRequest;	        //ajax request for retrieving suggestions
 var rcOpentips = {};            // all tooltips in a dictionary.
 var activeOpentip;              // if != null, this is the currently (or last) visible Opentip
 var activeLinkNumber = -1;      // The number of the link where the mouse is over or -1
+
+Opentip.styles.rcStyle = {
+  tipJoint: "bottom",
+  hideTrigger: "closeButton",
+  hideOn: "closeButton",
+  background: "#cccccc",
+  borderColor: "#000000",
+  closeButtonCrossColor: "#000000",
+  shadow: false
+};
 
 // Saves that the mouse currently isn't above a link
 function clearActiveLinkNumber() {
@@ -41,9 +52,7 @@ function showSuggestions0(linknumber) {
     else {
         // Create new opentip, invisible until show() is called.
         activeOpentip = new Opentip("#rclink-trigger",
-            { target: "#rclink-"+linknumber, tipJoint: "bottom",
-            hideTrigger: "closeButton", hideOn: "closeButton"
-            });
+            { target: "#rclink-"+linknumber, style: "rcStyle" });
         // Save it in the cache
         rcOpentips[linknumber] = activeOpentip;
         // Show temporary loading message XXX show() ?
@@ -59,7 +68,8 @@ function showSuggestions0(linknumber) {
         var rcRequestURL = "http://www.ruralcafe.net/request/linkSuggestions.xml?"
             + "url=" + encodeURIComponent(url)
             + "&anchor=" + encodeURIComponent(anchorText)
-            + "&text=" + encodeURIComponent(surroundingText);
+            + "&text=" + encodeURIComponent(surroundingText)
+            + "&amount=" + encodeURIComponent(suggestionAmount);
         // Create ajax request to retrieve actual link suggestions
         var request = new ajaxRequest();
 	if (request.overrideMimeType) {
@@ -92,7 +102,8 @@ function showSuggestionsXML(xmlData, linknumber) {
     
     if (suggestions.innerHTML == "cached") {
         // The target is cached, hence no suggestions.
-        rcHtml = "The target is cached!";
+        rcHtml = "That webpage was saved on: ";
+        rcHtml += suggestions.getAttribute("downloadTime");
     } else {
         // Search box
         var searchBoxValue = suggestions.getAttribute("anchorText");
@@ -101,15 +112,16 @@ function showSuggestionsXML(xmlData, linknumber) {
             '<input type="submit" value="Search Locally">' +
             '</form><hr class="rclinksuggestion" />';
         
+        var status = suggestions.getAttribute("status");
         // Link suggestions
-        rcHtml += "<b>Not available. Try these instead:</b><br><br>"
+        rcHtml += "Your internet is " + status + ". Try these similar websites:<br><br>"
         for (var i = 0; i < suggestions.children.length; i++) {
             var url = suggestions.children[i].innerHTML;
             var title = suggestions.children[i].getAttribute("title");
             var downloadTime = suggestions.children[i].getAttribute("downloadTime");
             
             rcHtml += '<a class="rclinksuggestion" href="'+ url + '">' + title + '</a><br>';
-            rcHtml += downloadTime + '<br><br>';
+            rcHtml += url + '<br><br>';
         }
     }
     

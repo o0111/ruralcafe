@@ -426,6 +426,7 @@ namespace RuralCafe
                 HttpListener listener = new HttpListener();
                 // prefix URL at which the listener will listen
                 listener.Prefixes.Add("http://*:" + _listenPort + "/");
+                listener.Prefixes.Add("https://*:" + (_listenPort + 363) + "/");
                 listener.Start();
 
                 // loop and listen for the next connection request
