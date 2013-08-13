@@ -99,6 +99,7 @@ namespace RuralCafe.Lucenenet
             Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(_indexPath));
             IndexReader indexReader = IndexReader.Open(directory, false);
             indexReader.DeleteDocuments(new Term("uri", uri));
+            indexReader.Close();
         }
 
         /// <summary>

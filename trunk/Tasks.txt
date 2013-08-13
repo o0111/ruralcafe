@@ -3,29 +3,17 @@ Mayor tasks
 	- Async requests ??
 		- We need a listener for responses from the RP at the LP side
 		- RP requests management (IDs, save from which LP request came, ...)
-	- Cancel request
 	- Detect network outage
 		- Restart interrupted downloads
 - Cache
 	- caching larger granularity (lower priority)
 		- intelligent eviction, timeout, etc. (also for subcomponents)
 	- Directory hashes - better solution ideas?
-	- Cache problems with POST and subsequent requests. E.g. user is logged in but gets old page.
-	  - Per user cache:
-		- User must be logged in into Trotro to do POSTs
-		- While logged in, after a POST with a setcookie-header in the response, create a per user-cache for the specific domain, and use that instead of global cache.
-		- Delete this when user logs out.
-- Add/RequestWithoutUser redesign
-  - Either
-    - GET -> Redirect to Trotro or
-    - POST -> Stream transparently or
-	  -> Redirect to /request/add directly
-	  -> make /request/add redirect to index.html
-	  -> See if old (GET) redirect doesn't work for other pages, too.
 
 Minor tasks
 - Use unix file names to support longer file names: http://blogs.msdn.com/b/bclteam/archive/2007/02/13/long-paths-in-net-part-1-of-3-kim-hamilton.aspx
 - Limit outgoing requests like incoming (_activeRequests)
+- At first hardcoded percentage of _maxInflightRequests that have to be non-streamed ones.
 - Do not delegate remove if request is undispatched or finished 
 - Queue also streaming requests at the RP ??
 	- Duplicate IsStreaming()-Check at the moment.
@@ -65,6 +53,7 @@ Tests
 - Test if queue works for offline network status.
 
 Bugs
+- Estimated network speed is sometimes negative!?
 - en.wikipedia.org/wiki/Bananas*! (bad chars...)
 - "Failed finishing the search work item due to timeout." Indexer:809
 - HttpListenerException (close browser window) uncatched. (Hard to reproduce)
