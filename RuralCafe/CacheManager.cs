@@ -35,6 +35,7 @@ namespace RuralCafe
         private const string TREE_FILE_NAME = "tree";
         public const string CLUSTERS_XML_FILE_NAME = "clusters.xml";
         private const string DATABASE_FILE_NAME = "RCDatabase.sdf";
+        private const int DATABASE_BULK_INSERT_THRESHOLD = 1000;
         private const double CACHE_EVICTION_PERCENT = 0.05;
         private readonly string EMPTY_DATABASE_FILE_NAME = Directory.GetCurrentDirectory()
             + Path.DirectorySeparatorChar + "Database" + Path.DirectorySeparatorChar + DATABASE_FILE_NAME;
@@ -414,7 +415,10 @@ namespace RuralCafe
             _lock.EnterReadLock();
             try
             {
-                return IsCached(httpMethod, uri, GetNewDatabaseContext());
+                using (RCDatabaseEntities databaseContext = GetNewDatabaseContext())
+                {
+                    return IsCached(httpMethod, uri, databaseContext);
+                }
             }
             finally
             {
@@ -433,14 +437,17 @@ namespace RuralCafe
             _lock.EnterReadLock();
             try
             {
-                // Be sure to call the private method! Otherwise this would count as a request.
-                GlobalCacheItem gci = GetGlobalCacheItem(httpMethod, uri, GetNewDatabaseContext());
-                if (gci == null)
+                using (RCDatabaseEntities databaseContext = GetNewDatabaseContext())
                 {
-                    // This hould not happen
-                    return false;
+                    // Be sure to call the private method! Otherwise this would count as a request.
+                    GlobalCacheItem gci = GetGlobalCacheItem(httpMethod, uri, databaseContext);
+                    if (gci == null)
+                    {
+                        // This hould not happen
+                        return false;
+                    }
+                    return gci.responseHeaders.Contains("\"Content-Type\":[\"text/html");
                 }
-                return gci.responseHeaders.Contains("\"Content-Type\":[\"text/html");
             }
             finally
             {
@@ -462,18 +469,20 @@ namespace RuralCafe
             _lock.EnterWriteLock();
             try
             {
-                RCDatabaseEntities databaseContext = GetNewDatabaseContext();
-                GlobalCacheItem result = GetGlobalCacheItem(httpMethod, uri, databaseContext);
-                if (result != null)
+                using (RCDatabaseEntities databaseContext = GetNewDatabaseContext())
                 {
-                    _proxy.Logger.Debug(String.Format("Updating request time and number of requests of {0} {1}",
-                        httpMethod, uri));
-                    // Modify the RC data and save
-                    result.GlobalCacheRCData.lastRequestTime = DateTime.Now;
-                    result.GlobalCacheRCData.numberOfRequests++;
-                    databaseContext.SaveChanges();
+                    GlobalCacheItem result = GetGlobalCacheItem(httpMethod, uri, databaseContext);
+                    if (result != null)
+                    {
+                        _proxy.Logger.Debug(String.Format("Updating request time and number of requests of {0} {1}",
+                            httpMethod, uri));
+                        // Modify the RC data and save
+                        result.GlobalCacheRCData.lastRequestTime = DateTime.Now;
+                        result.GlobalCacheRCData.numberOfRequests++;
+                        databaseContext.SaveChanges();
+                    }
+                    return result;
                 }
-                return result;
             }
             finally
             {
@@ -493,7 +502,10 @@ namespace RuralCafe
             _lock.EnterReadLock();
             try
             {
-                return GetGlobalCacheRCData(httpMethod, uri, GetNewDatabaseContext());
+                using (RCDatabaseEntities databaseContext = GetNewDatabaseContext())
+                {
+                    return GetGlobalCacheRCData(httpMethod, uri, databaseContext);
+                }
             }
             finally
             {
@@ -517,82 +529,84 @@ namespace RuralCafe
             NameValueCollection headers, short statusCode)
         {
             string relFileName = GetRelativeCacheFileName(url, httpMethod);
-            RCDatabaseEntities databaseContext = GetNewDatabaseContext();
 
             _lock.EnterWriteLock();
             try
             {
-                // If the headers do not contain "Content-Type", which should practically not happen,
-                // (but servers are actually not required to send it) we set it to the default:
-                // "application/octet-stream"
-                if (headers["Content-Type"] == null)
+                using (RCDatabaseEntities databaseContext = GetNewDatabaseContext())
                 {
-                    headers["Content-Type"] = "application/octet-stream";
-                }
+                    // If the headers do not contain "Content-Type", which should practically not happen,
+                    // (but servers are actually not required to send it) we set it to the default:
+                    // "application/octet-stream"
+                    if (headers["Content-Type"] == null)
+                    {
+                        headers["Content-Type"] = "application/octet-stream";
+                    }
 
-                // Get the cache and the file size
-                long cacheSize, itemSize;
-                try
-                {
-                    cacheSize = CacheSize(databaseContext);
-                    itemSize = CacheItemFileSize(relFileName);
-                }
-                catch (Exception e)
-                {
-                    _proxy.Logger.Error("Could not compute cache or file size.", e);
-                    return false;
-                }
-
-                GlobalCacheItem existingCacheItem = GetGlobalCacheItem(httpMethod, url, databaseContext);
-
-                // Look if we have to evict cache items first.
-                long cacheOversize = cacheSize + itemSize - _maxCacheSize;
-                if (existingCacheItem != null)
-                {
-                    cacheOversize -= -existingCacheItem.filesize;
-                }
-                if (cacheOversize > 0)
-                {
+                    // Get the cache and the file size
+                    long cacheSize, itemSize;
                     try
                     {
-                        // We have to evict. We do until 5 % is free again.
-                        EvictCacheItems((long)(cacheOversize + CACHE_EVICTION_PERCENT * _maxCacheSize), databaseContext);
+                        cacheSize = CacheSize(databaseContext);
+                        itemSize = CacheItemFileSize(relFileName);
                     }
                     catch (Exception e)
                     {
-                        _proxy.Logger.Error("Could not evict cache items.", e);
+                        _proxy.Logger.Error("Could not compute cache or file size.", e);
                         return false;
                     }
-                }
 
-                if (existingCacheItem == null)
-                {
-                    // Add database entry.
-                    try
+                    GlobalCacheItem existingCacheItem = GetGlobalCacheItem(httpMethod, url, databaseContext);
+
+                    // Look if we have to evict cache items first.
+                    long cacheOversize = cacheSize + itemSize - _maxCacheSize;
+                    if (existingCacheItem != null)
                     {
-                        AddCacheItemToDatabase(url, httpMethod, headers, statusCode,
-                            relFileName, itemSize, databaseContext);
-                        databaseContext.SaveChanges();
+                        cacheOversize -= -existingCacheItem.filesize;
                     }
-                    catch (Exception e)
+                    if (cacheOversize > 0)
                     {
-                        _proxy.Logger.Error("Could not add cache item to the database.", e);
-                        return false;
+                        try
+                        {
+                            // We have to evict. We do until 5 % is free again.
+                            EvictCacheItems((long)(cacheOversize + CACHE_EVICTION_PERCENT * _maxCacheSize), databaseContext);
+                        }
+                        catch (Exception e)
+                        {
+                            _proxy.Logger.Error("Could not evict cache items.", e);
+                            return false;
+                        }
                     }
-                }
-                else
-                {
-                    // Update database entry.
-                    try
+
+                    if (existingCacheItem == null)
                     {
-                        UpdateCacheItemInDatabase(existingCacheItem, headers, statusCode,
-                            relFileName, itemSize, databaseContext);
-                        databaseContext.SaveChanges();
+                        // Add database entry.
+                        try
+                        {
+                            AddCacheItemToDatabase(url, httpMethod, headers, statusCode,
+                                relFileName, itemSize, databaseContext);
+                            databaseContext.SaveChanges();
+                        }
+                        catch (Exception e)
+                        {
+                            _proxy.Logger.Error("Could not add cache item to the database.", e);
+                            return false;
+                        }
                     }
-                    catch (Exception e)
+                    else
                     {
-                        _proxy.Logger.Error("Could not add cache item to the database.", e);
-                        return false;
+                        // Update database entry.
+                        try
+                        {
+                            UpdateCacheItemInDatabase(existingCacheItem, headers, statusCode,
+                                relFileName, itemSize, databaseContext);
+                            databaseContext.SaveChanges();
+                        }
+                        catch (Exception e)
+                        {
+                            _proxy.Logger.Error("Could not add cache item to the database.", e);
+                            return false;
+                        }
                     }
                 }
             }
@@ -639,7 +653,6 @@ namespace RuralCafe
             // Remove cache item entry
             databaseContext.GlobalCacheItem.Remove(cacheItem);
 
-            // TODO remove from lucene
             // If we're on the local proxy, we want to add text documents to the Lucene index.
             if (_proxy is RCLocalProxy && cacheItem.httpMethod.Equals("GET") &&
                 (cacheItem.responseHeaders.Contains("\"Content-Type\":[\"text/html") ||
@@ -656,9 +669,6 @@ namespace RuralCafe
                     _proxy.Logger.Warn("Could not remove document from the index.", e);
                 }
             }
-
-            // TODO Test if rc data is still there
-            var x = GetGlobalCacheRCData(cacheItem.httpMethod, cacheItem.url, databaseContext);
         }
 
         /// <summary>
@@ -802,6 +812,9 @@ namespace RuralCafe
 
         /// <summary>
         /// Gets a new database context. This context must not be shared among threads!
+        /// 
+        /// The context will never detect changes (which improves performance), as we have
+        /// our own synchronization.
         /// </summary>
         /// <returns>A new database context.</returns>
         private RCDatabaseEntities GetNewDatabaseContext()
@@ -810,6 +823,7 @@ namespace RuralCafe
             RCDatabaseEntities result = new RCDatabaseEntities();
             result.Database.Connection.ConnectionString =
                 String.Format("data source=\"{0}\"", _proxy.ProxyPath + DATABASE_FILE_NAME);
+            result.Configuration.AutoDetectChangesEnabled = false;
             return result;
         }
 
@@ -897,35 +911,37 @@ namespace RuralCafe
         /// <returns>True for a valid DB file, false otherwise.</returns>
         private bool CheckDatabaseIntegrityAndRepair()
         {
-            RCDatabaseEntities databaseContext = GetNewDatabaseContext();
-            // See if all tables exist
-            IEnumerable<string> tableNames = databaseContext.Database.SqlQuery<string>(
-                "SELECT table_name FROM information_schema.tables WHERE table_type <> 'VIEW'");
-            foreach (string tableName in DB_SCHEMA.Keys)
+            using (RCDatabaseEntities databaseContext = GetNewDatabaseContext())
             {
-                if (!tableNames.Contains(tableName))
+                // See if all tables exist
+                IEnumerable<string> tableNames = databaseContext.Database.SqlQuery<string>(
+                    "SELECT table_name FROM information_schema.tables WHERE table_type <> 'VIEW'");
+                foreach (string tableName in DB_SCHEMA.Keys)
                 {
-                    _proxy.Logger.Warn(tableName + " table is missing in the database. Will create a new database.");
-                    return false;
-                }
-                // See if all columns exist
-                IEnumerable<string> colNames = databaseContext.Database.SqlQuery<string>(
-                    String.Format("SELECT column_name FROM information_schema.columns WHERE table_name='{0}'",
-                    tableName));
-                foreach (string colName in DB_SCHEMA[tableName])
-                {
-                    if (!colNames.Contains(colName))
+                    if (!tableNames.Contains(tableName))
                     {
-                        // XXX: If we add columns later, we might want to do an
-                        // ALTER TABLE here, instead of returning false.
-                        // Be aware that sqlite is different in regards of adding columns!
-                        _proxy.Logger.Warn(tableName + " table is missing column " +
-                            colName + " in the database. Will create a new database.");
+                        _proxy.Logger.Warn(tableName + " table is missing in the database. Will create a new database.");
                         return false;
                     }
+                    // See if all columns exist
+                    IEnumerable<string> colNames = databaseContext.Database.SqlQuery<string>(
+                        String.Format("SELECT column_name FROM information_schema.columns WHERE table_name='{0}'",
+                        tableName));
+                    foreach (string colName in DB_SCHEMA[tableName])
+                    {
+                        if (!colNames.Contains(colName))
+                        {
+                            // XXX: If we add columns later, we might want to do an
+                            // ALTER TABLE here, instead of returning false.
+                            // Be aware that sqlite is different in regards of adding columns!
+                            _proxy.Logger.Warn(tableName + " table is missing column " +
+                                colName + " in the database. Will create a new database.");
+                            return false;
+                        }
+                    }
                 }
+                return true;
             }
-            return true;
         }
 
         /// <summary>
@@ -955,6 +971,7 @@ namespace RuralCafe
 
             _proxy.Logger.Warn("Creating new database, but the cache is not empty. Filling database with cache data...");
             RCDatabaseEntities databaseContext = GetNewDatabaseContext();
+            int counter = 0;
             // Iterate through all files and fill the database
             foreach (FileInfo fileInfo in files)
             {
@@ -987,11 +1004,24 @@ namespace RuralCafe
                 string httpMethod = GetHTTPMethodFromRelCacheFileName(relFileName);
                 AddCacheItemToDatabase(uri, httpMethod, headers, 200, relFileName, fileInfo.Length, databaseContext);
                 _proxy.Logger.Debug(String.Format("Adding {0} to the database.", fileName));
+
+
+                // To gain a better performace, we save and recreate the context after 1000 inserts.
+                counter++;
+                if (counter == DATABASE_BULK_INSERT_THRESHOLD)
+                {
+                    counter = 0;
+                    _proxy.Logger.Debug("Saving database changes made so far.");
+                    databaseContext.SaveChanges();
+                    databaseContext.Dispose();
+                    databaseContext = GetNewDatabaseContext();
+                }
             }
 
             // Save
-            _proxy.Logger.Debug("Saving database.");
+            _proxy.Logger.Debug("Saving completed database changes.");
             databaseContext.SaveChanges();
+            databaseContext.Dispose();
         }
 
         /// <summary>
@@ -1229,14 +1259,16 @@ namespace RuralCafe
             // Request all filenames where the header has the specified content type. Contains looks dirty
             // as we save the headers in JSON format. This is faster as deserializing before testing,
             // as SQL can do it for as.
-            RCDatabaseEntities databaseContext = GetNewDatabaseContext();
-            List<string> dbResults = (from gci in databaseContext.GlobalCacheItem
-                                      where gci.responseHeaders.Contains("\"Content-Type\":[\"text/html") ||
-                                        gci.responseHeaders.Contains("\"Content-Type\":[\"text/plain")
-                                      select gci.filename).ToList();
-            // Convert relative to global filenames (extra step as the above is converted into SQL, where this
-            // cannot be done)
-            return (from relFile in dbResults select _cachePath + relFile).ToList();
+            using (RCDatabaseEntities databaseContext = GetNewDatabaseContext())
+            {
+                List<string> dbResults = (from gci in databaseContext.GlobalCacheItem
+                                          where gci.responseHeaders.Contains("\"Content-Type\":[\"text/html") ||
+                                            gci.responseHeaders.Contains("\"Content-Type\":[\"text/plain")
+                                          select gci.filename).ToList();
+                // Convert relative to global filenames (extra step as the above is converted into SQL, where this
+                // cannot be done)
+                return (from relFile in dbResults select _cachePath + relFile).ToList();
+            }
         }
 
         /// <summary>
