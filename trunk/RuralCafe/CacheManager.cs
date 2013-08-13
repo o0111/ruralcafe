@@ -35,6 +35,7 @@ namespace RuralCafe
         private const string TREE_FILE_NAME = "tree";
         public const string CLUSTERS_XML_FILE_NAME = "clusters.xml";
         private const string DATABASE_FILE_NAME = "RCDatabase.sdf";
+        private const double CACHE_EVICTION_PERCENT = 0.05;
         private readonly string EMPTY_DATABASE_FILE_NAME = Directory.GetCurrentDirectory()
             + Path.DirectorySeparatorChar + "Database" + Path.DirectorySeparatorChar + DATABASE_FILE_NAME;
         // Adapt this if the Database schema changes
@@ -554,8 +555,8 @@ namespace RuralCafe
                 {
                     try
                     {
-                        // We have to evict.
-                        EvictCacheItems(cacheOversize, databaseContext);
+                        // We have to evict. We do until 5 % is free again.
+                        EvictCacheItems((long)(cacheOversize + CACHE_EVICTION_PERCENT * _maxCacheSize), databaseContext);
                     }
                     catch (Exception e)
                     {
@@ -644,9 +645,16 @@ namespace RuralCafe
                 (cacheItem.responseHeaders.Contains("\"Content-Type\":[\"text/html") ||
                 cacheItem.responseHeaders.Contains("\"Content-Type\":[\"text/plain")))
             {
-                // remove the file from Lucene, if it is a GET text or HTML file.
-                // We have made sure the content-type header is always present in the DB!
-                ((RCLocalProxy)_proxy).IndexWrapper.DeleteDocument(cacheItem.url);
+                try
+                {
+                    // remove the file from Lucene, if it is a GET text or HTML file.
+                    // We have made sure the content-type header is always present in the DB!
+                    ((RCLocalProxy)_proxy).IndexWrapper.DeleteDocument(cacheItem.url);
+                }
+                catch (Exception e)
+                {
+                    _proxy.Logger.Warn("Could not remove document from the index.", e);
+                }
             }
 
             // TODO Test if rc data is still there
@@ -850,8 +858,16 @@ namespace RuralCafe
             catch (Exception e)
             {
                 _proxy.Logger.Warn("Error checking database integrity: ", e);
-                CreateNewDatabase();
-                return true;
+                try
+                {
+                    CreateNewDatabase();
+                    return true;
+                }
+                catch (Exception e1)
+                {
+                    _proxy.Logger.Error("Could not create database file.", e1);
+                    return false;
+                }
             }
 
             // If it exists, we must test whether it really contains a valid DB
@@ -931,12 +947,10 @@ namespace RuralCafe
             long currentCacheSize = files.Sum(file => file.Length);
             if (currentCacheSize >= _maxCacheSize)
             {
-                _proxy.Logger.Fatal(String.Format("The existing cache is {0} bytes in size, " +
+                _proxy.Logger.Error(String.Format("The existing cache is {0} bytes in size, " +
                     "which is bigger than {1}, the max size allowed.", currentCacheSize, _maxCacheSize));
                 // This is actually a reason to stop RC
-                Console.WriteLine("Press a key to exit");
-                Console.ReadKey();
-                Environment.Exit(-1);
+                throw new Exception("Existing cache too big.");
             }
 
             _proxy.Logger.Warn("Creating new database, but the cache is not empty. Filling database with cache data...");
@@ -1032,6 +1046,9 @@ namespace RuralCafe
             NameValueCollection headers, short statusCode, string relFileName, long fileSize,
             RCDatabaseEntities databaseContext)
         {
+            // We disable cookies for non-streamed requests
+            headers.Remove("Set-Cookie");
+
             string headersJson = JsonConvert.SerializeObject(headers,
                 Formatting.None, new NameValueCollectionConverter());
 
@@ -1104,7 +1121,14 @@ namespace RuralCafe
                 string title = HtmlUtils.GetPageTitleFromHTML(document);
 
                 // Use whole document, so we can also find results with tags, etc.
-                proxy.IndexWrapper.IndexDocument(url, title, document);
+                try
+                {
+                    proxy.IndexWrapper.IndexDocument(url, title, document);
+                }
+                catch (Exception e)
+                {
+                    _proxy.Logger.Warn("Could not add document to index.", e);
+                }
             }
         }
 
