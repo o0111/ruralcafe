@@ -35,7 +35,7 @@ namespace RuralCafe
         private const string TREE_FILE_NAME = "tree";
         public const string CLUSTERS_XML_FILE_NAME = "clusters.xml";
         private const string DATABASE_FILE_NAME = "RCDatabase.sdf";
-        private const int DATABASE_BULK_INSERT_THRESHOLD = 1000;
+        private const int DATABASE_BULK_INSERT_THRESHOLD = 100;
         private const double CACHE_EVICTION_PERCENT = 0.05;
         private readonly string EMPTY_DATABASE_FILE_NAME = Directory.GetCurrentDirectory()
             + Path.DirectorySeparatorChar + "Database" + Path.DirectorySeparatorChar + DATABASE_FILE_NAME;
@@ -824,6 +824,7 @@ namespace RuralCafe
             result.Database.Connection.ConnectionString =
                 String.Format("data source=\"{0}\"", _proxy.ProxyPath + DATABASE_FILE_NAME);
             result.Configuration.AutoDetectChangesEnabled = false;
+            result.Configuration.ValidateOnSaveEnabled = false;
             return result;
         }
 
