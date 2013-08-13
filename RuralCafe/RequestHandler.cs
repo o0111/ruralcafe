@@ -573,7 +573,7 @@ namespace RuralCafe
             if (takeDBData)
             {
                 // Modify the webresponse
-                GlobalCacheItem gci = _proxy.ProxyCacheManager.GetGlobalCacheItem(_originalRequest.HttpMethod,
+                GlobalCacheItem gci = _proxy.ProxyCacheManager.GetGlobalCacheItemAsRequest(_originalRequest.HttpMethod,
                     _originalRequest.RawUrl);
                 if (gci == null)
                 {

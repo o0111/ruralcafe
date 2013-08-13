@@ -161,7 +161,7 @@ namespace RuralCafe
                 // create the package index file
                 foreach (RCRequest rcRequest in _rcRequests)
                 {
-                    GlobalCacheItem cacheItem = cacheManager.GetGlobalCacheItem(rcRequest.GenericWebRequest.Method,
+                    GlobalCacheItem cacheItem = cacheManager.GetGlobalCacheItemAsRequest(rcRequest.GenericWebRequest.Method,
                         rcRequest.Uri);
                     if (cacheItem == null)
                     {

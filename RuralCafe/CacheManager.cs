@@ -459,12 +459,38 @@ namespace RuralCafe
         /// Gets the global cache item for the specified HTTP method and URI, if it exists,
         /// and null otherwise.
         /// 
-        /// Also, the lastRequestTime is set to now and the number of requests is incremented.
+        /// This does not count as a request and the last request time and number of requests are
+        /// not modified!
         /// </summary>
         /// <param name="httpMethod">The HTTP method.</param>
         /// <param name="uri">The URI.</param>
         /// <returns>The global cache item or null.</returns>
         public GlobalCacheItem GetGlobalCacheItem(string httpMethod, string uri)
+        {
+            _lock.EnterReadLock();
+            try
+            {
+                using (RCDatabaseEntities databaseContext = GetNewDatabaseContext())
+                {
+                    return GetGlobalCacheItem(httpMethod, uri, databaseContext);
+                }
+            }
+            finally
+            {
+                _lock.ExitReadLock();
+            }
+        }
+
+        /// <summary>
+        /// Gets the global cache item for the specified HTTP method and URI, if it exists,
+        /// and null otherwise.
+        /// 
+        /// Also, the lastRequestTime is set to now and the number of requests is incremented.
+        /// </summary>
+        /// <param name="httpMethod">The HTTP method.</param>
+        /// <param name="uri">The URI.</param>
+        /// <returns>The global cache item or null.</returns>
+        public GlobalCacheItem GetGlobalCacheItemAsRequest(string httpMethod, string uri)
         {
             _lock.EnterWriteLock();
             try
@@ -838,7 +864,11 @@ namespace RuralCafe
             _proxy.Logger.Debug("Creating a new database file.");
             File.Copy(EMPTY_DATABASE_FILE_NAME, dbFile);
             // We must fill the database with the current cache content!
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
             FillDatabaseFromCache();
+            sw.Stop();
+            _proxy.Logger.Debug("It took " + sw.Elapsed.TotalSeconds + "s to create DB");
         }
 
         /// <summary>
@@ -1146,7 +1176,7 @@ namespace RuralCafe
 
                 // add the file to Lucene, if it is a GET text or HTML file.
                 // We have made sure the content-type header is always present in the DB!
-                
+
                 // XXX reading the file we just wrote. Not perfect.
                 string document = Utils.ReadFileAsString(_cachePath + relFileName);
                 string title = HtmlUtils.GetPageTitleFromHTML(document);
@@ -1312,6 +1342,8 @@ namespace RuralCafe
                     _proxy.Logger.Debug("Clustering: Less than 2 text files, aborting.");
                     return;
                 }
+                // List number of text files
+                _proxy.Logger.Debug(String.Format("Clustering: Using {0} text files.", textFiles.Count));
                 // List all Text files XXX Debug
                 //foreach(string textFile in textFiles)
                 //{

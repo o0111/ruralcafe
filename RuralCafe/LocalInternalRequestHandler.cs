@@ -1,5 +1,6 @@
 ﻿using BzReader;
 using RuralCafe.Clusters;
+using RuralCafe.Database;
 using RuralCafe.Lucenenet;
 using RuralCafe.Util;
 using System;
@@ -45,8 +46,8 @@ namespace RuralCafe
                 new string[] { "v" }, new Type[] { typeof(string) }));
             routines.Add("/request/status.xml", new RoutineMethod("ServeNetworkStatus"));
             routines.Add("/request/linkSuggestions.xml", new RoutineMethod("LinkSuggestions",
-                new string[] { "url", "anchor", "text" },
-                new Type[] { typeof(string), typeof(string), typeof(string) }));
+                new string[] { "url", "anchor", "text", "amount" },
+                new Type[] { typeof(string), typeof(string), typeof(string), typeof(int) }));
 
             routines.Add("/request/remove", new RoutineMethod("RemoveRequest",
                 new string[] { "i" }, new Type[] { typeof(string) }));
@@ -628,7 +629,8 @@ namespace RuralCafe
         /// <param name="url">The target URL.</param>
         /// <param name="anchorText">The anchor text.</param>
         /// <param name="surroundingText">The text surrounding the link.</param>
-        public Response LinkSuggestions(string url, string anchorText, string surroundingText)
+        /// <param name="amount">The max. number of suggestions to return.</param>
+        public Response LinkSuggestions(string url, string anchorText, string surroundingText, int amount)
         {
             XmlDocument xmlDoc = new XmlDocument();
             xmlDoc.AppendChild(xmlDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
@@ -642,14 +644,19 @@ namespace RuralCafe
             Uri targetUri = new Uri(refUri, url);
 
             // Test if url is cached.
-            if (Proxy.ProxyCacheManager.IsCached("GET", targetUri.ToString()))
+            GlobalCacheItem gci = Proxy.ProxyCacheManager.GetGlobalCacheItem("GET", targetUri.ToString());
+            if (gci != null)
             {
                 suggestionsXml.InnerText = LINK_SUGGESTIONS_CACHED_TEXT;
+                suggestionsXml.SetAttribute("downloadTime",
+                    Proxy.ProxyCacheManager.GetGlobalCacheRCData("GET", targetUri.ToString()).
+                    downloadTime.ToShortDateString());
             }
             else
             {
+                suggestionsXml.SetAttribute("status", Proxy.NetworkStatus.ToString().ToLower());
                 // XXX Mockup data
-                for (int i = 0; i < 3; i++)
+                for (int i = 0; i < amount; i++)
                 {
                     XmlElement elem = xmlDoc.CreateElement("suggestion");
                     suggestionsXml.AppendChild(elem);
