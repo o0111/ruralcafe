@@ -182,27 +182,52 @@ namespace RuralCafe
         /// <returns>The status.</returns>
         public override void HandleRequest(object nullObj)
         {
-            Logger.Debug("Processing internal request: " + _originalRequest.Url);
-
-            String path = _originalRequest.Url.LocalPath;
-            RoutineMethod method = _routines.ContainsKey(path) ? _routines[path] : _defaultMethod;
-
             try
             {
+                Logger.Debug("Processing internal request: " + _originalRequest.Url);
+
+                String path = _originalRequest.Url.LocalPath;
+                RoutineMethod method = _routines.ContainsKey(path) ? _routines[path] : _defaultMethod;
+
                 MethodInfo mInfo = this.GetType().GetMethod(method.MethodName);
                 if (mInfo == null)
                 {
                     Logger.Error("Unknown method in internal handler: " + method.MethodName);
-
-                    return;// RequestHandler.Status.Failed;
+                    SendErrorPage(HttpStatusCode.InternalServerError, "Unknown method in internal handler: " + method.MethodName);
+                    return;
                 }
-                Object result = mInfo.Invoke(this, GetParameters(method));
+            
+                Object result;
+                try
+                {
+                    result = mInfo.Invoke(this, GetParameters(method));
+                }
+                catch (Exception e)
+                {
+                    // Get inner Exception
+                    Exception innerE = e.InnerException;
+                    if (innerE is HttpException)
+                    {
+                        // an intended Exception
+                        HttpException httpe = (HttpException)innerE;
+                        SendErrorPage(httpe.Status, httpe.Text);
+                    }
+                    else
+                    {
+                        // an unknown exception
+                        string message = innerE != null ? innerE.Message : e.Message;
+                        SendErrorPage(HttpStatusCode.InternalServerError, message);
+                    }
+
+                    return;
+                }
+
                 if (result == null || !(result is Response))
                 {
                     Logger.Error("Return type wrong: " + method.MethodName);
                     SendErrorPage(HttpStatusCode.InternalServerError, "Return type wrong: " + method.MethodName);
 
-                    return;// RequestHandler.Status.Failed;
+                    return;
                 }
                 // Send result
                 Response response = (Response)result;
@@ -217,35 +242,19 @@ namespace RuralCafe
                 }
                 else if (response.StreamFileName != null)
                 {
-                    long bytesSent = StreamFromCacheToClient(response.StreamFileName, false);
-                    if (bytesSent <= 0)
+                    try
+                    {
+                        StreamFromCacheToClient(response.StreamFileName, false);
+                    }
+                    catch (FileNotFoundException)
                     {
                         SendErrorPage(HttpStatusCode.NotFound, "page does not exist: " + _originalRequest.Url);
-
-                        return;// RequestHandler.Status.Failed;
+                    }
+                    catch (Exception e)
+                    {
+                        SendErrorPage(HttpStatusCode.InternalServerError, e.Message);
                     }
                 }
-
-                return;// RequestHandler.Status.Completed;
-            }
-            catch (Exception e)
-            {
-                // Get inner Exception
-                Exception innerE = e.InnerException;
-                if (innerE is HttpException)
-                {
-                    // an intended Exception
-                    HttpException httpe = (HttpException)innerE;
-                    SendErrorPage(httpe.Status, httpe.Text);
-                }
-                else
-                {
-                    // an unknown exception
-                    string message = innerE != null ? innerE.Message : e.Message;
-                    SendErrorPage(HttpStatusCode.InternalServerError, message);
-                }
-
-                return;// RequestHandler.Status.Failed;
             }
             finally
             {

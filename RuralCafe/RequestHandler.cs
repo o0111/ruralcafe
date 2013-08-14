@@ -546,6 +546,11 @@ namespace RuralCafe
         /// <summary>
         /// Stream the file from the cache to the client. Also modifies the response
         /// according to the DB data.
+        /// 
+        /// Throws an FileNotFoundException if the file does not exist.
+        /// Throws an Exception if the DB info could not be retrieved.
+        /// 
+        /// Other exceptions are also forwarded.
         /// </summary>
         /// <param name="fileName">Name of the file to stream to the client.</param>
         /// <param name="takeDBData">If the headers and status code from the DB should be used.
@@ -554,20 +559,11 @@ namespace RuralCafe
         protected long StreamFromCacheToClient(string fileName, bool takeDBData)
         {
             // make sure the file exists.
-            FileInfo f;
-            try
+            FileInfo f = new FileInfo(fileName);
+            if (!f.Exists)
             {
-                f = new FileInfo(fileName);
-                if (!f.Exists)
-                {
-                    Logger.Warn("file doesn't exist: " + fileName);
-                    return -1;
-                }
-            }
-            catch (Exception e)
-            {
-                Logger.Warn("problem getting file info: " + fileName, e);
-                return -1;
+                Logger.Warn("File doesn't exist: " + fileName);
+                throw new FileNotFoundException("File doesn't exist: )");
             }
 
             if (takeDBData)
@@ -577,23 +573,14 @@ namespace RuralCafe
                     _originalRequest.RawUrl);
                 if (gci == null)
                 {
-                    Logger.Warn("problem getting db info: " + fileName);
-                    return -1;
+                    Logger.Warn("Problem getting DB info: " + fileName);
+                    throw new Exception("Problem getting DB info.");
                 }
                 ModifyWebResponse(gci);
             }
 
             // Stream file to client
-            FileStream fs = null;
-            try
-            {
-                fs = f.Open(FileMode.Open, FileAccess.Read);
-            }
-            catch (Exception e)
-            {
-                Logger.Warn("problem opening file: " + fileName, e);
-                return -1;
-            }
+            FileStream fs = f.Open(FileMode.Open, FileAccess.Read);
             return StreamToClient(fs);
         }
 
@@ -643,12 +630,17 @@ namespace RuralCafe
                 FileInfo f = new FileInfo(_rcRequest.CacheFileName);
                 if (downloadSuccessful && f.Exists)
                 {
-                    _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName, true);
-                    if (_rcRequest.FileSize < 0)
+                    try
                     {
+                        _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName, true);
+                        return Status.Completed;
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Warn(e.Message);
+                        SendErrorPage(HttpStatusCode.InternalServerError, e.Message);
                         return Status.Failed;
                     }
-                    return Status.Completed;
                 }
                 else
                 {
