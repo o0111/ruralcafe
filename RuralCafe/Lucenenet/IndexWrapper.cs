@@ -135,7 +135,7 @@ namespace RuralCafe.Lucenenet
         /// <param name="queryString">String to query the index for.</param>
         /// <param name="cachePath">The path to the local cache.</param>
         /// <param name="offset">The offset for the first result to return.</param>
-        /// <param name="resultAmount">The max munber of results to return for the current page.</param>
+        /// <param name="resultAmount">The max number of results to return for the current page.</param>
         /// <returns>A list of search results.</returns>
         public SearchResults Query(string queryString, string cachePath,
             int offset, int resultAmount)
@@ -162,8 +162,6 @@ namespace RuralCafe.Lucenenet
                 Document doc = searcher.Doc(docId);
 
                 // Read the whole file from the cache to find the content snippet.
-                // XXX: Maybe we should include the httpMethod also into lucene
-                // and not just assume, that this is a GET
                 string filepath = CacheManager.GetRelativeCacheFileName(doc.Get("uri"), "GET");
                 string documentContent = Utils.ReadFileAsString(cachePath + filepath);
 

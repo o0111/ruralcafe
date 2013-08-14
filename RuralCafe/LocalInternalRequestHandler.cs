@@ -515,8 +515,8 @@ namespace RuralCafe
                     // We will have to look at the same index again.
                     i--;
                 }
-
             }
+
             // Log result num
             int numResults = luceneResults.NumResults + wikiResults.NumResults;
             Logger.Debug(numResults +  " results");
@@ -537,7 +537,7 @@ namespace RuralCafe
         /// <param name="elem">The XmlElement to append the childs.</param>
         private void AppendSearchResultsXMLElements(SearchResults results, XmlDocument doc, XmlElement elem)
         {
-            foreach (SearchResult result in results.Results)
+            foreach (SearchResult result in results)
             {
                 elem.AppendChild(BuildSearchResultXmlElement(doc,
                     result.Title, HttpUtils.RemoveHttpPrefix(result.URI), result.ContentSnippet));
@@ -655,15 +655,30 @@ namespace RuralCafe
             else
             {
                 suggestionsXml.SetAttribute("status", Proxy.NetworkStatus.ToString().ToLower());
-                // XXX Mockup data
-                for (int i = 0; i < amount; i++)
+
+                // The query is: <targetURL> <referrerURL> <anchorText> <surroundingText>
+                string queryString = url + " " + RefererUri + " " + anchorText + " " + surroundingText;
+                // We want one result more, as we're obviously going to find the referrer page
+                SearchResults luceneResults = Proxy.IndexWrapper.Query(queryString,
+                Proxy.CachePath, 0, amount + 1);
+
+                // remove the referrer page from the reults
+                for (int i = 0; i < luceneResults.Results.Count; i++)
                 {
-                    XmlElement elem = xmlDoc.CreateElement("suggestion");
-                    suggestionsXml.AppendChild(elem);
-                    elem.InnerText = url + i;
-                    elem.SetAttribute("downloadTime", "July 15, 2013");
-                    elem.SetAttribute("title", "Link " + i);
+                    if (luceneResults.Results[i].URI.ToLower().Equals(RefererUri.ToLower()))
+                    {
+                        luceneResults.RemoveDocument(i);
+                        break;
+                    }
                 }
+                // In the rare case that the referrer page was not among the results, we have to remove the last result
+                if (luceneResults.Results.Count > amount)
+                {
+                    luceneResults.RemoveDocument(luceneResults.Results.Count - 1);
+                }
+
+                // Add the results to the XML
+                AppendSearchResultsXMLElements(luceneResults, xmlDoc, suggestionsXml);
             }
 
             PrepareXMLRequestAnswer();

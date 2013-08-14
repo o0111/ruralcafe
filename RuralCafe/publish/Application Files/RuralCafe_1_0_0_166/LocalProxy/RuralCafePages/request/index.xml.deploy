@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+xml file of categories, will be shown in index.html
+
+GET request will be sent to request/index.xml?c=6&n=4 where
+ c is the number of categories, the number of <category> required
+ n is the maximum number of items in a category, the number of <item> allowed
+ 
+GET request will also be sent to request/status to fetch the current internet status,
+"online", "cached" or "offline" (string) should be returned accordingly
+ -->
+ 
+
+<!--Please set the Content-type of this file to 'text/xml'-->
+
+<categories>
+
+<category title="news">
+<item>John Atta Mills</item>
+<item>Geometry Expressions</item>
+<item>Daily Guide Newspaper</item>
+</category>
+
+<category title="sports">
+<item>Olympics</item>
+<item>London</item>
+</category>
+
+</categories>
+

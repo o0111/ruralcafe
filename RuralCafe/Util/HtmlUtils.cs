@@ -125,7 +125,7 @@ namespace RuralCafe.Util
         private static string GetTitle(HtmlDocument doc)
         {
             HtmlNode titleNode = doc.DocumentNode.SelectSingleNode("/html/head/title");
-            return titleNode != null ? titleNode.InnerText : "";
+            return titleNode != null ? titleNode.InnerText.Trim() : "";
         }
 
         /// <summary>
