@@ -201,7 +201,6 @@ namespace RuralCafe.Wiki
         public SearchResults Query(string queryString, int offset, int resultAmount)
         {
             SearchResults results = new SearchResults();
-            // TODO
             HitCollection wikiResults = Indexer.Search(queryString,
                 WikiIndices.Values, WIKI_MAX_RESULTS);
             // Save results num

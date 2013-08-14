@@ -54,7 +54,7 @@ function showXML() {
 				//if url is not empty
 				if(results[i].getElementsByTagName('url')[0].firstChild) {
 					var itemURL = results[i].getElementsByTagName('url')[0].firstChild.nodeValue;
-					var itemTitle = results[i].getElementsByTagName('title')[0].firstChild?results[i].getElementsByTagName('title')[0].firstChild.nodeValue:itemURL;
+					var itemTitle = results[i].getElementsByTagName('title')[0].firstChild ? results[i].getElementsByTagName('title')[0].firstChild.nodeValue : itemURL;
 					var itemSnippet = results[i].getElementsByTagName('snippet')[0].firstChild?results[i].getElementsByTagName('snippet')[0].firstChild.nodeValue:"";
 					innerHtml += '<div class="result_page"><p><a href="http://'+itemURL+'" target="_newtab">'+itemTitle+'</a><img class="cached_icon" alt="cached" src="img/cached.png" /></p><p class="url">'+itemURL+'</p><p>'+itemSnippet+'</p></div>';
 				}

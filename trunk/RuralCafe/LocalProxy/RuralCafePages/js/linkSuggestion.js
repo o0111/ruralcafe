@@ -1,5 +1,6 @@
 var timeToShowTooltipMs = 250;
 var suggestionAmount = 3;
+var followingAndPrecedingWordCount = 3;
 
 var suggestionRequest;	        //ajax request for retrieving suggestions
 var rcOpentips = {};            // all tooltips in a dictionary.
@@ -38,7 +39,9 @@ function showSuggestions0(linknumber) {
     // check if another one is still visible and hide it then
     if (activeOpentip) {
         if (activeOpentip == rcOpentips[linknumber]) {
-            //already visible, just return
+            // already the active one. Might need to call show again,
+            // if it has been closed
+            activeOpentip.show();
             return;
         }
         activeOpentip.hide();
@@ -63,8 +66,43 @@ function showSuggestions0(linknumber) {
         var linkNode = document.getElementById('rclink-'+linknumber);
         var url = linkNode.href;
         var anchorText = linkNode.textContent;
-        // TODO include surrounding text
-        var surroundingText = "";
+        
+        var baseNode = linkNode;
+        // If the linkCode is embedded in some markup (e.g. bold tags),
+        // we might have to go up to its parent.
+        // We do only do this once.
+        if (!baseNode.nextSibling && !baseNode.previousSibling && baseNode.parentNode) {
+            baseNode = baseNode.parentNode;
+        }
+        
+        // Get the following and preciding words.
+        var followingWords = [];
+        var currentSibling = baseNode.nextSibling;
+        while (currentSibling && followingWords.length < followingAndPrecedingWordCount) {
+            var currentSiblingWords = currentSibling.textContent.split(/\s+/);
+            for (var i = 0; i < currentSiblingWords.length
+                 && followingWords.length < followingAndPrecedingWordCount; i++) {
+                if (currentSiblingWords[i]) {
+                    followingWords.push(currentSiblingWords[i]);
+                }
+            }
+            currentSibling = currentSibling.nextSibling;
+        }
+        var precedingWords = [];
+        currentSibling = baseNode.previousSibling;
+        while (currentSibling && precedingWords.length < followingAndPrecedingWordCount) {
+            var currentSiblingWords = currentSibling.textContent.split(/\s+/);
+            for (var i = currentSiblingWords.length - 1; i >= 0
+                 && precedingWords.length < followingAndPrecedingWordCount; i--) {
+                if (currentSiblingWords[i]) {
+                    precedingWords.push(currentSiblingWords[i]);
+                }
+            }
+            currentSibling = currentSibling.previousSibling;
+        }
+        var surroundingText = precedingWords.reverse().join(" ") + " " + followingWords.join(" ");
+        
+        // build the request URL
         var rcRequestURL = "http://www.ruralcafe.net/request/linkSuggestions.xml?"
             + "url=" + encodeURIComponent(url)
             + "&anchor=" + encodeURIComponent(anchorText)
@@ -114,14 +152,26 @@ function showSuggestionsXML(xmlData, linknumber) {
         
         var status = suggestions.getAttribute("status");
         // Link suggestions
-        rcHtml += "Your internet is " + status + ". Try these similar websites:<br><br>"
-        for (var i = 0; i < suggestions.children.length; i++) {
-            var url = suggestions.children[i].innerHTML;
-            var title = suggestions.children[i].getAttribute("title");
-            var downloadTime = suggestions.children[i].getAttribute("downloadTime");
+        rcHtml += "Your internet is " + status + ".";
+        
+        if (suggestions.children.length > 0) {
+            rcHtml += " Try these similar websites:<br><br>";
             
-            rcHtml += '<a class="rclinksuggestion" href="'+ url + '">' + title + '</a><br>';
-            rcHtml += url + '<br><br>';
+            for (var i = 0; i < suggestions.children.length; i++) {
+                var url = suggestions.children[i].getElementsByTagName('url')[0].firstChild.nodeValue;
+                var title = suggestions.children[i].getElementsByTagName('title')[0].firstChild ?
+                    suggestions.children[i].getElementsByTagName('title')[0].firstChild.nodeValue.trim() : url;
+                // If trimmed title is empty
+                if (!title) {
+                    title = url;
+                }
+                    
+                var snippet = suggestions.children[i].getElementsByTagName('snippet')[0].firstChild ?
+                    suggestions.children[i].getElementsByTagName('snippet')[0].firstChild.nodeValue : "";
+                
+                rcHtml += '<a class="rclinksuggestion" href="http://'+ url + '">' + title + '</a><br>';
+                rcHtml += url + '<br><br>';
+            }   
         }
     }
     

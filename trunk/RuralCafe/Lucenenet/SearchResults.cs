@@ -62,7 +62,7 @@ namespace RuralCafe.Lucenenet
     /// Simple data class that combines a list of search results, and the number
     /// of total results. Can be used for both Lucene and BzReader results.
     /// </summary>
-    public class SearchResults
+    public class SearchResults : IEnumerable<SearchResult>
     {
         private List<SearchResult> _results;
         /// <summary>
@@ -129,6 +129,18 @@ namespace RuralCafe.Lucenenet
         {
             this._results.RemoveAt(index);
             this.NumResults--;
+        }
+
+        // Methods for the IEnumerable interface
+        /// <summary></summary>
+        /// <returns>The enumerator.</returns>
+        public IEnumerator<SearchResult> GetEnumerator()
+        {
+            return Results.GetEnumerator();
+        }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }
