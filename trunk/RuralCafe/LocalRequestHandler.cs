@@ -160,12 +160,19 @@ namespace RuralCafe
                             return;
                         }
                         ModifyWebResponse(gci);
-
                         SendMessage(content);
                         return;
                     }
 
-                    _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName, true);
+                    try
+                    {
+                        _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName, true);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Warn(e.Message);
+                        SendErrorPage(HttpStatusCode.InternalServerError, e.Message);
+                    }
                     return;
                 }
 
