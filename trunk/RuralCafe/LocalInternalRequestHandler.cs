@@ -650,7 +650,7 @@ namespace RuralCafe
                 suggestionsXml.InnerText = LINK_SUGGESTIONS_CACHED_TEXT;
                 suggestionsXml.SetAttribute("downloadTime",
                     Proxy.ProxyCacheManager.GetGlobalCacheRCData("GET", targetUri.ToString()).
-                    downloadTime.ToShortDateString());
+                    downloadTime.ToString("dd'/'MM'/'yyyy"));
             }
             else
             {

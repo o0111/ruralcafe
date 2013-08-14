@@ -6,7 +6,7 @@
 }
 .opentip-container {
   position: absolute;
-  max-width: 300px;
+  max-width: 550px;
   z-index: 100;
   -webkit-transition: -webkit-transform 1s ease-in-out;
   -moz-transition: -moz-transform 1s ease-in-out;
@@ -278,11 +278,44 @@
 }
 
 /* Style for the HTML inside the tooltip. Satia */
+.rclinksuggestionOuterBox {
+  text-align: left;
+  font-size: 12pt;
+  color: black;
+  font-family: Arial, Helvetica, sans-serif,
+}
+
+.rclinksuggestionInnerBox {
+  background-color: #ffffff;
+  margin-top: 10px;
+  padding: 10px;
+}
+
+input.rclinksuggestionSearchField {
+  width: 300px;
+  margin-right: 10px;
+  font-size: 12pt;
+}
+
+input.rclinksuggestionButton {
+  float: right;
+  font-size: 12pt;
+  background-color: #33cc33;
+  border-color: black;
+}
+
+a.rclinksuggestion {
+  padding-left: 15px;
+}
+
 a.rclinksuggestion:link {
-  color:#0000ff;
+  color:#0033cc;
   text-decoration:underline;
 }
 
-hr.rclinksuggestion {
-  background-color:#0000ff;
+p.rclinksuggestionURL {
+  font-size: 10pt;
+  color: #808080;
+  padding-top: 6px;
+  padding-left: 25px;
 }

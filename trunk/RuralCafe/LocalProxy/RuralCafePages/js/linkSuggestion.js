@@ -135,9 +135,9 @@ function showSuggestions0(linknumber) {
 }
 
 function showSuggestionsXML(xmlData, linknumber) {
-    var rcHtml = "";
     var suggestions = xmlData.firstChild;
     
+    var rcHtml = '';
     if (suggestions.innerHTML == "cached") {
         // The target is cached, hence no suggestions.
         rcHtml = "That webpage was saved on: ";
@@ -145,13 +145,15 @@ function showSuggestionsXML(xmlData, linknumber) {
     } else {
         // Search box
         var searchBoxValue = suggestions.getAttribute("anchorText");
-        rcHtml = '<form method="get" action="http://ruralcafe.net/result-offline.html">' +
-            '<input id="rcsearch_input' + linknumber + '"   type="text" name="s" value="' + searchBoxValue + '">' +
-            '<input type="submit" value="Search Locally">' +
-            '</form><hr class="rclinksuggestion" />';
+        rcHtml = '<div class="rclinksuggestionOuterBox">';
+        rcHtml += '<form method="get" action="http://ruralcafe.net/result-offline.html">' +
+            '<input class="rclinksuggestionSearchField" id="rcsearch_input' + linknumber + '"   type="text" name="s" value="' + searchBoxValue + '">' +
+            '<input class="rclinksuggestionButton" type="submit" value="Local Search">' +
+            '</form>';
         
         var status = suggestions.getAttribute("status");
         // Link suggestions
+        rcHtml += '<div class="rclinksuggestionInnerBox">';
         rcHtml += "Your internet is " + status + ".";
         
         if (suggestions.children.length > 0) {
@@ -165,15 +167,23 @@ function showSuggestionsXML(xmlData, linknumber) {
                 if (!title) {
                     title = url;
                 }
+                // shrink long titles and urls
+                if (title.length > 60) {
+                    title = title.substring(0, 57) + "...";
+                }
+                var shortUrl = url;
+                if (shortUrl.length > 60) {
+                    shortUrl = shortUrl.substring(0, 57) + "...";
+                }
                     
                 var snippet = suggestions.children[i].getElementsByTagName('snippet')[0].firstChild ?
                     suggestions.children[i].getElementsByTagName('snippet')[0].firstChild.nodeValue : "";
                 
-                rcHtml += '<a class="rclinksuggestion" href="http://'+ url + '">' + title + '</a><br>';
-                rcHtml += url + '<br><br>';
+                rcHtml += '<a class="rclinksuggestion" href="http://'+ url + '">' + title + '</a>';
+                rcHtml += '<p class="rclinksuggestionURL">' + shortUrl + '</p>';
             }   
         }
+        rcHtml += '</div></div>'
     }
-    
     rcOpentips[linknumber].setContent(rcHtml);
 }
