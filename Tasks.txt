@@ -11,6 +11,7 @@ Mayor tasks
 	- Directory hashes - better solution ideas?
 
 Minor tasks
+- Force to run as administrator, if possible
 - Use unix file names to support longer file names: http://blogs.msdn.com/b/bclteam/archive/2007/02/13/long-paths-in-net-part-1-of-3-kim-hamilton.aspx
 - Limit outgoing requests like incoming (_activeRequests)
 - At first hardcoded percentage of _maxInflightRequests that have to be non-streamed ones.
@@ -28,11 +29,11 @@ Minor tasks
 - Create more sub-namespaces and restructure the .cs files.
 
 Code piece integration
-- Clustering:
-	- Make cache access (cluster, add, remove) synchronized. (Maybe both after restructuring cache, otherwise we might have to do it again.)
+- Clustering
 - Link recommendation
 - Crawler
-	- Run crawler button in UI, to build a download a cache based on predefined topics.
+	- Run crawler button in UI, to build a download a cache based on predefined topics ?
+	- Integrate the database creation into the crawler.
 
 Metrics logging
 - Save IP per userId (done)
@@ -44,11 +45,10 @@ Metrics logging
 - self reported user satisfaction
   - html form before or after logout
   - request for the server that logs this
-- total number of cached objects (done, commented out)
-- network speed + status (when detection is implemented)
+- total number of cached objects (done, commented out, needs to be repeated in intervals)
+- network speed + status (done)
 
 Tests
-- Test metadata restoring: POST requests
 - Test search avg. time with >100 local search results
 - Test if queue works for offline network status.
 
@@ -63,10 +63,10 @@ Bugs
 - Unpack bug !?
 	- http://ros.org/wiki/tf 
 - Trotro
-  - sometimes "Pending" does not update to "Downloading". Could be Trotro or RC bug.
+  - Sometimes "Pending" does not update to "Downloading". Could be Trotro or RC bug.
   - When clicking next on either local or google results, the other results should not be loaded again.
   - needs F5 to show page is ready sometimes (can't reproduce this...)
-  - always opens in first tab! 
+  - always opens in first tab!
   - Login mechanism does not work correct
   - Embed opened pages instead of new tabs. Page inside main frame. At the moment, if you do that, you end up having Trotro inside Trotro .... (not sure we can fix this one.)
   - Click search results makes links open in the TroTro tab, this is inconsistent with opening in a new tab. (fixed for cached results, the problem with new results is that it gets redirected to the queue. this should be changed so the RCproxy filters out live results that are actually cached)

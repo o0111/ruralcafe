@@ -277,6 +277,12 @@ namespace RuralCafe
         /// </summary> 		
         public Response ServeRCIndexPage(int numItems, int numCategories, string searchString)
         {
+            if (!File.Exists(Proxy.ProxyCacheManager.ClustersPath + CacheManager.CLUSTERS_XML_FILE_NAME))
+            {
+                // We haven't done clustering yet or there are no files in the cache.
+                throw new HttpException(HttpStatusCode.NotFound, "No clusters computed.");
+            }
+
             string xmlAnswer;
             // Determine the hierarchy-level (1, 2 or 3)
             if (searchString.Equals("root"))
