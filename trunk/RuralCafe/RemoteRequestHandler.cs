@@ -71,10 +71,8 @@ namespace RuralCafe
         /// <param name="proxy">Proxy this request handler belongs to.</param>
         /// <param name="context">Client context.</param>
         public RemoteRequestHandler(RCRemoteProxy proxy, HttpListenerContext context)
-            : base(proxy, context)
+            : base(proxy, context, REMOTE_REQUEST_PACKAGE_DEFAULT_TIMEOUT)
         {
-            _requestTimeout = REMOTE_REQUEST_PACKAGE_DEFAULT_TIMEOUT;
-
             _quota = Properties.Settings.Default.DEFAULT_QUOTA;
             _package = new Package();
             _killYourself = false;
@@ -503,7 +501,7 @@ namespace RuralCafe
         /// Downloads a set of URIs in parallel using a ThreadPool.
         /// </summary>
         /// <param name="parentRequest">Root request.</param>
-        /// <param name="children">Children requests to be downloaded.</param>
+        /// <param name="childObjects">Children URIs to be downloaded.</param>
         /// <returns>List of downloaded requests.</returns>
         private LinkedList<RCRequest> DownloadObjectsInParallel(RCRequest parentRequest, LinkedList<Uri> childObjects)
         {
@@ -685,9 +683,7 @@ namespace RuralCafe
             }
             catch (WebException e)
             {
-                Logger.Debug("IsATextPage: " + e.Message);
-                // probably 404
-                return false;
+                response = e.Response;
             }
 
             string contentType = "";

@@ -40,10 +40,7 @@ namespace RuralCafe
         /// <param name="proxy">Proxy this request handler belongs to.</param>
         /// <param name="context">Client context.</param>
         public RemoteInternalRequestHandler(RCRemoteProxy proxy, HttpListenerContext context)
-            : base(proxy, context, routines, defaultMethod)
-        {
-            _requestTimeout = LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT;
-        }
+            : base(proxy, context, routines, defaultMethod) { }
 
         /// <summary>The proxy that this request belongs to.</summary>
         public RCRemoteProxy Proxy
@@ -75,12 +72,7 @@ namespace RuralCafe
                 Context.Request.RemoteEndPoint + " was set to: " + richness);
             return new Response("Richness set.");
         }
-
-        /// <summary>Dummy.</summary>
-        public override void DispatchRequest(object nullObj)
-        {
-            // dummy
-        }
+        
 
         /// <summary>
         /// Removes the request from Ruralcafe's queue.

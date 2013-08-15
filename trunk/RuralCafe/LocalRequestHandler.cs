@@ -45,11 +45,10 @@ namespace RuralCafe
         /// <summary>
         /// Constructor for a local proxy's request handler.
         /// </summary>
-        /// <param name="internalHandler">The internal handler to copy fields from.</pparam>
+        /// <param name="internalHandler">The internal handler to copy fields from.</param>
         public LocalRequestHandler(LocalInternalRequestHandler internalHandler)
-            : base(internalHandler.Proxy, internalHandler.Context)
+            : base(internalHandler.Proxy, internalHandler.Context, LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT)
         {
-            _requestTimeout = LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT;
             // Copy fields from internalHandler
             _outstandingRequests = internalHandler.OutstandingRequests;
             PackageFileName = internalHandler.PackageFileName;
@@ -61,20 +60,14 @@ namespace RuralCafe
         /// <param name="proxy">Proxy this request handler belongs to.</param>
         /// <param name="context">Client context.</param>
         public LocalRequestHandler(RCLocalProxy proxy, HttpListenerContext context)
-            : base(proxy, context)
-        {
-            _requestTimeout = LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT;
-        }
+            : base(proxy, context, LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT) { }
 
         /// <summary>
         /// Constructor used, when http context is not available any more. E.g. queue deserialization.
         /// </summary>
         /// <param name="proxy">Proxy this request handler belongs to.</param>
         public LocalRequestHandler(RCLocalProxy proxy)
-            : base(proxy)
-        {
-            _requestTimeout = LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT;
-        }
+            : base(proxy, LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT) { }
 
         /// <summary>
         /// Default constructor for JSON.
@@ -274,12 +267,12 @@ namespace RuralCafe
             if (_proxy.GatewayProxy == null)
             {
                 // connect directly to remote proxy
-                _rcRequest.SetProxyAndTimeout(Proxy.RemoteProxy, System.Threading.Timeout.Infinite);
+                _rcRequest.SetProxyAndTimeout(Proxy.RemoteProxy, _requestTimeout);
             }
             else
             {
                 // connect through gateway proxy
-                _rcRequest.SetProxyAndTimeout(Proxy.GatewayProxy, System.Threading.Timeout.Infinite);
+                _rcRequest.SetProxyAndTimeout(Proxy.GatewayProxy, _requestTimeout);
             }
 
             // wait for admission control
@@ -351,7 +344,7 @@ namespace RuralCafe
         private void SetStreamToRemoteProxy()
         {
             // Set Remote Proxy as Proxy
-            RCRequest.SetProxyAndTimeout(Proxy.RemoteProxy, System.Threading.Timeout.Infinite);
+            RCRequest.SetProxyAndTimeout(Proxy.RemoteProxy, _requestTimeout);
             // Set flag to indicate we're streaming
             AddRCSpecificRequestHeaders(new RCSpecificRequestHeaders(true));
         }

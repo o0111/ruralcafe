@@ -228,7 +228,6 @@ namespace RuralCafe.Util
         /// The calling method should call MarkReadyForCallback or AbortCallback once,
         /// if and only if it gets true returned.
         /// </summary>
-        /// <param name="msToWait">The ms to wait until callback should be called.</param>
         /// <param name="callbackMethod">The callback method to be called.</param>
         /// <returns>True if measuring started, false if it was already running.</returns>
         public static bool StartMeasuringIfNotRunningWithCallback(NetworkUsageDetectorDelegate callbackMethod)

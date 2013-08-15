@@ -80,7 +80,6 @@ namespace RuralCafe
         public LocalInternalRequestHandler(RCLocalProxy proxy, HttpListenerContext context)
             : base(proxy, context, routines, defaultMethod)
         {
-            _requestTimeout = LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT;
             UIPagesPath = Proxy.UIPagesPath;
         }
 
@@ -88,12 +87,6 @@ namespace RuralCafe
         public RCLocalProxy Proxy
         {
             get { return (RCLocalProxy)_proxy; }
-        }
-
-        /// <summary>Dummy.</summary>
-        public override void DispatchRequest(object nullObj)
-        {
-            // dummy
         }
 
         #region helper methods
@@ -270,9 +263,9 @@ namespace RuralCafe
 
         /// <summary> 		
         /// Sends the RC Index page to the client. 		
-        /// GET request will be sent to request/index.xml?c=6&n=4&s=root where 		
-        /// n is the maximum number of items in a category, the number of <item>.
-        /// c is the number of categories, the number of <category>. Only for level 1 and 2.
+        /// GET request will be sent to <![CDATA[request/index.xml?c=6&n=4&s=root]]> where 		
+        /// n is the maximum number of items in a category, the number of <![CDATA[<item>]]>.
+        /// c is the number of categories, the number of <![CDATA[<category>]]>. Only for level 1 and 2.
         /// s is the upper level category which the user want to explore (the top level category is defined as 'root') 		
         /// </summary> 		
         public Response ServeRCIndexPage(int numItems, int numCategories, string searchString)
@@ -342,7 +335,7 @@ namespace RuralCafe
         /// Sends the frame page to the client.
         /// xml file of requests in the queue, content will be displayed in frame-offline-login.html
         /// Please organize the item in chronological order (older items first)
-        /// GET request will be sent to request/queue.xml?u=a01&v=24-05-2012 where
+        /// GET request will be sent to <![CDATA[request/queue.xml?u=a01&v=24-05-2012]]> where
         /// u is the user id
         /// v is used to specify date (in format of dd-mm-yyyy), or month (in format of mm-yyyy), or all (v=0). 
         /// If t is set to dd-mm-yyyy or mm-yyyy, only the requests submitted during that day/month will be returned. 
@@ -456,8 +449,8 @@ namespace RuralCafe
 
         /// <summary>
         /// Sends the frame page to the client.
-        /// GET request will be sent to request/result.xml?n=5&p=1&s=searchstring where
-        /// n is the maximum number of items per page, the number of <item> allowed in this file
+        /// GET request will be sent to <![CDATA[request/result.xml?n=5&p=1&s=searchstring]]> where
+        /// n is the maximum number of items per page, the number of <![CDATA[<item>]]> allowed in this file
         /// p is the current page number, if there are multipage pages, page number starts from 1, 2, 3...,
         /// s is the search query string
         /// 
@@ -552,7 +545,7 @@ namespace RuralCafe
 
         /// <summary>
         /// Sends the frame page to the client.
-        /// GET request will be sent to request/search.xml?p=1&s=searchstring where
+        /// GET request will be sent to <![CDATA[request/search.xml?p=1&s=searchstring]]> where
         /// p is the current page number, if there are multipage pages, page number starts from 1, 2, 3...,
         /// s is the search query string
         /// 
@@ -863,7 +856,7 @@ namespace RuralCafe
             // We need to create the request as this is usually not done for the internal handler
             CreateRequest(OriginalRequest);
             // Set Proxy for the request
-            _rcRequest.SetProxyAndTimeout(Proxy.RemoteProxy, System.Threading.Timeout.Infinite);
+            _rcRequest.SetProxyAndTimeout(Proxy.RemoteProxy, _requestTimeout);
             HttpWebResponse response = (HttpWebResponse)_rcRequest.GenericWebRequest.GetResponse();
             return createResponse(response);
         }

@@ -33,8 +33,8 @@
     <TargetCulture>en</TargetCulture>
     <ProductName>Rural Cafe</ProductName>
     <AutorunEnabled>true</AutorunEnabled>
-    <ApplicationRevision>171</ApplicationRevision>
-    <ApplicationVersion>1.0.0.171</ApplicationVersion>
+    <ApplicationRevision>172</ApplicationRevision>
+    <ApplicationVersion>1.0.0.172</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -74,6 +74,12 @@
   </PropertyGroup>
   <PropertyGroup>
     <SignManifests>true</SignManifests>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TargetZone>Custom</TargetZone>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="EntityFramework">
@@ -213,6 +219,7 @@
       <LastGenOutput>RCDatabase.cs</LastGenOutput>
     </None>
     <None Include="packages.config" />
+    <None Include="Properties\app.manifest" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

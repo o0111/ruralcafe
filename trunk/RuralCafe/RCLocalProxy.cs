@@ -102,8 +102,6 @@ namespace RuralCafe
         /// </summary>
         private Timer _changeNetworkStatusTimer;
         /// <summary>
-
-        /// <summary>
         /// The timer that does the clustering.
         /// </summary>
         private Timer _clusteringTimer;

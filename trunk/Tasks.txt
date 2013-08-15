@@ -41,7 +41,6 @@ Metrics logging
   - sync cookie timeout and server "session" timeout
 - log all requests (done)
   - per user (done)
-- log every RC request?
 - self reported user satisfaction
   - html form before or after logout
   - request for the server that logs this

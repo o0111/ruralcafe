@@ -69,37 +69,41 @@ namespace RuralCafe
         [Serializable]
         protected class HttpException : Exception
         {
-            HttpStatusCode _status;
-            string _strText;
-
             /// <summary>
             ///  Construct an HttpError
             /// </summary>
             /// <param name="status">Error status.</param>
             public HttpException(HttpStatusCode status)
             {
-                _status = status;
-                _strText = "";
+                Status = status;
+                Text = "";
             }
 
             /// <summary>
             ///  Construct an HttpError
             /// </summary>
             /// <param name="status">Error status.</param>
-            /// <param name="strReason">The reason for the status.</param>
+            /// <param name="strText">The reason for the status.</param>
             public HttpException(HttpStatusCode status, string strText)
             {
-                _status = status;
-                _strText = strText;
+                Status = status;
+                Text = strText;
             }
 
+            /// <summary>
+            /// The status code.
+            /// </summary>
             public HttpStatusCode Status
             {
-                get { return _status; }
+                get; private set;
             }
+            /// <summary>
+            /// The text.
+            /// </summary>
             public String Text
             {
-                get { return _strText; }
+                get;
+                private set;
             }
         }
 
@@ -108,9 +112,6 @@ namespace RuralCafe
         /// </summary>
         public class Response
         {
-            private string _message;
-            private string _streamFileName;
-
             /// <summary>
             /// Empty response.
             /// </summary>
@@ -122,7 +123,7 @@ namespace RuralCafe
             /// <param name="message">The message.</param>
             public Response(string message)
             {
-                _message = message;
+                Message = message;
             }
 
             /// <summary>
@@ -134,21 +135,26 @@ namespace RuralCafe
             {
                 if (isStreamFileName)
                 {
-                    _streamFileName = addition;
+                    StreamFileName = addition;
                 }
                 else
                 {
-                    _message = addition;
+                    Message = addition;
                 }
             }
-
+            /// <summary>
+            /// A message.
+            /// </summary>
             public string Message
             {
-                get { return _message; }
+                get; private set; 
             }
+            /// <summary>
+            /// A filename to stream its contents.
+            /// </summary>
             public string StreamFileName
             {
-                get { return _streamFileName; }
+                get; private set; 
             }
         }
 
@@ -166,14 +172,21 @@ namespace RuralCafe
         /// Constructor for a internal proxy's request handler.
         /// </summary>
         /// <param name="proxy">Proxy this request handler belongs to.</param>
-        /// <param name="socket">Client socket.</param>
+        /// <param name="context">The client http context,</param>
+        /// <param name="routines">The routines, mapped to the URL that should trigger them.</param>
+        /// <param name="defaultMethod">The default method.</param>
         protected InternalRequestHandler(RCProxy proxy, HttpListenerContext context, 
             Dictionary<String, RoutineMethod> routines, RoutineMethod defaultMethod)
-            : base(proxy, context)
+            : base(proxy, context, LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT)
         {
-            _requestTimeout = LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT;
             _routines = routines;
             _defaultMethod = defaultMethod;
+        }
+
+        /// <summary>Dummy.</summary>
+        public override void DispatchRequest(object nullObj)
+        {
+            // dummy
         }
 
         /// <summary>
@@ -305,7 +318,7 @@ namespace RuralCafe
         /// </summary>
         /// <param name="originalResponse">The original HttpWebResponse.</param>
         /// <returns>The generated Response.</returns>
-        public Response createResponse(HttpWebResponse originalResponse)
+        protected Response createResponse(HttpWebResponse originalResponse)
         {
             _clientHttpContext.Response.ContentType = originalResponse.ContentType;
             // XXX: additional headers lost ATM
