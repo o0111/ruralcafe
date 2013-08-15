@@ -850,7 +850,7 @@ namespace RuralCafe
             // Create context and modify connection string to point to our DB file.
             RCDatabaseEntities result = new RCDatabaseEntities();
             result.Database.Connection.ConnectionString =
-                String.Format("data source=\"{0}\"", _proxy.ProxyPath + DATABASE_FILE_NAME);
+                String.Format("data source=\"{0}\";Max Database Size=4000;Max Buffer Size=256", _proxy.ProxyPath + DATABASE_FILE_NAME);
             result.Configuration.AutoDetectChangesEnabled = false;
             result.Configuration.ValidateOnSaveEnabled = false;
             return result;
