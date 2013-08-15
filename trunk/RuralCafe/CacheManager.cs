@@ -1033,11 +1033,23 @@ namespace RuralCafe
                 string uri = AbsoluteFilePathToUri(fileName);
                 string relFileName = fileName.Substring(_cachePath.Length);
                 string httpMethod = GetHTTPMethodFromRelCacheFileName(relFileName);
-                AddCacheItemToDatabase(uri, httpMethod, headers, 200, relFileName, fileInfo.Length, databaseContext);
-                _proxy.Logger.Debug(String.Format("Adding {0} to the database.", fileName));
 
+                GlobalCacheItem existingCacheItem = GetGlobalCacheItem(httpMethod, uri, databaseContext);
+                if (existingCacheItem == null)
+                {
+                    // Add database entry.
+                    AddCacheItemToDatabase(uri, httpMethod, headers, 200, relFileName, fileInfo.Length, databaseContext);
+                }
+                else
+                {
+                    // Update database entry.
+                    _proxy.Logger.Warn(String.Format("Duplicate entry in database: {0} {1} {2}",
+                        httpMethod, uri, relFileName));
+                    UpdateCacheItemInDatabase(existingCacheItem, headers, 200,
+                            relFileName, fileInfo.Length, databaseContext);
+                }
 
-                // To gain a better performace, we save and recreate the context after 1000 inserts.
+                // To gain a better performace, we save and recreate the context after 100 inserts.
                 counter++;
                 if (counter == DATABASE_BULK_INSERT_THRESHOLD)
                 {
@@ -1200,7 +1212,8 @@ namespace RuralCafe
         /// <returns>The current cache size.</returns>
         private long CacheSize(RCDatabaseEntities databaseContext)
         {
-            return (from gci in databaseContext.GlobalCacheItem select gci.filesize).Sum();
+            IQueryable<long>fileSizes = from gci in databaseContext.GlobalCacheItem select gci.filesize;
+            return fileSizes.Count() > 0 ? fileSizes.Sum() : 0;
         }
 
         /// <summary>
