@@ -50,9 +50,13 @@ namespace RuralCafe
         /// </summary>
         public enum Status
         {
+            /// <summary>Request has failed.</summary>
             Failed = -1,
+            /// <summary>Request waits to be downloaded.</summary>
             Pending = 0,
+            /// <summary>Request is being downloaded.</summary>
             Downloading = 1,
+            /// <summary>Request completed successfully.</summary>
             Completed = 2
         };
         /// <summary>
@@ -60,26 +64,12 @@ namespace RuralCafe
         /// </summary>
         public enum Richness
         {
-            // Do NOT give away value zero! Used to distinguish as there is no null for enums.
+            // Do NOT use value zero! Used to distinguish as there is no null for enums.
+            /// <summary>Normal richness: everything is downloaded.</summary>
             Normal = 1,
+            /// <summary>Low richness: no images, videos or sounds.</summary>
             Low = 2
         }
-
-        // Util consts
-        /// <summary>
-        /// The name of our homepage.
-        /// </summary>
-        public const string RC_PAGE = "http://www.ruralcafe.net/";
-        /// <summary>
-        /// The name of our homepage without preceding www.
-        /// </summary>
-        public const string RC_PAGE_WITHOUT_WWW = "http://ruralcafe.net/";
-        public static readonly Regex REDIR_REGEX = new Regex(@"HTTP/1\.1 301 Moved Permanently\s?Location: (?<uri>\S+)");
-
-        /// <summary>
-        /// The Name of the cookie for the user id.
-        /// </summary>
-        private const string cookieUserID = "uid";
 
         #region static preparation methods
 
@@ -143,38 +133,54 @@ namespace RuralCafe
 
         #endregion
 
-        // timeouts
-        public const int LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT = Timeout.Infinite; // in milliseconds
-        public const int REMOTE_REQUEST_PACKAGE_DEFAULT_TIMEOUT = 180000; // in milliseconds
-        public const int WEB_REQUEST_DEFAULT_TIMEOUT = 60000; // in milliseconds
-        public const int HEAD_REQUEST_DEFAULT_TIMEOUT = 1000; // in milliseconds
-        
-        // ID
+        // Util consts
+        /// <summary>The name of our homepage.</summary>
+        public const string RC_PAGE = "http://www.ruralcafe.net/";
+        /// <summary>The name of our homepage without preceding www.</summary>
+        public const string RC_PAGE_WITHOUT_WWW = "http://ruralcafe.net/";
+        /// <summary>Regex to identify a HTTP redirection.</summary>
+        public static readonly Regex REDIR_REGEX = new Regex(@"HTTP/1\.1 301 Moved Permanently\s?Location: (?<uri>\S+)");
+
+        /// <summary>The Name of the cookie for the user id.</summary>
+        private const string cookieUserID = "uid";
+
+        // timeouts, all in milliseconds
+        /// <summary>Time until a local request is aborted.</summary>
+        public const int LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT = Timeout.Infinite;
+        /// <summary>Time until a remote request is aborted.</summary>
+        public const int REMOTE_REQUEST_PACKAGE_DEFAULT_TIMEOUT = 180000;
+        /// <summary>Time until a web request (from remote proxy) is aborted.</summary>
+        public const int WEB_REQUEST_DEFAULT_TIMEOUT = 60000;
+        /// <summary>Time until a HTTP HEAD request is aborted.</summary>
+        public const int HEAD_REQUEST_DEFAULT_TIMEOUT = 1000;
+
+        /// <summary>The ID.</summary>
         [JsonProperty]
         protected long _handlerId;
-        // number of outstanding requests for this object
+        /// <summary>Number of outstanding requests for this object.</summary>
         [JsonProperty]
         protected int _outstandingRequests;
 
-        // proxy this request belongs to
+        /// <summary>Proxy this request belongs to.</summary>/
         protected RCProxy _proxy;
 
-        // client info
+        /// <summary>Client info.</summary>
         protected HttpListenerContext _clientHttpContext;
 
-        // the actual request object variables
+        /// <summary>The original request object.</summary>
         protected HttpListenerRequest _originalRequest;
+        /// <summary>The RC reuest that is potentially being made.</summary>
         [JsonProperty]
         protected RCRequest _rcRequest;
-        // timeout in milliseconds
+        /// <summary>Timeout in milliseconds.</summary>
         [JsonProperty]
         protected int _requestTimeout;
 
-        // If request is valid
+        /// <summary>If request is valid.</summary>
         [JsonProperty]
         private bool _validRequest = true;
 
-        // Time of creation in ticks since system start
+        /// <summary>Time of creation in ticks since system start.</summary>
         [JsonProperty]
         private long _creationTime;
 
@@ -187,7 +193,8 @@ namespace RuralCafe
         /// </summary>
         /// <param name="proxy">Proxy that this request belongs to.</param>
         /// <param name="context">Client context.</param>
-        protected RequestHandler(RCProxy proxy, HttpListenerContext context) : this(proxy)
+        /// <param name="requestTimeout">The timeout for the request.</param>
+        protected RequestHandler(RCProxy proxy, HttpListenerContext context, int requestTimeout) : this(proxy, requestTimeout)
         {
             _clientHttpContext = context;
             _originalRequest = context.Request;
@@ -197,8 +204,10 @@ namespace RuralCafe
         /// Constructor used, when http context is not available any more. E.g. queue deserialization.
         /// </summary>
         /// <param name="proxy">Proxy that this request belongs to.</param>
-        protected RequestHandler(RCProxy proxy)
+        /// <param name="requestTimeout">The timeout for the request.</param>
+        protected RequestHandler(RCProxy proxy, int requestTimeout)
         {
+            _requestTimeout = requestTimeout;
             _proxy = proxy;
             _handlerId = _proxy.GetAndIncrementNextHandlerID();
             _creationTime = Environment.TickCount;
@@ -302,16 +311,12 @@ namespace RuralCafe
         {
             get { return _creationTime; }
         }
-        /// <summary>
-        /// The Proxy's Logger.
-        /// </summary>
+        /// <summary>The Proxy's Logger.</summary>
         public ILog Logger
         {
             get { return _proxy.Logger; }
         }
-        /// <summary>
-        /// Gets the Value. -1 if cookie not set.
-        /// </summary>
+        /// <summary>Gets the Value. -1 if cookie not set.</summary>
         public int UserIDCookieValue
         {
             get
@@ -320,6 +325,7 @@ namespace RuralCafe
                     -1 : Int32.Parse(_originalRequest.Cookies[cookieUserID].Value);
             }
         }
+        /// <summary>The client's IP address.</summary>
         public IPAddress ClientIP
         {
             get { return _clientHttpContext.Request.RemoteEndPoint.Address; }
@@ -514,7 +520,7 @@ namespace RuralCafe
                 serverResponse = (HttpWebResponse)e.Response;
             }
 
-            // Copy headers
+            // Copy headers and status code.
             HttpUtils.CopyWebResponse(_clientHttpContext.Response, serverResponse);
 
             // Stream 
@@ -805,13 +811,7 @@ namespace RuralCafe
                 return false;
             }
 
-            DateTime currTime = DateTime.Now;
-            TimeSpan elapsed = currTime.Subtract(_rcRequest.StartTime);
-            if (elapsed.TotalMilliseconds < _requestTimeout)
-            {
-                return false;
-            }
-            return true;
+            return DateTime.Now.Subtract(_rcRequest.StartTime).TotalMilliseconds >= _requestTimeout;
         }
 
         #endregion

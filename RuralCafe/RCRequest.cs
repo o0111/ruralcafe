@@ -336,7 +336,11 @@ namespace RuralCafe
             }
             _requestHandler.Logger.Debug("received: " + _webResponse.ResponseUri + " "
                     + bytesDownloaded + " bytes.");
-            return true;
+            // TODO instead of using the download size to detect errors,
+            // we should use HTTP status codes on the remote side, if something goes wrong
+            // and surround _webRequest.GetResponse() with try/catch and handle errors
+            // accordingly
+            return bytesDownloaded > 0;
         }
 
         /// <summary>

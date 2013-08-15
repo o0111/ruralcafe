@@ -122,7 +122,6 @@ namespace RuralCafe.Util
         /// <param name="originalResponse">The incoming response.</param>
         public static void CopyWebResponse(HttpListenerResponse outgoingResponse, HttpWebResponse originalResponse)
         {
-            // TODO integrate other headers, too
             IntegrateHeadersIntoWebResponse(outgoingResponse, originalResponse.Headers);
             // Do not set content length or content encoding
             outgoingResponse.ContentType = originalResponse.ContentType;
@@ -217,6 +216,7 @@ namespace RuralCafe.Util
         /// Sends the body for an outgoing request.
         /// </summary>
         /// <param name="webRequest">The outgoing request.</param>
+        /// <param name="body">The body to send.</param>
         public static void SendBody(HttpWebRequest webRequest, byte[] body)
         {
             // Stream body for non HEAD/GET requests

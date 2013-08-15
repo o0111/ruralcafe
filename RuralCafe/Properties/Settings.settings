@@ -78,10 +78,10 @@
       <Value Profile="(Default)">50</Value>
     </Setting>
     <Setting Name="LOCAL_MAX_CACHE_SIZE_MIB" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">2048</Value>
+      <Value Profile="(Default)">153600</Value>
     </Setting>
     <Setting Name="REMOTE_MAX_CACHE_SIZE_MIB" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">4096</Value>
+      <Value Profile="(Default)">153600</Value>
     </Setting>
   </Settings>
 </SettingsFile>

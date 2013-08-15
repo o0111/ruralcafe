@@ -61,7 +61,6 @@ namespace RuralCafe.Clusters
             Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar +
             "Clusters" + Path.DirectorySeparatorChar + "blacklist.txt";
         /// <summary>
-        /// <summary>
         /// A dictionary of the english language. Used as a whitelist for the clustering.
         /// </summary>
         private static HashSet<string> _dictionary = new HashSet<string>();

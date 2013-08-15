@@ -7,22 +7,29 @@ using System.Text;
 namespace RuralCafe
 {
     /// <summary>
-    /// A logged in user. Contains his id and the time of login.
+    /// Manages sessions of the user.
+    /// 
+    /// Currently just manages a dictionary of IPs mapped to the logged in users.
+    /// Should later also do the actual Login/Logout stuff, which is currently done at the
+    /// client side in JavaScript.
     /// </summary>
-    public class LoggedInUser
-    {
-        public int userId;
-        public DateTime timeOfLogin;
-
-        public LoggedInUser(int userId, DateTime timeOfLogin)
-        {
-            this.userId = userId;
-            this.timeOfLogin = timeOfLogin;
-        }
-    }
-
     public class SessionManager
     {
+        /// <summary>
+        /// A logged in user. Contains his id and the time of login.
+        /// </summary>
+        private class LoggedInUser
+        {
+            public int userId;
+            public DateTime timeOfLogin;
+
+            public LoggedInUser(int userId, DateTime timeOfLogin)
+            {
+                this.userId = userId;
+                this.timeOfLogin = timeOfLogin;
+            }
+        }
+
         // Constants
         private const long sessionTimeoutS = 60 * 60 * 24 * 14; // 2 weeks
         

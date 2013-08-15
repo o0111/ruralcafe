@@ -134,6 +134,7 @@ namespace RuralCafe
         /// Gets the path of a filename from an URI. Relative to the cache path.
         /// </summary>
         /// <param name="uri">The URI.</param>
+        /// <param name="httpMethod">The HTTP method.</param>
         /// <returns>Retalive cache file name.</returns>
         public static string GetRelativeCacheFileName(string uri, string httpMethod)
         {
@@ -704,6 +705,7 @@ namespace RuralCafe
         /// LRU is the eviction strategy.
         /// </summary>
         /// <param name="bytesToEvict">The number of bytes to evict.</param>
+        /// <param name="databaseContext">The database context.</param>
         private void EvictCacheItems(long bytesToEvict, RCDatabaseEntities databaseContext)
         {
             _proxy.Logger.Debug(String.Format("Evicting {0} bytes from the cache.", bytesToEvict));
@@ -861,14 +863,10 @@ namespace RuralCafe
         private void CreateNewDatabase()
         {
             string dbFile = _proxy.ProxyPath + DATABASE_FILE_NAME;
-            _proxy.Logger.Debug("Creating a new database file.");
+            _proxy.Logger.Info("Creating a new database file. This may take up to several hours!");
             File.Copy(EMPTY_DATABASE_FILE_NAME, dbFile);
             // We must fill the database with the current cache content!
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
             FillDatabaseFromCache();
-            sw.Stop();
-            _proxy.Logger.Debug("It took " + sw.Elapsed.TotalSeconds + "s to create DB");
         }
 
         /// <summary>
@@ -882,7 +880,7 @@ namespace RuralCafe
             string dbFile = _proxy.ProxyPath + DATABASE_FILE_NAME;
             if (!File.Exists(dbFile))
             {
-                _proxy.Logger.Debug("No database file found.");
+                _proxy.Logger.Info("No database file found.");
                 try
                 {
                     CreateNewDatabase();
@@ -890,11 +888,17 @@ namespace RuralCafe
                 }
                 catch (Exception e)
                 {
-                    _proxy.Logger.Error("Could not create database file.", e);
+                    _proxy.Logger.Error("Could not create database file. Deleting what we got so far.", e);
+                    try
+                    {
+                        File.Delete(dbFile);
+                    }
+                    catch(Exception) { }
                     return false;
                 }
             }
 
+            // If it exists, we must test whether it really contains a valid DB
             bool validDB;
             try
             {
@@ -910,12 +914,16 @@ namespace RuralCafe
                 }
                 catch (Exception e1)
                 {
-                    _proxy.Logger.Error("Could not create database file.", e1);
+                    _proxy.Logger.Error("Could not create database file. Deleting what we got so far.", e1);
+                    try
+                    {
+                        File.Delete(dbFile);
+                    }
+                    catch (Exception) { }
                     return false;
                 }
             }
-
-            // If it exists, we must test whether it really contains a valid DB
+            
             if (!validDB)
             {
                 // The database is invalid and we must create a new one
@@ -926,7 +934,12 @@ namespace RuralCafe
                 }
                 catch (Exception e)
                 {
-                    _proxy.Logger.Error("Could not create database file.", e);
+                    _proxy.Logger.Error("Could not create database file. Deleting what we got so far.", e);
+                    try
+                    {
+                        File.Delete(dbFile);
+                    }
+                    catch (Exception) { }
                     return false;
                 }
 
@@ -996,7 +1009,6 @@ namespace RuralCafe
             {
                 _proxy.Logger.Error(String.Format("The existing cache is {0} bytes in size, " +
                     "which is bigger than {1}, the max size allowed.", currentCacheSize, _maxCacheSize));
-                // This is actually a reason to stop RC
                 throw new Exception("Existing cache too big.");
             }
 
@@ -1054,7 +1066,7 @@ namespace RuralCafe
                 if (counter == DATABASE_BULK_INSERT_THRESHOLD)
                 {
                     counter = 0;
-                    _proxy.Logger.Debug("Saving database changes made so far.");
+                    _proxy.Logger.Info(DATABASE_BULK_INSERT_THRESHOLD + "new files added. Saving database changes made so far.");
                     databaseContext.SaveChanges();
                     databaseContext.Dispose();
                     databaseContext = GetNewDatabaseContext();
@@ -1062,7 +1074,7 @@ namespace RuralCafe
             }
 
             // Save
-            _proxy.Logger.Debug("Saving completed database changes.");
+            _proxy.Logger.Info("Saving completed database changes.");
             databaseContext.SaveChanges();
             databaseContext.Dispose();
         }
