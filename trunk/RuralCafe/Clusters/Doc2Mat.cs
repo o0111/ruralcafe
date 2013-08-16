@@ -12,6 +12,9 @@ namespace RuralCafe.Clusters
     /// </summary>
     public static class Doc2Mat
     {
+        // Constants
+        private const int DOC2MAT_TIMEOUT_MS = 1000 * 60 * 60 * 2; // 2 hours
+
         /// <summary>
         /// Path to the doc2mat PERL script.
         /// </summary>
@@ -30,8 +33,6 @@ namespace RuralCafe.Clusters
         {
             // TODO re-implement doc2mat in c# ?
 
-            int timeoutMS = 60000; // 1 minute
-
             // perl doc2mat -nostem <docFile> <matFile>
             ProcessStartInfo perlStartInfo = new ProcessStartInfo("perl");
             perlStartInfo.Arguments = "\"" + DOC2MAT_PERL_SCRIPT + "\"" + " -nostem " +
@@ -45,7 +46,7 @@ namespace RuralCafe.Clusters
             Process perl = new Process();
             perl.StartInfo = perlStartInfo;
             perl.Start();
-            if (perl.WaitForExit(timeoutMS))
+            if (perl.WaitForExit(DOC2MAT_TIMEOUT_MS))
             {
                 if (perl.ExitCode != 0)
                 {

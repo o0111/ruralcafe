@@ -34,7 +34,10 @@ namespace RuralCafe
         private const string CLUSTERS_FILE_NAME = "clusters";
         private const string TREE_FILE_NAME = "tree";
         public const string CLUSTERS_XML_FILE_NAME = "clusters.xml";
+
         private const string DATABASE_FILE_NAME = "RCDatabase.sdf";
+        private const int DATABASE_MAX_SIZE_MB = 4000;
+        private const int DATABASE_BUFFER_MAX_SIZE_KB = 8192;
         private const int DATABASE_BULK_INSERT_THRESHOLD = 100;
         private const double CACHE_EVICTION_PERCENT = 0.05;
         private readonly string EMPTY_DATABASE_FILE_NAME = Directory.GetCurrentDirectory()
@@ -673,7 +676,7 @@ namespace RuralCafe
         /// <param name="databaseContext">The database context.</param>
         private void RemoveCacheItem(GlobalCacheItem cacheItem, RCDatabaseEntities databaseContext)
         {
-            _proxy.Logger.Debug(String.Format("Removing from the cache: {0} {1} Last request: {2}", 
+            _proxy.Logger.Debug(String.Format("Removing from the cache: {0} {1} Last request: {2}",
                 cacheItem.httpMethod, cacheItem.url, cacheItem.GlobalCacheRCData.lastRequestTime));
             // Remove file
             Utils.DeleteFile(_cachePath + GetRelativeCacheFileName(cacheItem.url, cacheItem.httpMethod));
@@ -850,7 +853,8 @@ namespace RuralCafe
             // Create context and modify connection string to point to our DB file.
             RCDatabaseEntities result = new RCDatabaseEntities();
             result.Database.Connection.ConnectionString =
-                String.Format("data source=\"{0}\";Max Database Size=4000;Max Buffer Size=256", _proxy.ProxyPath + DATABASE_FILE_NAME);
+                String.Format("data source=\"{0}\";Max Database Size={1};Max Buffer Size={2}",
+                _proxy.ProxyPath + DATABASE_FILE_NAME, DATABASE_MAX_SIZE_MB, DATABASE_BUFFER_MAX_SIZE_KB);
             result.Configuration.AutoDetectChangesEnabled = false;
             result.Configuration.ValidateOnSaveEnabled = false;
             return result;
@@ -893,7 +897,7 @@ namespace RuralCafe
                     {
                         File.Delete(dbFile);
                     }
-                    catch(Exception) { }
+                    catch (Exception) { }
                     return false;
                 }
             }
@@ -923,7 +927,7 @@ namespace RuralCafe
                     return false;
                 }
             }
-            
+
             if (!validDB)
             {
                 // The database is invalid and we must create a new one
@@ -996,83 +1000,91 @@ namespace RuralCafe
         /// </summary>
         private void FillDatabaseFromCache()
         {
-            List<FileInfo> files = AllFileInfos();
-            if (files.Count == 0)
-            {
-                // Cache is empty, as it should be.
-                return;
-            }
-
-            // Check for size!
-            long currentCacheSize = files.Sum(file => file.Length);
-            if (currentCacheSize >= _maxCacheSize)
-            {
-                _proxy.Logger.Error(String.Format("The existing cache is {0} bytes in size, " +
-                    "which is bigger than {1}, the max size allowed.", currentCacheSize, _maxCacheSize));
-                throw new Exception("Existing cache too big.");
-            }
-
-            _proxy.Logger.Warn("Creating new database, but the cache is not empty. Filling database with cache data...");
+            long currentCacheSize = 0;
+            // We loop through each sub-sub-directory, so we don't have all fileInfos in
+            // memory at a time
+            DirectoryInfo cacheDirInfo = new DirectoryInfo(_cachePath);
             RCDatabaseEntities databaseContext = GetNewDatabaseContext();
             int counter = 0;
-            // Iterate through all files and fill the database
-            foreach (FileInfo fileInfo in files)
+
+            foreach (DirectoryInfo subDirInfo in cacheDirInfo.EnumerateDirectories())
             {
-                string fileName;
-                try
+                foreach (DirectoryInfo subsubDirInfo in subDirInfo.EnumerateDirectories())
                 {
-                    fileName = fileInfo.FullName;
-                }
-                catch (PathTooLongException)
-                {
-                    // The file actually exists, but the path is too long.
-                    // To have our database consistent, we add it anyway. We have to find out
-                    // the path via reflection.
-                    fileName = (string)typeof(FileInfo).GetField(
-                                        "FullPath",
-                                         BindingFlags.Instance |
-                                         BindingFlags.NonPublic).GetValue(fileInfo);
-                    _proxy.Logger.Warn(String.Format("Filename too long: {0}", fileName));
-                }
-                // We assume it was a GET request with a 200 OK answer.
-                // We cannot recover the headers, but we look at the file to determine its content-type,
-                // as we always want this header!
-                NameValueCollection headers = new NameValueCollection()
-                {
-                    { "Content-Type", Utils.GetContentTypeOfFile(fileName)}
-                };
+                    List<FileInfo> files = subsubDirInfo.EnumerateFiles("*", SearchOption.AllDirectories).ToList();
+                    if (files.Count == 0)
+                    {
+                        continue;
+                    }
 
-                string uri = AbsoluteFilePathToUri(fileName);
-                string relFileName = fileName.Substring(_cachePath.Length);
-                string httpMethod = GetHTTPMethodFromRelCacheFileName(relFileName);
+                    currentCacheSize += files.Sum(file => file.Length);
+                    if (currentCacheSize >= _maxCacheSize)
+                    {
+                        // We could find that out very late potentially, which is not so nice.
+                        _proxy.Logger.Error(String.Format("The existing cache is more than {0} bytes in size, " +
+                            "which is bigger than {1}, the max size allowed.", currentCacheSize, _maxCacheSize));
+                        throw new Exception("Existing cache too big.");
+                    }
+                    
+                    // Iterate through all files and fill the database
+                    foreach (FileInfo fileInfo in files)
+                    {
+                        string fileName;
+                        try
+                        {
+                            fileName = fileInfo.FullName;
+                        }
+                        catch (PathTooLongException)
+                        {
+                            // The file actually exists, but the path is too long.
+                            // To have our database consistent, we add it anyway. We have to find out
+                            // the path via reflection.
+                            fileName = (string)typeof(FileInfo).GetField(
+                                                "FullPath",
+                                                 BindingFlags.Instance |
+                                                 BindingFlags.NonPublic).GetValue(fileInfo);
+                            _proxy.Logger.Warn(String.Format("Filename too long: {0}", fileName));
+                        }
+                        // We assume it was a GET request with a 200 OK answer.
+                        // We cannot recover the headers, but we look at the file to determine its content-type,
+                        // as we always want this header!
+                        NameValueCollection headers = new NameValueCollection()
+                        {
+                            { "Content-Type", Utils.GetContentTypeOfFile(fileName)}
+                        };
 
-                GlobalCacheItem existingCacheItem = GetGlobalCacheItem(httpMethod, uri, databaseContext);
-                if (existingCacheItem == null)
-                {
-                    // Add database entry.
-                    AddCacheItemToDatabase(uri, httpMethod, headers, 200, relFileName, fileInfo.Length, databaseContext);
-                }
-                else
-                {
-                    // Update database entry.
-                    _proxy.Logger.Warn(String.Format("Duplicate entry in database: {0} {1} {2}",
-                        httpMethod, uri, relFileName));
-                    UpdateCacheItemInDatabase(existingCacheItem, headers, 200,
-                            relFileName, fileInfo.Length, databaseContext);
-                }
+                        string uri = AbsoluteFilePathToUri(fileName);
+                        string relFileName = fileName.Substring(_cachePath.Length);
+                        string httpMethod = GetHTTPMethodFromRelCacheFileName(relFileName);
 
-                // To gain a better performace, we save and recreate the context after 100 inserts.
-                counter++;
-                if (counter == DATABASE_BULK_INSERT_THRESHOLD)
-                {
-                    counter = 0;
-                    _proxy.Logger.Info(DATABASE_BULK_INSERT_THRESHOLD + "new files added. Saving database changes made so far.");
-                    databaseContext.SaveChanges();
-                    databaseContext.Dispose();
-                    databaseContext = GetNewDatabaseContext();
+                        GlobalCacheItem existingCacheItem = GetGlobalCacheItem(httpMethod, uri, databaseContext);
+                        if (existingCacheItem == null)
+                        {
+                            // Add database entry.
+                            AddCacheItemToDatabase(uri, httpMethod, headers, 200, relFileName, fileInfo.Length, databaseContext);
+                        }
+                        else
+                        {
+                            // Update database entry.
+                            _proxy.Logger.Warn(String.Format("Duplicate entry in database: {0} {1} {2}",
+                                httpMethod, uri, relFileName));
+                            UpdateCacheItemInDatabase(existingCacheItem, headers, 200,
+                                    relFileName, fileInfo.Length, databaseContext);
+                        }
+
+                        // To gain a better performace, we save and recreate the context after 100 inserts.
+                        counter++;
+                        if (counter == DATABASE_BULK_INSERT_THRESHOLD)
+                        {
+                            counter = 0;
+                            _proxy.Logger.Info(DATABASE_BULK_INSERT_THRESHOLD + "new files added. Saving database changes made so far.");
+                            databaseContext.SaveChanges();
+                            databaseContext.Dispose();
+                            databaseContext = GetNewDatabaseContext();
+                        }
+                    }
                 }
             }
-
             // Save
             _proxy.Logger.Info("Saving completed database changes.");
             databaseContext.SaveChanges();
@@ -1224,7 +1236,7 @@ namespace RuralCafe
         /// <returns>The current cache size.</returns>
         private long CacheSize(RCDatabaseEntities databaseContext)
         {
-            IQueryable<long>fileSizes = from gci in databaseContext.GlobalCacheItem select gci.filesize;
+            IQueryable<long> fileSizes = from gci in databaseContext.GlobalCacheItem select gci.filesize;
             return fileSizes.Count() > 0 ? fileSizes.Sum() : 0;
         }
 

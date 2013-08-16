@@ -61,7 +61,7 @@ namespace RuralCafe
         /// </summary>
         private const double THRESHOLD_PERCENT_ANTI_FLAPPING = 0.1;
         // .. for clustering XXX customizable?
-        private static readonly TimeSpan CLUSTERING_INTERVAL = new TimeSpan(0, 30, 0);
+        private static readonly TimeSpan CLUSTERING_INTERVAL = new TimeSpan(24, 0, 0);
         private const int CLUSTERING_K = 20;
         private const bool CLUSTERING_HIERARCHICAL = true;
         private const int CLUSTERING_CAT_NFEATURES = 2;

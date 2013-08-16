@@ -18,6 +18,9 @@ namespace RuralCafe.Clusters
     /// </summary>
     public static class Cluster
     {
+        // Constants
+        private const int VCLUSTER_TIMEOUT_MS = 1000 * 60 * 60 * 2; // 2 hours
+
         // XML name constants
         private const string CLUSTERS_XML_NAME = "clusters";
         private const string CLUSTERS_NUMBEROFCLUSTERS_XML_NAME = "numberOfClusters";
@@ -161,8 +164,6 @@ namespace RuralCafe.Clusters
         public static HashSet<string>[] CreateClusters(string matFile, string clustersFile, int k,
             bool fulltree, string treefile, int catNFeatures, int subcatNFeatures)
         {
-            int timeoutMS = 60000; // 1 minute
-
             // vcluster.exe -clmethod=rbr -nfeatures=<n> [-showtree -labeltree -treefile=<treefile>]
             //  -showfeatures -clustfile=<clustFile> <matFile> k
             ProcessStartInfo clusterStartInfo = new ProcessStartInfo(VCLUSTERS_PATH);
@@ -222,9 +223,9 @@ namespace RuralCafe.Clusters
                 vcluster.BeginOutputReadLine();
                 vcluster.BeginErrorReadLine();
 
-                if (vcluster.WaitForExit(timeoutMS) &&
-                    outputWaitHandle.WaitOne(timeoutMS) &&
-                    errorWaitHandle.WaitOne(timeoutMS))
+                if (vcluster.WaitForExit(VCLUSTER_TIMEOUT_MS) &&
+                    outputWaitHandle.WaitOne(VCLUSTER_TIMEOUT_MS) &&
+                    errorWaitHandle.WaitOne(VCLUSTER_TIMEOUT_MS))
                 {
                     // Process completed. Check process.ExitCode here.
                     // Parse output
