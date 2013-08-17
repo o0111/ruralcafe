@@ -383,8 +383,15 @@ namespace RuralCafe
                         // We need to include content-type, as we always want that header!
                         { "Content-Type", "text/plain"}
                     };
-                    cacheManager.AddCacheItemForExistingFile(_uriBeforeRedirect, _webRequest.Method,
-                        redirHeaders, 301);
+
+                    GlobalCacheItemToAdd newItem = new GlobalCacheItemToAdd();
+                    newItem.url = _uriBeforeRedirect;
+                    newItem.httpMethod = _webRequest.Method;
+                    newItem.headers = redirHeaders;
+                    newItem.statusCode = 301;
+
+                    // Add redir file to the database
+                    cacheManager.AddCacheItemsForExistingFiles(new List<GlobalCacheItemToAdd>() { newItem });
 
                     // have to save to the new cache file location
                     string uri = _webResponse.ResponseUri.ToString();

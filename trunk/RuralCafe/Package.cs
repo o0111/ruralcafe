@@ -242,6 +242,8 @@ namespace RuralCafe
             long unpackedBytes = 0;
             Byte[] buffer = new Byte[1024];
 
+            List<GlobalCacheItemToAdd> itemsToAdd = new List<GlobalCacheItemToAdd>();
+
             for (int i = 0; i < packageContentArr.Length; i += 2)
             {
                 // Index format is 2 lines:
@@ -353,20 +355,26 @@ namespace RuralCafe
 
                 currFileFS.Close();
 
-                // Add Database entry
-                if (!requestHandler.Proxy.ProxyCacheManager.AddCacheItemForExistingFile(currUri, httpMethod,
-                    headers, statusCode))
-                {
-                    // Adding to the DB failed
-                    // Clean up: delete file and return (do not add to lucene)
-                    Utils.DeleteFile(cacheFileName);
-                    return -1;
-                }
+                GlobalCacheItemToAdd newItem = new GlobalCacheItemToAdd();
+                newItem.url = currUri;
+                newItem.httpMethod = httpMethod;
+                newItem.headers = headers;
+                newItem.statusCode = statusCode;
+
+                itemsToAdd.Add(newItem);
             }
             if (packageFs != null)
             {
                 packageFs.Close();
             }
+
+            // Add all Database entries
+            if (!requestHandler.Proxy.ProxyCacheManager.AddCacheItemsForExistingFiles(itemsToAdd))
+            {
+                // Adding to the DB failed
+                return -1;
+            }
+
             return unpackedBytes;
         }
     }
