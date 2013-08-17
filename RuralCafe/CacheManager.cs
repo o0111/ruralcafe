@@ -18,6 +18,14 @@ using RuralCafe.Lucenenet;
 
 namespace RuralCafe
 {
+    public class GlobalCacheItemToAdd
+    {
+        public string url;
+        public string httpMethod;
+        public NameValueCollection headers;
+        public short statusCode;
+    }
+
     /// <summary>
     /// Class that manages the cache.
     /// 
@@ -544,6 +552,46 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// Adds cache items to the database. The files should already exist. Existing items
+        /// will be replaced, and eviction will be done if necessary.
+        /// </summary>
+        /// <param name="items">The items to add.</param>
+        /// <returns>True for success and false for failure.</returns>
+        public bool AddCacheItemsForExistingFiles(IEnumerable<GlobalCacheItemToAdd> items)
+        {
+            bool returnValue = true;
+            _lock.EnterWriteLock();
+            try
+            {
+                using (RCDatabaseEntities databaseContext = GetNewDatabaseContext())
+                {
+                    try
+                    {
+                        foreach (GlobalCacheItemToAdd item in items)
+                        {
+                            if (!AddCacheItemForExistingFile(item.url, item.httpMethod, item.headers, item.statusCode, databaseContext))
+                            {
+                                returnValue = false;
+                                break;
+                            }
+                        }
+                        databaseContext.SaveChanges();
+                    }
+                    catch (Exception e)
+                    {
+                        _proxy.Logger.Warn("Could not add cache items to the database.", e);
+                        returnValue = false;
+                    }
+                }
+            }
+            finally
+            {
+                _lock.ExitWriteLock();
+            }
+            return returnValue;
+        }
+
+        /// <summary>
         /// Adds a cache item to the database. The file is assumed to exist already. If that item exists
         /// already in the DB, it will be replaced with the new headers and statusCode, and the RC data will
         /// be updated.
@@ -555,95 +603,83 @@ namespace RuralCafe
         /// <param name="headers">The headers.</param>
         /// <param name="statusCode">The status code.</param>
         /// <returns>True for success and false for failure.</returns>
-        public bool AddCacheItemForExistingFile(string url, string httpMethod,
-            NameValueCollection headers, short statusCode)
+        private bool AddCacheItemForExistingFile(string url, string httpMethod,
+            NameValueCollection headers, short statusCode, RCDatabaseEntities databaseContext)
         {
             string relFileName = GetRelativeCacheFileName(url, httpMethod);
+            
+            // If the headers do not contain "Content-Type", which should practically not happen,
+            // (but servers are actually not required to send it) we set it to the default:
+            // "application/octet-stream"
+            if (headers["Content-Type"] == null)
+            {
+                headers["Content-Type"] = "application/octet-stream";
+            }
 
-            _lock.EnterWriteLock();
+            // Get the cache and the file size
+            long cacheSize, itemSize;
             try
             {
-                using (RCDatabaseEntities databaseContext = GetNewDatabaseContext())
+                cacheSize = CacheSize(databaseContext);
+                itemSize = CacheItemFileSize(relFileName);
+            }
+            catch (Exception e)
+            {
+                _proxy.Logger.Warn("Could not compute cache or file size.", e);
+                return false;
+            }
+
+            GlobalCacheItem existingCacheItem = GetGlobalCacheItem(httpMethod, url, databaseContext);
+
+            // Look if we have to evict cache items first.
+            long cacheOversize = cacheSize + itemSize - _maxCacheSize;
+            if (existingCacheItem != null)
+            {
+                cacheOversize -= -existingCacheItem.filesize;
+            }
+            if (cacheOversize > 0)
+            {
+                try
                 {
-                    // If the headers do not contain "Content-Type", which should practically not happen,
-                    // (but servers are actually not required to send it) we set it to the default:
-                    // "application/octet-stream"
-                    if (headers["Content-Type"] == null)
-                    {
-                        headers["Content-Type"] = "application/octet-stream";
-                    }
-
-                    // Get the cache and the file size
-                    long cacheSize, itemSize;
-                    try
-                    {
-                        cacheSize = CacheSize(databaseContext);
-                        itemSize = CacheItemFileSize(relFileName);
-                    }
-                    catch (Exception e)
-                    {
-                        _proxy.Logger.Error("Could not compute cache or file size.", e);
-                        return false;
-                    }
-
-                    GlobalCacheItem existingCacheItem = GetGlobalCacheItem(httpMethod, url, databaseContext);
-
-                    // Look if we have to evict cache items first.
-                    long cacheOversize = cacheSize + itemSize - _maxCacheSize;
-                    if (existingCacheItem != null)
-                    {
-                        cacheOversize -= -existingCacheItem.filesize;
-                    }
-                    if (cacheOversize > 0)
-                    {
-                        try
-                        {
-                            // We have to evict. We do until 5 % is free again.
-                            EvictCacheItems((long)(cacheOversize + CACHE_EVICTION_PERCENT * _maxCacheSize), databaseContext);
-                        }
-                        catch (Exception e)
-                        {
-                            _proxy.Logger.Error("Could not evict cache items.", e);
-                            return false;
-                        }
-                    }
-
-                    if (existingCacheItem == null)
-                    {
-                        // Add database entry.
-                        try
-                        {
-                            AddCacheItemToDatabase(url, httpMethod, headers, statusCode,
-                                relFileName, itemSize, databaseContext);
-                            databaseContext.SaveChanges();
-                        }
-                        catch (Exception e)
-                        {
-                            _proxy.Logger.Error("Could not add cache item to the database.", e);
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        // Update database entry.
-                        try
-                        {
-                            UpdateCacheItemInDatabase(existingCacheItem, headers, statusCode,
-                                relFileName, itemSize, databaseContext);
-                            databaseContext.SaveChanges();
-                        }
-                        catch (Exception e)
-                        {
-                            _proxy.Logger.Error("Could not add cache item to the database.", e);
-                            return false;
-                        }
-                    }
+                    // We have to evict. We do until 5 % is free again.
+                    EvictCacheItems((long)(cacheOversize + CACHE_EVICTION_PERCENT * _maxCacheSize), databaseContext);
+                }
+                catch (Exception e)
+                {
+                    _proxy.Logger.Warn("Could not evict cache items.", e);
+                    return false;
                 }
             }
-            finally
+
+            if (existingCacheItem == null)
             {
-                _lock.ExitWriteLock();
+                // Add database entry.
+                try
+                {
+                    AddCacheItemToDatabase(url, httpMethod, headers, statusCode,
+                        relFileName, itemSize, databaseContext);
+                }
+                catch (Exception e)
+                {
+                    _proxy.Logger.Warn("Could not add cache item to the database.", e);
+                    return false;
+                }
             }
+            else
+            {
+                // Update database entry.
+                try
+                {
+                    UpdateCacheItemInDatabase(existingCacheItem, headers, statusCode,
+                        relFileName, itemSize, databaseContext);
+                }
+                catch (Exception e)
+                {
+                    _proxy.Logger.Warn("Could not add cache item to the database.", e);
+                    return false;
+                }
+            }
+               
             return true;
         }
 
@@ -654,10 +690,12 @@ namespace RuralCafe
         /// <returns>True for success and false for failure.</returns>
         public bool AddCacheItem(HttpWebResponse webResponse)
         {
-            string url = webResponse.ResponseUri.ToString();
-            string httpMethod = webResponse.Method;
-            NameValueCollection headers = webResponse.Headers;
-            short statusCode = (short)webResponse.StatusCode;
+            GlobalCacheItemToAdd newItem = new GlobalCacheItemToAdd();
+
+            newItem.url = webResponse.ResponseUri.ToString();
+            newItem.httpMethod = webResponse.Method;
+            newItem.headers = webResponse.Headers;
+            newItem.statusCode = (short)webResponse.StatusCode;
 
 
             // Add file to the disk
@@ -666,7 +704,7 @@ namespace RuralCafe
                 return false;
             }
             // Add file to the database
-            return AddCacheItemForExistingFile(url, httpMethod, headers, statusCode);
+            return AddCacheItemsForExistingFiles(new List<GlobalCacheItemToAdd>() { newItem });
         }
 
         /// <summary>
@@ -1066,8 +1104,8 @@ namespace RuralCafe
                         else
                         {
                             // Update database entry.
-                            _proxy.Logger.Warn(String.Format("Duplicate entry in database: {0} {1} {2}",
-                                httpMethod, uri, relFileName));
+                            _proxy.Logger.Warn(String.Format("Duplicate entry in database: {0} {1}\nOld file: {2}\nNew file: {3}",
+                                httpMethod, uri, existingCacheItem.filename, relFileName));
                             UpdateCacheItemInDatabase(existingCacheItem, headers, 200,
                                     relFileName, fileInfo.Length, databaseContext);
                         }

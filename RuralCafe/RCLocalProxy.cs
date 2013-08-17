@@ -37,7 +37,7 @@ using RuralCafe.Wiki;
 namespace RuralCafe
 {
     /// <summary>
-    /// Local proxy implementation, inherits from GenericProxy.
+    /// Local proxy implementation, inherits from  the generic RCProxy.
     /// </summary>
     public class RCLocalProxy : RCProxy
     {
