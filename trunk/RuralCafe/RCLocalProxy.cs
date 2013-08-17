@@ -61,7 +61,9 @@ namespace RuralCafe
         /// </summary>
         private const double THRESHOLD_PERCENT_ANTI_FLAPPING = 0.1;
         // .. for clustering XXX customizable?
-        private static readonly TimeSpan CLUSTERING_INTERVAL = new TimeSpan(24, 0, 0);
+
+        // TODO make it actually only run a t 5 in the morning, without checking
+        private static readonly TimeSpan CLUSTERING_INTERVAL = new TimeSpan(0, 15, 0);
         private const int CLUSTERING_K = 20;
         private const bool CLUSTERING_HIERARCHICAL = true;
         private const int CLUSTERING_CAT_NFEATURES = 2;
@@ -293,8 +295,14 @@ namespace RuralCafe
         /// <param name="o">Ignored.</param>
         private void StartClustering(object o)
         {
-            ProxyCacheManager.CreateClusters(CLUSTERING_K, CLUSTERING_CAT_NFEATURES, CLUSTERING_SUBCAT_NFEATURES,
+            // FIXME this should actually not check for the time
+
+            DateTime now = DateTime.Now;
+            if(now.Hour == 5 && now.Minute < 15)
+            {
+                ProxyCacheManager.CreateClusters(CLUSTERING_K, CLUSTERING_CAT_NFEATURES, CLUSTERING_SUBCAT_NFEATURES,
                 CLUSTERING_HIERARCHICAL);
+            }
         }
         
         #region Network status detection
