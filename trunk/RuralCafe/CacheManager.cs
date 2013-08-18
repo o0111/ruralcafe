@@ -1072,6 +1072,29 @@ namespace RuralCafe
                         try
                         {
                             fileName = fileInfo.FullName;
+
+                            // if its compressed
+                            if (fileName.EndsWith(".html.bz2") ||
+                                fileName.EndsWith(".htm.bz2") ||
+                                fileName.EndsWith(".txt.bz2") ||
+                                fileName.EndsWith(".xml.bz2") ||
+                                fileName.EndsWith(".js.bz2"))
+                            {
+                                // decompress
+                                _proxy.Logger.Info("Decompress: " + fileName);
+                                MemoryStream decompressedMs = Utils.BZ2DecompressFile(fileName);
+
+                                // writeback
+                                string oldFileName = fileName;
+                                fileName = fileName.Substring(0, fileName.Length - 4);
+                                FileStream outStream = File.OpenWrite(fileName);
+                                decompressedMs.WriteTo(outStream);
+                                outStream.Flush();
+                                outStream.Close();
+
+                                // delete old
+                                File.Delete(oldFileName);
+                            }
                         }
                         catch (PathTooLongException)
                         {
@@ -1084,6 +1107,8 @@ namespace RuralCafe
                                                  BindingFlags.NonPublic).GetValue(fileInfo);
                             _proxy.Logger.Warn(String.Format("Filename too long: {0}", fileName));
                         }
+                        
+                        /*
                         // We assume it was a GET request with a 200 OK answer.
                         // We cannot recover the headers, but we look at the file to determine its content-type,
                         // as we always want this header!
@@ -1121,13 +1146,17 @@ namespace RuralCafe
                             databaseContext.Dispose();
                             databaseContext = GetNewDatabaseContext();
                         }
+                         */
                     }
                 }
             }
+            
+            /*
             // Save
             _proxy.Logger.Info("Saving completed database changes.");
             databaseContext.SaveChanges();
             databaseContext.Dispose();
+             */
         }
 
         /// <summary>
@@ -1232,6 +1261,7 @@ namespace RuralCafe
             // add item
             databaseContext.GlobalCacheItem.Add(cacheItem);
 
+            /*
             // If we're on the local proxy, we want to add text documents to the Lucene index.
             if (_proxy is RCLocalProxy && httpMethod.Equals("GET") &&
                 (headers["Content-Type"].Contains("text/html") || headers["Content-Type"].Contains("text/plain")))
@@ -1266,6 +1296,7 @@ namespace RuralCafe
                     _proxy.Logger.Warn("Could not add document to index.", e);
                 }
             }
+             */
         }
 
         /// <summary>
@@ -1389,7 +1420,7 @@ namespace RuralCafe
         /// <param name="maxCategories">The maximum number of categories.</param>
         public void CreateClusters(int k, int catNFeatures, int subcatNFeatures, bool hierarchical, int maxCategories)
         {
-            _proxy.Logger.Info("Creating clusters.");
+            _proxy.Logger.Info("Clustering: Creating clusters. This may take around an hour!");
             // Measure what part takes what time
             Stopwatch stopwatch = new Stopwatch();
 
@@ -1400,6 +1431,24 @@ namespace RuralCafe
             string xmlBTFileName = _clustersPath + CLUSTERS_BT_XML_FILE_NAME;
             string xmlFileName = _clustersPath + CLUSTERS_XML_FILE_NAME;
 
+            // XXX: temp change 1
+            // Create XML file
+            _proxy.Logger.Debug("Clustering: Creating clusters.xml.");
+            stopwatch.Restart();
+            try
+            {
+                Cluster.CreateClusterXMLFile(xmlFileName, xmlBTFileName, maxCategories);
+            }
+            catch (Exception e)
+            {
+                _proxy.Logger.Warn("Clustering: Creating XML failed.", e);
+                return;
+            }
+            stopwatch.Stop();
+            _proxy.Logger.Debug("Clustering: Creating clusters.xml took " +
+            stopwatch.Elapsed.TotalSeconds + " s");
+            return;
+
             List<string> textFiles;
 
             // Lock
@@ -1407,11 +1456,11 @@ namespace RuralCafe
             try
             {
                 // get files
-                _proxy.Logger.Debug("Clustering: Getting all text files.");
+                _proxy.Logger.Debug("Clustering (1/5): Getting all text files.");
                 stopwatch.Start();
                 textFiles = TextFiles();
                 stopwatch.Stop();
-                _proxy.Logger.Debug("Clustering: Getting all text files took " + stopwatch.Elapsed.TotalSeconds + " s");
+                _proxy.Logger.Debug("Custering (1/5): Getting all text files took: " + stopwatch.Elapsed.TotalSeconds + "s");
 
                 // Abort if we're having less than 2 text files
                 if (textFiles.Count < 2)
@@ -1420,7 +1469,7 @@ namespace RuralCafe
                     return;
                 }
                 // List number of text files
-                _proxy.Logger.Debug(String.Format("Clustering: Using {0} text files.", textFiles.Count));
+                _proxy.Logger.Debug(String.Format("Clustering (1/5): Using {0} text files.", textFiles.Count));
                 // List all Text files XXX Debug
                 //foreach(string textFile in textFiles)
                 //{
@@ -1428,7 +1477,7 @@ namespace RuralCafe
                 //}
 
                 // files2doc
-                _proxy.Logger.Debug("Clustering: Creating docfile.");
+                _proxy.Logger.Debug("Clustering (2/5): Creating docfile.");
                 stopwatch.Restart();
                 try
                 {
@@ -1440,11 +1489,11 @@ namespace RuralCafe
                     return;
                 }
                 stopwatch.Stop();
-                _proxy.Logger.Debug("Clustering: Creating docfile took " + stopwatch.Elapsed.TotalSeconds + " s");
+                _proxy.Logger.Debug("Custering (2/5): Creating docfile took: " + stopwatch.Elapsed.TotalSeconds + "s");
 
 
                 // doc2mat
-                _proxy.Logger.Debug("Clustering: Doc2Mat.");
+                _proxy.Logger.Debug("Clustering (3/5): Doc2Mat.");
                 stopwatch.Restart();
                 try
                 {
@@ -1456,10 +1505,10 @@ namespace RuralCafe
                     return;
                 }
                 stopwatch.Stop();
-                _proxy.Logger.Debug("Clustering: Doc2Mat took " + stopwatch.Elapsed.TotalSeconds + " s");
+                _proxy.Logger.Debug("Custering (3/5): Doc2Mat took: " + stopwatch.Elapsed.TotalSeconds + "s");
 
                 // ClutoClusters
-                _proxy.Logger.Debug("Clustering: Cluto-Clustering.");
+                _proxy.Logger.Debug("Clustering (4/5): Cluto-Clustering.");
                 string treeFileName = null;
                 HashSet<string>[] features;
                 stopwatch.Restart();
@@ -1483,7 +1532,7 @@ namespace RuralCafe
                     return;
                 }
                 stopwatch.Stop();
-                _proxy.Logger.Debug("Clustering: Cluto-Clustering took " + stopwatch.Elapsed.TotalSeconds + " s");
+                _proxy.Logger.Debug("Custering (4/5): Cluto-Clustering took: " + stopwatch.Elapsed.TotalSeconds + "s");
 
                 // Create binary tree XML file
                 _proxy.Logger.Debug("Clustering: Creating clustersBT.xml.");
@@ -1502,7 +1551,7 @@ namespace RuralCafe
                 _proxy.Logger.Debug("Clustering: Creating clustersBT.xml took " + stopwatch.Elapsed.TotalSeconds + " s");
 
                 // Create XML file
-                _proxy.Logger.Debug("Clustering: Creating clusters.xml.");
+                _proxy.Logger.Debug("Clustering (5/5): Creating clusters.xml.");
                 stopwatch.Restart();
                 try
                 {
@@ -1510,11 +1559,11 @@ namespace RuralCafe
                 }
                 catch (Exception e)
                 {
-                    _proxy.Logger.Warn("Clustering: Creating XML failed.", e);
+                    _proxy.Logger.Error("Clustering: Creating clusters.xml failed.", e);
                     return;
                 }
                 stopwatch.Stop();
-                _proxy.Logger.Debug("Clustering: Creating clusters.xml took " + stopwatch.Elapsed.TotalSeconds + " s");
+                _proxy.Logger.Debug("Custering (5/5): Creating clusters.xml took: " + stopwatch.Elapsed.TotalSeconds + "s");
             }
             finally
             {
@@ -1522,7 +1571,7 @@ namespace RuralCafe
                 _lock.ExitReadLock();
             }
 
-            _proxy.Logger.Info("Clustering finished successfully.");
+            _proxy.Logger.Info("Clustering: Finished successfully.");
         }
 
         #endregion
