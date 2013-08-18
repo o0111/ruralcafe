@@ -685,7 +685,7 @@ namespace RuralCafe.Clusters
                     // XXX also remove the proxy method parameter, as this is only needed for lucene
                     SearchResults luceneResults = proxy.IndexWrapper.Query(
                         (categoryElement.ChildNodes[i] as XmlElement).GetAttribute(CLUSTER_FEATURES_XML_NAME),
-                        proxy.CachePath, 0, maxItems);
+                        proxy.CachePath, 0, maxItems, false);
 
                     // Add the results to the XML
                     LocalInternalRequestHandler.AppendSearchResultsXMLElements(luceneResults, indexDoc, subCategory as XmlElement);
@@ -746,7 +746,7 @@ namespace RuralCafe.Clusters
                 // XXX also remove the proxy method parameter, as this is only needed for lucene
                 SearchResults luceneResults = proxy.IndexWrapper.Query(
                     subCategoryElement.GetAttribute(CLUSTER_FEATURES_XML_NAME),
-                    proxy.CachePath, 0, maxItems);
+                    proxy.CachePath, 0, maxItems, false);
 
                 // Add the results to the XML
                 LocalInternalRequestHandler.AppendSearchResultsXMLElements(luceneResults, indexDoc, subCategory as XmlElement);

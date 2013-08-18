@@ -504,7 +504,7 @@ namespace RuralCafe
            
             // Query our RuralCafe index
             SearchResults luceneResults = Proxy.IndexWrapper.Query(queryString, 
-                Proxy.CachePath, offsets[0], resultAmounts[0]);
+                Proxy.CachePath, offsets[0], resultAmounts[0], true);
             // Query the Wiki index
             SearchResults wikiResults = Proxy.WikiWrapper.
                 Query(queryString, offsets[1], resultAmounts[1]);
@@ -664,7 +664,7 @@ namespace RuralCafe
                 string queryString = url + " " + RefererUri + " " + anchorText + " " + surroundingText;
                 // We want one result more, as we're obviously going to find the referrer page
                 SearchResults luceneResults = Proxy.IndexWrapper.Query(queryString,
-                Proxy.CachePath, 0, amount + 1);
+                Proxy.CachePath, 0, amount + 1, false);
 
                 // remove the referrer page from the reults
                 for (int i = 0; i < luceneResults.Results.Count; i++)

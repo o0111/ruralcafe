@@ -86,6 +86,17 @@ namespace RuralCafe.Lucenenet
         }
 
         /// <summary>
+        /// Add a lucene document without content snippet to the list.
+        /// </summary>
+        /// <param name="document">The document</param>
+        /// <param name="contentSnippet">The content snippet</param>
+        public void AddLuceneDocument(Document document)
+        {
+            SearchResult result = new SearchResult(document.Get("title"), document.Get("uri"));
+            this._results.Add(result);
+        }
+
+        /// <summary>
         /// Add a lucene document and its content snippet to the list.
         /// </summary>
         /// <param name="document">The document</param>
