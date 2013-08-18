@@ -98,7 +98,10 @@ namespace RuralCafe
         protected string _packagesCachePath;
         protected string _name;
         protected CacheManager _cacheManager;
-        protected int _maxThreads = 1000; // XXX: probably don't want to hard-code this as the number of port threads should be proportional to line speed.
+        // XXX: probably don't want to hard-code this as the number of port threads should be proportional to line speed.
+        // XXX: We also should not use ThreadPool static, as then we cannot have different setting for Local and Remote
+        // and they share the same ThreadPool...
+        protected int _maxThreads = 1000; 
 
         /// <summary>
         /// The network status
@@ -414,6 +417,38 @@ namespace RuralCafe
             return requestHandler;
         }
 
+        public void StartHttpsListener()
+        {
+            int _httpsListenPort = _listenPort + (443 - 80); // TODO own field
+
+            _logger.Info("Started HTTPS Listener on " + _listenAddress + ":" + _httpsListenPort);
+            try
+            {
+                // create a listener for the proxy port
+                TcpListener listener = new TcpListener(_listenAddress, _httpsListenPort);
+                
+                listener.Start();
+
+                // loop and listen for the next connection request
+                while (true)
+                {
+                    // accept connections on the proxy port (blocks)
+                    TcpClient client = listener.AcceptTcpClient();
+
+                    // Start own method HandleTCPRequest in the thread
+                    ThreadPool.QueueUserWorkItem(new WaitCallback(HandleTCPRequest), client);
+                }
+            }
+            catch (SocketException e)
+            {
+                _logger.Fatal("SocketException in StartListener, errorcode: " + e.NativeErrorCode, e);
+            }
+            catch (Exception e)
+            {
+                _logger.Fatal("Exception in StartListener", e);
+            }
+        }
+
         /// <summary>
         /// Starts the listener for connections from clients.
         /// </summary>
@@ -426,7 +461,6 @@ namespace RuralCafe
                 HttpListener listener = new HttpListener();
                 // prefix URL at which the listener will listen
                 listener.Prefixes.Add("http://*:" + _listenPort + "/");
-                listener.Prefixes.Add("https://*:" + (_listenPort + 363) + "/");
                 listener.Start();
 
                 // loop and listen for the next connection request
@@ -589,6 +623,87 @@ namespace RuralCafe
             return null;
         }
 
+        #region HTTPS TCP Proxy
+
+        protected void HandleTCPRequest(object clientObject)
+        {
+            TcpClient inClient = clientObject as TcpClient;
+
+            try
+            {
+                NetworkStream clientStream = inClient.GetStream();
+                StreamReader clientReader = new StreamReader(clientStream);
+
+                string requestLine0 = clientReader.ReadLine();
+                if (requestLine0 == null)
+                {
+                    return;
+                }
+                string requestUri = requestLine0.Split(' ')[1];
+                string[] uriSplit = requestUri.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                string protocol = uriSplit[0];
+                string host = uriSplit[1];
+                int port = protocol.Equals("https:") ? 443 : 80;
+                if (host.Contains(':'))
+                {
+                    string[] hostSplit = host.Split(':');
+                    host = hostSplit[0];
+                    port = Int32.Parse(hostSplit[1]);
+                }
+
+                TcpClient outClient = new TcpClient(host, port);
+                try
+                {
+                    NetworkStream serverStream = outClient.GetStream();
+                    StreamWriter serverWriter = new StreamWriter(serverStream);
+
+                    serverWriter.WriteLine(requestLine0);
+
+                    // Stream buffered to server
+                    char[] buffer = new char[4096];
+                    int read;
+                    while ((read = clientReader.Read(buffer, 0, buffer.Length)) != 0)
+                    {
+                        serverWriter.Write(buffer, 0, read);
+                        if (read < buffer.Length)
+                        {
+                            break;
+                        }
+                    }
+
+                    // Stream buffered to client
+                    StreamReader serverReader = new StreamReader(serverStream);
+                    StreamWriter clientWriter = new StreamWriter(clientStream);
+                    while ((read = serverReader.Read(buffer, 0, buffer.Length)) != 0)
+                    {
+                        clientWriter.Write(buffer, 0, read);
+                        if (read < buffer.Length)
+                        {
+                            break;
+                        }
+                    }
+                }
+                finally
+                {
+                    // Disconnent
+                    outClient.Close();
+                }
+            }
+            finally
+            {
+                // Disconnent
+                try
+                {
+                    inClient.Close();
+                }
+                catch (Exception e)
+                {
+                    Logger.Warn("Could not close the tcp connection: ", e);
+                }
+            }
+        }
+
+        #endregion
         #region State (de)serialization
 
         /// <summary>

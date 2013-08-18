@@ -243,12 +243,17 @@ namespace RuralCafe
 
             // start local listener thread
             Thread localListenerThread = new Thread(new ThreadStart(localProxy.StartListener));
-            localListenerThread.Name = String.Format("localListenerThread");
+            localListenerThread.Name = "localListenerThread";
             localListenerThread.Start();
+
+            // start local HTTPS listener thread
+            Thread localHttpsListenerThread = new Thread(new ThreadStart(localProxy.StartHttpsListener));
+            localHttpsListenerThread.Name = "localHTTPSListenerThread";
+            localHttpsListenerThread.Start();
 
             // start local requester thread
             Thread localRequesterThread = new Thread(new ThreadStart(localProxy.StartDispatcher));
-            localRequesterThread.Name = String.Format("localRequesterThread");
+            localRequesterThread.Name = "localRequesterThread";
             localRequesterThread.Start();
 
             // Start the clustering timer
