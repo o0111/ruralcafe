@@ -1085,31 +1085,32 @@ namespace RuralCafe
                             _proxy.Logger.Warn(String.Format("Filename too long: {0}", fileName));
                         }
                         
-                        /*
-                        // We assume it was a GET request with a 200 OK answer.
+                        
                         // We cannot recover the headers, but we look at the file to determine its content-type,
                         // as we always want this header!
                         NameValueCollection headers = new NameValueCollection()
                         {
                             { "Content-Type", Utils.GetContentTypeOfFile(fileName)}
                         };
-
+                        // We assume it was a request with a 200 OK answer.
+                        short statusCode = 200;
                         string uri = AbsoluteFilePathToUri(fileName);
                         string relFileName = fileName.Substring(_cachePath.Length);
                         string httpMethod = GetHTTPMethodFromRelCacheFileName(relFileName);
+                        
 
                         GlobalCacheItem existingCacheItem = GetGlobalCacheItem(httpMethod, uri, databaseContext);
                         if (existingCacheItem == null)
                         {
                             // Add database entry.
-                            AddCacheItemToDatabase(uri, httpMethod, headers, 200, relFileName, fileInfo.Length, databaseContext);
+                            AddCacheItemToDatabase(uri, httpMethod, headers, statusCode, relFileName, fileInfo.Length, databaseContext);
                         }
                         else
                         {
                             // Update database entry.
                             _proxy.Logger.Warn(String.Format("Duplicate entry in database: {0} {1}\nOld file: {2}\nNew file: {3}",
                                 httpMethod, uri, existingCacheItem.filename, relFileName));
-                            UpdateCacheItemInDatabase(existingCacheItem, headers, 200,
+                            UpdateCacheItemInDatabase(existingCacheItem, headers, statusCode,
                                     relFileName, fileInfo.Length, databaseContext);
                         }
 
@@ -1118,22 +1119,20 @@ namespace RuralCafe
                         if (counter == DATABASE_BULK_INSERT_THRESHOLD)
                         {
                             counter = 0;
-                            _proxy.Logger.Info(DATABASE_BULK_INSERT_THRESHOLD + "new files added. Saving database changes made so far.");
+                            _proxy.Logger.Info(DATABASE_BULK_INSERT_THRESHOLD + " new files added. Saving database changes made so far.");
                             databaseContext.SaveChanges();
                             databaseContext.Dispose();
                             databaseContext = GetNewDatabaseContext();
                         }
-                         */
+                         
                     }
                 }
             }
             
-            /*
             // Save
             _proxy.Logger.Info("Saving completed database changes.");
             databaseContext.SaveChanges();
             databaseContext.Dispose();
-             */
         }
 
         /// <summary>
@@ -1238,7 +1237,6 @@ namespace RuralCafe
             // add item
             databaseContext.GlobalCacheItem.Add(cacheItem);
 
-            /*
             // If we're on the local proxy, we want to add text documents to the Lucene index.
             if (_proxy is RCLocalProxy && httpMethod.Equals("GET") &&
                 (headers["Content-Type"].Contains("text/html") || headers["Content-Type"].Contains("text/plain")))
@@ -1273,7 +1271,6 @@ namespace RuralCafe
                     _proxy.Logger.Warn("Could not add document to index.", e);
                 }
             }
-             */
         }
 
         /// <summary>
@@ -1408,24 +1405,6 @@ namespace RuralCafe
             string xmlBTFileName = _clustersPath + CLUSTERS_BT_XML_FILE_NAME;
             string xmlFileName = _clustersPath + CLUSTERS_XML_FILE_NAME;
 
-            // XXX: temp change 1
-            // Create XML file
-            _proxy.Logger.Debug("Clustering: Creating clusters.xml.");
-            stopwatch.Restart();
-            try
-            {
-                Cluster.CreateClusterXMLFile(xmlFileName, xmlBTFileName, maxCategories);
-            }
-            catch (Exception e)
-            {
-                _proxy.Logger.Warn("Clustering: Creating XML failed.", e);
-                return;
-            }
-            stopwatch.Stop();
-            _proxy.Logger.Debug("Clustering: Creating clusters.xml took " +
-            stopwatch.Elapsed.TotalSeconds + " s");
-            return;
-
             List<string> textFiles;
 
             // Lock
@@ -1433,11 +1412,11 @@ namespace RuralCafe
             try
             {
                 // get files
-                _proxy.Logger.Debug("Clustering (1/5): Getting all text files.");
+                _proxy.Logger.Debug("Clustering (1/6): Getting all text files.");
                 stopwatch.Start();
                 textFiles = TextFiles();
                 stopwatch.Stop();
-                _proxy.Logger.Debug("Custering (1/5): Getting all text files took: " + stopwatch.Elapsed.TotalSeconds + "s");
+                _proxy.Logger.Debug("Custering (1/6): Getting all text files took: " + stopwatch.Elapsed.TotalSeconds + "s");
 
                 // Abort if we're having less than 2 text files
                 if (textFiles.Count < 2)
@@ -1446,7 +1425,7 @@ namespace RuralCafe
                     return;
                 }
                 // List number of text files
-                _proxy.Logger.Debug(String.Format("Clustering (1/5): Using {0} text files.", textFiles.Count));
+                _proxy.Logger.Debug(String.Format("Clustering (1/6): Using {0} text files.", textFiles.Count));
                 // List all Text files XXX Debug
                 //foreach(string textFile in textFiles)
                 //{
@@ -1454,7 +1433,7 @@ namespace RuralCafe
                 //}
 
                 // files2doc
-                _proxy.Logger.Debug("Clustering (2/5): Creating docfile.");
+                _proxy.Logger.Debug("Clustering (2/6): Creating docfile.");
                 stopwatch.Restart();
                 try
                 {
@@ -1466,11 +1445,11 @@ namespace RuralCafe
                     return;
                 }
                 stopwatch.Stop();
-                _proxy.Logger.Debug("Custering (2/5): Creating docfile took: " + stopwatch.Elapsed.TotalSeconds + "s");
+                _proxy.Logger.Debug("Custering (2/6): Creating docfile took: " + stopwatch.Elapsed.TotalSeconds + "s");
 
 
                 // doc2mat
-                _proxy.Logger.Debug("Clustering (3/5): Doc2Mat.");
+                _proxy.Logger.Debug("Clustering (3/6): Doc2Mat.");
                 stopwatch.Restart();
                 try
                 {
@@ -1482,10 +1461,10 @@ namespace RuralCafe
                     return;
                 }
                 stopwatch.Stop();
-                _proxy.Logger.Debug("Custering (3/5): Doc2Mat took: " + stopwatch.Elapsed.TotalSeconds + "s");
+                _proxy.Logger.Debug("Custering (3/6): Doc2Mat took: " + stopwatch.Elapsed.TotalSeconds + "s");
 
                 // ClutoClusters
-                _proxy.Logger.Debug("Clustering (4/5): Cluto-Clustering.");
+                _proxy.Logger.Debug("Clustering (4/6): Cluto-Clustering.");
                 string treeFileName = null;
                 HashSet<string>[] features;
                 stopwatch.Restart();
@@ -1509,10 +1488,10 @@ namespace RuralCafe
                     return;
                 }
                 stopwatch.Stop();
-                _proxy.Logger.Debug("Custering (4/5): Cluto-Clustering took: " + stopwatch.Elapsed.TotalSeconds + "s");
+                _proxy.Logger.Debug("Custering (4/6): Cluto-Clustering took: " + stopwatch.Elapsed.TotalSeconds + "s");
 
                 // Create binary tree XML file
-                _proxy.Logger.Debug("Clustering: Creating clustersBT.xml.");
+                _proxy.Logger.Debug("Clustering (5/6): Creating clustersBT.xml.");
                 stopwatch.Restart();
                 try
                 {
@@ -1525,10 +1504,10 @@ namespace RuralCafe
                     return;
                 }
                 stopwatch.Stop();
-                _proxy.Logger.Debug("Clustering: Creating clustersBT.xml took " + stopwatch.Elapsed.TotalSeconds + " s");
+                _proxy.Logger.Debug("Clustering (5/6): Creating clustersBT.xml took " + stopwatch.Elapsed.TotalSeconds + " s");
 
                 // Create XML file
-                _proxy.Logger.Debug("Clustering (5/5): Creating clusters.xml.");
+                _proxy.Logger.Debug("Clustering (6/6): Creating clusters.xml.");
                 stopwatch.Restart();
                 try
                 {
@@ -1540,7 +1519,7 @@ namespace RuralCafe
                     return;
                 }
                 stopwatch.Stop();
-                _proxy.Logger.Debug("Custering (5/5): Creating clusters.xml took: " + stopwatch.Elapsed.TotalSeconds + "s");
+                _proxy.Logger.Debug("Custering (6/6): Creating clusters.xml took: " + stopwatch.Elapsed.TotalSeconds + "s");
             }
             finally
             {

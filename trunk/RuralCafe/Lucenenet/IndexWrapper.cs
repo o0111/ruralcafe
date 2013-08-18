@@ -136,9 +136,10 @@ namespace RuralCafe.Lucenenet
         /// <param name="cachePath">The path to the local cache.</param>
         /// <param name="offset">The offset for the first result to return.</param>
         /// <param name="resultAmount">The max number of results to return for the current page.</param>
+        /// <param name="includeContentSnippets">Whether the results should contain content snippets.</param>
         /// <returns>A list of search results.</returns>
         public SearchResults Query(string queryString, string cachePath,
-            int offset, int resultAmount)
+            int offset, int resultAmount, bool includeContentSnippets)
         {
             SearchResults results = new SearchResults();
             Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(_indexPath));
@@ -161,40 +162,47 @@ namespace RuralCafe.Lucenenet
                 int docId = hits[i].doc;
                 Document doc = searcher.Doc(docId);
 
-                // Read the whole file from the cache to find the content snippet.
-                string filepath = CacheManager.GetRelativeCacheFileName(doc.Get("uri"), "GET");
-                string documentContent = Utils.ReadFileAsString(cachePath + filepath);
-
-                // Remove unusable stuff.
-                documentContent = HtmlUtils.RemoveHead(documentContent);
-                documentContent = HtmlUtils.ExtractText(documentContent);
-
-                // Find (and highlight) content snippets
-                QueryScorer scorer = new QueryScorer(query);
-                SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<b>", "</b>");
-                Highlighter highlighter = new Highlighter(formatter, scorer);
-                highlighter.SetTextFragmenter(new SentenceFragmenter());
-                TokenStream stream = _analyzer.TokenStream("content", new StringReader(documentContent));
-
-                // Get 1 fragment
-                string contentSnippet = "";
-                try
+                if (includeContentSnippets)
                 {
-                    string[] fragments = highlighter.GetBestFragments(stream, documentContent, 1);
-                    if (fragments.Length > 0)
+                    // Read the whole file from the cache to find the content snippet.
+                    string filepath = CacheManager.GetRelativeCacheFileName(doc.Get("uri"), "GET");
+                    string documentContent = Utils.ReadFileAsString(cachePath + filepath);
+
+                    // Remove unusable stuff.
+                    documentContent = HtmlUtils.RemoveHead(documentContent);
+                    documentContent = HtmlUtils.ExtractText(documentContent);
+
+                    // Find (and highlight) content snippets
+                    QueryScorer scorer = new QueryScorer(query);
+                    SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<b>", "</b>");
+                    Highlighter highlighter = new Highlighter(formatter, scorer);
+                    highlighter.SetTextFragmenter(new SentenceFragmenter());
+                    TokenStream stream = _analyzer.TokenStream("content", new StringReader(documentContent));
+
+                    // Get 1 fragment
+                    string contentSnippet = "";
+                    try
                     {
-                        contentSnippet = HtmlUtils.StripTagsCharArray(fragments[0], false);
-                        // If the content snippet does end in mid of a sentence, let's append "..."
-                        if(!new char[]{'.','!','?'}.Contains(contentSnippet[contentSnippet.Length - 1]))
+                        string[] fragments = highlighter.GetBestFragments(stream, documentContent, 1);
+                        if (fragments.Length > 0)
                         {
-                            contentSnippet += "...";
+                            contentSnippet = HtmlUtils.StripTagsCharArray(fragments[0], false);
+                            // If the content snippet does end in mid of a sentence, let's append "..."
+                            if (!new char[] { '.', '!', '?' }.Contains(contentSnippet[contentSnippet.Length - 1]))
+                            {
+                                contentSnippet += "...";
+                            }
                         }
                     }
+                    catch (Exception)
+                    {
+                    }
+                    results.AddLuceneDocument(doc, contentSnippet);
                 }
-                catch (Exception)
+                else
                 {
+                    results.AddLuceneDocument(doc);
                 }
-                results.AddLuceneDocument(doc, contentSnippet);
             }
             
             searcher.Close();
