@@ -71,6 +71,10 @@ namespace RuralCafe.Clusters
         /// The blacklist words for clustering.
         /// </summary>
         private static HashSet<string> _blacklist = new HashSet<string>();
+        /// <summary>
+        /// The clusters.xml
+        /// </summary>
+        private static XmlDocument _clustersXMLDoc = new XmlDocument();
 
         /// <summary>
         /// Static Constructor. Fills _dictionary and _blacklist.
@@ -546,38 +550,61 @@ namespace RuralCafe.Clusters
             XmlDocument btDoc = new XmlDocument();
             btDoc.Load(new XmlTextReader(xmlBTFileName));
 
-            XmlDocument newXmlDoc = new XmlDocument();
-            newXmlDoc.AppendChild(newXmlDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
-
-            XmlElement newRootXml = newXmlDoc.CreateElement(INDEX_CATEGORIES_XML_NAME);
-            newXmlDoc.AppendChild(newRootXml);
-
-            XmlElement rootNode = (XmlElement)btDoc.DocumentElement.ChildNodes[0];
-            // Find up to maxCategories categories
-            List<XmlElement> categories = FindCategories(btDoc, rootNode, maxCategories);
-
-            foreach (XmlElement categoryElement in categories)
+            lock (_clustersXMLDoc)
             {
-                // Get all plain subcategories for each category
-                List<XmlElement> subCategories = FindSubCategories(categoryElement);
-                // Remove all childs from category
-                categoryElement.RemoveAllChilds();
 
-                // Add all subcategories
-                for (int i = 0; i < subCategories.Count; i++)
+                XmlDocument newXmlDoc = _clustersXMLDoc = new XmlDocument();
+                newXmlDoc.AppendChild(newXmlDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
+
+                XmlElement newRootXml = newXmlDoc.CreateElement(INDEX_CATEGORIES_XML_NAME);
+                newXmlDoc.AppendChild(newRootXml);
+
+                XmlElement rootNode = (XmlElement)btDoc.DocumentElement.ChildNodes[0];
+                // Find up to maxCategories categories
+                List<XmlElement> categories = FindCategories(btDoc, rootNode, maxCategories);
+
+                foreach (XmlElement categoryElement in categories)
                 {
-                    categoryElement.AppendChild(subCategories[i]);
+                    // Get all plain subcategories for each category
+                    List<XmlElement> subCategories = FindSubCategories(categoryElement);
+                    // Remove all childs from category
+                    categoryElement.RemoveAllChilds();
+
+                    // Add all subcategories
+                    for (int i = 0; i < subCategories.Count; i++)
+                    {
+                        categoryElement.AppendChild(subCategories[i]);
+                    }
+
+                    // Add category to newRootXml
+                    newRootXml.AppendChild(newXmlDoc.ImportNode(categoryElement, true));
                 }
 
-                // Add category to newRootXml
-                newRootXml.AppendChild(newXmlDoc.ImportNode(categoryElement, true));
+                // Save new xml
+                newXmlDoc.Save(xmlFileName);
             }
-
-            // Save new xml
-            newXmlDoc.Save(xmlFileName);
         }
 
         #region index serving
+
+        /// <summary>
+        /// Gets the clusters xml document. Loads the content, if they are not already loaded.
+        /// </summary>
+        /// <param name="clusterXMLFile">The fileName</param>
+        /// <returns>The XML document.</returns>
+        private static XmlDocument GetClustersXMLDocument(string clusterXMLFile)
+        {
+            lock (_clustersXMLDoc)
+            {
+                if (_clustersXMLDoc.DocumentElement == null)
+                {
+                    _clustersXMLDoc.Load(new XmlTextReader(clusterXMLFile));
+                }
+
+                return _clustersXMLDoc;
+            }
+        }
+
 
         /// <summary>
         /// Computes the 1st level in the hierarchy.
@@ -588,8 +615,7 @@ namespace RuralCafe.Clusters
         /// <returns>The index.xml string.</returns>
         public static string Level1Index(string clusterXMLFile, int maxCategories, int maxSubCategories)
         {
-            XmlDocument clustersDoc = new XmlDocument();
-            clustersDoc.Load(new XmlTextReader(clusterXMLFile));
+            XmlDocument clustersDoc = GetClustersXMLDocument(clusterXMLFile);
 
             XmlDocument indexDoc = new XmlDocument();
             indexDoc.AppendChild(indexDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
@@ -629,8 +655,7 @@ namespace RuralCafe.Clusters
         /// <returns>The index.xml string.</returns>
         public static string Level2Index(string clusterXMLFile, string categoryId, int maxSubCategories, int maxItems)
         {
-            XmlDocument clustersDoc = new XmlDocument();
-            clustersDoc.Load(new XmlTextReader(clusterXMLFile));
+            XmlDocument clustersDoc = GetClustersXMLDocument(clusterXMLFile);
 
             XmlDocument indexDoc = new XmlDocument();
             indexDoc.AppendChild(indexDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
@@ -671,8 +696,7 @@ namespace RuralCafe.Clusters
         /// <returns>The index.xml string.</returns>
         public static string Level3Index(string clusterXMLFile, string categoryId, string subCategoryId, int maxItems)
         {
-            XmlDocument clustersDoc = new XmlDocument();
-            clustersDoc.Load(new XmlTextReader(clusterXMLFile));
+            XmlDocument clustersDoc = GetClustersXMLDocument(clusterXMLFile);
 
             XmlDocument indexDoc = new XmlDocument();
             indexDoc.AppendChild(indexDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
