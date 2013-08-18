@@ -276,6 +276,11 @@ namespace RuralCafe
                 throw new HttpException(HttpStatusCode.NotFound, "No clusters computed.");
             }
 
+            if (searchString == null)
+            {
+                throw new HttpException(HttpStatusCode.BadRequest, "Must provide search string.");
+            }
+
             string xmlAnswer;
             // Determine the hierarchy-level (1, 2 or 3)
             if (searchString.Equals("root"))

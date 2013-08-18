@@ -62,12 +62,13 @@ namespace RuralCafe
         private const double THRESHOLD_PERCENT_ANTI_FLAPPING = 0.1;
         // .. for clustering XXX customizable?
 
-        // TODO make it actually only run a t 5 in the morning, without checking
+        // TODO make it actually only run at 5 in the morning, without checking
         private static readonly TimeSpan CLUSTERING_INTERVAL = new TimeSpan(0, 15, 0);
         private const int CLUSTERING_K = 20;
         private const bool CLUSTERING_HIERARCHICAL = true;
         private const int CLUSTERING_CAT_NFEATURES = 2;
         private const int CLUSTERING_SUBCAT_NFEATURES = 4;
+        private const int CLUSTERING_MAXCATEGORIES = 8;
         private const string CLUSTERS_FOLDER = "clusters";
 
         // RuralCafe pages path
@@ -301,7 +302,7 @@ namespace RuralCafe
             if(now.Hour == 5 && now.Minute < 15)
             {
                 ProxyCacheManager.CreateClusters(CLUSTERING_K, CLUSTERING_CAT_NFEATURES, CLUSTERING_SUBCAT_NFEATURES,
-                CLUSTERING_HIERARCHICAL);
+                CLUSTERING_HIERARCHICAL, CLUSTERING_MAXCATEGORIES);
             }
         }
         

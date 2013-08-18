@@ -41,6 +41,7 @@ namespace RuralCafe
         private const string MAT_FILE_NAME = "cache.mat";
         private const string CLUSTERS_FILE_NAME = "clusters";
         private const string TREE_FILE_NAME = "tree";
+        public const string CLUSTERS_BT_XML_FILE_NAME = "clustersBT.xml";
         public const string CLUSTERS_XML_FILE_NAME = "clusters.xml";
 
         private const string DATABASE_FILE_NAME = "RCDatabase.sdf";
@@ -1380,13 +1381,13 @@ namespace RuralCafe
         /// <summary>
         /// Creates the clusters.
         /// 
-        /// TODO remove stopwatches
         /// </summary>
         /// <param name="k">The number of clusters to create.</param>
         /// <param name="catNFeatures">The maximum number of features for a category.</param>
         /// <param name="subcatNFeatures">The maximum number of features for a subcategory.</param>
         /// <param name="hierarchical">If the clusters should be organized hierarchical.</param>
-        public void CreateClusters(int k, int catNFeatures, int subcatNFeatures, bool hierarchical)
+        /// <param name="maxCategories">The maximum number of categories.</param>
+        public void CreateClusters(int k, int catNFeatures, int subcatNFeatures, bool hierarchical, int maxCategories)
         {
             _proxy.Logger.Info("Creating clusters.");
             // Measure what part takes what time
@@ -1396,6 +1397,7 @@ namespace RuralCafe
             string docFileName = _clustersPath + DOC_FILE_NAME;
             string matFileName = _clustersPath + MAT_FILE_NAME;
             string clustersFileName = _clustersPath + CLUSTERS_FILE_NAME;
+            string xmlBTFileName = _clustersPath + CLUSTERS_BT_XML_FILE_NAME;
             string xmlFileName = _clustersPath + CLUSTERS_XML_FILE_NAME;
 
             List<string> textFiles;
@@ -1409,7 +1411,7 @@ namespace RuralCafe
                 stopwatch.Start();
                 textFiles = TextFiles();
                 stopwatch.Stop();
-                Console.WriteLine(stopwatch.Elapsed.TotalSeconds + "s");
+                _proxy.Logger.Debug("Clustering: Getting all text files took " + stopwatch.Elapsed.TotalSeconds + " s");
 
                 // Abort if we're having less than 2 text files
                 if (textFiles.Count < 2)
@@ -1434,11 +1436,11 @@ namespace RuralCafe
                 }
                 catch (IOException e)
                 {
-                    _proxy.Logger.Error("Clustering: DocFile creation failed.", e);
+                    _proxy.Logger.Warn("Clustering: DocFile creation failed.", e);
                     return;
                 }
                 stopwatch.Stop();
-                Console.WriteLine(stopwatch.Elapsed.TotalSeconds + "s");
+                _proxy.Logger.Debug("Clustering: Creating docfile took " + stopwatch.Elapsed.TotalSeconds + " s");
 
 
                 // doc2mat
@@ -1450,11 +1452,11 @@ namespace RuralCafe
                 }
                 catch (Exception e)
                 {
-                    _proxy.Logger.Error("Clustering: Doc2Mat failed.", e);
+                    _proxy.Logger.Warn("Clustering: Doc2Mat failed.", e);
                     return;
                 }
                 stopwatch.Stop();
-                Console.WriteLine(stopwatch.Elapsed.TotalSeconds + "s");
+                _proxy.Logger.Debug("Clustering: Doc2Mat took " + stopwatch.Elapsed.TotalSeconds + " s");
 
                 // ClutoClusters
                 _proxy.Logger.Debug("Clustering: Cluto-Clustering.");
@@ -1477,27 +1479,42 @@ namespace RuralCafe
                 }
                 catch (Exception e)
                 {
-                    _proxy.Logger.Error("Clustering: Cluto failed.", e);
+                    _proxy.Logger.Warn("Clustering: Cluto failed.", e);
                     return;
                 }
                 stopwatch.Stop();
-                Console.WriteLine(stopwatch.Elapsed.TotalSeconds + "s");
+                _proxy.Logger.Debug("Clustering: Cluto-Clustering took " + stopwatch.Elapsed.TotalSeconds + " s");
+
+                // Create binary tree XML file
+                _proxy.Logger.Debug("Clustering: Creating clustersBT.xml.");
+                stopwatch.Restart();
+                try
+                {
+                    Cluster.CreateClusterBTXMLFile(textFiles, features, clustersFileName, (hierarchical ? treeFileName : ""),
+                        xmlBTFileName, k, _cachePath.Length);
+                }
+                catch (Exception e)
+                {
+                    _proxy.Logger.Warn("Clustering: Creating XML failed.", e);
+                    return;
+                }
+                stopwatch.Stop();
+                _proxy.Logger.Debug("Clustering: Creating clustersBT.xml took " + stopwatch.Elapsed.TotalSeconds + " s");
 
                 // Create XML file
                 _proxy.Logger.Debug("Clustering: Creating clusters.xml.");
                 stopwatch.Restart();
                 try
                 {
-                    Cluster.CreateClusterXMLFile(textFiles, features, clustersFileName, (hierarchical ? treeFileName : ""),
-                        xmlFileName, k, _cachePath.Length);
+                    Cluster.CreateClusterXMLFile(xmlFileName, xmlBTFileName, maxCategories);
                 }
                 catch (Exception e)
                 {
-                    _proxy.Logger.Error("Clustering: Creating XML failed.", e);
+                    _proxy.Logger.Warn("Clustering: Creating XML failed.", e);
                     return;
                 }
                 stopwatch.Stop();
-                Console.WriteLine(stopwatch.Elapsed.TotalSeconds + "s");
+                _proxy.Logger.Debug("Clustering: Creating clusters.xml took " + stopwatch.Elapsed.TotalSeconds + " s");
             }
             finally
             {
