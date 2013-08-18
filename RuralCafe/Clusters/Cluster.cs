@@ -1,4 +1,5 @@
-﻿using RuralCafe.Util;
+﻿using RuralCafe.Lucenenet;
+using RuralCafe.Util;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -653,7 +654,8 @@ namespace RuralCafe.Clusters
         /// <param name="maxSubCategories">The maximum number of subcategories.</param>
         /// <param name="maxItems">The maximum number of items per subcategory.</param>
         /// <returns>The index.xml string.</returns>
-        public static string Level2Index(string clusterXMLFile, string categoryId, int maxSubCategories, int maxItems)
+        public static string Level2Index(string clusterXMLFile, string categoryId, int maxSubCategories, int maxItems,
+            RCLocalProxy proxy)
         {
             XmlDocument clustersDoc = GetClustersXMLDocument(clusterXMLFile);
 
@@ -676,10 +678,25 @@ namespace RuralCafe.Clusters
             for (int i = 0; i < categoryElement.ChildNodes.Count && (maxSubCategories == 0 || i < maxSubCategories); i++)
             {
                 XmlNode subCategory = category.AppendChild(indexDoc.ImportNode(categoryElement.ChildNodes[i], false));
-                // For each subCategory import up to maxItems items
-                for (int j = 0; j < categoryElement.ChildNodes[i].ChildNodes.Count && (maxItems == 0 || j < maxItems); j++)
+
+                if (categoryElement.ChildNodes[i].ChildNodes.Count == 0)
                 {
-                    subCategory.AppendChild(indexDoc.ImportNode(categoryElement.ChildNodes[i].ChildNodes[j], true));
+                    // XXX this is just for the current study. Do a Lucene search, if there are no items
+                    // XXX also remove the proxy method parameter, as this is only needed for lucene
+                    SearchResults luceneResults = proxy.IndexWrapper.Query(
+                        (categoryElement.ChildNodes[i] as XmlElement).GetAttribute(CLUSTER_FEATURES_XML_NAME),
+                        proxy.CachePath, 0, maxItems);
+
+                    // Add the results to the XML
+                    LocalInternalRequestHandler.AppendSearchResultsXMLElements(luceneResults, indexDoc, subCategory as XmlElement);
+                }
+                else
+                {
+                    // For each subCategory import up to maxItems items
+                    for (int j = 0; j < categoryElement.ChildNodes[i].ChildNodes.Count && (maxItems == 0 || j < maxItems); j++)
+                    {
+                        subCategory.AppendChild(indexDoc.ImportNode(categoryElement.ChildNodes[i].ChildNodes[j], true));
+                    }
                 }
             }
 
@@ -694,7 +711,8 @@ namespace RuralCafe.Clusters
         /// <param name="subCategoryId">The subcategory id.</param>
         /// <param name="maxItems">The maximum number of items for the subcategory.</param>
         /// <returns>The index.xml string.</returns>
-        public static string Level3Index(string clusterXMLFile, string categoryId, string subCategoryId, int maxItems)
+        public static string Level3Index(string clusterXMLFile, string categoryId, string subCategoryId, int maxItems,
+            RCLocalProxy proxy)
         {
             XmlDocument clustersDoc = GetClustersXMLDocument(clusterXMLFile);
 
@@ -722,10 +740,24 @@ namespace RuralCafe.Clusters
             XmlNode category = indexRootXml.AppendChild(indexDoc.ImportNode(categoryElement, false));
             // Import subcategory
             XmlNode subCategory = category.AppendChild(indexDoc.ImportNode(subCategoryElement, false));
-            // Import up to maxItems items
-            for (int i = 0; i < subCategoryElement.ChildNodes.Count && (maxItems == 0 || i < maxItems); i++)
+            if (subCategoryElement.ChildNodes.Count == 0)
             {
-                subCategory.AppendChild(indexDoc.ImportNode(subCategoryElement.ChildNodes[i], true));
+                // XXX this is just for the current study. Do a Lucene search, if there are no items
+                // XXX also remove the proxy method parameter, as this is only needed for lucene
+                SearchResults luceneResults = proxy.IndexWrapper.Query(
+                    subCategoryElement.GetAttribute(CLUSTER_FEATURES_XML_NAME),
+                    proxy.CachePath, 0, maxItems);
+
+                // Add the results to the XML
+                LocalInternalRequestHandler.AppendSearchResultsXMLElements(luceneResults, indexDoc, subCategory as XmlElement);
+            }
+            else
+            {
+                // Import up to maxItems items
+                for (int i = 0; i < subCategoryElement.ChildNodes.Count && (maxItems == 0 || i < maxItems); i++)
+                {
+                    subCategory.AppendChild(indexDoc.ImportNode(subCategoryElement.ChildNodes[i], true));
+                }
             }
 
             return indexDoc.InnerXml;

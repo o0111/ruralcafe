@@ -302,7 +302,7 @@ namespace RuralCafe
                 try
                 {
                     xmlAnswer = Cluster.Level2Index(Proxy.ProxyCacheManager.ClustersPath + CacheManager.CLUSTERS_XML_FILE_NAME,
-                        searchString, numCategories, numItems);
+                        searchString, numCategories, numItems, Proxy);
                 }
                 catch (ArgumentException e)
                 {
@@ -325,7 +325,7 @@ namespace RuralCafe
                 try
                 {
                     xmlAnswer = Cluster.Level3Index(Proxy.ProxyCacheManager.ClustersPath + CacheManager.CLUSTERS_XML_FILE_NAME,
-                        catId, subCatId, numItems);
+                        catId, subCatId, numItems, Proxy);
                 }
                 catch (ArgumentException e)
                 {
@@ -539,7 +539,7 @@ namespace RuralCafe
         /// <param name="results">The search results.</param>
         /// <param name="doc">The XmlDocument.</param>
         /// <param name="elem">The XmlElement to append the childs.</param>
-        private void AppendSearchResultsXMLElements(SearchResults results, XmlDocument doc, XmlElement elem)
+        public static void AppendSearchResultsXMLElements(SearchResults results, XmlDocument doc, XmlElement elem)
         {
             foreach (SearchResult result in results)
             {
@@ -610,7 +610,7 @@ namespace RuralCafe
         /// <param name="url">The URL.</param>
         /// <param name="snippet">The content snippet.</param>
         /// <returns>The XmlElement.</returns>
-        private XmlElement BuildSearchResultXmlElement(XmlDocument doc, string title, string url, string snippet)
+        private static XmlElement BuildSearchResultXmlElement(XmlDocument doc, string title, string url, string snippet)
         {
             XmlElement itemXml = doc.CreateElement("item");
 
