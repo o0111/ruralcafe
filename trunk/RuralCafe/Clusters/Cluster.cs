@@ -38,7 +38,7 @@ namespace RuralCafe.Clusters
         private const string INDEX_CATEGORIES_XML_NAME = "categories";
         private const string INDEX_LEVEL_XML_NAME = "level";
         private const string INDEX_ONLY_LEAF_CHILDS_TITLE = "Other";
-        private const string INDEX_ONLY_LEAF_CHILDS_TROTRO_ID = "null";
+        private const string INDEX_ONLY_LEAF_CHILDS_ID = "-1";
 
         /// Regex's for docfile creation replacement
         private static readonly Regex newlineRegex = new Regex(@"\r\n|\n|\r");
@@ -387,7 +387,7 @@ namespace RuralCafe.Clusters
         }
 
         /// <summary>
-        /// Creates an XML file containing all the cluster information.
+        /// Creates an XML file containing all the cluster information in a binary tree.
         /// 
         /// Throws an Exception (e.g. FormatException or XmlException)
         /// if anything goes wrong.
@@ -399,7 +399,7 @@ namespace RuralCafe.Clusters
         /// <param name="xmlFile">The XML result will be stored in here.</param>
         /// <param name="k">The number of clusters</param>
         /// <param name="cachePathLength">The length of a string containing the cache path root folder.</param>
-        public static void CreateClusterXMLFile(List<string> fileNames, HashSet<string>[] features,
+        public static void CreateClusterBTXMLFile(List<string> fileNames, HashSet<string>[] features,
             string clusterFile, string treeFile,
             string xmlFile, int k, int cachePathLength)
         {
@@ -535,6 +535,48 @@ namespace RuralCafe.Clusters
             xmlDoc.Save(xmlFile);
         }
 
+        /// <summary>
+        /// Creates a 3-level hiererchy xml file from the binary tree xml file.
+        /// </summary>
+        /// <param name="xmlFileName">The file where to store the result</param>
+        /// <param name="xmlBTFileName">The file with the binary tree</param>
+        /// <param name="maxCategories">The maximum number of categories.</param>
+        public static void CreateClusterXMLFile(string xmlFileName, string xmlBTFileName, int maxCategories)
+        {
+            XmlDocument btDoc = new XmlDocument();
+            btDoc.Load(new XmlTextReader(xmlBTFileName));
+
+            XmlDocument newXmlDoc = new XmlDocument();
+            newXmlDoc.AppendChild(newXmlDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
+
+            XmlElement newRootXml = newXmlDoc.CreateElement(INDEX_CATEGORIES_XML_NAME);
+            newXmlDoc.AppendChild(newRootXml);
+
+            XmlElement rootNode = (XmlElement)btDoc.DocumentElement.ChildNodes[0];
+            // Find up to maxCategories categories
+            List<XmlElement> categories = FindCategories(btDoc, rootNode, maxCategories);
+
+            foreach (XmlElement categoryElement in categories)
+            {
+                // Get all plain subcategories for each category
+                List<XmlElement> subCategories = FindSubCategories(categoryElement);
+                // Remove all childs from category
+                categoryElement.RemoveAllChilds();
+
+                // Add all subcategories
+                for (int i = 0; i < subCategories.Count; i++)
+                {
+                    categoryElement.AppendChild(subCategories[i]);
+                }
+
+                // Add category to newRootXml
+                newRootXml.AppendChild(newXmlDoc.ImportNode(categoryElement, true));
+            }
+
+            // Save new xml
+            newXmlDoc.Save(xmlFileName);
+        }
+
         #region index serving
 
         /// <summary>
@@ -561,27 +603,17 @@ namespace RuralCafe.Clusters
             {
                 throw new ArgumentException("No categories");
             }
-            XmlElement rootNode = (XmlElement) clustersDoc.DocumentElement.ChildNodes[0];
-            // Find up to maxCategories categories
-            List<XmlElement> categories = FindCategories(clustersDoc, rootNode, maxCategories);
-            foreach (XmlElement categoryElement in categories)
+            XmlElement rootNode = (XmlElement) clustersDoc.DocumentElement;
+            
+            // Import up to maxCategories categories
+            for (int i = 0; i < rootNode.ChildNodes.Count && (maxCategories == 0 || i < maxCategories); i++)
             {
-                // Get all plain subcategories for each category
-                List<XmlElement> subCategories = FindSubCategories(categoryElement);
-                // Remove all childs from category
-                categoryElement.RemoveAllChilds();
-                // Add until maxSubCategories is reached (if it's != 0)
-                for (int i = 0; i < subCategories.Count && (maxSubCategories == 0 || i < maxSubCategories); i++)
+                XmlNode category = indexRootXml.AppendChild(indexDoc.ImportNode(rootNode.ChildNodes[i], false));
+                // For each category import up to maxSubCategories subCategories
+                for (int j = 0; j < rootNode.ChildNodes[i].ChildNodes.Count && (maxSubCategories == 0 || j < maxSubCategories); j++)
                 {
-                    categoryElement.AppendChild(subCategories[i]);
+                    category.AppendChild(indexDoc.ImportNode(rootNode.ChildNodes[i].ChildNodes[j], false));
                 }
-                // For each subcategory we must remove all childs
-                foreach (XmlElement subCategoryElement in categoryElement.ChildNodes)
-                {
-                    subCategoryElement.RemoveAllChilds();
-                }
-                // Add category to indexRootXml
-                indexRootXml.AppendChild(indexDoc.ImportNode(categoryElement, true));
             }
 
             return indexDoc.InnerXml;
@@ -612,29 +644,19 @@ namespace RuralCafe.Clusters
             {
                 throw new ArgumentException("Could not find category with that id.");
             }
-            // Get all plain subcategories.
-            List<XmlElement> subCategories = FindSubCategories(categoryElement);
-            // Remove all childs from category
-            categoryElement.RemoveAllChilds();
 
-            // Add until maxSubCategories is reached (if it's != 0)
-            for (int i = 0; i < subCategories.Count && (maxSubCategories == 0 || i < maxSubCategories); i++)
+            // Import category
+            XmlNode category = indexRootXml.AppendChild(indexDoc.ImportNode(categoryElement, false));
+            // For the category import up to maxSubCategories subCategories
+            for (int i = 0; i < categoryElement.ChildNodes.Count && (maxSubCategories == 0 || i < maxSubCategories); i++)
             {
-                categoryElement.AppendChild(subCategories[i]);
-            }
-            if (maxItems != 0)
-            {
-                // For each subcategory we might have to cut some elements
-                foreach (XmlElement subCategoryElement in categoryElement.ChildNodes)
+                XmlNode subCategory = category.AppendChild(indexDoc.ImportNode(categoryElement.ChildNodes[i], false));
+                // For each subCategory import up to maxItems items
+                for (int j = 0; j < categoryElement.ChildNodes[i].ChildNodes.Count && (maxItems == 0 || j < maxItems); j++)
                 {
-                    for (int i = subCategoryElement.ChildNodes.Count - 1; i >= maxItems; i--)
-                    {
-                        subCategoryElement.RemoveChild(subCategoryElement.ChildNodes[i]);
-                    }
+                    subCategory.AppendChild(indexDoc.ImportNode(categoryElement.ChildNodes[i].ChildNodes[j], true));
                 }
             }
-            // Add category to indexRootXml
-            indexRootXml.AppendChild(indexDoc.ImportNode(categoryElement, true));
 
             return indexDoc.InnerXml;
         }
@@ -659,45 +681,28 @@ namespace RuralCafe.Clusters
             indexDoc.AppendChild(indexRootXml);
             indexRootXml.SetAttribute(INDEX_LEVEL_XML_NAME, String.Empty + 3);
 
+            // Find category and subcategory element
             XmlElement categoryElement, subCategoryElement;
-            if (categoryId.Equals(INDEX_ONLY_LEAF_CHILDS_TROTRO_ID))
+            categoryElement = FindCategory(clustersDoc.DocumentElement, categoryId);
+            if (categoryElement == null)
             {
-                // This is an only leaf child subcategory
-                categoryElement = clustersDoc.CreateElement(PARENT_CLUSTER_XML_NAME);
-                // It will not have an id since it is not really a category.
-                categoryElement.SetAttribute(ITEM_TITLE_XML_NAME, INDEX_ONLY_LEAF_CHILDS_TITLE);
-
-                subCategoryElement = FindCategory(clustersDoc.DocumentElement, subCategoryId);
+                throw new ArgumentException("Could not find category with that id.");
             }
-            else
-            {
-                categoryElement = FindCategory(clustersDoc.DocumentElement, categoryId);
-                if (categoryElement == null)
-                {
-                    throw new ArgumentException("Could not find category with that id.");
-                }
-                subCategoryElement = FindCategory(categoryElement, subCategoryId);
-            }
-
+            subCategoryElement = FindCategory(categoryElement, subCategoryId);
             if (subCategoryElement == null)
             {
                 throw new ArgumentException("Could not find subcategory with that id.");
             }
-            if (maxItems != 0 && maxItems < subCategoryElement.ChildNodes.Count)
-            {
-                // We have to cut some items
-                for (int i = subCategoryElement.ChildNodes.Count - 1; i >= maxItems; i--)
-                {
-                    subCategoryElement.RemoveChild(subCategoryElement.ChildNodes[i]);
-                }
-            }
 
-            // Remove all childs
-            categoryElement.RemoveAllChilds();
-            // Add subcategory plain
-            categoryElement.AppendChild(subCategoryElement);
-            // Add category to indexRootXml
-            indexRootXml.AppendChild(indexDoc.ImportNode(categoryElement, true));
+            // Import category
+            XmlNode category = indexRootXml.AppendChild(indexDoc.ImportNode(categoryElement, false));
+            // Import subcategory
+            XmlNode subCategory = category.AppendChild(indexDoc.ImportNode(subCategoryElement, false));
+            // Import up to maxItems items
+            for (int i = 0; i < subCategoryElement.ChildNodes.Count && (maxItems == 0 || i < maxItems); i++)
+            {
+                subCategory.AppendChild(indexDoc.ImportNode(subCategoryElement.ChildNodes[i], true));
+            }
 
             return indexDoc.InnerXml;
         }
@@ -740,7 +745,7 @@ namespace RuralCafe.Clusters
         private static XmlElement FindCategory(XmlElement parent, string id)
         {
             if (parent.Name.Equals(CLUSTERS_XML_NAME) || parent.Name.Equals(PARENT_CLUSTER_XML_NAME)
-                || parent.Name.Equals(CLUSTER_XML_NAME))
+                || parent.Name.Equals(CLUSTER_XML_NAME) || parent.Name.Equals(INDEX_CATEGORIES_XML_NAME))
             {
                 if (id.Equals(parent.GetAttribute(CLUSTER_ID_XML_NAME)))
                 {
@@ -829,7 +834,8 @@ namespace RuralCafe.Clusters
             {
                 // We will have to create a new category for the only leaf childs.
                 XmlElement onlyLeafChildsElement = doc.CreateElement(PARENT_CLUSTER_XML_NAME);
-                // It will not have an id since it is not really a category.
+                // It will id=-1 since it is not really a category.
+                onlyLeafChildsElement.SetAttribute(CLUSTER_ID_XML_NAME, INDEX_ONLY_LEAF_CHILDS_ID);
                 onlyLeafChildsElement.SetAttribute(ITEM_TITLE_XML_NAME, INDEX_ONLY_LEAF_CHILDS_TITLE);
                 // Add all only leaf childs
                 foreach (XmlElement child in onlyLeafChilds)
