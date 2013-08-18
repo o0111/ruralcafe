@@ -1072,29 +1072,6 @@ namespace RuralCafe
                         try
                         {
                             fileName = fileInfo.FullName;
-
-                            // if its compressed
-                            if (fileName.EndsWith(".html.bz2") ||
-                                fileName.EndsWith(".htm.bz2") ||
-                                fileName.EndsWith(".txt.bz2") ||
-                                fileName.EndsWith(".xml.bz2") ||
-                                fileName.EndsWith(".js.bz2"))
-                            {
-                                // decompress
-                                _proxy.Logger.Info("Decompress: " + fileName);
-                                MemoryStream decompressedMs = Utils.BZ2DecompressFile(fileName);
-
-                                // writeback
-                                string oldFileName = fileName;
-                                fileName = fileName.Substring(0, fileName.Length - 4);
-                                FileStream outStream = File.OpenWrite(fileName);
-                                decompressedMs.WriteTo(outStream);
-                                outStream.Flush();
-                                outStream.Close();
-
-                                // delete old
-                                File.Delete(oldFileName);
-                            }
                         }
                         catch (PathTooLongException)
                         {
