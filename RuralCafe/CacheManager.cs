@@ -1329,6 +1329,72 @@ namespace RuralCafe
                     select gcrc).FirstOrDefault();
         }
 
+        public void DeleteBZ2Entries()
+        {
+            RCDatabaseEntities databaseContext = GetNewDatabaseContext();
+            IQueryable<GlobalCacheItem> bz2s = from gci in databaseContext.GlobalCacheItem
+                    where
+                        gci.filename.EndsWith(".html.bz2") ||
+                        gci.filename.EndsWith(".htm.bz2") ||
+                        gci.filename.EndsWith(".txt.bz2") ||
+                        gci.filename.EndsWith(".xml.bz2") ||
+                        gci.filename.EndsWith(".js.bz2")
+                    select gci;
+
+            int counter = 0;
+            foreach (GlobalCacheItem bz2 in bz2s)
+            {
+                try
+                {
+                    string newFileName = _cachePath + bz2.filename.Substring(0, bz2.filename.Length - 4);
+                    FileInfo newFileInfo = new FileInfo(newFileName);
+                    if (newFileInfo.Exists)
+                    {
+                        // Update DB entry
+                        bz2.GlobalCacheRCData.url = bz2.GlobalCacheRCData.url.Substring(0, bz2.filename.Length - 4);
+                        bz2.url = bz2.url.Substring(0, bz2.filename.Length - 4);
+                        bz2.filename = bz2.filename.Substring(0, bz2.filename.Length - 4);
+                        bz2.filesize = newFileInfo.Length;
+                    }
+                    else
+                    {
+                        // Remove DB entry
+                        databaseContext.GlobalCacheRCData.Remove(bz2.GlobalCacheRCData);
+                        databaseContext.GlobalCacheItem.Remove(bz2);
+                    }
+                    // Save (just when debugging to see if it works)
+                    // databaseContext.SaveChanges();
+
+                    counter++;
+                    if (counter == DATABASE_BULK_INSERT_THRESHOLD)
+                    {
+                        counter = 0;
+                        _proxy.Logger.Info(DATABASE_BULK_INSERT_THRESHOLD + " files updated. Saving database changes made so far.");
+                        databaseContext.SaveChanges();
+                        databaseContext.Dispose();
+                        databaseContext = GetNewDatabaseContext();
+                    }
+                         
+                }
+                catch (Exception e)
+                {
+                    _proxy.Logger.Warn("Error deleting/updating bz2 entries: ", e);
+                }
+            }
+
+            try
+            {
+                // Save
+                _proxy.Logger.Info("Saving completed database changes.");
+                databaseContext.SaveChanges();
+                databaseContext.Dispose();
+            }
+            catch (Exception e)
+            {
+                _proxy.Logger.Warn("Error deleting/updating bz2 entries: ", e);
+            }
+        }
+
         #endregion
         #region analysis
 
