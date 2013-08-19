@@ -391,7 +391,7 @@ namespace RuralCafe
                     newItem.statusCode = 301;
 
                     // Add redir file to the database
-                    cacheManager.AddCacheItemsForExistingFiles(new List<GlobalCacheItemToAdd>() { newItem });
+                    cacheManager.AddCacheItemsForExistingFiles(new HashSet<GlobalCacheItemToAdd>() { newItem });
 
                     // have to save to the new cache file location
                     string uri = _webResponse.ResponseUri.ToString();

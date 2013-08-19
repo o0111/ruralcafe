@@ -143,8 +143,8 @@ namespace RuralCafe
                         content = LinkSuggestionHtmlModifier.IncludeTooltips(content);
 
                         // Modify the webresponse
-                        GlobalCacheItem gci = _proxy.ProxyCacheManager.GetGlobalCacheItemAsRequest(_originalRequest.HttpMethod,
-                            _originalRequest.RawUrl);
+                        GlobalCacheItem gci = _proxy.ProxyCacheManager.
+                            GetGlobalCacheItemAsRequest(_rcRequest.GenericWebRequest.Method, _rcRequest.GenericWebRequest.RequestUri.ToString());
                         if (gci == null)
                         {
                             string message = "problem getting db info: " + _rcRequest.CacheFileName;
