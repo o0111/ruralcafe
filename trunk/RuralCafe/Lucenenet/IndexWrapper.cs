@@ -130,6 +130,33 @@ namespace RuralCafe.Lucenenet
         }
 
         /// <summary>
+        /// Removes all dead links from the indexx
+        /// </summary>
+        /// <param name="proxy">The proxy, to log and to gain access to the cache manager.</param>
+        public void RemoveAllDeadLinks(RCLocalProxy proxy)
+        {
+            proxy.Logger.Info("Deleting all dead links from index...");
+            Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(_indexPath));
+            IndexReader reader = IndexReader.Open(directory, false);
+            for (int i = 0; i < reader.MaxDoc(); i++) 
+            {
+                if (reader.IsDeleted(i))
+                {
+                    continue;
+                }
+
+                Document doc = reader.Document(i);
+                if(!proxy.ProxyCacheManager.IsCached("GET", doc.Get("uri")))
+                {
+                    proxy.Logger.Debug("Deleting " + doc.Get("uri") + " from the lucene index.");
+                    reader.DeleteDocument(i);
+                }
+            }
+            reader.Close();
+            proxy.Logger.Info("Deleted all dead links from index.");
+        }
+
+        /// <summary>
         /// Queries the index for a list of results.
         /// </summary>
         /// <param name="queryString">String to query the index for.</param>
