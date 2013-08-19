@@ -62,8 +62,9 @@ namespace RuralCafe
         private const double THRESHOLD_PERCENT_ANTI_FLAPPING = 0.1;
         // .. for clustering XXX customizable?
 
-        // TODO make it actually only run at 5 in the morning, without checking
-        private static readonly TimeSpan CLUSTERING_INTERVAL = new TimeSpan(0, 15, 0);
+        // This is the interval the time is being checked. The clustering is run once daily
+        // between 5 and 6 o' clock.
+        private static readonly TimeSpan CLUSTERING_INTERVAL = new TimeSpan(1, 0, 0);
         private const int CLUSTERING_K = 20;
         private const bool CLUSTERING_HIERARCHICAL = true;
         private const int CLUSTERING_CAT_NFEATURES = 2;
@@ -108,6 +109,10 @@ namespace RuralCafe
         /// The timer that does the clustering.
         /// </summary>
         private Timer _clusteringTimer;
+        /// <summary>
+        /// A variable telling whether the clustering is currently running.
+        /// </summary>
+        private bool clusteringRunning;
 
         // dictionary of lists of requests made by each client
         private Dictionary<int, List<LocalRequestHandler>> _clientRequestsMap;
@@ -292,17 +297,33 @@ namespace RuralCafe
         /// <summary>
         /// Starts the clustering. This method is called periodically
         /// by a timer in a new thread.
+        /// 
+        /// Starts the clustering if it is between 5 and 6 or if the last creation is more than a day ago.
+        /// Only starts if the clustering is not currently running.
         /// </summary>
         /// <param name="o">Ignored.</param>
         private void StartClustering(object o)
         {
-            // FIXME this should actually not check for the time
-
             DateTime now = DateTime.Now;
-            if(now.Hour == 5 && now.Minute < 15)
+            if(now.Hour == 5 || ProxyCacheManager.GetClusteringTimeStamp().AddDays(1).CompareTo(now) < 0)
             {
-                ProxyCacheManager.CreateClusters(CLUSTERING_K, CLUSTERING_CAT_NFEATURES, CLUSTERING_SUBCAT_NFEATURES,
-                CLUSTERING_HIERARCHICAL, CLUSTERING_MAXCATEGORIES);
+                bool doClustering = false;
+                lock (_clusteringTimer)
+                {
+                    if (!clusteringRunning)
+                    {
+                        clusteringRunning = doClustering = true;
+                    }
+                }
+                if (doClustering)
+                {
+                    ProxyCacheManager.CreateClusters(CLUSTERING_K, CLUSTERING_CAT_NFEATURES, CLUSTERING_SUBCAT_NFEATURES,
+                    CLUSTERING_HIERARCHICAL, CLUSTERING_MAXCATEGORIES);
+                    lock (_clusteringTimer)
+                    {
+                        clusteringRunning = false;
+                    }
+                }
             }
         }
         
