@@ -242,7 +242,7 @@ namespace RuralCafe
             long unpackedBytes = 0;
             Byte[] buffer = new Byte[1024];
 
-            List<GlobalCacheItemToAdd> itemsToAdd = new List<GlobalCacheItemToAdd>();
+            HashSet<GlobalCacheItemToAdd> itemsToAdd = new HashSet<GlobalCacheItemToAdd>();
 
             for (int i = 0; i < packageContentArr.Length; i += 2)
             {
@@ -287,13 +287,17 @@ namespace RuralCafe
 
                 unpackedBytes += currFileSize;
 
+                // TODO whenever a file cannot be saved, continue with the others instead
+                // of aborting.
+                // Also guarantee, that all created files are added to the database
                 if (!Utils.IsNotTooLongFileName(cacheFileName))
                 {
                     // We can't save the file
                     requestHandler.Logger.Warn("problem unpacking, filename too long for uri: " + currUri);
-                    return unpackedBytes;
+                    return -1;
                 }
 
+                // TODO this should go through the cache manager, to use its sync methods.
                 if (requestHandler.Proxy.ProxyCacheManager.IsCached(httpMethod, currUri))
                 {
                     // We override the file, if it exists
@@ -303,7 +307,7 @@ namespace RuralCafe
                 FileStream currFileFS = Utils.CreateFile(cacheFileName);
                 if (currFileFS == null)
                 {
-                    return unpackedBytes;
+                    return -1;
                 }
 
                 // check for overflow from previous file, and use it up first

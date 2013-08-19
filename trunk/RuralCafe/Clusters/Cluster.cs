@@ -109,7 +109,8 @@ namespace RuralCafe.Clusters
         /// </summary>
         /// <param name="files">The text files to merge.</param>
         /// <param name="docFile">The docfile. Contains one file per line, text only.</param>
-        public static void CreateDocFile(List<string> files, string docFile)
+        /// <returns>The titles of all documents added to the docfile.</returns>
+        public static List<string> CreateDocFile(List<string> files, string docFile)
         {
             FileStream docFileStream = Utils.CreateFile(docFile);
             if (docFileStream == null)
@@ -117,14 +118,27 @@ namespace RuralCafe.Clusters
                 throw new IOException("Could not create docFile.");
             }
 
+            // We save all HTML titles of the files in here.
+            List<string> titles = new List<string>();
+
             using (StreamWriter docFileWriter = new StreamWriter(docFileStream, Encoding.UTF8))
             {
-                foreach (string file in files)
+                for (int i = 0; i < files.Count; i++)
                 {
+                    string file = files[i];
                     // Read file
                     string content = Utils.ReadFileAsString(file);
+                    // Remove empty or nonexisting files from the list
+                    if (String.IsNullOrEmpty(content))
+                    {
+                        files.RemoveAt(i);
+                        i--;
+                        continue;
+                    }
                     // Format HTML
                     content = WebUtility.HtmlDecode(content);
+                    // Save page title
+                    titles.Add(HtmlUtils.GetPageTitleFromHTML(content));
                     // Extract text from Html
                     content = HtmlUtils.ExtractText(content);
                     // Remove newlines
@@ -151,6 +165,7 @@ namespace RuralCafe.Clusters
                     docFileWriter.WriteLine(content);
                 }
             }
+            return titles;
         }
 
         /// <summary>
@@ -404,9 +419,10 @@ namespace RuralCafe.Clusters
         /// <param name="xmlFile">The XML result will be stored in here.</param>
         /// <param name="k">The number of clusters</param>
         /// <param name="cachePathLength">The length of a string containing the cache path root folder.</param>
+        /// <param name="titles">The titles of the files in fileNames.</param>
         public static void CreateClusterBTXMLFile(List<string> fileNames, HashSet<string>[] features,
             string clusterFile, string treeFile,
-            string xmlFile, int k, int cachePathLength)
+            string xmlFile, int k, int cachePathLength, List<string> titles)
         {
             // Read cluster file
             string clusterFileContent = Utils.ReadFileAsString(clusterFile);
@@ -464,7 +480,7 @@ namespace RuralCafe.Clusters
 
                 XmlElement titleElement = xmlDoc.CreateElement(ITEM_TITLE_XML_NAME);
                 itemElement.AppendChild(titleElement);
-                titleElement.InnerText = HtmlUtils.GetPageTitleFromFile(fileNames[i]);
+                titleElement.InnerText = titles[i];
 
                 XmlElement uriElement = xmlDoc.CreateElement(ITEM_URL_XML_NAME);
                 itemElement.AppendChild(uriElement);
