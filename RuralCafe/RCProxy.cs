@@ -628,73 +628,160 @@ namespace RuralCafe
         protected void HandleTCPRequest(object clientObject)
         {
             TcpClient inClient = clientObject as TcpClient;
+            TcpClient outClient = null;
 
             try
             {
                 NetworkStream clientStream = inClient.GetStream();
                 StreamReader clientReader = new StreamReader(clientStream);
+                StreamWriter clientWriter = new StreamWriter(clientStream);
 
+                // Read first line
                 string requestLine0 = clientReader.ReadLine();
                 if (requestLine0 == null)
                 {
                     return;
                 }
-                string requestUri = requestLine0.Split(' ')[1];
-                string[] uriSplit = requestUri.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-                string protocol = uriSplit[0];
-                string host = uriSplit[1];
-                int port = protocol.Equals("https:") ? 443 : 80;
-                if (host.Contains(':'))
+                string[] requestLine0Split = requestLine0.Split(' ');
+                if (requestLine0Split.Length < 3)
                 {
-                    string[] hostSplit = host.Split(':');
-                    host = hostSplit[0];
-                    port = Int32.Parse(hostSplit[1]);
+                    return;
                 }
-
-                TcpClient outClient = new TcpClient(host, port);
-                try
+                // Check if it is CONNECT
+                string method = requestLine0Split[0];
+                if (!method.Equals("CONNECT"))
                 {
-                    NetworkStream serverStream = outClient.GetStream();
-                    StreamWriter serverWriter = new StreamWriter(serverStream);
+                    return;
+                }
+                // Get host and port
+                string requestUri = requestLine0Split[1];
+                string[] uriSplit = requestUri.Split(new char[] { ':' }, StringSplitOptions.RemoveEmptyEntries);
+                if (uriSplit.Length < 2)
+                {
+                    return;
+                }
+                string host = uriSplit[0];
+                int port = Int32.Parse(uriSplit[1]);
 
-                    serverWriter.WriteLine(requestLine0);
+                // Connect to server
+                outClient = new TcpClient(host, port);
+                NetworkStream serverStream = outClient.GetStream();
+                StreamWriter serverWriter = new StreamWriter(serverStream);
+                StreamReader serverReader = new StreamReader(serverStream);
 
+                serverWriter.WriteLine(requestLine0);
+
+                Thread clientThread = new Thread(() =>
+                {
                     // Stream buffered to server
                     char[] buffer = new char[4096];
                     int read;
-                    while ((read = clientReader.Read(buffer, 0, buffer.Length)) != 0)
+                    while (true)
                     {
-                        serverWriter.Write(buffer, 0, read);
-                        if (read < buffer.Length)
+                        lock (inClient)
                         {
-                            break;
+                            if (inClient.Connected)
+                            {
+                                read = clientReader.Read(buffer, 0, buffer.Length);
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+                        lock (outClient)
+                        {
+                            if (outClient.Connected)
+                            {
+                                serverWriter.Write(buffer, 0, read);
+                                serverWriter.Flush();
+                            }
+                            else
+                            {
+                                break;
+                            }
                         }
                     }
+                    // Disconnect all open connections
+                    lock (outClient)
+                    {
+                        if (outClient.Connected)
+                        {
+                            outClient.Close();
+                        }
+                    }
+                    lock (inClient)
+                    {
+                        if (inClient.Connected)
+                        {
+                            inClient.Close();
+                        }
+                    }
+                });
+                clientThread.Start();
 
+                Thread serverThread = new Thread(() =>
+                {
                     // Stream buffered to client
-                    StreamReader serverReader = new StreamReader(serverStream);
-                    StreamWriter clientWriter = new StreamWriter(clientStream);
-                    while ((read = serverReader.Read(buffer, 0, buffer.Length)) != 0)
+                    char[] buffer = new char[4096];
+                    int read;
+                    while (true)
                     {
-                        clientWriter.Write(buffer, 0, read);
-                        if (read < buffer.Length)
+                        lock (outClient)
                         {
-                            break;
+                            if (outClient.Connected)
+                            {
+                                read = serverReader.Read(buffer, 0, buffer.Length);
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+                        lock (inClient)
+                        {
+                            if (inClient.Connected)
+                            {
+                                clientWriter.Write(buffer, 0, read);
+                                clientWriter.Flush();
+                            }
+                            else
+                            {
+                                break;
+                            }
                         }
                     }
-                }
-                finally
-                {
-                    // Disconnent
-                    outClient.Close();
-                }
+                    // Disconnect all open connections
+                    lock (outClient)
+                    {
+                        if (outClient.Connected)
+                        {
+                            outClient.Close();
+                        }
+                    }
+                    lock (inClient)
+                    {
+                        if (inClient.Connected)
+                        {
+                            inClient.Close();
+                        }
+                    }
+                });
+                serverThread.Start();
             }
-            finally
+            catch(Exception)
             {
-                // Disconnent
+                // Disconnent if connections still alive
                 try
                 {
-                    inClient.Close();
+                    if (inClient.Connected)
+                    {
+                        inClient.Close();
+                    }
+                    if (outClient != null && outClient.Connected)
+                    {
+                        outClient.Close();
+                    }
                 }
                 catch (Exception e)
                 {

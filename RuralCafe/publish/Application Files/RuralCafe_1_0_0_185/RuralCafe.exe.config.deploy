@@ -83,10 +83,10 @@
         <value>50</value>
       </setting>
       <setting name="LOCAL_MAX_CACHE_SIZE_MIB" serializeAs="String">
-        <value>2048</value>
+        <value>153600</value>
       </setting>
       <setting name="REMOTE_MAX_CACHE_SIZE_MIB" serializeAs="String">
-        <value>4096</value>
+        <value>153600</value>
       </setting>
     </RuralCafe.Properties.Settings>
   </userSettings>
@@ -114,7 +114,7 @@
       <file value="Logs/RuralCafe.log" />
       <staticLogFileName value="false" />
       <appendToFile value="true" />
-      <maximumFileSize value="100KB" />
+      <maximumFileSize value="1024KB" />
       <maxSizeRollBackups value="100" />
       <layout type="log4net.Layout.PatternLayout">
         <conversionPattern value="%date [%thread] %-5level %logger - %message%newline" />
