@@ -102,6 +102,9 @@ function showXMLLevel2(categories) {
 		for (var j=0;j<subcategories[i].children.length;j++) {
 			var item = subcategories[i].children[j];
 			var url = item.getElementsByTagName("url")[0].innerHTML;
+			if (url.slice(0, 7) != "http://") {
+				url = "http://" + url;
+			}
 			var title = item.getElementsByTagName("title")[0].innerHTML;
 			if( title == "") {
 				title = url;
@@ -128,6 +131,9 @@ function showXMLLevel3(categories) {
 	for (var j=0;j<subCat.children.length;j++) {
 			var item = subCat.children[j];
 			var url = item.getElementsByTagName("url")[0].innerHTML;
+			if (url.slice(0, 7) != "http://") {
+				url = "http://" + url;
+			}
 			var title = item.getElementsByTagName("title")[0].innerHTML;
 			if( title == "") {
 				title = url;
