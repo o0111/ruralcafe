@@ -31,6 +31,9 @@ using System.Collections.Specialized;
 using RuralCafe.Util;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
+using System.Security.Principal;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace RuralCafe
 {
@@ -65,6 +68,54 @@ namespace RuralCafe
         /// </summary>
         [STAThread]
         private static void Main()
+        {
+            if (!IsRunAsAdministrator())
+            {
+                // It is not possible to launch a ClickOnce app as administrator directly, so instead we launch the
+                // app as administrator in a new process.
+                ProcessStartInfo processInfo = new ProcessStartInfo(Assembly.GetExecutingAssembly().CodeBase);
+
+                // The following properties run the new process as administrator
+                processInfo.UseShellExecute = true;
+                processInfo.Verb = "runas";
+
+                // Start the new process
+                try
+                {
+                    Process.Start(processInfo);
+                }
+                catch (Exception)
+                {
+                    // The user did not allow the application to run as administrator
+                    MessageBox.Show("Sorry, this application must be run as Administrator.");
+                }
+
+                // Shut down the current process
+                Environment.Exit(-1);
+            }
+            else
+            {
+                // We are running as administrator
+                MyMain();
+            }
+        }
+
+        /// <summary>
+        /// Checks whether we have admin rights.
+        /// </summary>
+        /// <returns>If we have admin rights.</returns>
+        private static bool IsRunAsAdministrator()
+        {
+            WindowsIdentity wi = WindowsIdentity.GetCurrent();
+            WindowsPrincipal wp = new WindowsPrincipal(wi);
+
+            return wp.IsInRole(WindowsBuiltInRole.Administrator);
+        }
+
+        /// <summary>
+        /// Now we're defenitely admin and can start everything.
+        /// </summary>
+        private static void MyMain()
         {
             StartRuralCafe();
 
