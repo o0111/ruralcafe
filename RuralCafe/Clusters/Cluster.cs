@@ -553,7 +553,6 @@ namespace RuralCafe.Clusters
 
             lock (_clustersXMLDoc)
             {
-
                 XmlDocument newXmlDoc = _clustersXMLDoc = new XmlDocument();
                 newXmlDoc.AppendChild(newXmlDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
 
@@ -581,9 +580,40 @@ namespace RuralCafe.Clusters
                     newRootXml.AppendChild(newXmlDoc.ImportNode(categoryElement, true));
                 }
 
+                // Set timestamp for the new clusters.xml
+                newRootXml.SetAttribute("time", "" + DateTime.Now.ToFileTime());
+
                 // Save new xml
                 newXmlDoc.Save(xmlFileName);
             }
+        }
+
+        /// <summary>
+        /// Gets the timestamp of the current clusters.xml, if existent.
+        /// </summary>
+        /// <param name="xmlFileName">The file name of the xml file.</param>
+        /// <returns>The timestamp.</returns>
+        public static DateTime GetClusteringTimeStamp(string xmlFileName)
+        {
+            if (File.Exists(xmlFileName))
+            {
+                XmlDocument doc = new XmlDocument();
+                doc.Load(new XmlTextReader(xmlFileName));
+
+                string dateString = doc.DocumentElement.GetAttribute("time");
+                if (!String.IsNullOrEmpty(dateString))
+                {
+                    long dateFileTime;
+                    if (Int64.TryParse(dateString, out dateFileTime))
+                    {
+                        // return the timestamp
+                        return DateTime.FromFileTime(dateFileTime);
+                    }
+                }
+            }
+
+            // Return the earliest possible.
+            return DateTime.MinValue;
         }
 
         #region index serving
@@ -605,7 +635,6 @@ namespace RuralCafe.Clusters
                 return _clustersXMLDoc;
             }
         }
-
 
         /// <summary>
         /// Computes the 1st level in the hierarchy.
@@ -763,6 +792,9 @@ namespace RuralCafe.Clusters
             return indexDoc.InnerXml;
         }
 
+        #endregion
+        #region XML helpers
+
         /// <summary>
         /// Finds all plain subcategories in this category.
         /// </summary>
@@ -800,21 +832,11 @@ namespace RuralCafe.Clusters
         /// <returns>The category with the given id or null.</returns>
         private static XmlElement FindCategory(XmlElement parent, string id)
         {
-            if (parent.Name.Equals(CLUSTERS_XML_NAME) || parent.Name.Equals(PARENT_CLUSTER_XML_NAME)
-                || parent.Name.Equals(CLUSTER_XML_NAME) || parent.Name.Equals(INDEX_CATEGORIES_XML_NAME))
+            foreach (XmlElement child in parent.ChildNodes)
             {
-                if (id.Equals(parent.GetAttribute(CLUSTER_ID_XML_NAME)))
+                if (id.Equals(child.GetAttribute(CLUSTER_ID_XML_NAME)))
                 {
-                    return parent;
-                }
-                // Recursively look through the children
-                foreach (XmlElement child in parent.ChildNodes)
-                {
-                    XmlElement childResult = FindCategory(child, id);
-                    if (childResult != null)
-                    {
-                        return childResult;
-                    }
+                    return child;
                 }
             }
             return null;

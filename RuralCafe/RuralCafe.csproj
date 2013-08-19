@@ -22,19 +22,20 @@
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
-    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateEnabled>true</UpdateEnabled>
     <UpdateMode>Background</UpdateMode>
     <UpdateInterval>1</UpdateInterval>
     <UpdateIntervalUnits>Hours</UpdateIntervalUnits>
     <UpdatePeriodically>true</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
+    <UpdateUrl>\\FRITZMOBIL\Users\Satia\Documents\Visual Studio 2012\Projects\Rural Cafe\trunk\RuralCafe\publish\</UpdateUrl>
     <SupportUrl>http://code.google.com/p/ruralcafe/</SupportUrl>
     <TargetCulture>en</TargetCulture>
     <ProductName>Rural Cafe</ProductName>
     <AutorunEnabled>true</AutorunEnabled>
-    <ApplicationRevision>185</ApplicationRevision>
-    <ApplicationVersion>1.0.0.185</ApplicationVersion>
+    <ApplicationRevision>186</ApplicationRevision>
+    <ApplicationVersion>1.0.0.186</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
     <PublishWizardCompleted>true</PublishWizardCompleted>

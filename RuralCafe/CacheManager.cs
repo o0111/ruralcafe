@@ -1450,6 +1450,16 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// Gets the timestamp of the current clusters.xml, if existent.
+        /// </summary>
+        /// <returns>The timestamp.</returns>
+        public DateTime GetClusteringTimeStamp()
+        {
+            string xmlFileName = _clustersPath + CLUSTERS_XML_FILE_NAME;
+            return Cluster.GetClusteringTimeStamp(xmlFileName);
+        }
+
+        /// <summary>
         /// Creates the clusters.
         /// 
         /// </summary>
