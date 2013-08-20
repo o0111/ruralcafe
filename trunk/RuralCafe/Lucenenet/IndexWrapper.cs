@@ -158,12 +158,21 @@ namespace RuralCafe.Lucenenet
                                 RecoverInfoFromFile(fileName, fileName.Substring(proxy.ProxyCacheManager.CachePath.Length)) }))
                         {
                             delete = false;
+                            proxy.Logger.Debug("Item is now cached: " + proxy.ProxyCacheManager.IsCached("GET", doc.Get("uri")));
                         }
                     }
                     if(delete)
                     {
                         proxy.Logger.Debug("Deleting " + doc.Get("uri") + " from the lucene index.");
-                        reader.DeleteDocument(i);
+                        try
+                        {
+                            reader.DeleteDocument(i);
+                        }
+                        catch (StaleReaderException)
+                        {
+                            reader = IndexReader.Open(directory, false);
+                            reader.DeleteDocument(i);
+                        }
                     }
                 }
             }
