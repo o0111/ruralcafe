@@ -91,15 +91,14 @@ namespace RuralCafe.Lucenenet
         /// <summary>
         /// Deletes a document from our cache indexer.
         /// To be used for cache coherence/maintainence.
-        /// Unused. Untested.
+        /// Should not be called when there is already an indexWriter active.
         /// </summary>
         /// <param name="uri">The uri to delete from the index.</param>
         public void DeleteDocument(string uri)
         {
-            Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(_indexPath));
-            IndexReader indexReader = IndexReader.Open(directory, false);
-            indexReader.DeleteDocuments(new Term("uri", uri));
-            indexReader.Close();
+            IndexWriter writer = new IndexWriter(_indexPath, _analyzer, false);
+            writer.DeleteDocuments(new Term("uri", uri));
+            writer.Close();
         }
 
         /// <summary>
@@ -110,23 +109,17 @@ namespace RuralCafe.Lucenenet
         /// <param name="content">The page contents.</param>
         public void IndexDocument(string uri, string title, string content)
         {
+            IndexWriter writer = new IndexWriter(_indexPath, _analyzer, false);
             // Delete in order not to have duplicates
-            try
-            {
-                DeleteDocument(uri);
-            }
-            finally
-            {
-                IndexWriter writer = new IndexWriter(_indexPath, _analyzer, false);
+            writer.DeleteDocuments(new Term("uri", uri));
 
-                Document doc = new Document();
-                doc.Add(new Field("uri", uri, Field.Store.YES, Field.Index.NOT_ANALYZED));
-                doc.Add(new Field("title", title, Field.Store.YES, Field.Index.ANALYZED));
-                doc.Add(new Field("content", content, Field.Store.NO, Field.Index.ANALYZED));
-                writer.AddDocument(doc);
+            Document doc = new Document();
+            doc.Add(new Field("uri", uri, Field.Store.YES, Field.Index.NOT_ANALYZED));
+            doc.Add(new Field("title", title, Field.Store.YES, Field.Index.ANALYZED));
+            doc.Add(new Field("content", content, Field.Store.NO, Field.Index.ANALYZED));
+            writer.AddDocument(doc);
 
-                writer.Close();
-            }
+            writer.Close();
         }
 
         /// <summary>
@@ -139,7 +132,7 @@ namespace RuralCafe.Lucenenet
             Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(_indexPath));
             IndexReader reader = IndexReader.Open(directory, false);
             IndexWriter writer = new IndexWriter(_indexPath, _analyzer, false);
-            for (int i = 0; i < reader.MaxDoc(); i++) 
+            for (int i = 0; i < reader.MaxDoc(); i++)
             {
                 if (reader.IsDeleted(i))
                 {
@@ -151,11 +144,11 @@ namespace RuralCafe.Lucenenet
                 string uri2 = CacheManager.FilePathToUri(
                     CacheManager.GetRelativeCacheFileName(uri, "GET"));
 
-                
-                if(!proxy.ProxyCacheManager.IsCached("GET", doc.Get("uri")))
+
+                if (!proxy.ProxyCacheManager.IsCached("GET", doc.Get("uri")))
                 {
                     bool delete = true;
-                    
+
                     string fileName = proxy.ProxyCacheManager.CachePath +
                         CacheManager.GetRelativeCacheFileName(uri, "GET");
                     if (File.Exists(fileName))
@@ -164,17 +157,14 @@ namespace RuralCafe.Lucenenet
                         {
                             proxy.Logger.Debug("Deleting " + uri + " from the lucene index and adding " + uri2);
                             // Save new and delete old
-                            // we cannot use IndexDocument, as this would fail to obtain the lock
                             Document doc2 = new Document();
                             doc2.Add(new Field("uri", uri2, Field.Store.YES, Field.Index.NOT_ANALYZED));
                             doc2.Add(new Field("title", doc.Get("title"), Field.Store.YES, Field.Index.ANALYZED));
                             doc2.Add(new Field("content", Utils.ReadFileAsString(fileName), Field.Store.NO, Field.Index.ANALYZED));
+
                             writer.AddDocument(doc2);
+                            writer.DeleteDocuments(new Term("uri", uri));
                             writer.Commit();
-                            // Reopen reader
-                            reader = reader.Reopen();
-                            // and delete doc
-                            reader.DeleteDocument(i);
                             continue;
                         }
 
@@ -186,18 +176,11 @@ namespace RuralCafe.Lucenenet
                             proxy.Logger.Debug(uri + " is now cached: " + proxy.ProxyCacheManager.IsCached("GET", uri));
                         }
                     }
-                    if(delete)
+                    if (delete)
                     {
                         proxy.Logger.Debug("Deleting " + uri + " from the lucene index.");
-                        try
-                        {
-                            reader.DeleteDocument(i);
-                        }
-                        catch (StaleReaderException)
-                        {
-                            reader = reader.Reopen();
-                            reader.DeleteDocument(i);
-                        }
+                        writer.DeleteDocuments(new Term("uri", uri));
+                        writer.Commit();
                     }
                 }
             }
@@ -223,7 +206,7 @@ namespace RuralCafe.Lucenenet
             IndexReader reader = IndexReader.Open(directory, true);
             IndexSearcher searcher = new IndexSearcher(reader);
             QueryParser parser = new QueryParser(Lucene.Net.Util.Version.LUCENE_CURRENT, "content", _analyzer);
-            
+
             // the search function
             string searchQuery = "(" + QueryParser.Escape(queryString) + ")";
             Query query = parser.Parse(searchQuery);
@@ -234,7 +217,7 @@ namespace RuralCafe.Lucenenet
             results.NumResults = hits.Length;
 
             // Only loop through the hits that should be on the page
-            for (int i = offset; i< hits.Length && i < offset + resultAmount; i++)
+            for (int i = offset; i < hits.Length && i < offset + resultAmount; i++)
             {
                 int docId = hits[i].doc;
                 Document doc = searcher.Doc(docId);
@@ -281,7 +264,7 @@ namespace RuralCafe.Lucenenet
                     results.AddLuceneDocument(doc);
                 }
             }
-            
+
             searcher.Close();
             return results;
         }
