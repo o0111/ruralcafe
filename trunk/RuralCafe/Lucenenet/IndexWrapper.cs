@@ -149,8 +149,9 @@ namespace RuralCafe.Lucenenet
                 if(!proxy.ProxyCacheManager.IsCached("GET", doc.Get("uri")))
                 {
                     bool delete = true;
+                    string uri = doc.Get("uri");
                     string fileName = proxy.ProxyCacheManager.CachePath +
-                        CacheManager.GetRelativeCacheFileName(doc.Get("uri"), "GET");
+                        CacheManager.GetRelativeCacheFileName(uri, "GET");
                     if (File.Exists(fileName))
                     {
                         if (proxy.ProxyCacheManager.AddCacheItemsForExistingFiles(
@@ -158,12 +159,12 @@ namespace RuralCafe.Lucenenet
                                 RecoverInfoFromFile(fileName, fileName.Substring(proxy.ProxyCacheManager.CachePath.Length)) }))
                         {
                             delete = false;
-                            proxy.Logger.Debug("Item is now cached: " + proxy.ProxyCacheManager.IsCached("GET", doc.Get("uri")));
+                            proxy.Logger.Debug(uri + " is now cached: " + proxy.ProxyCacheManager.IsCached("GET", uri));
                         }
                     }
                     if(delete)
                     {
-                        proxy.Logger.Debug("Deleting " + doc.Get("uri") + " from the lucene index.");
+                        proxy.Logger.Debug("Deleting " + uri + " from the lucene index.");
                         try
                         {
                             reader.DeleteDocument(i);

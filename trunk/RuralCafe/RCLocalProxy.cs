@@ -224,6 +224,7 @@ namespace RuralCafe
                 // initialize the index
                 _indexWrapper.EnsureIndexExists();
             }
+            _indexWrapper.RemoveAllDeadLinks(this);
 
             bool success = false;
             // initialize the wiki index

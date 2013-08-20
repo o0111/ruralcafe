@@ -432,7 +432,7 @@ namespace RuralCafe
 
         /// <summary>
         /// Checks whether an item is cached. Only the DB is being used,
-        /// the disk contens are not ebing looked at.
+        /// the disk contens are not being looked at.
         /// </summary>
         /// <param name="httpMethod">The used HTTP method.</param>
         /// <param name="uri">The URI.</param>

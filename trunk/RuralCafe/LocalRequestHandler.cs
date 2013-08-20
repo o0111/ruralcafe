@@ -50,7 +50,7 @@ namespace RuralCafe
             : base(internalHandler.Proxy, internalHandler.Context, LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT)
         {
             // Copy fields from internalHandler
-            _outstandingRequests = internalHandler.OutstandingRequests;
+            OutstandingRequests = internalHandler.OutstandingRequests;
             PackageFileName = internalHandler.PackageFileName;
         }
 
