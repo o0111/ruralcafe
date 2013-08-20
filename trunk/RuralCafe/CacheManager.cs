@@ -545,6 +545,10 @@ namespace RuralCafe
             bool returnValue = true;
             using (RCDatabaseEntities databaseContext = GetNewDatabaseContext())
             {
+                // When we add, we potentially also evict.
+                // We need to make sure no other additions take place at the same time.
+                GetLockFor("ADD", "");
+                GetLocksFor(items);
                 try
                 {
                     foreach (GlobalCacheItemToAdd item in items)
@@ -561,6 +565,11 @@ namespace RuralCafe
                 {
                     _proxy.Logger.Warn("Could not add cache items to the database.", e);
                     returnValue = false;
+                }
+                finally
+                {
+                    ReleaseLocksFor(items);
+                    ReleaseLockFor("ADD", "");
                 }
             }
             return returnValue;
@@ -581,102 +590,81 @@ namespace RuralCafe
         private bool AddCacheItemForExistingFile(string url, string httpMethod,
             NameValueCollection headers, short statusCode, RCDatabaseEntities databaseContext)
         {
-            GetLockFor(httpMethod, url);
+            string relFileName = GetRelativeCacheFileName(url, httpMethod);
+
+            // If the headers do not contain "Content-Type", which should practically not happen,
+            // (but servers are actually not required to send it) we set it to the default:
+            // "application/octet-stream"
+            if (headers["Content-Type"] == null)
+            {
+                headers["Content-Type"] = "application/octet-stream";
+            }
+
+            long cacheSize, itemSize;
+            // Get the cache and the file size
             try
             {
-                string relFileName = GetRelativeCacheFileName(url, httpMethod);
+                cacheSize = CacheSize(databaseContext);
+                itemSize = CacheItemFileSize(relFileName);
+            }
+            catch (Exception e)
+            {
+                _proxy.Logger.Warn("Could not compute cache or file size.", e);
+                return false;
+            }
 
-                // If the headers do not contain "Content-Type", which should practically not happen,
-                // (but servers are actually not required to send it) we set it to the default:
-                // "application/octet-stream"
-                if (headers["Content-Type"] == null)
-                {
-                    headers["Content-Type"] = "application/octet-stream";
-                }
+            GlobalCacheItem existingCacheItem = GetGlobalCacheItem(httpMethod, url, databaseContext);
 
-                long cacheSize, itemSize;
-                GlobalCacheItem existingCacheItem;
-
-                // We get the lock for the eviction. This is essential, because
-                // otherwise other threads might start an eviction at the same time,
-                // resulting in deleting too much
-                GetLockFor("EVICT", "");
+            // Look if we have to evict cache items first.
+            long cacheOversize = cacheSize + itemSize - _maxCacheSize;
+            if (existingCacheItem != null)
+            {
+                cacheOversize -= -existingCacheItem.filesize;
+            }
+            if (cacheOversize > 0)
+            {
                 try
                 {
-                    // Get the cache and the file size
-                    try
-                    {
-                        cacheSize = CacheSize(databaseContext);
-                        itemSize = CacheItemFileSize(relFileName);
-                    }
-                    catch (Exception e)
-                    {
-                        _proxy.Logger.Warn("Could not compute cache or file size.", e);
-                        return false;
-                    }
-
-                    existingCacheItem = GetGlobalCacheItem(httpMethod, url, databaseContext);
-
-                    // Look if we have to evict cache items first.
-                    long cacheOversize = cacheSize + itemSize - _maxCacheSize;
-                    if (existingCacheItem != null)
-                    {
-                        cacheOversize -= -existingCacheItem.filesize;
-                    }
-                    if (cacheOversize > 0)
-                    {
-                        try
-                        {
-                            // We have to evict. We do until 5 % is free again.
-                            EvictCacheItems((long)(cacheOversize + CACHE_EVICTION_PERCENT * _maxCacheSize), databaseContext);
-                        }
-                        catch (Exception e)
-                        {
-                            _proxy.Logger.Warn("Could not evict cache items.", e);
-                            return false;
-                        }
-                    }
+                    // We have to evict. We do until 5 % is free again.
+                    EvictCacheItems((long)(cacheOversize + CACHE_EVICTION_PERCENT * _maxCacheSize), databaseContext);
                 }
-                finally
+                catch (Exception e)
                 {
-                    ReleaseLockFor("EVICT", "");
+                    _proxy.Logger.Warn("Could not evict cache items.", e);
+                    return false;
                 }
-
-                if (existingCacheItem == null)
-                {
-                    // Add database entry.
-                    try
-                    {
-                        AddCacheItemToDatabase(url, httpMethod, headers, statusCode,
-                            relFileName, itemSize, databaseContext);
-                    }
-                    catch (Exception e)
-                    {
-                        _proxy.Logger.Warn("Could not add cache item to the database.", e);
-                        return false;
-                    }
-                }
-                else
-                {
-                    // Update database entry.
-                    try
-                    {
-                        UpdateCacheItemInDatabase(existingCacheItem, headers, statusCode,
-                            relFileName, itemSize, databaseContext);
-                    }
-                    catch (Exception e)
-                    {
-                        _proxy.Logger.Warn("Could not add cache item to the database.", e);
-                        return false;
-                    }
-                }
-
-                return true;
             }
-            finally
+
+            if (existingCacheItem == null)
             {
-                ReleaseLockFor(httpMethod, url);
+                // Add database entry.
+                try
+                {
+                    AddCacheItemToDatabase(url, httpMethod, headers, statusCode,
+                        relFileName, itemSize, databaseContext);
+                }
+                catch (Exception e)
+                {
+                    _proxy.Logger.Warn("Could not add cache item to the database.", e);
+                    return false;
+                }
             }
+            else
+            {
+                // Update database entry.
+                try
+                {
+                    UpdateCacheItemInDatabase(existingCacheItem, headers, statusCode,
+                        relFileName, itemSize, databaseContext);
+                }
+                catch (Exception e)
+                {
+                    _proxy.Logger.Warn("Could not add cache item to the database.", e);
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -1635,6 +1623,18 @@ namespace RuralCafe
         #region synchronization
 
         /// <summary>
+        /// Gets locks for all items. In alphabetic order to prevent deadlocks.
+        /// </summary>
+        /// <param name="items">The items to get locks for.</param>
+        private void GetLocksFor(IEnumerable<GlobalCacheItemToAdd> items)
+        {
+            foreach (GlobalCacheItemToAdd item in items.OrderBy(item => item.url).ThenBy(item => item.httpMethod))
+            {
+                GetLockFor(item.httpMethod, item.url);
+            }
+        }
+
+        /// <summary>
         /// Gets a lock for the item with the given httpMethod and URL.
         /// 
         /// You can also lock on any string, passing that string as httpMethod and
@@ -1669,6 +1669,18 @@ namespace RuralCafe
             string relFileName = absoluteFileName.Substring(_cachePath.Length);
             GetLockFor(GetHTTPMethodFromRelCacheFileName(relFileName),
                 FilePathToUri(relFileName));
+        }
+
+        /// <summary>
+        /// Releases locks for all items. In reverse alphabetic order to prevent deadlocks.
+        /// </summary>
+        /// <param name="items">The items to release locks for.</param>
+        private void ReleaseLocksFor(IEnumerable<GlobalCacheItemToAdd> items)
+        {
+            foreach (GlobalCacheItemToAdd item in items.OrderByDescending(item => item.url).ThenByDescending(item => item.httpMethod))
+            {
+                ReleaseLockFor(item.httpMethod, item.url);
+            }
         }
 
         /// <summary>
