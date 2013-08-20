@@ -204,7 +204,7 @@ namespace RuralCafe
             {
                 // This is an internal error that should not happen!
                 requestHandler.Logger.Warn("problem unpacking: package index or content size is 0.");
-                return 0;
+                return -1;
             }
             
             string packageFileName = requestHandler.PackageFileName;
@@ -224,7 +224,7 @@ namespace RuralCafe
                 {
                     // This should not happen
                     requestHandler.Logger.Warn("problem unpacking: could not read index.");
-                    return 0;
+                    return -1;
                 }
                 bytesOfIndexRead += read;
             }
@@ -235,148 +235,84 @@ namespace RuralCafe
             string package = enc.GetString(packageIndexBuffer);
             string[] packageContentArr = package.Split(stringSeparator, StringSplitOptions.RemoveEmptyEntries);
 
-            Byte[] bufferOverflow = new Byte[1024];
-            int bufferOverflowCount = 0;
-            int bytesRead = 0;
-            long bytesReadOfCurrFile = 0;
             long unpackedBytes = 0;
-            Byte[] buffer = new Byte[1024];
-
             HashSet<GlobalCacheItemToAdd> itemsToAdd = new HashSet<GlobalCacheItemToAdd>();
 
-            for (int i = 0; i < packageContentArr.Length; i += 2)
+            try
             {
-                // Index format is 2 lines:
-                // <httpMethod> <statusCode> <fileSize> <URL> (Url is last, as it can have spaces)
-                // <headers> (JSON)
-                string[] firstLineArray = packageContentArr[i].Split(new string[]{" "}, 4, StringSplitOptions.None);
-
-                if (firstLineArray.Length != 4)
+                for (int i = 0; i < packageContentArr.Length; i += 2)
                 {
-                    requestHandler.Logger.Error("unparseable entry: " + packageContentArr[i]);
-                    return unpackedBytes;
-                }
-                string httpMethod = firstLineArray[0];
-                short statusCode;
-                long currFileSize;
-                try
-                {
-                    statusCode = Int16.Parse(firstLineArray[1]);
-                    currFileSize = Int64.Parse(firstLineArray[2]);
-                }
-                catch (Exception e)
-                {
-                    requestHandler.Logger.Warn("problem unpacking: " + packageContentArr[i], e);
-                    return unpackedBytes;
-                }
+                    // Index format is 2 lines:
+                    // <httpMethod> <statusCode> <fileSize> <URL> (Url is last, as it can have spaces)
+                    // <headers> (JSON)
+                    string[] firstLineArray = packageContentArr[i].Split(new string[] { " " }, 4, StringSplitOptions.None);
 
-                string currUri = firstLineArray[3];
-
-                string headersJson = packageContentArr[i + 1];
-                NameValueCollection headers = JsonConvert.DeserializeObject<NameValueCollection>(headersJson,
-                    new NameValueCollectionConverter());
-
-                if (!HttpUtils.IsValidUri(currUri))
-                {
-                    requestHandler.Logger.Warn("problem unpacking (invalid uri): " + currUri);
-                    return unpackedBytes;
-                }
-
-                string cacheFileName = requestHandler.Proxy.CachePath +
-                    CacheManager.GetRelativeCacheFileName(currUri, httpMethod);
-
-                unpackedBytes += currFileSize;
-
-                // TODO whenever a file cannot be saved, continue with the others instead
-                // of aborting.
-                // Also guarantee, that all created files are added to the database
-                if (!Utils.IsNotTooLongFileName(cacheFileName))
-                {
-                    // We can't save the file
-                    requestHandler.Logger.Warn("problem unpacking, filename too long for uri: " + currUri);
-                    return -1;
-                }
-
-                // TODO this should go through the cache manager, to use its sync methods.
-                if (requestHandler.Proxy.ProxyCacheManager.IsCached(httpMethod, currUri))
-                {
-                    // We override the file, if it exists
-                    Utils.DeleteFile(cacheFileName);
-                }
-                // (re)create the file
-                FileStream currFileFS = Utils.CreateFile(cacheFileName);
-                if (currFileFS == null)
-                {
-                    return -1;
-                }
-
-                // check for overflow from previous file, and use it up first
-                if (bufferOverflowCount > 0)
-                {
-                    Buffer.BlockCopy(bufferOverflow, 0, buffer, 0, bufferOverflowCount);
-                    bytesRead = bufferOverflowCount;
-                }
-                else
-                {
-                    bytesRead = packageFs.Read(buffer, 0, buffer.Length);
-                }
-
-                // reset for current file
-                bytesReadOfCurrFile = 0;
-                while (bytesRead != 0 && bytesReadOfCurrFile < currFileSize)
-                {
-                    // check if we read too much
-                    if (bytesReadOfCurrFile + bytesRead > currFileSize)
+                    if (firstLineArray.Length != 4)
                     {
-                        // bytes left must be less than 1024, fine to convert to Int
-                        int bytesLeftOfCurrFile = ((int)(currFileSize - bytesReadOfCurrFile));
-                        currFileFS.Write(buffer, 0, bytesLeftOfCurrFile);
-                        // done with this file
-                        bytesReadOfCurrFile = currFileSize;
-
-                        // handle overflow
-                        bufferOverflowCount = bytesRead - bytesLeftOfCurrFile;
-                        Buffer.BlockCopy(buffer, bytesLeftOfCurrFile, bufferOverflow, 0, bytesRead - bytesLeftOfCurrFile);
+                        requestHandler.Logger.Error("unparseable entry: " + packageContentArr[i]);
+                        return -1;
                     }
-                    else
+                    string httpMethod = firstLineArray[0];
+                    short statusCode;
+                    long currFileSize;
+                    try
                     {
-                        // append what we read
-                        currFileFS.Write(buffer, 0, bytesRead);
-                        // update bytesReadOfCurrFile
-                        bytesReadOfCurrFile += bytesRead;
+                        statusCode = Int16.Parse(firstLineArray[1]);
+                        currFileSize = Int64.Parse(firstLineArray[2]);
+                    }
+                    catch (Exception e)
+                    {
+                        requestHandler.Logger.Warn("problem unpacking: " + packageContentArr[i], e);
+                        return -1;
+                    }
 
-                        bytesRead = packageFs.Read(buffer, 0, buffer.Length);
+                    string currUri = firstLineArray[3];
+
+                    string headersJson = packageContentArr[i + 1];
+                    NameValueCollection headers = JsonConvert.DeserializeObject<NameValueCollection>(headersJson,
+                        new NameValueCollectionConverter());
+
+                    if (!HttpUtils.IsValidUri(currUri))
+                    {
+                        requestHandler.Logger.Warn("problem unpacking (invalid uri): " + currUri);
+                        return -1;
+                    }
+
+                    try
+                    {
+                        if (requestHandler.Proxy.ProxyCacheManager.CreateOrUpdateFileAndWrite(httpMethod, currUri,
+                            currFileSize, packageFs))
+                        {
+                            unpackedBytes += currFileSize;
+
+                            GlobalCacheItemToAdd newItem = new GlobalCacheItemToAdd();
+                            newItem.url = currUri;
+                            newItem.httpMethod = httpMethod;
+                            newItem.headers = headers;
+                            newItem.statusCode = statusCode;
+
+                            itemsToAdd.Add(newItem);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        requestHandler.Logger.Warn("Problem unpacking: ", e);
+                        return -1;
                     }
                 }
-
-                if (bytesReadOfCurrFile != currFileSize)
+            }
+            finally
+            {
+                if (packageFs != null)
                 {
-                    // ran out of bytes for this file
-                    requestHandler.Logger.Error("unexpected package size: " + cacheFileName +
-                        "(" + bytesReadOfCurrFile + " / " + currFileSize + ")");
-                    return -1;
+                    packageFs.Close();
                 }
-
-                currFileFS.Close();
-
-                GlobalCacheItemToAdd newItem = new GlobalCacheItemToAdd();
-                newItem.url = currUri;
-                newItem.httpMethod = httpMethod;
-                newItem.headers = headers;
-                newItem.statusCode = statusCode;
-
-                itemsToAdd.Add(newItem);
-            }
-            if (packageFs != null)
-            {
-                packageFs.Close();
-            }
-
-            // Add all Database entries
-            if (!requestHandler.Proxy.ProxyCacheManager.AddCacheItemsForExistingFiles(itemsToAdd))
-            {
-                // Adding to the DB failed
-                return -1;
+                // Add all Database entries
+                if (!requestHandler.Proxy.ProxyCacheManager.AddCacheItemsForExistingFiles(itemsToAdd))
+                {
+                    // Adding to the DB failed
+                    unpackedBytes = - 1;
+                }
             }
 
             return unpackedBytes;
