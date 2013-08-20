@@ -177,7 +177,7 @@ namespace RuralCafe
             // abort! XXX: no interrupt handling, but better than nothing for now.
             // XXX: if the request is removed from the queue already, we can't do much to it since we're not storing active requests somewhere right now
             // XXX: since this interruption doesn't work well anyway we might as well not do anything to requests that are already downloading until it works in its entirety.
-            // requestHandler.KillYourself();
+            // requestHandler.KillYourself(); // XXX: beware - requestHandler can be null!
         }
 
         # endregion

@@ -463,11 +463,12 @@ namespace RuralCafe
         /// </summary>
         /// <param name="userId">The userId of the client.</param>
         /// <param name="requestHandlerItemId">The item id of the request handlers to dequeue.</param>
-        public void RemoveRequest(int userId, string requestHandlerItemId)
+        /// <returns>The removed RequestHandler or null.</returns>
+        public LocalRequestHandler RemoveRequest(int userId, string requestHandlerItemId)
         {
             // Order is important!
             RemoveRequestGlobalQueue(requestHandlerItemId);
-            RemoveRequestUserQueue(userId, requestHandlerItemId);
+            return RemoveRequestUserQueue(userId, requestHandlerItemId);
         }
 
         /// <summary>
@@ -475,7 +476,8 @@ namespace RuralCafe
         /// </summary>
         /// <param name="userId">The userId of the client.</param>
         /// <param name="requestHandlerItemId">The item id of the request handlers to dequeue.</param>
-        private void RemoveRequestUserQueue(int userId, string requestHandlerItemId)
+        /// <returns>The removed RequestHandler or null.</returns>
+        private LocalRequestHandler RemoveRequestUserQueue(int userId, string requestHandlerItemId)
         {
             // remove the request from the client's queue
             // don't need to lock the _clientRequestQueueMap for reading
@@ -492,8 +494,10 @@ namespace RuralCafe
                         requestHandler.OutstandingRequests--;
                         requestHandlers.Remove(requestHandler);
                     }
+                    return requestHandler;
                 }
             }
+            return null;
         }
 
         /// <summary>

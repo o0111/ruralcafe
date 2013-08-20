@@ -148,8 +148,23 @@ namespace RuralCafe.Lucenenet
                 Document doc = reader.Document(i);
                 if(!proxy.ProxyCacheManager.IsCached("GET", doc.Get("uri")))
                 {
-                    proxy.Logger.Debug("Deleting " + doc.Get("uri") + " from the lucene index.");
-                    reader.DeleteDocument(i);
+                    bool delete = true;
+                    string fileName = proxy.ProxyCacheManager.CachePath +
+                        CacheManager.GetRelativeCacheFileName(doc.Get("uri"), "GET");
+                    if (File.Exists(fileName))
+                    {
+                        if (proxy.ProxyCacheManager.AddCacheItemsForExistingFiles(
+                            new HashSet<GlobalCacheItemToAdd>() { proxy.ProxyCacheManager.
+                                RecoverInfoFromFile(fileName, fileName.Substring(proxy.ProxyCacheManager.CachePath.Length)) }))
+                        {
+                            delete = false;
+                        }
+                    }
+                    if(delete)
+                    {
+                        proxy.Logger.Debug("Deleting " + doc.Get("uri") + " from the lucene index.");
+                        reader.DeleteDocument(i);
+                    }
                 }
             }
             reader.Close();

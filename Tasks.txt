@@ -11,11 +11,9 @@ Mayor tasks
 	- Directory hashes - better solution ideas?
 
 Minor tasks
-- Force to run as administrator, if possible
 - Use unix file names to support longer file names: http://blogs.msdn.com/b/bclteam/archive/2007/02/13/long-paths-in-net-part-1-of-3-kim-hamilton.aspx
 - Limit outgoing requests like incoming (_activeRequests)
 - At first hardcoded percentage of _maxInflightRequests that have to be non-streamed ones.
-- Do not delegate remove if request is undispatched or finished 
 - Queue also streaming requests at the RP ??
 	- Duplicate IsStreaming()-Check at the moment.
 - RequestHandlers are considered equal, if URL is equal. They should not be equal if HTTP method is different or body (for POSTs e.g.) is different.
@@ -75,6 +73,7 @@ Bugs
     https://twitter.com/search?q=%23lololo (entering URI)
 
 Webpage issues
+- http://favstar.fm/users/ubershitfacts (Infinite requests for the same item)
 - 9gag no images
 - facebook, youtube -> blacklisted!?
 - sometimes no css at all (chefkoch.de)

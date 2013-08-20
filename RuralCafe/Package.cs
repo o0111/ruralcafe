@@ -36,7 +36,7 @@ namespace RuralCafe
     /// </summary>
     public class Package
     {
-        private LinkedList<RCRequest> _rcRequests;
+        private List<RCRequest> _rcRequests;
         private long _contentSize;
         private long _indexSize;
         private string _packageFileName;
@@ -46,7 +46,7 @@ namespace RuralCafe
         /// </summary>
         public Package()
         {
-            this._rcRequests = new LinkedList<RCRequest>();
+            this._rcRequests = new List<RCRequest>();
             this._contentSize = 0;
             this._indexSize = 0;
         }
@@ -64,7 +64,7 @@ namespace RuralCafe
             get { return _indexSize; }
         }
         /// <summary>List of the RCRequests in this package.</summary>
-        public LinkedList<RCRequest> RCRequests
+        public List<RCRequest> RCRequests
         {
             get { return _rcRequests; }
         }
@@ -107,7 +107,7 @@ namespace RuralCafe
                 return false;
             }
 
-            _rcRequests.AddLast(requestObject);
+            _rcRequests.Add(requestObject);
             quota -= requestObject.FileSize;
 
             return true;
@@ -158,11 +158,11 @@ namespace RuralCafe
 
             using (TextWriter tw = new StreamWriter(_packageFileName))
             {
+                List<GlobalCacheItem> items = cacheManager.GetGlobalCacheItemsAsRequests(_rcRequests);
+
                 // create the package index file
-                foreach (RCRequest rcRequest in _rcRequests)
+                foreach (GlobalCacheItem cacheItem in items)
                 {
-                    GlobalCacheItem cacheItem = cacheManager.GetGlobalCacheItemAsRequest(rcRequest.GenericWebRequest.Method,
-                        rcRequest.Uri);
                     if (cacheItem == null)
                     {
                         // This should generally not happen.
@@ -175,10 +175,10 @@ namespace RuralCafe
                     // <headers>
                     tw.WriteLine(String.Format("{0} {1} {2} {3}",
                         cacheItem.httpMethod, (short)cacheItem.statusCode,
-                        rcRequest.FileSize, rcRequest.Uri));
+                        cacheItem.filesize, cacheItem.url));
                     tw.WriteLine(cacheItem.responseHeaders);
 
-                    _contentSize += rcRequest.FileSize;
+                    _contentSize += cacheItem.filesize;
                 }
             }
 
