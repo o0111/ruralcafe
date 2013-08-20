@@ -270,6 +270,7 @@ namespace RuralCafe
         /// </summary> 		
         public Response ServeRCIndexPage(int numItems, int numCategories, string searchString)
         {
+            //return new Response();
             if (!File.Exists(Proxy.ProxyCacheManager.ClustersPath + CacheManager.CLUSTERS_XML_FILE_NAME))
             {
                 // We haven't done clustering yet or there are no files in the cache.

@@ -226,6 +226,9 @@ namespace RuralCafe
             }
             _indexWrapper.RemoveAllDeadLinks(this);
 
+            // XXX: temp
+            _indexWrapper.RemoveAllDeadLinks(this);
+
             bool success = false;
             // initialize the wiki index
             success = _wikiWrapper.InitializeWikiIndex();
@@ -306,7 +309,8 @@ namespace RuralCafe
         private void StartClustering(object o)
         {
             DateTime now = DateTime.Now;
-            if(now.Hour == 5 || ProxyCacheManager.GetClusteringTimeStamp().AddDays(1).CompareTo(now) < 0)
+            if (false)
+            //if(now.Hour == 5 || ProxyCacheManager.GetClusteringTimeStamp().AddDays(1).CompareTo(now) < 0)
             {
                 bool doClustering = false;
                 lock (_clusteringTimer)
