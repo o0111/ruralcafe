@@ -485,6 +485,38 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// Gets the global cache items for the given requests. If one does not exits,
+        /// null will be put into the result list.
+        /// 
+        /// Also, the lastRequestTime is set to now and the number of requests is incremented
+        /// for each existing item.
+        /// </summary>
+        /// <param name="requests">The requests to get the itemns for.</param>
+        /// <returns>The items.</returns>
+        public List<GlobalCacheItem> GetGlobalCacheItemsAsRequests(List<RCRequest> requests)
+        {
+            GetLocksFor(requests);
+            try
+            {
+                List<GlobalCacheItem> gcis = new List<GlobalCacheItem>();
+                using (RCDatabaseEntities databaseContext = GetNewDatabaseContext())
+                {
+                    foreach (RCRequest request in requests)
+                    {
+                        gcis.Add(GetGlobalCacheItemAsRequest(request.GenericWebRequest.Method,
+                            request.Uri, databaseContext));
+                    }
+                    databaseContext.SaveChanges();
+                }
+                return gcis;
+            }
+            finally
+            {
+                ReleaseLocksFor(requests);
+            }
+        }
+
+        /// <summary>
         /// Gets the global cache item for the specified HTTP method and URI, if it exists,
         /// and null otherwise.
         /// 
@@ -500,16 +532,8 @@ namespace RuralCafe
             {
                 using (RCDatabaseEntities databaseContext = GetNewDatabaseContext())
                 {
-                    GlobalCacheItem result = GetGlobalCacheItem(httpMethod, uri, databaseContext);
-                    if (result != null)
-                    {
-                        _proxy.Logger.Debug(String.Format("Updating request time and number of requests of {0} {1}",
-                            httpMethod, uri));
-                        // Modify the RC data and save
-                        result.GlobalCacheRCData.lastRequestTime = DateTime.Now;
-                        result.GlobalCacheRCData.numberOfRequests++;
-                        databaseContext.SaveChanges();
-                    }
+                    GlobalCacheItem result = GetGlobalCacheItemAsRequest(httpMethod, uri, databaseContext);
+                    databaseContext.SaveChanges();
                     return result;
                 }
             }
@@ -627,6 +651,9 @@ namespace RuralCafe
                 {
                     // We have to evict. We do until 5 % is free again.
                     EvictCacheItems((long)(cacheOversize + CACHE_EVICTION_PERCENT * _maxCacheSize), databaseContext);
+                    // Always save after evicting, otherwise the CacheSize will not return the correct value
+                    // the next time and we will try evicting the same items again, which produces errors.
+                    databaseContext.SaveChanges();
                 }
                 catch (Exception e)
                 {
@@ -690,6 +717,29 @@ namespace RuralCafe
             // Add file to the database (using the method for multiple files that has a try-catch
             // and also saves the database.
             return AddCacheItemsForExistingFiles(new HashSet<GlobalCacheItemToAdd>() { newItem });
+        }
+
+        /// <summary>
+        /// Recovers info from a file.
+        /// </summary>
+        /// <param name="fileName">The absolute file name.</param>
+        /// <param name="relFileName">The relative file name.</param>
+        /// <returns>A global cache item to add.</returns>
+        public GlobalCacheItemToAdd RecoverInfoFromFile(string fileName, string relFileName)
+        {
+            GlobalCacheItemToAdd result = new GlobalCacheItemToAdd();
+            // We cannot recover the headers, but we look at the file to determine its content-type,
+            // as we always want this header!
+            result.headers = new NameValueCollection()
+            {
+                { "Content-Type", Utils.GetContentTypeOfFile(fileName)}
+            };
+            // We assume it was a request with a 200 OK answer.
+            result.statusCode = 200;
+            result.url = FilePathToUri(relFileName);
+            result.httpMethod = GetHTTPMethodFromRelCacheFileName(relFileName);
+
+            return result;
         }
 
         /// <summary>
@@ -919,7 +969,7 @@ namespace RuralCafe
             result.Database.Connection.ConnectionString =
                 String.Format("data source=\"{0}\";Max Database Size={1};Max Buffer Size={2}",
                 _proxy.ProxyPath + DATABASE_FILE_NAME, DATABASE_MAX_SIZE_MB, DATABASE_BUFFER_MAX_SIZE_KB);
-            result.Configuration.AutoDetectChangesEnabled = false;
+            // result.Configuration.AutoDetectChangesEnabled = false;
             result.Configuration.ValidateOnSaveEnabled = false;
             return result;
         }
@@ -1112,33 +1162,23 @@ namespace RuralCafe
                                                  BindingFlags.NonPublic).GetValue(fileInfo);
                             _proxy.Logger.Warn(String.Format("Filename too long: {0}", fileName));
                         }
-                        
-                        
-                        // We cannot recover the headers, but we look at the file to determine its content-type,
-                        // as we always want this header!
-                        NameValueCollection headers = new NameValueCollection()
-                        {
-                            { "Content-Type", Utils.GetContentTypeOfFile(fileName)}
-                        };
-                        // We assume it was a request with a 200 OK answer.
-                        short statusCode = 200;
-                        string uri = AbsoluteFilePathToUri(fileName);
-                        string relFileName = fileName.Substring(_cachePath.Length);
-                        string httpMethod = GetHTTPMethodFromRelCacheFileName(relFileName);
-                        
 
-                        GlobalCacheItem existingCacheItem = GetGlobalCacheItem(httpMethod, uri, databaseContext);
+                        string relFileName = fileName.Substring(_cachePath.Length);
+                        GlobalCacheItemToAdd newItem = RecoverInfoFromFile(fileName, relFileName);
+
+                        GlobalCacheItem existingCacheItem = GetGlobalCacheItem(newItem.httpMethod, newItem.url, databaseContext);
                         if (existingCacheItem == null)
                         {
                             // Add database entry.
-                            AddCacheItemToDatabase(uri, httpMethod, headers, statusCode, relFileName, fileInfo.Length, databaseContext);
+                            AddCacheItemToDatabase(newItem.url, newItem.httpMethod, newItem.headers, newItem.statusCode,
+                                relFileName, fileInfo.Length, databaseContext);
                         }
                         else
                         {
                             // Update database entry.
                             _proxy.Logger.Warn(String.Format("Duplicate entry in database: {0} {1}\nOld file: {2}\nNew file: {3}",
-                                httpMethod, uri, existingCacheItem.filename, relFileName));
-                            UpdateCacheItemInDatabase(existingCacheItem, headers, statusCode,
+                                newItem.httpMethod, newItem.url, existingCacheItem.filename, relFileName));
+                            UpdateCacheItemInDatabase(existingCacheItem, newItem.headers, newItem.statusCode,
                                     relFileName, fileInfo.Length, databaseContext);
                         }
 
@@ -1329,6 +1369,29 @@ namespace RuralCafe
             return (from gci in databaseContext.GlobalCacheItem
                     where gci.httpMethod.Equals(httpMethod) && gci.url.Equals(uri)
                     select 1).Count() != 0;
+        }
+
+        /// <summary>
+        /// Gets a global cache item and updates the rc metadata.
+        /// 
+        /// databaseContext.SaveChanges() still needs to be called.
+        /// </summary>
+        /// <param name="httpMethod">The HTTP method.</param>
+        /// <param name="uri">The URL.</param>
+        /// <param name="databaseContext">The database context.</param>
+        /// <returns>The item or null.</returns>
+        private GlobalCacheItem GetGlobalCacheItemAsRequest(string httpMethod, string uri, RCDatabaseEntities databaseContext)
+        {
+            GlobalCacheItem result = GetGlobalCacheItem(httpMethod, uri, databaseContext);
+            if (result != null)
+            {
+                _proxy.Logger.Debug(String.Format("Updating request time and number of requests of {0} {1}",
+                    httpMethod, uri));
+                // Modify the RC data
+                result.GlobalCacheRCData.lastRequestTime = DateTime.Now;
+                result.GlobalCacheRCData.numberOfRequests++;
+            }
+            return result;
         }
 
         /// <summary>
@@ -1700,6 +1763,18 @@ namespace RuralCafe
         #region synchronization
 
         /// <summary>
+        /// Gets locks for all request. In alphabetic order to prevent deadlocks.
+        /// </summary>
+        /// <param name="items">The requests to get locks for.</param>
+        private void GetLocksFor(IEnumerable<RCRequest> requests)
+        {
+            foreach (RCRequest request in requests.OrderBy(request => request.Uri).ThenBy(request => request.GenericWebRequest.Method))
+            {
+                GetLockFor(request.GenericWebRequest.Method, request.Uri);
+            }
+        }
+
+        /// <summary>
         /// Gets locks for all items. In alphabetic order to prevent deadlocks.
         /// </summary>
         /// <param name="items">The items to get locks for.</param>
@@ -1749,12 +1824,24 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Releases locks for all items. In reverse alphabetic order to prevent deadlocks.
+        /// Releases locks for all request.
+        /// </summary>
+        /// <param name="items">The requests to get locks for.</param>
+        private void ReleaseLocksFor(IEnumerable<RCRequest> requests)
+        {
+            foreach (RCRequest request in requests)
+            {
+                ReleaseLockFor(request.GenericWebRequest.Method, request.Uri);
+            }
+        }
+
+        /// <summary>
+        /// Releases locks for all items.
         /// </summary>
         /// <param name="items">The items to release locks for.</param>
         private void ReleaseLocksFor(IEnumerable<GlobalCacheItemToAdd> items)
         {
-            foreach (GlobalCacheItemToAdd item in items.OrderByDescending(item => item.url).ThenByDescending(item => item.httpMethod))
+            foreach (GlobalCacheItemToAdd item in items)
             {
                 ReleaseLockFor(item.httpMethod, item.url);
             }

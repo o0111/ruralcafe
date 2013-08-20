@@ -647,8 +647,6 @@ namespace RuralCafe
             return StreamToClient(ms);
         }
 
-        
-
         #endregion
         #region Remote Proxy Specific Helper Functions
 

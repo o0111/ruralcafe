@@ -821,10 +821,14 @@ namespace RuralCafe
         public Response RemoveRequest(string requestId)
         {
             // remove it locally
-            Proxy.RemoveRequest(UserIDCookieValue, requestId);
+            LocalRequestHandler removedLRH = Proxy.RemoveRequest(UserIDCookieValue, requestId);
 
-            // delegate removal at remote proxy to remote proxy
-            return DelegateToRemoteProxy();
+            if (removedLRH.RequestStatus == Status.Downloading && removedLRH.OutstandingRequests == 0)
+            {
+                // delegate removal also to remote proxy for active requests that others haven't requested
+                return DelegateToRemoteProxy();
+            }
+            return new Response("Removed request.");
         }
 
         /// <summary>

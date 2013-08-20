@@ -138,30 +138,19 @@ namespace RuralCafe.Util
         {
             foreach (string key in headers)
             {
-                if (key.Equals("Content-Type") || key.Equals("Content-Length") || key.Equals("Content-Encoding"))
+                if (key.Equals("Content-Type") || key.Equals("Content-Length") || key.Equals("Content-Encoding")
+                    || key.Equals("Keep-Alive"))
                 {
                     continue;
                 }
                 foreach (string value in headers.GetValues(key))
                 {
+
                     // Headers that need special treatment
                     if (key.Equals("Transfer-Encoding"))
                     {
                         response.SendChunked = value.Equals("chunked");
                         continue;
-                    }
-                    else if (key.Equals("Connection"))
-                    {
-                        if (value.Equals("keep-alive"))
-                        {
-                            response.KeepAlive = true;
-                            continue;
-                        }
-                        else if (value.Equals("close"))
-                        {
-                            response.KeepAlive = false;
-                            continue;
-                        }
                     }
 
                     try
