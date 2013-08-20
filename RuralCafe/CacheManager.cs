@@ -65,7 +65,7 @@ namespace RuralCafe
         private const string DATABASE_FILE_NAME = "RCDatabase.sdf";
         private const int DATABASE_MAX_SIZE_MB = 4000;
         private const int DATABASE_BUFFER_MAX_SIZE_KB = 8192;
-        private const int DATABASE_BULK_INSERT_THRESHOLD = 100;
+        private const int DATABASE_BULK_INSERT_THRESHOLD = 1000;
         private const double CACHE_EVICTION_PERCENT = 0.05;
         private readonly string EMPTY_DATABASE_FILE_NAME = Directory.GetCurrentDirectory()
             + Path.DirectorySeparatorChar + "Database" + Path.DirectorySeparatorChar + DATABASE_FILE_NAME;
@@ -1527,46 +1527,56 @@ namespace RuralCafe
             int counter = 0;
             foreach (GlobalCacheItem bz2 in bz2s)
             {
+                string newFileName = "";
                 try
                 {
-                    string newFileName = _cachePath + bz2.filename.Substring(0, bz2.filename.Length - 4);
+                    // decompress BZ2, not working atm
+                    //Utils.BZ2DecompressFile(fileName);
+
+                    // get the name of the new file and check for existence
+                    newFileName = _cachePath + bz2.filename.Substring(0, bz2.filename.Length - 4);
                     FileInfo newFileInfo = new FileInfo(newFileName);
+                    GlobalCacheItem cacheItem;
+
+                    _proxy.Logger.Info("Processing: " + newFileName);
                     if (newFileInfo.Exists)
                     {
-                        // Update DB entry
-                        bz2.GlobalCacheRCData.url = bz2.GlobalCacheRCData.url.Substring(0, bz2.GlobalCacheRCData.url.Length - 4);
-                        bz2.url = bz2.url.Substring(0, bz2.url.Length - 4);
-                        bz2.filename = bz2.filename.Substring(0, bz2.filename.Length - 4);
-                        bz2.filesize = newFileInfo.Length;
+                        // Create DB entry
+                        cacheItem = new GlobalCacheItem();
+                        cacheItem.GlobalCacheRCData = new GlobalCacheRCData();
+
+                        cacheItem.GlobalCacheRCData.url = bz2.GlobalCacheRCData.url.Substring(0, bz2.GlobalCacheRCData.url.Length - 4);
+                        cacheItem.url = bz2.url.Substring(0, bz2.url.Length - 4);
+                        cacheItem.filename = bz2.filename.Substring(0, bz2.filename.Length - 4);
+                        cacheItem.filesize = newFileInfo.Length;
                         NameValueCollection headers = new NameValueCollection()
                         {
                              { "Content-Type", Utils.GetContentTypeOfFile(newFileName)}
                         };
-                        bz2.responseHeaders = JsonConvert.SerializeObject(headers, Formatting.None, new NameValueCollectionConverter());
+                        cacheItem.responseHeaders = JsonConvert.SerializeObject(headers, Formatting.None, new NameValueCollectionConverter());
+                        //_proxy.Logger.Info("Updating: " + cacheItem.url);
+
+                        // add entry to DB
+                        databaseContext.GlobalCacheItem.Add(cacheItem);
                     }
-                    else
-                    {
-                        // Remove DB entry
-                        databaseContext.GlobalCacheRCData.Remove(bz2.GlobalCacheRCData);
-                        databaseContext.GlobalCacheItem.Remove(bz2);
-                    }
-                    // Save (just when debugging to see if it works)
-                    // databaseContext.SaveChanges();
 
                     counter++;
                     if (counter % DATABASE_BULK_INSERT_THRESHOLD == (DATABASE_BULK_INSERT_THRESHOLD - 1))
                     {
-                        counter = 0;
                         _proxy.Logger.Info(counter + " files updated. Saving database changes made so far.");
                         databaseContext.SaveChanges();
-                        //databaseContext.Dispose();
-                        //databaseContext = GetNewDatabaseContext(true);
                     }
-                         
                 }
                 catch (Exception e)
                 {
                     _proxy.Logger.Warn("Error deleting/updating bz2 entries: ", e);
+                }
+                finally
+                {
+                    // Remove DB entry
+                    databaseContext.GlobalCacheRCData.Remove(bz2.GlobalCacheRCData);
+                    databaseContext.GlobalCacheItem.Remove(bz2);
+                    //_proxy.Logger.Info("Removing: " + bz2.url);
                 }
             }
 
