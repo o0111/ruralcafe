@@ -439,7 +439,7 @@ namespace RuralCafe
         /// <returns>If the item is cached.</returns>
         public bool IsCached(string httpMethod, string uri)
         {
-            using (RCDatabaseEntities databaseContext = GetNewDatabaseContext())
+            using (RCDatabaseEntities databaseContext = GetNewDatabaseContext(false))
             {
                 return IsCached(httpMethod, uri, databaseContext);
             }
@@ -453,7 +453,7 @@ namespace RuralCafe
         /// <returns>True, if the content-type is "text/html" and false otherwise or if there is no such cache item.</returns>
         public bool IsHTMLFile(string httpMethod, string uri)
         {
-            using (RCDatabaseEntities databaseContext = GetNewDatabaseContext())
+            using (RCDatabaseEntities databaseContext = GetNewDatabaseContext(false))
             {
                 // Be sure to call the private method! Otherwise this would count as a request.
                 GlobalCacheItem gci = GetGlobalCacheItem(httpMethod, uri, databaseContext);
@@ -478,7 +478,7 @@ namespace RuralCafe
         /// <returns>The global cache item or null.</returns>
         public GlobalCacheItem GetGlobalCacheItem(string httpMethod, string uri)
         {
-            using (RCDatabaseEntities databaseContext = GetNewDatabaseContext())
+            using (RCDatabaseEntities databaseContext = GetNewDatabaseContext(false))
             {
                 return GetGlobalCacheItem(httpMethod, uri, databaseContext);
             }
@@ -499,7 +499,7 @@ namespace RuralCafe
             try
             {
                 List<GlobalCacheItem> gcis = new List<GlobalCacheItem>();
-                using (RCDatabaseEntities databaseContext = GetNewDatabaseContext())
+                using (RCDatabaseEntities databaseContext = GetNewDatabaseContext(true))
                 {
                     foreach (RCRequest request in requests)
                     {
@@ -530,7 +530,7 @@ namespace RuralCafe
             GetLockFor(httpMethod, uri);
             try
             {
-                using (RCDatabaseEntities databaseContext = GetNewDatabaseContext())
+                using (RCDatabaseEntities databaseContext = GetNewDatabaseContext(true))
                 {
                     GlobalCacheItem result = GetGlobalCacheItemAsRequest(httpMethod, uri, databaseContext);
                     databaseContext.SaveChanges();
@@ -552,7 +552,7 @@ namespace RuralCafe
         /// <returns>The global cache RC data item or null.</returns>
         public GlobalCacheRCData GetGlobalCacheRCData(string httpMethod, string uri)
         {
-            using (RCDatabaseEntities databaseContext = GetNewDatabaseContext())
+            using (RCDatabaseEntities databaseContext = GetNewDatabaseContext(false))
             {
                 return GetGlobalCacheRCData(httpMethod, uri, databaseContext);
             }
@@ -567,7 +567,8 @@ namespace RuralCafe
         public bool AddCacheItemsForExistingFiles(HashSet<GlobalCacheItemToAdd> items)
         {
             bool returnValue = true;
-            using (RCDatabaseEntities databaseContext = GetNewDatabaseContext())
+            // We might need to update, hence we set autoDetectChangesEnabled = true
+            using (RCDatabaseEntities databaseContext = GetNewDatabaseContext(true))
             {
                 // When we add, we potentially also evict.
                 // We need to make sure no other additions take place at the same time.
@@ -610,6 +611,7 @@ namespace RuralCafe
         /// <param name="httpMethod">The HTTP Method.</param>
         /// <param name="headers">The headers.</param>
         /// <param name="statusCode">The status code.</param>
+        /// <param name="databaseContext">The database context.</param>
         /// <returns>True for success and false for failure.</returns>
         private bool AddCacheItemForExistingFile(string url, string httpMethod,
             NameValueCollection headers, short statusCode, RCDatabaseEntities databaseContext)
@@ -961,15 +963,18 @@ namespace RuralCafe
         /// The context will never detect changes (which improves performance), as we have
         /// our own synchronization.
         /// </summary>
+        /// <param name="autoDetectChangesEnabled">Whether this database context should detect changes to
+        /// attached items and write them back when saveChanges is called. As we have our own synchronization,
+        /// this should only be set to true, if we update an item. Otherwise performance will be bad.</param>
         /// <returns>A new database context.</returns>
-        private RCDatabaseEntities GetNewDatabaseContext()
+        private RCDatabaseEntities GetNewDatabaseContext(bool autoDetectChangesEnabled)
         {
             // Create context and modify connection string to point to our DB file.
             RCDatabaseEntities result = new RCDatabaseEntities();
             result.Database.Connection.ConnectionString =
                 String.Format("data source=\"{0}\";Max Database Size={1};Max Buffer Size={2}",
                 _proxy.ProxyPath + DATABASE_FILE_NAME, DATABASE_MAX_SIZE_MB, DATABASE_BUFFER_MAX_SIZE_KB);
-            // result.Configuration.AutoDetectChangesEnabled = false;
+            result.Configuration.AutoDetectChangesEnabled = autoDetectChangesEnabled;
             result.Configuration.ValidateOnSaveEnabled = false;
             return result;
         }
@@ -1073,7 +1078,7 @@ namespace RuralCafe
         /// <returns>True for a valid DB file, false otherwise.</returns>
         private bool CheckDatabaseIntegrityAndRepair()
         {
-            using (RCDatabaseEntities databaseContext = GetNewDatabaseContext())
+            using (RCDatabaseEntities databaseContext = GetNewDatabaseContext(false))
             {
                 // See if all tables exist
                 IEnumerable<string> tableNames = databaseContext.Database.SqlQuery<string>(
@@ -1121,7 +1126,7 @@ namespace RuralCafe
             // We loop through each sub-sub-directory, so we don't have all fileInfos in
             // memory at a time
             DirectoryInfo cacheDirInfo = new DirectoryInfo(_cachePath);
-            RCDatabaseEntities databaseContext = GetNewDatabaseContext();
+            RCDatabaseEntities databaseContext = GetNewDatabaseContext(false);
             int counter = 0;
 
             foreach (DirectoryInfo subDirInfo in cacheDirInfo.EnumerateDirectories())
@@ -1175,11 +1180,12 @@ namespace RuralCafe
                         }
                         else
                         {
-                            // Update database entry.
+                            // Warn and leave the old antry as it is
                             _proxy.Logger.Warn(String.Format("Duplicate entry in database: {0} {1}\nOld file: {2}\nNew file: {3}",
                                 newItem.httpMethod, newItem.url, existingCacheItem.filename, relFileName));
-                            UpdateCacheItemInDatabase(existingCacheItem, newItem.headers, newItem.statusCode,
-                                    relFileName, fileInfo.Length, databaseContext);
+                            // This will have no effect whatsoever as we set AutoDetectChangesEnabled = false
+                            //UpdateCacheItemInDatabase(existingCacheItem, newItem.headers, newItem.statusCode,
+                            //        relFileName, fileInfo.Length, databaseContext);
                         }
 
                         // To gain a better performace, we save and recreate the context after 100 inserts.
@@ -1190,7 +1196,7 @@ namespace RuralCafe
                             _proxy.Logger.Info(DATABASE_BULK_INSERT_THRESHOLD + " new files added. Saving database changes made so far.");
                             databaseContext.SaveChanges();
                             databaseContext.Dispose();
-                            databaseContext = GetNewDatabaseContext();
+                            databaseContext = GetNewDatabaseContext(false);
                         }
                          
                     }
@@ -1200,6 +1206,7 @@ namespace RuralCafe
             // Save
             _proxy.Logger.Info("Saving completed database changes.");
             databaseContext.SaveChanges();
+            _proxy.Logger.Info("Saved " + CachedItems(databaseContext) + " items in the database.");
             databaseContext.Dispose();
         }
 
@@ -1353,6 +1360,16 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// Gets the number of cached items. There will be more GlobalCacheRCData items than this.
+        /// </summary>
+        /// <param name="databaseContext">The database context.</param>
+        /// <returns>The number of cached items.</returns>
+        private int CachedItems(RCDatabaseEntities databaseContext)
+        {
+            return (from gci in databaseContext.GlobalCacheItem select 1).Count();
+        }
+
+        /// <summary>
         /// Checks whether an item is cached. Only the DB is being used,
         /// the disk contens are not ebing looked at.
         /// </summary>
@@ -1493,7 +1510,7 @@ namespace RuralCafe
 
         public void DeleteBZ2Entries()
         {
-            RCDatabaseEntities databaseContext = GetNewDatabaseContext();
+            RCDatabaseEntities databaseContext = GetNewDatabaseContext(true);
             IQueryable<GlobalCacheItem> bz2s = from gci in databaseContext.GlobalCacheItem
                     where
                         gci.filename.EndsWith(".html.bz2") ||
@@ -1534,7 +1551,7 @@ namespace RuralCafe
                         _proxy.Logger.Info(DATABASE_BULK_INSERT_THRESHOLD + " files updated. Saving database changes made so far.");
                         databaseContext.SaveChanges();
                         databaseContext.Dispose();
-                        databaseContext = GetNewDatabaseContext();
+                        databaseContext = GetNewDatabaseContext(true);
                     }
                          
                 }
@@ -1599,7 +1616,7 @@ namespace RuralCafe
             // Request all filenames where the header has the specified content type. Contains looks dirty
             // as we save the headers in JSON format. This is faster as deserializing before testing,
             // as SQL can do it for as.
-            using (RCDatabaseEntities databaseContext = GetNewDatabaseContext())
+            using (RCDatabaseEntities databaseContext = GetNewDatabaseContext(false))
             {
                 List<string> dbResults = (from gci in databaseContext.GlobalCacheItem
                                           where gci.responseHeaders.Contains("\"Content-Type\":[\"text/html") ||
