@@ -611,9 +611,8 @@ namespace RuralCafe
                 RequestHandler requestHandler = _globalRequests.FirstOrDefault(rh => rh.RequestId == requestId);
                 if (requestHandler != null)
                 {
-                    // check if remote proxy or
-                    // if this URI is requested only once, remove it
-                    if (_name == REMOTE_PROXY_NAME || requestHandler.OutstandingRequests == 1)
+                    // if this URI is requested only once (or 0, which will be the case at the remote proxy), remove it
+                    if (requestHandler.OutstandingRequests <= 1)
                     {
                         _globalRequests.Remove(requestHandler);
                         return requestHandler;
