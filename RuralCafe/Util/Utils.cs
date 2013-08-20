@@ -320,7 +320,8 @@ namespace RuralCafe.Util
         }
 
         /// <summary>
-        /// Helper function to get the file size on disk of a page.
+        /// Helper function to get the file size on 
+        /// of a page.
         /// </summary>
         /// <param name="fileName">Name of the file.</param>
         /// <returns>-1 for non-existent file. Otherwise the file size.</returns>
@@ -389,6 +390,19 @@ namespace RuralCafe.Util
 
         #endregion
         #region stream utils
+
+        /// <summary>
+        /// Decompress a bz2 file and return the memorystream. Will be obsoleted.
+        /// </summary>
+        /// <param name="fileName">Name of the file to decompress.</param>
+        /// <returns>The file contents in a memorystream.</returns>
+        public static MemoryStream BZ2DecompressFile(string fileName)
+        {
+            MemoryStream ms = new MemoryStream();
+            FileStream bzipFileFs = new FileStream(fileName, FileMode.Open);
+            ICSharpCode.SharpZipLib.BZip2.BZip2.Decompress(bzipFileFs, ms);
+            return ms;
+        }
 
         /// <summary>
         /// Reads in incoming stream to the end and returns the result

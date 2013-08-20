@@ -630,7 +630,7 @@ namespace RuralCafe
             // Get the cache and the file size
             try
             {
-                cacheSize = CacheSize(databaseContext);
+                cacheSize = 0;// XXX: hackery too slow. CacheSize(databaseContext);
                 itemSize = CacheItemFileSize(relFileName);
             }
             catch (Exception e)
@@ -1019,6 +1019,10 @@ namespace RuralCafe
                     catch (Exception) { }
                     return false;
                 }
+            }
+            else
+            {
+                DeleteBZ2Entries();
             }
 
             // If it exists, we must test whether it really contains a valid DB
@@ -1513,11 +1517,11 @@ namespace RuralCafe
             RCDatabaseEntities databaseContext = GetNewDatabaseContext(true);
             IQueryable<GlobalCacheItem> bz2s = from gci in databaseContext.GlobalCacheItem
                     where
-                        gci.filename.EndsWith(".html.bz2") ||
-                        gci.filename.EndsWith(".htm.bz2") ||
-                        gci.filename.EndsWith(".txt.bz2") ||
-                        gci.filename.EndsWith(".xml.bz2") ||
-                        gci.filename.EndsWith(".js.bz2")
+                        ((gci.filename.Substring(gci.filename.Length - 9, 9) == ".html.bz2") ||
+                        (gci.filename.Substring(gci.filename.Length - 8, 8) == ".htm.bz2") ||
+                        (gci.filename.Substring(gci.filename.Length - 8, 8) == ".txt.bz2") ||
+                        (gci.filename.Substring(gci.filename.Length - 8, 8) == ".xml.bz2") ||
+                        (gci.filename.Substring(gci.filename.Length - 7, 7) == ".js.bz2"))
                     select gci;
 
             int counter = 0;
@@ -1530,10 +1534,15 @@ namespace RuralCafe
                     if (newFileInfo.Exists)
                     {
                         // Update DB entry
-                        bz2.GlobalCacheRCData.url = bz2.GlobalCacheRCData.url.Substring(0, bz2.filename.Length - 4);
-                        bz2.url = bz2.url.Substring(0, bz2.filename.Length - 4);
+                        bz2.GlobalCacheRCData.url = bz2.GlobalCacheRCData.url.Substring(0, bz2.GlobalCacheRCData.url.Length - 4);
+                        bz2.url = bz2.url.Substring(0, bz2.url.Length - 4);
                         bz2.filename = bz2.filename.Substring(0, bz2.filename.Length - 4);
                         bz2.filesize = newFileInfo.Length;
+                        NameValueCollection headers = new NameValueCollection()
+                        {
+                             { "Content-Type", Utils.GetContentTypeOfFile(newFileName)}
+                        };
+                        bz2.responseHeaders = JsonConvert.SerializeObject(headers, Formatting.None, new NameValueCollectionConverter());
                     }
                     else
                     {
@@ -1545,13 +1554,13 @@ namespace RuralCafe
                     // databaseContext.SaveChanges();
 
                     counter++;
-                    if (counter == DATABASE_BULK_INSERT_THRESHOLD)
+                    if (counter % DATABASE_BULK_INSERT_THRESHOLD == (DATABASE_BULK_INSERT_THRESHOLD - 1))
                     {
                         counter = 0;
-                        _proxy.Logger.Info(DATABASE_BULK_INSERT_THRESHOLD + " files updated. Saving database changes made so far.");
+                        _proxy.Logger.Info(counter + " files updated. Saving database changes made so far.");
                         databaseContext.SaveChanges();
-                        databaseContext.Dispose();
-                        databaseContext = GetNewDatabaseContext(true);
+                        //databaseContext.Dispose();
+                        //databaseContext = GetNewDatabaseContext(true);
                     }
                          
                 }
@@ -1677,11 +1686,6 @@ namespace RuralCafe
             }
             // List number of text files
             _proxy.Logger.Debug(String.Format("Clustering (1/6): Using {0} text files.", textFiles.Count));
-            // List all Text files XXX Debug
-            //foreach(string textFile in textFiles)
-            //{
-            //    _proxy.Logger.Debug("Clustering uses file: " + textFile);
-            //}
 
             List<string> titles;
             // files2doc
