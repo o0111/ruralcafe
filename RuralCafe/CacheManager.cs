@@ -65,7 +65,7 @@ namespace RuralCafe
         private const string DATABASE_FILE_NAME = "RCDatabase.sdf";
         private const int DATABASE_MAX_SIZE_MB = 4000;
         private const int DATABASE_BUFFER_MAX_SIZE_KB = 8192;
-        private const int DATABASE_BULK_INSERT_THRESHOLD = 1000;
+        private const int DATABASE_BULK_INSERT_THRESHOLD = 100;
         private const double CACHE_EVICTION_PERCENT = 0.05;
         private readonly string EMPTY_DATABASE_FILE_NAME = Directory.GetCurrentDirectory()
             + Path.DirectorySeparatorChar + "Database" + Path.DirectorySeparatorChar + DATABASE_FILE_NAME;
@@ -1020,10 +1020,11 @@ namespace RuralCafe
                     return false;
                 }
             }
+                /*
             else
             {
                 DeleteBZ2Entries();
-            }
+            }*/
 
             // If it exists, we must test whether it really contains a valid DB
             bool validDB;
@@ -1538,26 +1539,47 @@ namespace RuralCafe
                     FileInfo newFileInfo = new FileInfo(newFileName);
                     GlobalCacheItem cacheItem;
 
-                    _proxy.Logger.Info("Processing: " + newFileName);
+                    //_proxy.Logger.Info("Processing: " + newFileName);
                     if (newFileInfo.Exists)
                     {
                         // Create DB entry
                         cacheItem = new GlobalCacheItem();
                         cacheItem.GlobalCacheRCData = new GlobalCacheRCData();
-
                         cacheItem.GlobalCacheRCData.url = bz2.GlobalCacheRCData.url.Substring(0, bz2.GlobalCacheRCData.url.Length - 4);
+                        cacheItem.GlobalCacheRCData.httpMethod = "GET";
+                        // Although this is not really a request, we set the lastRequestTime to now
+                        cacheItem.GlobalCacheRCData.lastRequestTime = DateTime.Now;
+                        // No requests so far
+                        cacheItem.GlobalCacheRCData.numberOfRequests = 0;
+                        // Download time is the lastModified time of the file, if it already exists. Otherwise now
+                        cacheItem.GlobalCacheRCData.downloadTime = DateTime.Now;
+
                         cacheItem.url = bz2.url.Substring(0, bz2.url.Length - 4);
+                        cacheItem.httpMethod = "GET";
+                        
                         cacheItem.filename = bz2.filename.Substring(0, bz2.filename.Length - 4);
                         cacheItem.filesize = newFileInfo.Length;
                         NameValueCollection headers = new NameValueCollection()
                         {
                              { "Content-Type", Utils.GetContentTypeOfFile(newFileName)}
                         };
+                        cacheItem.statusCode = 200;
+
                         cacheItem.responseHeaders = JsonConvert.SerializeObject(headers, Formatting.None, new NameValueCollectionConverter());
-                        //_proxy.Logger.Info("Updating: " + cacheItem.url);
+                        _proxy.Logger.Info("Adding: " + cacheItem.url);
 
                         // add entry to DB
                         databaseContext.GlobalCacheItem.Add(cacheItem);
+                        databaseContext.GlobalCacheRCData.Add(cacheItem.GlobalCacheRCData);
+
+                        /*
+                        //databaseContext.SaveChanges();
+                        bool iscached = IsCached("GET", cacheItem.url, databaseContext);
+                        if (!iscached)
+                        {
+                            // problem
+                            _proxy.Logger.Warn("ERROR");
+                        }*/
                     }
 
                     counter++;
@@ -1574,9 +1596,19 @@ namespace RuralCafe
                 finally
                 {
                     // Remove DB entry
+                    string oldUri = bz2.url;
+                    string method = bz2.httpMethod;
+                    _proxy.Logger.Info("Removing: " + bz2.url);
                     databaseContext.GlobalCacheRCData.Remove(bz2.GlobalCacheRCData);
                     databaseContext.GlobalCacheItem.Remove(bz2);
-                    //_proxy.Logger.Info("Removing: " + bz2.url);
+                    /*
+                    databaseContext.SaveChanges();
+                    bool iscached = IsCached("GET", oldUri, databaseContext);
+                    if (iscached)
+                    {
+                        // problem
+                        _proxy.Logger.Warn("ERROR");
+                    }*/
                 }
             }
 
