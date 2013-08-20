@@ -714,7 +714,7 @@ namespace RuralCafe
         /// Adds a file and writes content into it.
         /// 
         /// This method should be used, when a file a created prior to adding it to the
-        /// database, e.g. for 301s or when Unpacking. Then, AddCacheItemForExistingFile should
+        /// database, e.g. for 301s or when Unpacking. Then, AddCacheItemForExistingFiles should
         /// be called later.
         /// 
         /// When a WebResponse for the content is available, this method should not be used!
@@ -735,6 +735,83 @@ namespace RuralCafe
             finally
             {
                 ReleaseLockFor(fileName);
+            }
+        }
+
+        /// <summary>
+        /// Used for unpacking. Creates the file for the given HTTP method and URL (or overrides it),
+        /// streaming bytesToRead bytes form the readStream into it.
+        /// 
+        /// Only throws an exception if readStream does not provide enough bytes.
+        /// </summary>
+        /// <param name="httpMethod">The HTTP method</param>
+        /// <param name="uri">The URL.</param>
+        /// <param name="bytesToRead">The amount of bytes to read from readStream.</param>
+        /// <param name="readStream">The stream of data.</param>
+        /// <returns>True for success and false for failure. In any case readStream's position
+        /// will advance by bytesToRead bytes.</returns>
+        public bool CreateOrUpdateFileAndWrite(string httpMethod, string uri, long bytesToRead, FileStream readStream)
+        {
+            long bytesRead = 0;
+            byte[] buffer = new byte[1024];
+            FileStream writeStream = null;
+
+            GetLockFor(httpMethod, uri);
+            try
+            {
+                try
+                {
+                    string cacheFileName = _cachePath +
+                           CacheManager.GetRelativeCacheFileName(uri, httpMethod);
+                    if (!Utils.IsNotTooLongFileName(cacheFileName))
+                    {
+                        // We can't save the file
+                        _proxy.Logger.Warn("problem creating file, filename too long for uri: " + uri);
+                        return false;
+                    }
+                    if (IsCached(httpMethod, uri))
+                    {
+                        // We override the file, if it exists
+                        Utils.DeleteFile(cacheFileName);
+                    }
+                    // (re)create the file
+                    writeStream = Utils.CreateFile(cacheFileName);
+                    if (writeStream == null)
+                    {
+                        _proxy.Logger.Warn("problem creating file for uri: " + uri);
+                        return false;
+                    }
+                    return true;
+                }
+                finally
+                {
+                    // This is in a finally clause, so we read the bytes, even if there was an error.
+                    // Then for the next file, the stream will be at the right position.
+                    while (bytesRead < bytesToRead)
+                    {
+                        // is always fine to convert to int.
+                        int bytesToReadNow = (int)Math.Min(buffer.Length, bytesToRead - bytesRead);
+                        int bytesReadNow = readStream.Read(buffer, 0, bytesToReadNow);
+                        if (bytesReadNow == 0)
+                        {
+                            throw new Exception("Ran out of bytes to read for" + uri);
+                        }
+
+                        if (writeStream != null)
+                        {
+                            writeStream.Write(buffer, 0, bytesReadNow);
+                        }
+                        bytesRead += bytesReadNow;
+                    }
+                    if (writeStream != null)
+                    {
+                        writeStream.Close();
+                    }
+                }
+            }
+            finally
+            {
+                ReleaseLockFor(httpMethod, uri);
             }
         }
 
