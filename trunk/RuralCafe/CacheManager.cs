@@ -1257,6 +1257,10 @@ namespace RuralCafe
         /// <returns>If the item is cached.</returns>
         private bool IsCached(string httpMethod, string uri, RCDatabaseEntities databaseContext)
         {
+            if (uri.Length > 2000)
+            {
+                return false;
+            }
             return (from gci in databaseContext.GlobalCacheItem
                     where gci.httpMethod.Equals(httpMethod) && gci.url.Equals(uri)
                     select 1).Count() != 0;
@@ -1272,6 +1276,10 @@ namespace RuralCafe
         /// <returns>The global cache item or null.</returns>
         private GlobalCacheItem GetGlobalCacheItem(string httpMethod, string uri, RCDatabaseEntities databaseContext)
         {
+            if (uri.Length > 2000)
+            {
+                return null;
+            }
             return (from gci in databaseContext.GlobalCacheItem
                     where gci.httpMethod.Equals(httpMethod) && gci.url.Equals(uri)
                     select gci).FirstOrDefault();
@@ -1287,6 +1295,10 @@ namespace RuralCafe
         /// <returns>The global cache RC data item or null.</returns>
         private GlobalCacheRCData GetGlobalCacheRCData(string httpMethod, string uri, RCDatabaseEntities databaseContext)
         {
+            if (uri.Length > 2000)
+            {
+                return null;
+            }
             return (from gcrc in databaseContext.GlobalCacheRCData
                     where gcrc.httpMethod.Equals(httpMethod) && gcrc.url.Equals(uri)
                     select gcrc).FirstOrDefault();
