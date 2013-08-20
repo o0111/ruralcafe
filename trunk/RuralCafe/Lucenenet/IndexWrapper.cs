@@ -138,22 +138,46 @@ namespace RuralCafe.Lucenenet
             proxy.Logger.Info("Deleting all dead links from index...");
             Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(_indexPath));
             IndexReader reader = IndexReader.Open(directory, false);
+            IndexWriter writer = new IndexWriter(_indexPath, _analyzer, false);
             for (int i = 0; i < reader.MaxDoc(); i++) 
             {
                 if (reader.IsDeleted(i))
                 {
                     continue;
                 }
-
                 Document doc = reader.Document(i);
+
+                string uri = doc.Get("uri");
+                string uri2 = CacheManager.FilePathToUri(
+                    CacheManager.GetRelativeCacheFileName(uri, "GET"));
+
+                
                 if(!proxy.ProxyCacheManager.IsCached("GET", doc.Get("uri")))
                 {
                     bool delete = true;
-                    string uri = doc.Get("uri");
+                    
                     string fileName = proxy.ProxyCacheManager.CachePath +
                         CacheManager.GetRelativeCacheFileName(uri, "GET");
                     if (File.Exists(fileName))
                     {
+                        if (!uri.Equals(uri2))
+                        {
+                            proxy.Logger.Debug("Deleting " + uri + " from the lucene index and adding " + uri2);
+                            // Save new and delete old
+                            // we cannot use IndexDocument, as this would fail to obtain the lock
+                            Document doc2 = new Document();
+                            doc2.Add(new Field("uri", uri2, Field.Store.YES, Field.Index.NOT_ANALYZED));
+                            doc2.Add(new Field("title", doc.Get("title"), Field.Store.YES, Field.Index.ANALYZED));
+                            doc2.Add(new Field("content", Utils.ReadFileAsString(fileName), Field.Store.NO, Field.Index.ANALYZED));
+                            writer.AddDocument(doc2);
+                            writer.Commit();
+                            // Reopen reader
+                            reader = reader.Reopen();
+                            // and delete doc
+                            reader.DeleteDocument(i);
+                            continue;
+                        }
+
                         if (proxy.ProxyCacheManager.AddCacheItemsForExistingFiles(
                             new HashSet<GlobalCacheItemToAdd>() { proxy.ProxyCacheManager.
                                 RecoverInfoFromFile(fileName, fileName.Substring(proxy.ProxyCacheManager.CachePath.Length)) }))
@@ -171,13 +195,14 @@ namespace RuralCafe.Lucenenet
                         }
                         catch (StaleReaderException)
                         {
-                            reader = IndexReader.Open(directory, false);
+                            reader = reader.Reopen();
                             reader.DeleteDocument(i);
                         }
                     }
                 }
             }
             reader.Close();
+            writer.Close();
             proxy.Logger.Info("Deleted all dead links from index.");
         }
 
