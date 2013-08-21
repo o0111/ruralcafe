@@ -51,14 +51,14 @@ namespace RuralCafe
                 {
                     // Open the file as a FileStream object.
                     infile = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-                    byte[] buffer = new byte[32];
+                    byte[] buffer = new byte[4096];
                     // Read the file to ensure it is readable.
                     int bytesRead = infile.Read(buffer, 0, buffer.Length);
                     while (bytesRead != 0)
                     {
                         compressedzipStream.Write(buffer, 0, bytesRead);
 
-                        bytesRead = infile.Read(buffer, 0, 32);
+                        bytesRead = infile.Read(buffer, 0, buffer.Length);
                     }
                     infile.Close();
                 }

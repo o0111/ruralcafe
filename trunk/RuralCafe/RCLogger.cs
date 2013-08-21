@@ -31,17 +31,22 @@ using log4net.Config;
 
 namespace RuralCafe
 {
-    /// <summary>
-    /// All valid log levels for log4net.
-    /// </summary>
+    /// <summary>All valid log levels for log4net.</summary>
     public enum LogLevel
     {
+        /// <summary>Everything is being logged.</summary>
         ALL,
+        /// <summary>Everything is being logged.</summary>
         DEBUG,
+        /// <summary>Everything with INFO or higher is being logged.</summary>
         INFO,
+        /// <summary>Everything with WARN or higher is being logged.</summary>
         WARN,
+        /// <summary>Everything with ERROR or higher is being logged.</summary>
         ERROR,
+        /// <summary>Only FATAL is being logged.</summary>
         FATAL,
+        /// <summary>No logging.</summary>
         OFF
     }
 

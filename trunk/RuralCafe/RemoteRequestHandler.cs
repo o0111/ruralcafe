@@ -307,15 +307,10 @@ namespace RuralCafe
         /// <param name="rcRequest">Requested page to start from.</param>
         /// <param name="richness">Richness setting.</param>
         /// <param name="depth">Depth to download.</param>
-        /// <returns></returns>
+        /// <returns>Wheter something was downloaded successfully.</returns>
         public bool RecursivelyDownloadPage(RCRequest rcRequest, Richness richness, int depth)
         {
             if (_killYourself ||_quota < DEFAULT_LOW_WATERMARK)
-            {
-                return false;
-            }
-
-            if (depth == Properties.Settings.Default.DEFAULT_DEPTH)
             {
                 return false;
             }
@@ -382,11 +377,25 @@ namespace RuralCafe
                 _package.Pack(this, rc301, ref _quota);
             }
 
-            // get the embedded content of the search result page
-            DownloadEmbeddedObjects(rcRequest, richness);
+            if(!rcRequest.GenericWebResponse.ContentType.Contains("text/html"))
+            {
+                return true;
+            }
+            // Getting embedded objects and recursing only makes sence for html pages.
+            Uri baseUri = new Uri(rcRequest.Uri);
+            string htmlContent = Utils.ReadFileAsString(rcRequest.CacheFileName).ToLower();
 
-            // recurse if necessary
-            LinkedList<Uri> resultLinkUris = ExtractLinks(rcRequest);
+            // get the embedded content of the search result page
+            DownloadEmbeddedObjects(rcRequest, baseUri, htmlContent, richness);
+
+            // Don't recurse if this is we're on the deepest layer allowed
+            if (depth == Properties.Settings.Default.DEFAULT_DEPTH - 1)
+            {
+                return true;
+            }
+
+            // recurse
+            LinkedList<Uri> resultLinkUris = ExtractLinks(baseUri, htmlContent);
             foreach (Uri currUri in resultLinkUris)
             {
                 RCRequest currRequest = new RCRequest(this, (HttpWebRequest)WebRequest.Create(currUri));
@@ -401,8 +410,10 @@ namespace RuralCafe
         /// </summary>
         /// <param name="rcRequest">Request page to start from.</param>
         /// <param name="richness">Richness setting.</param>
+        /// <param name="baseUri">The Uri of the website where to download embedded objects.</param>
+        /// <param name="htmlContent">The HTML content of the webiste.</param>
         /// <returns>List of RCRequests of embedded objects downloaded</returns>
-        private LinkedList<RCRequest> DownloadEmbeddedObjects(RCRequest rcRequest, Richness richness)
+        private LinkedList<RCRequest> DownloadEmbeddedObjects(RCRequest rcRequest, Uri baseUri, string htmlContent, Richness richness)
         {
             LinkedList<Uri> filteredEmbeddedObjects = new LinkedList<Uri>();
 
@@ -411,7 +422,7 @@ namespace RuralCafe
                 return new LinkedList<RCRequest>();
             }
             
-            LinkedList<Uri> embeddedObjects = ExtractEmbeddedObjects(rcRequest);
+            LinkedList<Uri> embeddedObjects = ExtractEmbeddedObjects(baseUri, htmlContent);
 
             // XXX: refactor into filter class/method.
             // filter out based on richness
@@ -701,9 +712,11 @@ namespace RuralCafe
         /// Wrapper for ExtractReferences()
         /// XXX: not completely implemented, need non HTML/"src=" references.
         /// </summary>
-        LinkedList<Uri> ExtractEmbeddedObjects(RCRequest rcRequest)
+        /// <param name="baseUri">The Uri of the website where to extract embedded objects.</param>
+        /// <param name="htmlContent">The HTML content of the webiste.</param>
+        LinkedList<Uri> ExtractEmbeddedObjects(Uri baseUri, string htmlContent)
         {
-            return ExtractReferences(rcRequest, HtmlUtils.EmbeddedObjectTagAttributes);
+            return ExtractReferences(baseUri, htmlContent, HtmlUtils.EmbeddedObjectTagAttributes);
         }
 
         /// <summary>
@@ -711,25 +724,25 @@ namespace RuralCafe
         /// Wrapper for ExtractReferences()
         /// XXX: not completely implemented, need non HTML/"a href=" references.
         /// </summary>
-        LinkedList<Uri> ExtractLinks(RCRequest rcRequest)
+        /// <param name="baseUri">The Uri of the website where to extract links.</param>
+        /// <param name="htmlContent">The HTML content of the webiste.</param>
+        LinkedList<Uri> ExtractLinks(Uri baseUri, string htmlContent)
         {
-            return ExtractReferences(rcRequest, HtmlUtils.LinkTagAttributes);
+            return ExtractReferences(baseUri, htmlContent, HtmlUtils.LinkTagAttributes);
         }
 
         /// <summary>
         /// Extracts the html references using a separator token and returns them.
         /// </summary>
-        /// <param name="rcRequest">Page to parse.</param>
+        /// <param name="baseUri">The Uri of the website where to extract references.</param>
+        /// <param name="htmlContent">The HTML content of the webiste.</param>
         /// <param name="tagAttributes">Seperator tokens.</param>
         /// <returns>List of references.</returns>
-        LinkedList<Uri> ExtractReferences(RCRequest rcRequest, string[,] tagAttributes)
+        LinkedList<Uri> ExtractReferences(Uri baseUri, string htmlContent, string[,] tagAttributes)
         {
             LinkedList<Uri> extractedReferences = new LinkedList<Uri>();
-
-            string fileString = Utils.ReadFileAsString(rcRequest.CacheFileName).ToLower();
             HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(fileString);
-            Uri baseUri = new Uri(rcRequest.Uri);
+            doc.LoadHtml(htmlContent);
 
             for (int i = 0; i < tagAttributes.GetLength(0); i++)
             {

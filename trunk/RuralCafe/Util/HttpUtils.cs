@@ -74,7 +74,7 @@ namespace RuralCafe.Util
                 // Range may be ignored by Servers anyway, Expect will never be set by us.
                 // Accept-Encoding can be set manually, but we're ignoring it here
                 if (keyLower.Equals("user-agent") || keyLower.Equals("accept") || keyLower.Equals("referer")
-                     || keyLower.Equals("content-type") || keyLower.Equals("content-Length")
+                     || keyLower.Equals("content-type") || keyLower.Equals("content-length")
                      || keyLower.Equals("host") || keyLower.Equals("proxy-connection")
                      || keyLower.Equals("range") || keyLower.Equals("expect") || keyLower.Equals("accept-encoding"))
                 {

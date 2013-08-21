@@ -113,8 +113,8 @@ namespace RuralCafe
                     }
                     // Set content type.
                     _clientHttpContext.Response.ContentType = "text/html";
-                    // Include link suggestions if we're offline. XXX do we want that for wiki?
-                    if (Proxy.NetworkStatus == RCLocalProxy.NetworkStatusCode.Offline)
+                    // Include link suggestions if we're not online. XXX do we want that for wiki?
+                    if (Proxy.NetworkStatus != RCLocalProxy.NetworkStatusCode.Online)
                     {
                         wikiContent = LinkSuggestionHtmlModifier.IncludeTooltips(wikiContent);
                     }

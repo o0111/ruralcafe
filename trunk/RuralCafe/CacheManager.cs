@@ -64,7 +64,9 @@ namespace RuralCafe
         private const string MAT_FILE_NAME = "cache.mat";
         private const string CLUSTERS_FILE_NAME = "clusters";
         private const string TREE_FILE_NAME = "tree";
+        /// <summary>The file name of the binary tree clusters xml file.</summary>
         public const string CLUSTERS_BT_XML_FILE_NAME = "clustersBT.xml";
+        /// <summary>The file name of the 3-level-hierarchy tree clusters xml file.</summary>
         public const string CLUSTERS_XML_FILE_NAME = "clusters.xml";
 
         private const string DATABASE_FILE_NAME = "RCDatabase.sdf";
@@ -1522,6 +1524,9 @@ namespace RuralCafe
             }
         }
 
+        /// <summary>
+        /// Deletes the BZ2 entries.
+        /// </summary>
         public void DeleteBZ2Entries()
         {
             RCDatabaseEntities databaseContext = GetNewDatabaseContext(true);
@@ -1837,7 +1842,7 @@ namespace RuralCafe
         /// <summary>
         /// Gets locks for all request. In alphabetic order to prevent deadlocks.
         /// </summary>
-        /// <param name="items">The requests to get locks for.</param>
+        /// <param name="requests">The requests to get locks for.</param>
         private void GetLocksFor(IEnumerable<RCRequest> requests)
         {
             foreach (RCRequest request in requests.OrderBy(request => request.Uri).ThenBy(request => request.GenericWebRequest.Method))
@@ -1898,7 +1903,7 @@ namespace RuralCafe
         /// <summary>
         /// Releases locks for all request.
         /// </summary>
-        /// <param name="items">The requests to get locks for.</param>
+        /// <param name="requests">The requests to get locks for.</param>
         private void ReleaseLocksFor(IEnumerable<RCRequest> requests)
         {
             foreach (RCRequest request in requests)
