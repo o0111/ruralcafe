@@ -2,9 +2,9 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <PublishUrlHistory>ftp://195.229.110.133/RuralCafe/|publish\</PublishUrlHistory>
-    <InstallUrlHistory />
+    <InstallUrlHistory>http://195.229.110.133/ftp/RuralCafe/|http://195.229.110.133/ftp/</InstallUrlHistory>
     <SupportUrlHistory>http://code.google.com/p/ruralcafe/</SupportUrlHistory>
-    <UpdateUrlHistory>\\FRITZMOBIL\Users\Satia\Documents\Visual Studio 2012\Projects\Rural Cafe\trunk\RuralCafe\publish\</UpdateUrlHistory>
+    <UpdateUrlHistory>http://195.229.110.133/ftp/RuralCafe/|\\FRITZMOBIL\Users\Satia\Documents\Visual Studio 2012\Projects\Rural Cafe\trunk\RuralCafe\publish\</UpdateUrlHistory>
     <BootstrapperUrlHistory />
     <ErrorReportUrlHistory />
     <FallbackCulture>en-US</FallbackCulture>
