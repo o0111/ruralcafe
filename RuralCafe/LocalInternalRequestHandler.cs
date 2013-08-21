@@ -26,10 +26,6 @@ namespace RuralCafe
 
         private static Dictionary<String, RoutineMethod> routines = new Dictionary<String, RoutineMethod>();
         private static RoutineMethod defaultMethod = new RoutineMethod("DefaultPage");
-        // Regex that matches two or more spaces. Useful for trimming them to one space.
-        private static Regex multipleSpacesRegex = new Regex(@"\s\s+");
-        // Regex that matches the number of search results in a google results page.
-        private static Regex googleResultsNumRegex = new Regex("<div id=\"resultStats\">(Page \\d+ of a|A)bout (?<num>[\\d,]+) results");
 
         /// <summary>
         /// Static Constructor. Defines routines.
@@ -61,6 +57,9 @@ namespace RuralCafe
                 new string[] { }, new Type[] { }));
             routines.Add("/request/logout", new RoutineMethod("LogoutRequest",
                 new string[] { }, new Type[] { }));
+            routines.Add("/request/userSatisfaction", new RoutineMethod("UserSatisfactionRequest",
+                new string[] { "rating", "hadIssues", "problems", "comments" }, 
+                new Type[] { typeof(int), typeof(bool), typeof(string), typeof(string) }));
             routines.Add("/", new RoutineMethod("HomePage"));
 
             // All delegated routines
@@ -127,7 +126,7 @@ namespace RuralCafe
         /// <returns>The number of search results.</returns>
         private long GetGoogleResultsNumber(string googleResultsPage)
         {
-            Match match = googleResultsNumRegex.Match(googleResultsPage);
+            Match match = RegExs.GOOGLE_RESULTS_NUM_REGEX.Match(googleResultsPage);
             string numString = match.Groups["num"].Value;
             numString = numString.Replace(",", "");
             try
@@ -228,7 +227,7 @@ namespace RuralCafe
                             // cut end
                             currSnippet = currSnippet.Substring(0, pos);
                             currSnippet = HtmlUtils.StripTagsCharArray(currSnippet, false);
-                            currSnippet = multipleSpacesRegex.Replace(currSnippet.Trim(), " ");
+                            currSnippet = RegExs.MULTIPLE_SPACES_REGEX.Replace(currSnippet.Trim(), " ");
                         }
                     }
 
@@ -771,6 +770,27 @@ namespace RuralCafe
             Logger.Info("User " + UserIDCookieValue + " logs out.");
             Proxy.SessionManager.LogUserOut(UserIDCookieValue);
             return new Response();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="rating"></param>
+        /// <param name="hadIssues"></param>
+        /// <param name="problems"></param>
+        /// <param name="comments"></param>
+        /// <returns></returns>
+        public Response UserSatisfactionRequest(int rating, bool hadIssues, string problems, string comments)
+        {
+            // Remove newlines from the strings, so that everything will be in one line.
+            problems = RegExs.NEWLINE_REGEX.Replace(problems, " ");
+            comments = RegExs.NEWLINE_REGEX.Replace(comments, " ");
+
+            Logger.Metric(UserIDCookieValue,
+                String.Format("User satisfaction. Rating: {0}, Had issues: {1}, Problems: {2}, Comments: {3}",
+                rating, hadIssues, problems, comments));
+            // Send a html page just closing the window.
+            return new Response("<html><body><script>window.close();</script></body></html>");
         }
 
         #endregion
