@@ -19,11 +19,16 @@ using System.Collections.Concurrent;
 
 namespace RuralCafe
 {
+    /// <summary>A wrapper for a global cache item.</summary>
     public class GlobalCacheItemToAdd
     {
+        /// <summary>The URL.</summary>
         public string url;
+        /// <summary>The HTTP method.</summary>
         public string httpMethod;
+        /// <summary>The headers.</summary>
         public NameValueCollection headers;
+        /// <summary>The status code.</summary>
         public short statusCode;
 
         public override bool Equals(object obj)
@@ -71,12 +76,12 @@ namespace RuralCafe
             + Path.DirectorySeparatorChar + "Database" + Path.DirectorySeparatorChar + DATABASE_FILE_NAME;
         // Adapt this if the Database schema changes
         private readonly Dictionary<string, string[]> DB_SCHEMA = new Dictionary<string, string[]>() 
-            { 
-                { "GlobalCacheItem", new string[] { "httpMethod", "url", "responseHeaders", "filename", "statusCode", "filesize" } },
-                { "GlobalCacheRCData",  new string[] { "httpMethod", "url", "downloadTime", "lastRequestTime", "numberOfRequests" } },
-                { "UserCacheDomain",  new string[] { "userID", "domain" } },
-                { "UserCacheItem",  new string[] { "httpMethod", "url", "responseHeaders", "filename", "statusCode", "userID", "domain" } }
-            };
+        { 
+            { "GlobalCacheItem", new string[] { "httpMethod", "url", "responseHeaders", "filename", "statusCode", "filesize" } },
+            { "GlobalCacheRCData",  new string[] { "httpMethod", "url", "downloadTime", "lastRequestTime", "numberOfRequests" } },
+            { "UserCacheDomain",  new string[] { "userID", "domain" } },
+            { "UserCacheItem",  new string[] { "httpMethod", "url", "responseHeaders", "filename", "statusCode", "userID", "domain" } }
+        };
 
         // Regex's for safe URI replacements
         private static readonly Regex unsafeChars1 = new Regex(@"[^a-z0-9\\\-\.]");
@@ -630,7 +635,10 @@ namespace RuralCafe
             // Get the cache and the file size
             try
             {
-                cacheSize = 0;// XXX: hackery too slow. CacheSize(databaseContext);
+                //cacheSize = 0;// XXX: hackery too slow.
+                // Satia: How long does it take on your system?
+                // I might implement something to update it in intervals...
+                cacheSize = CacheSize(databaseContext);
                 itemSize = CacheItemFileSize(relFileName);
             }
             catch (Exception e)
@@ -1354,14 +1362,15 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Gets the current cache size by summing up all file sizes.
+        /// Gets the current cache size by summing up all file sizes and the DB file size.
         /// </summary>
         /// <param name="databaseContext">The database context.</param>
         /// <returns>The current cache size.</returns>
         private long CacheSize(RCDatabaseEntities databaseContext)
         {
+            long dbSize = new FileInfo(_proxy.ProxyPath + DATABASE_FILE_NAME).Length;
             IQueryable<long> fileSizes = from gci in databaseContext.GlobalCacheItem select gci.filesize;
-            return fileSizes.Count() > 0 ? fileSizes.Sum() : 0;
+            return fileSizes.Count() > 0 ? fileSizes.Sum() + dbSize : dbSize;
         }
 
         /// <summary>

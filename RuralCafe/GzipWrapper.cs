@@ -26,6 +26,9 @@ using RuralCafe.Util;
 
 namespace RuralCafe
 {
+    /// <summary>
+    /// A wrapper for GZIP.
+    /// </summary>
     public class GZipWrapper
     {
         private static readonly ILog _logger = LogManager.GetLogger(typeof(GZipWrapper));

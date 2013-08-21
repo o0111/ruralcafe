@@ -69,38 +69,41 @@ namespace RuralCafe.Util
         {
             foreach (string key in headers)
             {
+                string keyLower = key.ToLower();
                 // (Do NOT set Host- or Proxy-Connection-header!)
                 // Range may be ignored by Servers anyway, Expect will never be set by us.
                 // Accept-Encoding can be set manually, but we're ignoring it here
-                if (key.Equals("User-Agent") || key.Equals("Accept") || key.Equals("Referer")
-                     || key.Equals("Content-Type") || key.Equals("Content-Length")
-                     || key.Equals("Host") || key.Equals("Proxy-Connection")
-                     || key.Equals("Range") || key.Equals("Expect") || key.Equals("Accept-Encoding"))
+                if (keyLower.Equals("user-agent") || keyLower.Equals("accept") || keyLower.Equals("referer")
+                     || keyLower.Equals("content-type") || keyLower.Equals("content-Length")
+                     || keyLower.Equals("host") || keyLower.Equals("proxy-connection")
+                     || keyLower.Equals("range") || keyLower.Equals("expect") || keyLower.Equals("accept-encoding"))
                 {
                     continue;
                 }
                 foreach (string value in headers.GetValues(key))
                 {
+                    string valueLower = value.ToLower();
                     // Headers that need special treatment
-                    if (key.Equals("If-Modified-Since"))
+                    if (keyLower.Equals("if-modified-since"))
                     {
                         webRequest.IfModifiedSince = DateTime.Parse(value);
                         continue;
                     }
-                    else if (key.Equals("Connection"))
+                    else if (keyLower.Equals("connection"))
                     {
-                        if (value.Equals("keep-alive"))
+                        if (valueLower.Equals("keep-alive"))
                         {
                             webRequest.KeepAlive = true;
                             continue;
                         }
-                        else if (value.Equals("close"))
+                        else if (valueLower.Equals("close"))
                         {
                             webRequest.KeepAlive = false;
                             continue;
                         }
                         // else:
                         webRequest.Connection = value;
+                        continue;
                     }
                     try
                     {
@@ -138,19 +141,33 @@ namespace RuralCafe.Util
         {
             foreach (string key in headers)
             {
-                if (key.Equals("Content-Type") || key.Equals("Content-Length") || key.Equals("Content-Encoding")
-                    || key.Equals("Keep-Alive"))
+                string keyLower = key.ToLower();
+                if (keyLower.Equals("content-type") || keyLower.Equals("content-length") || keyLower.Equals("content-encoding")
+                    || keyLower.Equals("keep-alive"))
                 {
                     continue;
                 }
                 foreach (string value in headers.GetValues(key))
                 {
-
+                    string valueLower = value.ToLower();
                     // Headers that need special treatment
-                    if (key.Equals("Transfer-Encoding"))
+                    if (keyLower.Equals("transfer-encoding"))
                     {
-                        response.SendChunked = value.Equals("chunked");
+                        response.SendChunked = valueLower.Equals("chunked");
                         continue;
+                    }
+                    else if (keyLower.Equals("connection"))
+                    {
+                        if (valueLower.Equals("keep-alive"))
+                        {
+                            response.KeepAlive = true;
+                            continue;
+                        }
+                        else if (valueLower.Equals("close"))
+                        {
+                            response.KeepAlive = false;
+                            continue;
+                        }
                     }
 
                     try
