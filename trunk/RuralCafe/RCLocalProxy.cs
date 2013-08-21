@@ -291,12 +291,11 @@ namespace RuralCafe
         /// </summary>
         public void StartClusteringTimer()
         {
+            // Every x hours, re-cluster the cache in an own thread.
+            _clusteringTimer = new Timer(StartClustering, null, CLUSTERING_INTERVAL, CLUSTERING_INTERVAL);
             // Start the clustering now and pass true. Like this, the method knows
             // it should check if the old file is older than one day.
             StartClustering(true);
-
-            // Every x hours, re-cluster the cache in an own thread.
-            _clusteringTimer = new Timer(StartClustering, null, CLUSTERING_INTERVAL, CLUSTERING_INTERVAL);
         }
 
         /// <summary>
