@@ -134,6 +134,8 @@ namespace RuralCafe.Lucenenet
             IndexWriter writer = new IndexWriter(_indexPath, _analyzer, false);
             for (int i = 0; i < reader.MaxDoc(); i++)
             {
+                proxy.Logger.Warn(i + " files scanned out of: " + reader.MaxDoc());
+                
                 if (reader.IsDeleted(i))
                 {
                     continue;
@@ -141,33 +143,47 @@ namespace RuralCafe.Lucenenet
                 Document doc = reader.Document(i);
 
                 string uri = doc.Get("uri");
-                string uri2 = CacheManager.FilePathToUri(
-                    CacheManager.GetRelativeCacheFileName(uri, "GET"));
+                FixIndexLink(proxy, writer, uri, doc.Get("title"));
+            }
+            reader.Close();
+            writer.Close();
+            proxy.Logger.Info("Deleted all dead links from index.");
+        }
 
+        public void FixIndexLink(RCLocalProxy proxy, string uri)
+        {
+            Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(_indexPath));
+            IndexWriter writer = new IndexWriter(_indexPath, _analyzer, false);
+            FixIndexLink(proxy, writer, uri);
+        }
 
-                if (!proxy.ProxyCacheManager.IsCached("GET", doc.Get("uri")))
+        public void FixIndexLink(RCLocalProxy proxy, IndexWriter writer, string uri, string title = "")
+        {
+            if (!proxy.ProxyCacheManager.IsCached("GET", uri))
+            {
+                string uri2 = CacheManager.FilePathToUri(CacheManager.GetRelativeCacheFileName(uri, "GET"));
+
+                bool delete = true;
+
+                string fileName = proxy.ProxyCacheManager.CachePath +
+                    CacheManager.GetRelativeCacheFileName(uri, "GET");
+                if (File.Exists(fileName))
                 {
-                    bool delete = true;
-
-                    string fileName = proxy.ProxyCacheManager.CachePath +
-                        CacheManager.GetRelativeCacheFileName(uri, "GET");
-                    if (File.Exists(fileName))
+                    if (!uri.Equals(uri2))
                     {
-                        if (!uri.Equals(uri2))
-                        {
-                            proxy.Logger.Debug("Deleting " + uri + " from the lucene index and adding " + uri2);
-                            // Save new and delete old
-                            Document doc2 = new Document();
-                            doc2.Add(new Field("uri", uri2, Field.Store.YES, Field.Index.NOT_ANALYZED));
-                            doc2.Add(new Field("title", doc.Get("title"), Field.Store.YES, Field.Index.ANALYZED));
-                            doc2.Add(new Field("content", Utils.ReadFileAsString(fileName), Field.Store.NO, Field.Index.ANALYZED));
+                        proxy.Logger.Debug("Deleting " + uri + " from the lucene index and adding " + uri2);
+                        // Save new and delete old
+                        Document doc2 = new Document();
+                        doc2.Add(new Field("uri", uri2, Field.Store.YES, Field.Index.NOT_ANALYZED));
+                        doc2.Add(new Field("title", title, Field.Store.YES, Field.Index.ANALYZED));
+                        doc2.Add(new Field("content", Utils.ReadFileAsString(fileName), Field.Store.NO, Field.Index.ANALYZED));
 
-                            writer.AddDocument(doc2);
-                            writer.DeleteDocuments(new Term("uri", uri));
-                            writer.Commit();
-                            continue;
-                        }
-
+                        writer.AddDocument(doc2);
+                        writer.DeleteDocuments(new Term("uri", uri));
+                        writer.Commit();
+                    }
+                    else
+                    {
                         if (proxy.ProxyCacheManager.AddCacheItemsForExistingFiles(
                             new HashSet<GlobalCacheItemToAdd>() { proxy.ProxyCacheManager.
                                 RecoverInfoFromFile(fileName, fileName.Substring(proxy.ProxyCacheManager.CachePath.Length)) }))
@@ -176,17 +192,19 @@ namespace RuralCafe.Lucenenet
                             proxy.Logger.Debug(uri + " is now cached: " + proxy.ProxyCacheManager.IsCached("GET", uri));
                         }
                     }
-                    if (delete)
-                    {
-                        proxy.Logger.Debug("Deleting " + uri + " from the lucene index.");
-                        writer.DeleteDocuments(new Term("uri", uri));
-                        writer.Commit();
-                    }
                 }
+                if (delete)
+                {
+                    proxy.Logger.Debug("Deleting " + uri + " from the lucene index.");
+                    writer.DeleteDocuments(new Term("uri", uri));
+                    writer.Commit();
+                }
+                /* XXX: removed for runtime
+                if ((i % 100) == 99)
+                {
+                    writer.Commit();
+                }*/
             }
-            reader.Close();
-            writer.Close();
-            proxy.Logger.Info("Deleted all dead links from index.");
         }
 
         /// <summary>

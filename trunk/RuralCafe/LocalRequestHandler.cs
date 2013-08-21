@@ -124,49 +124,55 @@ namespace RuralCafe
                 }
 
                 // Check if this request is cacheable
-                if (IsCacheable() && Proxy.ProxyCacheManager.IsCached(_rcRequest.GenericWebRequest))
+                if (IsCacheable())
                 {
-                    // Log query metric
-                    Proxy.Logger.QueryMetric(Proxy.SessionManager.GetUserId(ClientIP),
-                        true, RefererUri, RequestUri);
-
-                    // Include link suggestions if we're not online for html pages
-                    if (Proxy.NetworkStatus != RCLocalProxy.NetworkStatusCode.Online
-                        && Proxy.ProxyCacheManager.IsHTMLFile(_rcRequest.GenericWebRequest.Method,
-                        _rcRequest.Uri))
+                    // XXX: super hackery
+                    //((RCLocalProxy)_proxy)._indexWrapper.FixIndexLink((RCLocalProxy)_proxy, RequestUri);
+                    string uri2 = CacheManager.FilePathToUri(CacheManager.GetRelativeCacheFileName(RequestUri, "GET"));
+                    if (Proxy.ProxyCacheManager.IsCached(_rcRequest.GenericWebRequest) || Proxy.ProxyCacheManager.IsCached("GET", uri2))
                     {
-                        string content = Utils.ReadFileAsString(_rcRequest.CacheFileName);
-                        if (String.IsNullOrEmpty(content))
-                        {
-                            return;// Status.Failed;
-                        }
-                        content = LinkSuggestionHtmlModifier.IncludeTooltips(content);
+                        // Log query metric
+                        Proxy.Logger.QueryMetric(Proxy.SessionManager.GetUserId(ClientIP),
+                            true, RefererUri, RequestUri);
 
-                        // Modify the webresponse
-                        GlobalCacheItem gci = _proxy.ProxyCacheManager.
-                            GetGlobalCacheItemAsRequest(_rcRequest.GenericWebRequest.Method, _rcRequest.GenericWebRequest.RequestUri.ToString());
-                        if (gci == null)
+                        // Include link suggestions if we're not online for html pages
+                        if (Proxy.NetworkStatus != RCLocalProxy.NetworkStatusCode.Online
+                            && Proxy.ProxyCacheManager.IsHTMLFile(_rcRequest.GenericWebRequest.Method,
+                            _rcRequest.Uri))
                         {
-                            string message = "problem getting db info: " + _rcRequest.CacheFileName;
-                            Logger.Warn(message);
-                            SendErrorPage(HttpStatusCode.InternalServerError, message);
+                            string content = Utils.ReadFileAsString(_rcRequest.CacheFileName);
+                            if (String.IsNullOrEmpty(content))
+                            {
+                                return;// Status.Failed;
+                            }
+                            content = LinkSuggestionHtmlModifier.IncludeTooltips(content);
+
+                            // Modify the webresponse
+                            GlobalCacheItem gci = _proxy.ProxyCacheManager.
+                                GetGlobalCacheItemAsRequest(_rcRequest.GenericWebRequest.Method, _rcRequest.GenericWebRequest.RequestUri.ToString());
+                            if (gci == null)
+                            {
+                                string message = "problem getting db info: " + _rcRequest.CacheFileName;
+                                Logger.Warn(message);
+                                SendErrorPage(HttpStatusCode.InternalServerError, message);
+                                return;
+                            }
+                            ModifyWebResponse(gci);
+                            SendMessage(content);
                             return;
                         }
-                        ModifyWebResponse(gci);
-                        SendMessage(content);
+
+                        try
+                        {
+                            _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName, true);
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.Warn(e.Message);
+                            SendErrorPage(HttpStatusCode.InternalServerError, e.Message);
+                        }
                         return;
                     }
-
-                    try
-                    {
-                        _rcRequest.FileSize = StreamFromCacheToClient(_rcRequest.CacheFileName, true);
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.Warn(e.Message);
-                        SendErrorPage(HttpStatusCode.InternalServerError, e.Message);
-                    }
-                    return;
                 }
 
                 // Log query metric for uncached items

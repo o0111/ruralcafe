@@ -519,6 +519,15 @@ namespace RuralCafe
                     // We will have to look at the same index again.
                     i--;
                 }
+
+                // XXX: super hackery
+                string uri2 = CacheManager.FilePathToUri(CacheManager.GetRelativeCacheFileName(luceneResults.Results[i].URI, "GET"));
+                if (!Proxy.ProxyCacheManager.IsCached("GET", luceneResults.Results[i].URI) && !Proxy.ProxyCacheManager.IsCached("GET", uri2))
+                {
+                    luceneResults.RemoveDocument(i);
+                    // We will have to look at the same index again.
+                    i--;
+                }
             }
 
             // Log result num
