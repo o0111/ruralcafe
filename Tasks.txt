@@ -20,7 +20,6 @@ Minor tasks
 - DNS cache hit/miss logging (César: Packet sniffing)
 - Domain name & Search query clustering
 - Handle 304 correctly (done for StreamTransparently, missing for DownloadToCache, but it doesn't seem to happen there)
-- When getting file from cache, only read file ONCE! (Do that after cache restructuring)
 - Configure Windows Firewall correct and write an article in the Wiki.
 - How to react to other server responses than 200 (e.g. 500), if the content is still useful?
 - If a request failed, provide more information (Server error (statuscode) vs. RC error (reason))

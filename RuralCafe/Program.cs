@@ -55,6 +55,7 @@ namespace RuralCafe
             + Path.DirectorySeparatorChar + "RemoteProxy" + Path.DirectorySeparatorChar;
         private static readonly string PACKAGE_PATH = "Packages" + Path.DirectorySeparatorChar;
         // FIXME this should not be public, but we have an ugly workaround
+        /// <summary>The path to the index for the local proxy.</summary>
         public static string INDEX_PATH;
         private static string LOCAL_CACHE_PATH;
         private static string REMOTE_CACHE_PATH;

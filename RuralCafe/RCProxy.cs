@@ -82,7 +82,9 @@ namespace RuralCafe
         /// </summary>
         public const string STATE_FILENAME = "State.json";
 
-        // notifies that a new request has arrived or a request has completed
+        /// <summary>
+        /// notifies that a new request has arrived or a request has completed
+        /// </summary>
         protected AutoResetEvent _requestEvent;
 
         /// <summary>
@@ -91,16 +93,24 @@ namespace RuralCafe
         protected WebProxy _gatewayProxy;
 
         // proxy settings
+        /// <summary>The IP address of the proxy.</summary>
         protected IPAddress _listenAddress;
+        /// <summary>The port the proxy listens to.</summary>
         protected int _listenPort;
+        /// <summary>The proxy's logger.</summary>
         protected readonly ILog _logger;
+        /// <summary>The proxy's file path.</summary>
         protected string _proxyPath;
+        /// <summary>The proxy's cache file path.</summary>
         protected string _packagesCachePath;
+        /// <summary>The name of the proxy.</summary>
         protected string _name;
+        /// <summary>The cache manager.</summary>
         protected CacheManager _cacheManager;
         // XXX: probably don't want to hard-code this as the number of port threads should be proportional to line speed.
         // XXX: We also should not use ThreadPool static, as then we cannot have different setting for Local and Remote
         // and they share the same ThreadPool...
+        /// <summary>The maximum number of threads being used.</summary>
         protected int _maxThreads = 1000; 
 
         /// <summary>
@@ -114,7 +124,9 @@ namespace RuralCafe
         private static DateTime _bwStartTime = DateTime.Now;
         private static int _bwDataSent = 0;
 
-        // maximum inflight requests
+        /// <summary>
+        /// maximum inflight requests
+        /// </summary>
         protected int _maxInflightRequests;
 
         /// <summary>

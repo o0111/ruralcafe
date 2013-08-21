@@ -22,17 +22,13 @@ namespace RuralCafe
         /// </summary>
         protected class RoutineMethod
         {
-            private String _methodName;
-            private String[] _parameterNames;
-            private Type[] _parameterTypes;
-
             /// <summary>
             /// A routine without parameters.
             /// </summary>
             /// <param name="methodName"></param>
             public RoutineMethod(String methodName)
             {
-                this._methodName = methodName;
+                this.MethodName = methodName;
             }
 
             /// <summary>
@@ -44,22 +40,28 @@ namespace RuralCafe
             public RoutineMethod(String methodName, String[] parameterNames,
                 Type[] parameterTypes)
             {
-                this._methodName = methodName;
-                this._parameterNames = parameterNames;
-                this._parameterTypes = parameterTypes;
+                this.MethodName = methodName;
+                this.ParameterNames = parameterNames;
+                this.ParameterTypes = parameterTypes;
             }
 
+            /// <summary>The name of the method.</summary>
             public String MethodName
             {
-                get { return _methodName; }
+                get;
+                private set;
             }
+            /// <summary>The names of all parameters.</summary>
             public String[] ParameterNames
             {
-                get { return _parameterNames; }
+                get;
+                private set;
             }
+            /// <summary>The types of all parameters.</summary>
             public Type[] ParameterTypes
             {
-                get { return _parameterTypes; }
+                get;
+                private set;
             }
         }
 
