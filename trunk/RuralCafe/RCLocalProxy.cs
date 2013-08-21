@@ -224,10 +224,7 @@ namespace RuralCafe
                 // initialize the index
                 _indexWrapper.EnsureIndexExists();
             }
-            _indexWrapper.RemoveAllDeadLinks(this);
-
-            // XXX: temp
-            _indexWrapper.RemoveAllDeadLinks(this);
+            // _indexWrapper.RemoveAllDeadLinks(this);
 
             bool success = false;
             // initialize the wiki index
@@ -294,8 +291,12 @@ namespace RuralCafe
         /// </summary>
         public void StartClusteringTimer()
         {
-            // Every x minutes, re-cluster the cache in an own thread.
-            _clusteringTimer =  new Timer(StartClustering, null, TimeSpan.Zero, CLUSTERING_INTERVAL);
+            // Start the clustering now and pass true. Like this, the method knows
+            // it should check if the old file is older than one day.
+            StartClustering(true);
+
+            // Every x hours, re-cluster the cache in an own thread.
+            _clusteringTimer = new Timer(StartClustering, null, CLUSTERING_INTERVAL, CLUSTERING_INTERVAL);
         }
 
         /// <summary>
@@ -305,12 +306,16 @@ namespace RuralCafe
         /// Starts the clustering if it is between 5 and 6 or if the last creation is more than a day ago.
         /// Only starts if the clustering is not currently running.
         /// </summary>
-        /// <param name="o">Ignored.</param>
+        /// <param name="o">When this is null, the time must be between 5 and 6 to run the clustering.
+        /// If this is not null, the old file must be older than one day.</param>
         private void StartClustering(object o)
         {
             DateTime now = DateTime.Now;
-            if (false)
-            //if(now.Hour == 5 || ProxyCacheManager.GetClusteringTimeStamp().AddDays(1).CompareTo(now) < 0)
+
+            // if (false)
+            if(o == null ? 
+                (now.Hour == 5) : 
+                (ProxyCacheManager.GetClusteringTimeStamp().AddDays(1).CompareTo(now) < 0))
             {
                 bool doClustering = false;
                 lock (_clusteringTimer)

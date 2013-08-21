@@ -123,7 +123,7 @@ namespace RuralCafe.Lucenenet
         }
 
         /// <summary>
-        /// Removes all dead links from the indexx
+        /// Removes all dead links from the index.
         /// </summary>
         /// <param name="proxy">The proxy, to log and to gain access to the cache manager.</param>
         public void RemoveAllDeadLinks(RCLocalProxy proxy)
