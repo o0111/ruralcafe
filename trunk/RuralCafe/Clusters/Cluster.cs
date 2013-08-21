@@ -40,11 +40,7 @@ namespace RuralCafe.Clusters
         private const string INDEX_LEVEL_XML_NAME = "level";
         private const string INDEX_ONLY_LEAF_CHILDS_TITLE = "Other";
         private const string INDEX_ONLY_LEAF_CHILDS_ID = "-1";
-
-        /// Regex's for docfile creation replacement
-        private static readonly Regex newlineRegex = new Regex(@"\r\n|\n|\r");
-        private static readonly Regex wordsStartingInvalidRegex = new Regex(@"\s\W\S*");
-        private static readonly Regex httpStartingRegex = new Regex(@"(\shttp\S*)|(http\S*\s)", RegexOptions.IgnoreCase);
+                
         /// <summary>
         /// Path to vcluster.exe
         /// </summary>
@@ -142,9 +138,9 @@ namespace RuralCafe.Clusters
                     // Extract text from Html
                     content = HtmlUtils.ExtractText(content);
                     // Remove newlines
-                    content = newlineRegex.Replace(content, " ");
+                    content = RegExs.NEWLINE_REGEX.Replace(content, " ");
                     // Empty content if this is a redirect
-                    if (RequestHandler.REDIR_REGEX.IsMatch(content))
+                    if (RegExs.REDIR_REGEX.IsMatch(content))
                     {
                         content = String.Empty;
                     }
@@ -254,7 +250,7 @@ namespace RuralCafe.Clusters
                     {
                         throw new Exception("vcluster failed with exitcode: " + vcluster.ExitCode);
                     }
-                    string[] lines = newlineRegex.Split(output.ToString());
+                    string[] lines = RegExs.NEWLINE_REGEX.Split(output.ToString());
                     // Create result array
                     HashSet<string>[] result = new HashSet<string>[fulltree ? 2 * k - 1 : k];
                     // Fill with empty sets
@@ -426,7 +422,7 @@ namespace RuralCafe.Clusters
         {
             // Read cluster file
             string clusterFileContent = Utils.ReadFileAsString(clusterFile);
-            string[] clusterNumbers = newlineRegex.Split(clusterFileContent);
+            string[] clusterNumbers = RegExs.NEWLINE_REGEX.Split(clusterFileContent);
 
             bool hierarchical = !String.IsNullOrEmpty(treeFile);
             string[] parentNumbers = null;
@@ -434,7 +430,7 @@ namespace RuralCafe.Clusters
             {
                 // Read tree file
                 string treeFileContent = Utils.ReadFileAsString(treeFile);
-                parentNumbers = newlineRegex.Split(treeFileContent);
+                parentNumbers = RegExs.NEWLINE_REGEX.Split(treeFileContent);
                 // Remove additional info, only parent is relevant
                 // Last line is empty and can be ignored
                 for (int i = 0; i < parentNumbers.Length - 1; i++)

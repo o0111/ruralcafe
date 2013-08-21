@@ -18,10 +18,6 @@ namespace RuralCafe.Util
     public static class HtmlUtils
     {
         /// <summary>
-        /// Regex for html tags
-        /// </summary>
-        private static readonly Regex htmlTagRegex = new Regex(@"<[^<]+?>", RegexOptions.IgnoreCase);
-        /// <summary>
         /// Tags that usually do not contain content text.
         /// </summary>
         private static string[] noContentTextHtmlTags = new string[] { "script", "meta", "style" };
@@ -172,11 +168,11 @@ namespace RuralCafe.Util
         {
             if (stripBoldTags)
             {
-                return htmlTagRegex.Replace(source, "");
+                return RegExs.HTML_TAG_REGEX.Replace(source, "");
             }
             else
             {
-                string result = htmlTagRegex.Replace(source, delegate(Match match)
+                string result = RegExs.HTML_TAG_REGEX.Replace(source, delegate(Match match)
                 {
                     string matchedString = match.ToString();
                     return matchedString.Equals("<b>") || matchedString.Equals("</b>") ?

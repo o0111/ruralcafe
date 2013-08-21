@@ -138,8 +138,6 @@ namespace RuralCafe
         public const string RC_PAGE = "http://www.ruralcafe.net/";
         /// <summary>The name of our homepage without preceding www.</summary>
         public const string RC_PAGE_WITHOUT_WWW = "http://ruralcafe.net/";
-        /// <summary>Regex to identify a HTTP redirection.</summary>
-        public static readonly Regex REDIR_REGEX = new Regex(@"HTTP/1\.1 301 Moved Permanently\s?Location: (?<uri>\S+)");
 
         /// <summary>The Name of the cookie for the user id.</summary>
         private const string cookieUserID = "uid";

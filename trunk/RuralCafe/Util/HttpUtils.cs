@@ -21,10 +21,6 @@ namespace RuralCafe.Util
     {
         //Constants
         private const string HTTP = "http://";
-        /// <summary>
-        /// Matches "localhost" or "127.0.0.1" followed by anything but a dot.
-        /// </summary>
-        private static readonly Regex localAddressRegex = new Regex(@"(?<add1>(localhost|127\.0\.0\.1))(?<add2>[^\.])");
 
         /// <summary>
         /// The local IP address.
@@ -274,7 +270,7 @@ namespace RuralCafe.Util
         /// <returns>The new address.</returns>
         public static string UseLocalNetworkAdressForLocalAdress(string address)
         {
-            return localAddressRegex.Replace(address, LOCAL_IP_ADDRESS + "${add2}");
+            return RegExs.LOCAL_ADDRESS_REGEX.Replace(address, LOCAL_IP_ADDRESS + "${add2}");
         }
 
         /// <summary>

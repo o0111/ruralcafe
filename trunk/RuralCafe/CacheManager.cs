@@ -85,10 +85,6 @@ namespace RuralCafe
             { "UserCacheItem",  new string[] { "httpMethod", "url", "responseHeaders", "filename", "statusCode", "userID", "domain" } }
         };
 
-        // Regex's for safe URI replacements
-        private static readonly Regex unsafeChars1 = new Regex(@"[^a-z0-9\\\-\.]");
-        private static readonly Regex unsafeChars2 = new Regex(@"[^a-z0-9/\-\.]");
-
         /// <summary>
         /// The path to the cache.
         /// </summary>
@@ -359,11 +355,11 @@ namespace RuralCafe
             // trim out illegal characters
             if (Path.DirectorySeparatorChar == '\\')
             {
-                safe = unsafeChars1.Replace(safe, "");
+                safe = RegExs.UNSAFE_CHARS1_REGEX.Replace(safe, "");
             }
             else
             {
-                safe = unsafeChars2.Replace(safe, "");
+                safe = RegExs.UNSAFE_CHARS2_REGEX.Replace(safe, "");
             }
 
             // trim the length
@@ -1205,10 +1201,9 @@ namespace RuralCafe
 
                         // To gain a better performace, we save and recreate the context after 100 inserts.
                         counter++;
-                        if (counter == DATABASE_BULK_INSERT_THRESHOLD)
+                        if (counter % DATABASE_BULK_INSERT_THRESHOLD == 0)
                         {
-                            counter = 0;
-                            _proxy.Logger.Info(DATABASE_BULK_INSERT_THRESHOLD + " new files added. Saving database changes made so far.");
+                            _proxy.Logger.Info(counter + " new files added. Saving database changes made so far.");
                             databaseContext.SaveChanges();
                             databaseContext.Dispose();
                             databaseContext = GetNewDatabaseContext(false);
@@ -1597,7 +1592,7 @@ namespace RuralCafe
                     }
 
                     counter++;
-                    if (counter % DATABASE_BULK_INSERT_THRESHOLD == (DATABASE_BULK_INSERT_THRESHOLD - 1))
+                    if (counter % DATABASE_BULK_INSERT_THRESHOLD == 0)
                     {
                         _proxy.Logger.Info(counter + " files updated. Saving database changes made so far.");
                         databaseContext.SaveChanges();

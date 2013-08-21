@@ -1,0 +1,30 @@
+<html>
+    <body>
+        <form name="userSatisfaction" action="request/userSatisfaction" method="get" > 
+            Rate your experience using Trotro today. <br>
+            Bad
+            <input type="radio" name="rating" value="1"> 1
+            <input type="radio" name="rating" value="2"> 2
+            <input type="radio" name="rating" value="3"> 3
+            <input type="radio" name="rating" value="4"> 4
+            <input type="radio" name="rating" value="5"> 5
+            Good
+            <br>
+            <br>
+            Did you have any issues using Trotro? <br>
+            <input type="radio" name="hadIssues" value="True"> Yes
+            <input type="radio" name="hadIssues" value="False"> No
+            <br>
+            <br>
+            If yes, what were they? <br>
+            <textarea name="problems" rows="2" wrap="hard"></textarea>
+            <br>
+            <br>
+            Additional Comments <br> 
+            <textarea name="comments" rows="5" wrap="hard"></textarea> 
+            <br>
+            <input type="submit" value="Send">
+            <input type="button" value="Cancel" onclick="window.close()" />
+        </form>
+    </body>
+</html>
