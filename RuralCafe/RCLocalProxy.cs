@@ -126,7 +126,7 @@ namespace RuralCafe
         
         // the wrappers
         private WikiWrapper _wikiWrapper;
-        private IndexWrapper _indexWrapper;
+        public IndexWrapper _indexWrapper;
 
         // the session manager
         private SessionManager _sessionManager;

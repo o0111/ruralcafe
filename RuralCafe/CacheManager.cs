@@ -1278,8 +1278,7 @@ namespace RuralCafe
             string headersJson = JsonConvert.SerializeObject(headers,
                 Formatting.None, new NameValueCollectionConverter());
 
-            _proxy.Logger.Debug("Adding to database: " + httpMethod + " "
-                    + url);
+            _proxy.Logger.Debug("Adding to database: " + httpMethod + " " + url);
 
             // Check if the RC data still exists (this means the file has been cached previsouly and was evicted)
             GlobalCacheRCData rcData = GetGlobalCacheRCData(httpMethod, url, databaseContext);
@@ -1575,7 +1574,7 @@ namespace RuralCafe
                         cacheItem.statusCode = 200;
 
                         cacheItem.responseHeaders = JsonConvert.SerializeObject(headers, Formatting.None, new NameValueCollectionConverter());
-                        _proxy.Logger.Info("Adding: " + cacheItem.url);
+                        //_proxy.Logger.Info("Adding: " + cacheItem.url);
 
                         // add entry to DB
                         databaseContext.GlobalCacheItem.Add(cacheItem);
@@ -1607,7 +1606,7 @@ namespace RuralCafe
                     // Remove DB entry
                     string oldUri = bz2.url;
                     string method = bz2.httpMethod;
-                    _proxy.Logger.Info("Removing: " + bz2.url);
+                    //_proxy.Logger.Info("Removing: " + bz2.url);
                     databaseContext.GlobalCacheRCData.Remove(bz2.GlobalCacheRCData);
                     databaseContext.GlobalCacheItem.Remove(bz2);
                     /*

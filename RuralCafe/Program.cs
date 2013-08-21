@@ -309,7 +309,7 @@ namespace RuralCafe
             localRequesterThread.Start();
 
             // Start the clustering timer
-            localProxy.StartClusteringTimer();            
+            //localProxy.StartClusteringTimer();            
 
             // listen for cc connection
             return localProxy;
