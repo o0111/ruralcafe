@@ -7,10 +7,6 @@
       <Diagram DiagramId="c4a66ea268f44253ad04dff62db65347" Name="Diagram1">
         <EntityTypeShape EntityType="RCDatabaseModel.GlobalCacheItem" Width="2.125" PointX="0.75" PointY="0.875" IsExpanded="true" />
         <EntityTypeShape EntityType="RCDatabaseModel.GlobalCacheRCData" Width="2.125" PointX="4.5" PointY="0.5" IsExpanded="true" />
-        <EntityTypeShape EntityType="RCDatabaseModel.UserCacheDomain" Width="1.5" PointX="0.75" PointY="4.75" IsExpanded="true" />
-        <EntityTypeShape EntityType="RCDatabaseModel.UserCacheItem" Width="2.375" PointX="4.875" PointY="4.75" IsExpanded="true" />
-        <AssociationConnector Association="RCDatabaseModel.rc2_fk" />
-        <AssociationConnector Association="RCDatabaseModel.ucd_fk" />
         <AssociationConnector Association="RCDatabaseModel.rc_fk" />
       </Diagram>
     </edmx:Diagrams>

@@ -23,7 +23,7 @@
     <Install>true</Install>
     <InstallFrom>Web</InstallFrom>
     <UpdateEnabled>true</UpdateEnabled>
-    <UpdateMode>Background</UpdateMode>
+    <UpdateMode>Foreground</UpdateMode>
     <UpdateInterval>1</UpdateInterval>
     <UpdateIntervalUnits>Days</UpdateIntervalUnits>
     <UpdatePeriodically>true</UpdatePeriodically>
@@ -35,8 +35,8 @@
     <TargetCulture>en</TargetCulture>
     <ProductName>Rural Cafe</ProductName>
     <AutorunEnabled>true</AutorunEnabled>
-    <ApplicationRevision>202</ApplicationRevision>
-    <ApplicationVersion>1.0.0.202</ApplicationVersion>
+    <ApplicationRevision>206</ApplicationRevision>
+    <ApplicationVersion>1.0.0.206</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -142,12 +142,6 @@
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>RCDatabase.edmx</DependentUpon>
-    </Compile>
-    <Compile Include="Database\UserCacheDomain.cs">
-      <DependentUpon>RCDatabase.tt</DependentUpon>
-    </Compile>
-    <Compile Include="Database\UserCacheItem.cs">
-      <DependentUpon>RCDatabase.tt</DependentUpon>
     </Compile>
     <Compile Include="Json\HttpWebRequestConverter.cs" />
     <Compile Include="Json\JsonCreationConverter.cs" />

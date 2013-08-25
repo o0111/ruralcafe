@@ -27,7 +27,5 @@ namespace RuralCafe.Database
     
         public DbSet<GlobalCacheItem> GlobalCacheItem { get; set; }
         public DbSet<GlobalCacheRCData> GlobalCacheRCData { get; set; }
-        public DbSet<UserCacheDomain> UserCacheDomain { get; set; }
-        public DbSet<UserCacheItem> UserCacheItem { get; set; }
     }
 }

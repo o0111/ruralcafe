@@ -49,6 +49,8 @@ namespace RuralCafe
         [JsonProperty]
         private string _cacheFileName;
         [JsonProperty]
+        private string _relCacheFileName;
+        [JsonProperty]
         private string _packageFileName;
 
         [JsonProperty]
@@ -121,10 +123,15 @@ namespace RuralCafe
         {
             get { return _requestId; }
         }
-        /// <summary>The file name of the object if it is cached.</summary>
+        /// <summary>The file name of the object if it is cached ,absolute.</summary>
         public string CacheFileName
         {
             get { return _cacheFileName; }
+        }
+        /// <summary>The file name of the object if it is cached, relative.</summary>
+        public string RelCacheFileName
+        {
+            get { return _relCacheFileName; }
         }
         /// <summary>The status of this request.</summary>
         public RequestHandler.Status RequestStatus
@@ -220,10 +227,9 @@ namespace RuralCafe
             string fileName = CacheManager.UriToFilePath(_webRequest.RequestUri.ToString());
             string hashPath = CacheManager.GetHashPath(fileName);
             _requestId = hashPath.Replace(Path.DirectorySeparatorChar.ToString(), "");
-
             // Cache file name like ./GET/2876/627/...
-            _cacheFileName = requestHandler.GenericProxy.CachePath + request.Method
-                + Path.DirectorySeparatorChar + hashPath + fileName;
+            _relCacheFileName = request.Method + Path.DirectorySeparatorChar + hashPath + fileName;
+            _cacheFileName = requestHandler.GenericProxy.CachePath + _relCacheFileName;
 
             _packageFileName = requestHandler.GenericProxy.PackagesPath + hashPath + fileName + ".gzip";
             _fileSize = 0;
@@ -385,8 +391,7 @@ namespace RuralCafe
                     };
 
                     GlobalCacheItemToAdd newItem = new GlobalCacheItemToAdd();
-                    newItem.url = _uriBeforeRedirect;
-                    newItem.httpMethod = _webRequest.Method;
+                    newItem.filename = _relCacheFileName;
                     newItem.headers = redirHeaders;
                     newItem.statusCode = 301;
 
@@ -395,10 +400,10 @@ namespace RuralCafe
 
                     // have to save to the new cache file location
                     string uri = _webResponse.ResponseUri.ToString();
-                    _cacheFileName = _requestHandler.GenericProxy.CachePath +
-                        CacheManager.GetRelativeCacheFileName(uri, _webResponse.Method);
+                    _relCacheFileName = CacheManager.GetRelativeCacheFileName(uri, _webResponse.Method);
+                    _cacheFileName = _requestHandler.GenericProxy.CachePath + _relCacheFileName;
 
-                    if (cacheManager.IsCached(_webResponse))
+                    if (cacheManager.IsCached(_relCacheFileName))
                     {
                         _requestHandler.Logger.Debug("Already exists: " +
                             _webResponse.Method + " " + uri);
@@ -407,7 +412,7 @@ namespace RuralCafe
                 }
 
                 // Add stream content to the cache. 
-                if (!cacheManager.AddCacheItem(GenericWebResponse))
+                if (!cacheManager.AddCacheItem(GenericWebResponse, _relCacheFileName))
                 {
                     // clean up the (partial) download
                     cacheManager.RemoveCacheItemFromDisk(_cacheFileName);

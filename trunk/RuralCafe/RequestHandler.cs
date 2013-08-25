@@ -556,28 +556,28 @@ namespace RuralCafe
         /// 
         /// Other exceptions are also forwarded.
         /// </summary>
-        /// <param name="fileName">Name of the file to stream to the client.</param>
+        /// <param name="absFileName">Name of the file to stream to the client.</param>
         /// <param name="takeDBData">If the headers and status code from the DB should be used.
         /// This should be true for cache files and false for RC page files (e.g. trotro.html)</param>
         /// <returns>Bytes streamed from the cache to the client.</returns>
-        protected long StreamFromCacheToClient(string fileName, bool takeDBData)
+        protected long StreamFromCacheToClient(string absFileName, bool takeDBData)
         {
             // make sure the file exists.
-            FileInfo f = new FileInfo(fileName);
+            FileInfo f = new FileInfo(absFileName);
             if (!f.Exists)
             {
-                Logger.Warn("File doesn't exist: " + fileName);
+                Logger.Warn("File doesn't exist: " + absFileName);
                 throw new FileNotFoundException("File doesn't exist: )");
             }
 
             if (takeDBData)
             {
+                string relFileName = absFileName.Substring(_proxy.ProxyCacheManager.CachePath.Length);
                 // Modify the webresponse
-                GlobalCacheItem gci = _proxy.ProxyCacheManager.GetGlobalCacheItemAsRequest(_originalRequest.HttpMethod,
-                    _originalRequest.RawUrl);
+                GlobalCacheItem gci = _proxy.ProxyCacheManager.GetGlobalCacheItemAsRequest(relFileName);
                 if (gci == null)
                 {
-                    Logger.Warn("Problem getting DB info: " + fileName);
+                    Logger.Warn("Problem getting DB info: " + absFileName);
                     throw new Exception("Problem getting DB info.");
                 }
                 ModifyWebResponse(gci);
