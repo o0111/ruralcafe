@@ -388,7 +388,7 @@ namespace RuralCafe
             // get the embedded content of the search result page
             DownloadEmbeddedObjects(rcRequest, baseUri, htmlContent, richness);
 
-            // Don't recurse if this is we're on the deepest layer allowed
+            // Don't recurse if we're on the deepest layer allowed
             if (depth == Properties.Settings.Default.DEFAULT_DEPTH - 1)
             {
                 return true;
