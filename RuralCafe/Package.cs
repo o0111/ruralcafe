@@ -171,11 +171,11 @@ namespace RuralCafe
                     }
 
                     // Index format is 2 lines:
-                    // <httpMethod> <statusCode> <fileSize> <URL> (Url is last, as it can have spaces)
+                    // <statusCode> <fileSize> <filename> (filename is last, as it can have spaces)
                     // <headers>
-                    tw.WriteLine(String.Format("{0} {1} {2} {3}",
-                        cacheItem.httpMethod, (short)cacheItem.statusCode,
-                        cacheItem.filesize, cacheItem.url));
+                    tw.WriteLine(String.Format("{0} {1} {2}",
+                        (short)cacheItem.statusCode,
+                        cacheItem.filesize, cacheItem.filename));
                     tw.WriteLine(cacheItem.responseHeaders);
 
                     _contentSize += cacheItem.filesize;
@@ -243,51 +243,43 @@ namespace RuralCafe
                 for (int i = 0; i < packageContentArr.Length; i += 2)
                 {
                     // Index format is 2 lines:
-                    // <httpMethod> <statusCode> <fileSize> <URL> (Url is last, as it can have spaces)
+                    // <statusCode> <fileSize> <filename> (filename is last, as it can have spaces)
                     // <headers> (JSON)
-                    string[] firstLineArray = packageContentArr[i].Split(new string[] { " " }, 4, StringSplitOptions.None);
+                    string[] firstLineArray = packageContentArr[i].Split(new string[] { " " }, 3, StringSplitOptions.None);
 
-                    if (firstLineArray.Length != 4)
+                    if (firstLineArray.Length != 3)
                     {
                         requestHandler.Logger.Error("unparseable entry: " + packageContentArr[i]);
                         return -1;
                     }
-                    string httpMethod = firstLineArray[0];
                     short statusCode;
-                    long currFileSize;
+                    long fileSize;
                     try
                     {
-                        statusCode = Int16.Parse(firstLineArray[1]);
-                        currFileSize = Int64.Parse(firstLineArray[2]);
+                        statusCode = Int16.Parse(firstLineArray[0]);
+                        fileSize = Int64.Parse(firstLineArray[1]);
                     }
                     catch (Exception e)
                     {
                         requestHandler.Logger.Warn("problem unpacking: " + packageContentArr[i], e);
                         return -1;
                     }
-
-                    string currUri = firstLineArray[3];
+                    string fileName = firstLineArray[2];
+                    //string currUri = firstLineArray[2];
 
                     string headersJson = packageContentArr[i + 1];
                     NameValueCollection headers = JsonConvert.DeserializeObject<NameValueCollection>(headersJson,
                         new NameValueCollectionConverter());
 
-                    if (!HttpUtils.IsValidUri(currUri))
-                    {
-                        requestHandler.Logger.Warn("problem unpacking (invalid uri): " + currUri);
-                        return -1;
-                    }
-
                     try
                     {
-                        if (requestHandler.Proxy.ProxyCacheManager.CreateOrUpdateFileAndWrite(httpMethod, currUri,
-                            currFileSize, packageFs))
+                        if (requestHandler.Proxy.ProxyCacheManager.CreateOrUpdateFileAndWrite(fileName,
+                            fileSize, packageFs))
                         {
-                            unpackedBytes += currFileSize;
+                            unpackedBytes += fileSize;
 
                             GlobalCacheItemToAdd newItem = new GlobalCacheItemToAdd();
-                            newItem.url = currUri;
-                            newItem.httpMethod = httpMethod;
+                            newItem.filename = fileName;
                             newItem.headers = headers;
                             newItem.statusCode = statusCode;
 

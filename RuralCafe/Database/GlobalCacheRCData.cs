@@ -14,18 +14,11 @@ namespace RuralCafe.Database
     
     public partial class GlobalCacheRCData
     {
-        public GlobalCacheRCData()
-        {
-            this.UserCacheItems = new HashSet<UserCacheItem>();
-        }
-    
-        public string url { get; set; }
-        public string httpMethod { get; set; }
         public System.DateTime downloadTime { get; set; }
         public System.DateTime lastRequestTime { get; set; }
         public int numberOfRequests { get; set; }
+        public string filename { get; set; }
     
-        public virtual ICollection<UserCacheItem> UserCacheItems { get; set; }
         public virtual GlobalCacheItem GlobalCacheItem { get; set; }
     }
 }

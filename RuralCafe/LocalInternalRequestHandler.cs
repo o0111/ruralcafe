@@ -521,13 +521,13 @@ namespace RuralCafe
                 }
 
                 // XXX: super hackery
-                string uri2 = CacheManager.FilePathToUri(CacheManager.GetRelativeCacheFileName(luceneResults.Results[i].URI, "GET"));
-                if (!Proxy.ProxyCacheManager.IsCached("GET", luceneResults.Results[i].URI) && !Proxy.ProxyCacheManager.IsCached("GET", uri2))
-                {
-                    luceneResults.RemoveDocument(i);
-                    // We will have to look at the same index again.
-                    i--;
-                }
+                //string uri2 = CacheManager.FilePathToUri(CacheManager.GetRelativeCacheFileName(luceneResults.Results[i].URI, "GET"));
+                //if (!Proxy.ProxyCacheManager.IsCached("GET", luceneResults.Results[i].URI) && !Proxy.ProxyCacheManager.IsCached("GET", uri2))
+                //{
+                //    luceneResults.RemoveDocument(i);
+                //    // We will have to look at the same index again.
+                //    i--;
+                //}
             }
 
             // Log result num
@@ -657,12 +657,13 @@ namespace RuralCafe
             Uri targetUri = new Uri(refUri, url);
 
             // Test if url is cached.
-            GlobalCacheItem gci = Proxy.ProxyCacheManager.GetGlobalCacheItem("GET", targetUri.ToString());
+            string relFileName = CacheManager.GetRelativeCacheFileName("GET", targetUri.ToString());
+            GlobalCacheItem gci = Proxy.ProxyCacheManager.GetGlobalCacheItem(relFileName);
             if (gci != null)
             {
                 suggestionsXml.InnerText = LINK_SUGGESTIONS_CACHED_TEXT;
                 suggestionsXml.SetAttribute("downloadTime",
-                    Proxy.ProxyCacheManager.GetGlobalCacheRCData("GET", targetUri.ToString()).
+                    Proxy.ProxyCacheManager.GetGlobalCacheRCData(relFileName).
                     downloadTime.ToString("dd'/'MM'/'yyyy"));
             }
             else

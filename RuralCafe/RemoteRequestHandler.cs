@@ -344,7 +344,7 @@ namespace RuralCafe
 
             // Only download for POST/... or not already existing items
             bool success;
-            if (!IsGetOrHeadHeader() || !_proxy.ProxyCacheManager.IsCached(rcRequest.GenericWebRequest))
+            if (!IsGetOrHeadHeader() || !_proxy.ProxyCacheManager.IsCached(rcRequest.RelCacheFileName))
             {
                 // Download!
                 success = rcRequest.DownloadToCache();
@@ -377,7 +377,7 @@ namespace RuralCafe
                 _package.Pack(this, rc301, ref _quota);
             }
 
-            if(!rcRequest.GenericWebResponse.ContentType.Contains("text/html"))
+            if(!_proxy.ProxyCacheManager.IsHTMLFile(rcRequest.RelCacheFileName))
             {
                 return true;
             }
@@ -604,7 +604,7 @@ namespace RuralCafe
                     request.GenericWebRequest.Timeout = (int)(endTime.Subtract(currTime)).TotalMilliseconds;
 
                     // download the page, if it does not exist already
-                    if (!_proxy.ProxyCacheManager.IsCached(request.GenericWebRequest))
+                    if (!_proxy.ProxyCacheManager.IsCached(request.RelCacheFileName))
                     {
                         // Download!
                         request.DownloadToCache();
