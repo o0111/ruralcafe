@@ -271,8 +271,8 @@ namespace RuralCafe
                 }
             }
 
-            //replace escaped chars with their original.
-            uri = RegExs.ESCAPED_CHARS_REGEX.Replace(uri, DecodeUriChars);
+            //replace escaped chars with their original. XXX xommented out.
+            // uri = RegExs.ESCAPED_CHARS_REGEX.Replace(uri, DecodeUriChars);
 
             // replace possible backslahes with shlashes
             uri = uri.Replace(Path.DirectorySeparatorChar, '/');
@@ -320,7 +320,7 @@ namespace RuralCafe
             uri = uri.Replace('/', Path.DirectorySeparatorChar);
 
             uri = System.Web.HttpUtility.UrlDecode(uri);
-            string fileName = UriToFilePathEncode(uri);//MakeSafeUri(uri);
+            string fileName = MakeSafeUri(uri);//UriToFilePathEncode(uri); // XXX commented out. Using old version.
 
             // fix the filename extension
             if (fileName.EndsWith(Path.DirectorySeparatorChar.ToString()))
