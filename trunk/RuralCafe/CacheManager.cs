@@ -16,6 +16,7 @@ using System.Threading;
 using System.Reflection;
 using RuralCafe.Lucenenet;
 using System.Collections.Concurrent;
+using System.Globalization;
 
 namespace RuralCafe
 {
@@ -57,6 +58,8 @@ namespace RuralCafe
     public class CacheManager
     {
         // Constants
+        /// <summary>The char to use for URI escaping.</summary>
+        public const char URI_ESCAPE_CHAR = '§';
         private const string DOC_FILE_NAME = "docfile.txt";
         private const string MAT_FILE_NAME = "cache.mat";
         private const string CLUSTERS_FILE_NAME = "clusters";
@@ -268,6 +271,9 @@ namespace RuralCafe
                 }
             }
 
+            //replace escaped chars with their original.
+            uri = RegExs.ESCAPED_CHARS_REGEX.Replace(uri, DecodeUriChars);
+
             // replace possible backslahes with shlashes
             uri = uri.Replace(Path.DirectorySeparatorChar, '/');
             // Remove possible index.html at the end
@@ -311,10 +317,10 @@ namespace RuralCafe
                 uri = uri + "/";
             }
 
-            uri = uri.Replace("/", Path.DirectorySeparatorChar.ToString());
+            uri = uri.Replace('/', Path.DirectorySeparatorChar);
 
             uri = System.Web.HttpUtility.UrlDecode(uri);
-            string fileName = MakeSafeUri(uri);
+            string fileName = UriToFilePathEncode(uri);//MakeSafeUri(uri);
 
             // fix the filename extension
             if (fileName.EndsWith(Path.DirectorySeparatorChar.ToString()))
@@ -324,6 +330,50 @@ namespace RuralCafe
 
             return fileName;
         }
+
+        /// <summary>
+        /// Decodes each char in the match.
+        /// </summary>
+        /// <param name="match">The RegEx Match.</param>
+        /// <returns>The string to replace the match with.</returns>
+        private static string DecodeUriChars(Match match)
+        {
+            int i = Int32.Parse(match.Value.Substring(1), NumberStyles.HexNumber);
+            return "" + ((char)i);
+        }
+
+        /// <summary>
+        /// Escapes each char in the match with "§[hexchar]"
+        /// </summary>
+        /// <param name="match">The RegEx Match.</param>
+        /// <returns>The string to replace the match with.</returns>
+        private static string EncodeUriChars(Match match)
+        {
+            return URI_ESCAPE_CHAR + ((int)match.Value[0]).ToString("X4");
+        }
+
+        /// <summary>
+        /// New encoding of URLs. We escape illegal chars instead of removing them.
+        /// </summary>
+        /// <param name="uri"></param>
+        /// <returns></returns>
+        private static string UriToFilePathEncode(string uri)
+        {
+            // Escape escape chars
+            string filename = uri.Replace("" + URI_ESCAPE_CHAR, ((int)URI_ESCAPE_CHAR).ToString("X4"));
+            // Escape illegal characters
+            if (Path.DirectorySeparatorChar == '\\')
+            {
+                filename = RegExs.UNSAFE_CHARS1_REGEX.Replace(filename, EncodeUriChars);
+            }
+            else
+            {
+                filename = RegExs.UNSAFE_CHARS2_REGEX.Replace(filename, EncodeUriChars);
+            }
+
+            return filename;
+        }
+
         /// <summary>
         /// Makes a URI safe for windows.
         /// Private helper for UriToFilePath.
@@ -339,12 +389,9 @@ namespace RuralCafe
             safe = safe.Replace(" ", "-").ToLower();
 
             // replace any 'double spaces' with singles
-            if (safe.IndexOf("--") > -1)
+            while (safe.IndexOf("--") > -1)
             {
-                while (safe.IndexOf("--") > -1)
-                {
-                    safe = safe.Replace("--", "-");
-                }
+                safe = safe.Replace("--", "-");
             }
 
             // trim out illegal characters
@@ -358,8 +405,8 @@ namespace RuralCafe
             }
 
             // trim the length
-            if (safe.Length > 220)
-                safe = safe.Substring(0, 219);
+            //if (safe.Length > 220)
+            //    safe = safe.Substring(0, 219);
 
             // clean the beginning and end of the filename
             char[] replace = { '-', '.' };

@@ -14,9 +14,9 @@ namespace RuralCafe.Util
         /// <summary>Newlines.</summary>
         public static readonly Regex NEWLINE_REGEX = new Regex(@"\r\n|\n|\r");
         /// <summary>Chars unsafe for URI replacements 1.</summary>
-        public static readonly Regex UNSAFE_CHARS1_REGEX = new Regex(@"[^a-z0-9\\\-\.]");
+        public static readonly Regex UNSAFE_CHARS1_REGEX = new Regex("[" + Regex.Escape("/:*?\"<>| ") + "]");// @"[^a-z0-9\\\-\.]");
         /// <summary>Chars unsafe for URI replacements 2.</summary>
-        public static readonly Regex UNSAFE_CHARS2_REGEX = new Regex(@"[^a-z0-9/\-\.]");
+        public static readonly Regex UNSAFE_CHARS2_REGEX = new Regex("[" + Regex.Escape("\\:*?\"<>| ") + "]"); // @"[^a-z0-9/\-\.]");
         /// <summary>Regex that matches two or more spaces. Useful for trimming them to one space.</summary>
         public static Regex MULTIPLE_SPACES_REGEX = new Regex(@"\s\s+");
         /// <summary>Regex that matches the number of search results in a google results page.</summary>
@@ -28,5 +28,7 @@ namespace RuralCafe.Util
         /// <summary>Matches "localhost" or "127.0.0.1" followed by anything but a dot.
         /// Provides mathcing groups add1 and add2</summary>
         public static readonly Regex LOCAL_ADDRESS_REGEX = new Regex(@"(?<add1>(localhost|127\.0\.0\.1))(?<add2>[^\.])");
+        /// <summary>A paragraph sign followed by 4 hex chars.</summary>
+        public static readonly Regex ESCAPED_CHARS_REGEX = new Regex(CacheManager.URI_ESCAPE_CHAR + @"[a-fA-F0-9]{4}");
     }
 }
