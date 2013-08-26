@@ -386,7 +386,7 @@ namespace RuralCafe
             int year = 1;
             DateTime queryDate = new DateTime();
 
-            if (date.Equals("0"))
+            if (String.IsNullOrEmpty(date) || date.Equals("0"))
             {
                 queryOnDate = false;
             }
@@ -461,6 +461,16 @@ namespace RuralCafe
                         XmlElement sizeXml = xmlDoc.CreateElement("size");
                         sizeXml.InnerText = "unknown";
                         itemXml.AppendChild(sizeXml);
+
+                        XmlElement statusCodeXml = xmlDoc.CreateElement("statusCode");
+                        if(requestHandler.RCRequest.StatusCode != 0)
+                        {
+                            statusCodeXml.InnerText = requestHandler.RCRequest.StatusCode.ToString();
+                        }
+                        itemXml.AppendChild(statusCodeXml);
+                        XmlElement errorMessageXml = xmlDoc.CreateElement("errorMessage");
+                        errorMessageXml.InnerText = requestHandler.RCRequest.ErrorMessage;
+                        itemXml.AppendChild(errorMessageXml);
                     }
                 }
             }

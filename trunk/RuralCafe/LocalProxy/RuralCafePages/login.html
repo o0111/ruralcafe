@@ -15,12 +15,14 @@
 			</h1>
 			<form method="post" action="trotro-user.html" onsubmit="return checkUser();">
 				<p class="login_hint">You are required to login before you can start downloading pages.</p>
-				<p>Username:<input id="username" name="username" type="text" value=""/><br>
-					<span id="wrong_username" class="err_message"></span>
-				</p>
-				<p>Password:<input id="password" name="password" type="password" value=""/><br>
-					<span id="wrong_password" class="err_message"></span>
-				</p>
+				<div class="login_form">
+					<p>Login:<input id="username" name="username" type="text" value=""/><br>
+						<span id="wrong_username" class="err_message"></span>
+					</p>
+					<p>Password:<input id="password" name="password" type="password" value=""/><br>
+						<span id="wrong_password" class="err_message"></span>
+					</p>
+				</div>
 				<p> <input id="login" name="login" type="submit" value="Login"/></p><br>
 				<p class="err_message" id="wrong_setting"></p>
 				<p class="login_hint">Do not have a username? Please <a href="signup.html">sign up</a> here.</p>

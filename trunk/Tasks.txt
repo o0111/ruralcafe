@@ -24,6 +24,8 @@ Minor tasks
 - How to react to other server responses than 200 (e.g. 500), if the content is still useful?
 - If a request failed, provide more information (Server error (statuscode) vs. RC error (reason))
 - Create more sub-namespaces and restructure the .cs files.
+- "Search later when I'm online" functionality.
+- Blacklist an URL being requested more than 10 times in an interval shorter than 10s.
 
 Code piece integration
 - Clustering
@@ -38,37 +40,27 @@ Metrics logging
   - sync cookie timeout and server "session" timeout
 - log all requests (done)
   - per user (done)
-- self reported user satisfaction
-  - html form before or after logout
-  - request for the server that logs this
+- self reported user satisfaction (done)
 - total number of cached objects (done, commented out, needs to be repeated in intervals)
 - network speed + status (done)
 
 Tests
 - Test search avg. time with >100 local search results
-- Test if queue works for offline network status.
 
 Bugs
 - Estimated network speed is sometimes negative!?
+- "DB file does not exist" when clicking a (Wikipedia) hyperlink in offline mode (Aaron).
 - en.wikipedia.org/wiki/Bananas*! (bad chars...)
 - "Failed finishing the search work item due to timeout." Indexer:809
-- HttpListenerException (close browser window) uncatched. (Hard to reproduce)
 - http://jsfiddle.net/mpRmV/5/
-- InvalidDataException in GzipWrapper:121  
-- LevelNIndex fails if clustering was aborted. e.g. Clusters.cs: 531
-- Unpack bug !?
-	- http://ros.org/wiki/tf 
+- InvalidDataException in GzipWrapper:121
 - Trotro
-  - Sometimes "Pending" does not update to "Downloading". Could be Trotro or RC bug.
+  - Inconsistent vertical spacing of the link suggestion box.
+  - Sometimes "Pending" does not update to "Downloading". Is Trotro bug, as queue.xml has "Downloading".
   - When clicking next on either local or google results, the other results should not be loaded again.
-  - needs F5 to show page is ready sometimes (can't reproduce this...)
-  - Login mechanism does not work correct
   - Embed opened pages instead of new tabs. Page inside main frame. At the moment, if you do that, you end up having Trotro inside Trotro .... (not sure we can fix this one.)
   - Click search results makes links open in the TroTro tab, this is inconsistent with opening in a new tab. (fixed for cached results, the problem with new results is that it gets redirected to the queue. this should be changed so the RCproxy filters out live results that are actually cached)
-- favicon.ico
-- https
-  - http://https//twitter.com/search?q=%23lololo bzw.
-    https://twitter.com/search?q=%23lololo (entering URI)
+- wrong https links (e.g. http://https//twitter.com/ )
 
 Webpage issues
 - http://favstar.fm/users/ubershitfacts (Infinite requests for the same item)

@@ -58,6 +58,12 @@ namespace RuralCafe
 
         [JsonProperty]
         private RequestHandler.Status _status;
+        // These two are used only on the local proxa side, for requests that have been dispatched to the remote proxy.
+        [JsonProperty]
+        private HttpStatusCode _statusCode;
+        [JsonProperty]
+        private string _errorMessage;
+
         /// <summary>
         /// The underlying web request.
         /// </summary>
@@ -138,6 +144,18 @@ namespace RuralCafe
         {
             set { _status = value; }
             get { return _status; }
+        }
+        /// <summary>The status code for dispatched requests on the LP side.</summary>
+        public HttpStatusCode StatusCode
+        {
+            set { _statusCode = value; }
+            get { return _statusCode; }
+        }
+        /// <summary>The error message for failed dispatched requests on the LP side.</summary>
+        public string ErrorMessage
+        {
+            set { _errorMessage = value; }
+            get { return _errorMessage; }
         }
         /// <summary>The web request.</summary>
         public HttpWebRequest GenericWebRequest
@@ -314,13 +332,25 @@ namespace RuralCafe
             HttpUtils.SendBody(_webRequest, _body);
 
             // get the web response for the web request
-            _webResponse = (HttpWebResponse)_webRequest.GetResponse();
+            try
+            {
+                _webResponse = (HttpWebResponse)_webRequest.GetResponse();
+            }
+            catch (WebException e)
+            {
+                _statusCode = (e.Response as HttpWebResponse).StatusCode;
+                _errorMessage = new StreamReader(e.Response.GetResponseStream()).ReadToEnd();
+                return false;
+            }
             _requestHandler.Logger.Debug("Received header: " + _webRequest.RequestUri);
+            _statusCode = _webResponse.StatusCode;
 
             FileStream writeFile = Utils.CreateFile(PackageFileName);
             if (writeFile == null)
             {
-                _requestHandler.Logger.Warn("Could not create package file: " + PackageFileName);
+                _statusCode = HttpStatusCode.InternalServerError;
+                _errorMessage = "Could not create package file";
+                _requestHandler.Logger.Warn(_errorMessage + ": " + PackageFileName);
                 return false;
             }
 
