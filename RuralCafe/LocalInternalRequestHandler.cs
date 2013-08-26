@@ -1,4 +1,5 @@
 ﻿using BzReader;
+using HtmlAgilityPack;
 using RuralCafe.Clusters;
 using RuralCafe.Database;
 using RuralCafe.Lucenenet;
@@ -12,6 +13,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Web;
 using System.Xml;
 
 namespace RuralCafe
@@ -32,6 +34,9 @@ namespace RuralCafe
         /// </summary>
         static LocalInternalRequestHandler()
         {
+            routines.Add("/newrequest.html", new RoutineMethod("NewRequestHTML",
+                new string[] { }, new Type[] { }));
+
             routines.Add("/request/index.xml", new RoutineMethod("ServeRCIndexPage", 		
  	            new string[] { "n", "c", "s" }, new Type[] { typeof(int), typeof(int), typeof(string) }));
             routines.Add("/request/search-live.xml", new RoutineMethod("ServeRCLiveResultPage",
@@ -253,11 +258,36 @@ namespace RuralCafe
         {
             string fileName = _originalRequest.Url.LocalPath.Substring(1);
             fileName = fileName.Replace('/', Path.DirectorySeparatorChar);
-            fileName = Proxy.UIPagesPath + fileName;
+            fileName = UIPagesPath + fileName;
             string contentType = Utils.GetContentTypeOfFile(fileName);
 
             _clientHttpContext.Response.ContentType = contentType;
             return new Response(fileName, true);
+        }
+
+        /// <summary>
+        /// Returns the newrequest.html frame, but let's the back link point to the original
+        /// referer, if available.
+        /// </summary>
+        public Response NewRequestHTML()
+        {
+            Uri referer = new Uri(RefererUri);
+            NameValueCollection parameterCollection = HttpUtility.ParseQueryString(referer.Query);
+            string originalReferer = parameterCollection["ref"];
+            if (originalReferer == null)
+            {
+                return DefaultPage();
+            }
+
+            string fileName = UIPagesPath + "newrequest.html";
+
+            HtmlDocument doc = new HtmlDocument();
+            doc.Load(fileName);
+            HtmlNode node = doc.DocumentNode.SelectSingleNode("//a[@id='back_link']");
+            node.SetAttributeValue("href", originalReferer);
+
+            _clientHttpContext.Response.ContentType = "text/html";
+            return new Response(doc.DocumentNode.OuterHtml, false);
         }
 
         /// <summary> 		
@@ -741,7 +771,7 @@ namespace RuralCafe
             String custidStr = custid.ToString("D3");
 
             // Open users.xml
-            String filename = Proxy.UIPagesPath + "users.xml";
+            String filename = UIPagesPath + "users.xml";
             XmlDocument doc = new XmlDocument();
             doc.Load(filename);
             XmlNode custsNode = doc.SelectSingleNode("customers");
