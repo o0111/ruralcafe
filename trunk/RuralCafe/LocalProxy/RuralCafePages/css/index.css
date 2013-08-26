@@ -71,12 +71,13 @@ hr {
 	font-size:14px;
 }
 .index_page{
-	padding-left:10px;
-	margin-bottom:5px;
+	padding:5px;
+	margin:0px 20px;
 }
 .index_page p a{
-	color:blue;
+	text-decoration: underline;
 	font-size:14px;
+	font-weight:bold;
 }
 .url{
 	color:#555;

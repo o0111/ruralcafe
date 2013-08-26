@@ -199,6 +199,13 @@ namespace RuralCafe
         {
             try
             {
+                if (_originalRequest.RawUrl.StartsWith(RC_PAGE_WITHOUT_WWW))
+                {
+                    // All internal requests without www will be redirected.
+                    _clientHttpContext.Response.Redirect(_originalRequest.RawUrl.Replace(RC_PAGE_WITHOUT_WWW, RC_PAGE));
+                    return;
+                }
+
                 Logger.Debug("Processing internal request: " + _originalRequest.Url);
 
                 String path = _originalRequest.Url.LocalPath;

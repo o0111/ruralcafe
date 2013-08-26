@@ -151,7 +151,8 @@ function itemHTML(index){
         if (itemTitle.length > 20)
                 itemTitle=itemTitle.slice(0, 20);
 	if (itemStatus=="Completed")
-		itemhtml= '<div id="'+itemId+'" class="complete_item"><div class="cancel_btn" onclick="removeRequest('+itemId+');"></div><span class="open_btn"  onclick="openPage(\''+itemURL+'\');"><span class="item_title">'+itemTitle+'</span><span class="status '+itemStatus+'" id="status_'+itemId+'">'+itemStatus+'</span></span><div class="queue_detail">'+itemTitle+'<br/><br/><span id="url_'+itemId+'"><a href='+itemURL+' target="_newtab">'+itemURL+'</a></span>';
+		itemhtml= '<div id="'+itemId+'" class="complete_item"><div class="cancel_btn" onclick="removeRequest('+itemId+');"></div><span class="open_btn"  onclick="openPage(\''+itemURL+'\');"><span class="item_title">'+itemTitle+'</span><span class="status '+itemStatus+'" id="status_'+itemId+'">'+itemStatus+'</span></span><div class="queue_detail">'+itemTitle+
+			'<br/><br/><span id="url_'+itemId+'"><a href='+itemURL+' target="_blank">'+itemURL+'</a></span>';
 	else if (itemStatus=="Downloading")
 		itemhtml= '<div id="'+itemId+'" class="queue_item"><div class="cancel_btn" onclick="removeRequest('+itemId+');"></div><span class="item_title">'+itemTitle+'</span><span class="status '+itemStatus+'" id="status_'+itemId+'"><img src="img/downloading.gif"/> '+itemStatus+'</span><div class="queue_detail">'+itemTitle+'<br/><br/><span id="url_'+itemId+'">'+itemURL+'</span>';
         else
@@ -168,7 +169,7 @@ function itemHTML(index){
 
 //open the url in a new tab
 function openPage(url){
-	window.open(url,'_newtab');
+	window.open(url,'_blank');
 }
 
 var interval;	//interval for checking request status and EST

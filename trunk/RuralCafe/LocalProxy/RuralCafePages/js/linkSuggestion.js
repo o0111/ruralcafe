@@ -209,7 +209,7 @@ function showSuggestionsXML(xmlData, linknumber) {
         // Search box
         var searchBoxValue = suggestions.getAttribute("anchorText");
         rcHtml = '<div class="rclinksuggestionOuterBox">';
-        rcHtml += '<form method="get" action="http://ruralcafe.net/result-offline.html">' +
+        rcHtml += '<form method="get" action="http://www.ruralcafe.net/result-offline.html">' +
             '<input class="rclinksuggestionSearchField" id="rcsearch_input' + linknumber + '"   type="text" name="s" value="' + searchBoxValue + '">' +
             '<input class="rclinksuggestionButton" type="submit" value="Local Search">' +
             '</form>';

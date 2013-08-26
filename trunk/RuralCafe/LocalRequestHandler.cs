@@ -233,7 +233,7 @@ namespace RuralCafe
                     // Save the request in the "without user" queue
                     string id = "" + Proxy.AddRequestWithoutUser(this);
 
-                    string redirectUrl = "http://www.ruralcafe.net/" +
+                    string redirectUrl = RC_PAGE +
                         "trotro-user.html"
                         + "?t=" + title + "&a=" + id;
                     _clientHttpContext.Response.Redirect(redirectUrl);
