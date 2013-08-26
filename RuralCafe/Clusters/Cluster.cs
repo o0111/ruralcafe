@@ -694,6 +694,7 @@ namespace RuralCafe.Clusters
         /// <param name="categoryId">The category id.</param>
         /// <param name="maxSubCategories">The maximum number of subcategories.</param>
         /// <param name="maxItems">The maximum number of items per subcategory.</param>
+        /// <param name="proxy">Proxy access to conduct a Lucene search.</param>
         /// <returns>The index.xml string.</returns>
         public static string Level2Index(string clusterXMLFile, string categoryId, int maxSubCategories, int maxItems,
             RCLocalProxy proxy)
@@ -722,11 +723,10 @@ namespace RuralCafe.Clusters
 
                 if (categoryElement.ChildNodes[i].ChildNodes.Count == 0)
                 {
-                    // XXX this is just for the current study. Do a Lucene search, if there are no items
-                    // XXX also remove the proxy method parameter, as this is only needed for lucene
+                    // Do a Lucene search, if there are no items.
                     SearchResults luceneResults = proxy.IndexWrapper.Query(
                         (categoryElement.ChildNodes[i] as XmlElement).GetAttribute(CLUSTER_FEATURES_XML_NAME),
-                        proxy.CachePath, 0, maxItems, false);
+                        proxy.CachePath, 0, maxItems, true);
 
                     // Add the results to the XML
                     LocalInternalRequestHandler.AppendSearchResultsXMLElements(luceneResults, indexDoc, subCategory as XmlElement);
@@ -751,6 +751,7 @@ namespace RuralCafe.Clusters
         /// <param name="categoryId">The category id.</param>
         /// <param name="subCategoryId">The subcategory id.</param>
         /// <param name="maxItems">The maximum number of items for the subcategory.</param>
+        /// <param name="proxy">Proxy access to conduct a Lucene search.</param>
         /// <returns>The index.xml string.</returns>
         public static string Level3Index(string clusterXMLFile, string categoryId, string subCategoryId, int maxItems,
             RCLocalProxy proxy)
@@ -783,11 +784,10 @@ namespace RuralCafe.Clusters
             XmlNode subCategory = category.AppendChild(indexDoc.ImportNode(subCategoryElement, false));
             if (subCategoryElement.ChildNodes.Count == 0)
             {
-                // XXX this is just for the current study. Do a Lucene search, if there are no items
-                // XXX also remove the proxy method parameter, as this is only needed for lucene
+                // Do a Lucene search, if there are no items.
                 SearchResults luceneResults = proxy.IndexWrapper.Query(
                     subCategoryElement.GetAttribute(CLUSTER_FEATURES_XML_NAME),
-                    proxy.CachePath, 0, maxItems, false);
+                    proxy.CachePath, 0, maxItems, true);
 
                 // Add the results to the XML
                 LocalInternalRequestHandler.AppendSearchResultsXMLElements(luceneResults, indexDoc, subCategory as XmlElement);

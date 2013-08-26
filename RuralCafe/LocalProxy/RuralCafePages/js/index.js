@@ -109,7 +109,10 @@ function showXMLLevel2(categories) {
 			if( title == "") {
 				title = url;
 			}
-			innerHtml += '<div class="index_page"><p><a href="'+url+'" target="_blank">'+title+'</a></p></div>';
+			var snippet = item.getElementsByTagName("snippet")[0].innerHTML;
+			//innerHtml += '<div class="index_page"><p><a href="'+url+'" target="_blank">'+title+'</a></p></div>';
+			innerHtml += '<div class="index_page"><p><a href="'+url+'" target="_blank">'+title+'</a><img class="cached_icon" alt="cached" src="img/cached.png" /></p><p class="url">'+url+
+			'</p><p>'+snippet+'</p></div>';
 		}
 		innerHtml += "</div>";
 	}
@@ -129,17 +132,20 @@ function showXMLLevel3(categories) {
 		+ subCatTitle + '</h1><hr />';
 	innerHtml += '<div class="index_cat_broad">';
 	for (var j=0;j<subCat.children.length;j++) {
-			var item = subCat.children[j];
-			var url = item.getElementsByTagName("url")[0].innerHTML;
-			if (url.slice(0, 7) != "http://") {
-				url = "http://" + url;
-			}
-			var title = item.getElementsByTagName("title")[0].innerHTML;
-			if( title == "") {
-				title = url;
-			}
-			innerHtml += '<div class="index_page"><p><a href="'+url+'" target="_blank">'+title+'</a></p></div>';
+		var item = subCat.children[j];
+		var url = item.getElementsByTagName("url")[0].innerHTML;
+		if (url.slice(0, 7) != "http://") {
+			url = "http://" + url;
 		}
+		var title = item.getElementsByTagName("title")[0].innerHTML;
+		if( title == "") {
+			title = url;
+		}
+		var snippet = item.getElementsByTagName('snippet')[0].firstChild?item.getElementsByTagName('snippet')[0].firstChild.nodeValue:"";
+		//innerHtml += '<div class="index_page"><p><a href="'+url+'" target="_blank">'+title+'</a></p></div>';
+		innerHtml += '<div class="index_page"><p><a href="'+url+'" target="_blank">'+title+'</a><img class="cached_icon" alt="cached" src="img/cached.png" /></p><p class="url">'+url+
+			'</p><p>'+snippet+'</p></div>';
+	}
 	innerHtml += "</div>";
 	return innerHtml;
 }
