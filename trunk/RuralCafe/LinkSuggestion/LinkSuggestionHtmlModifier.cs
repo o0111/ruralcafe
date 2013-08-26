@@ -30,32 +30,31 @@ namespace RuralCafe.LinkSuggestion
             }
             // include style document
             HtmlNode opentipStyle = doc.CreateElement("link");
-            head.AppendChild(opentipStyle);
             opentipStyle.SetAttributeValue("type", "text/css");
             opentipStyle.SetAttributeValue("rel", "stylesheet");
             opentipStyle.SetAttributeValue("href", "http://www.ruralcafe.net/css/opentip.css");
+            head.AppendChild(opentipStyle);
             // include opentip js document
             HtmlNode opentipJs = doc.CreateElement("script");
-            head.AppendChild(opentipJs);
             opentipJs.SetAttributeValue("type", "text/javascript");
             opentipJs.SetAttributeValue("src", "http://www.ruralcafe.net/js/opentip-native.min.js");
+            head.AppendChild(opentipJs);
             // include our js document
             HtmlNode ourJs = doc.CreateElement("script");
-            head.AppendChild(ourJs);
             ourJs.SetAttributeValue("type", "text/javascript");
             ourJs.SetAttributeValue("src", "http://www.ruralcafe.net/js/linkSuggestion.js");
+            head.AppendChild(ourJs);
             // include our ajax js document (Opentip ajax does not like us...)
             HtmlNode ourAjaxJs = doc.CreateElement("script");
-            head.AppendChild(ourAjaxJs);
             ourAjaxJs.SetAttributeValue("type", "text/javascript");
             ourAjaxJs.SetAttributeValue("src", "http://www.ruralcafe.net/js/ajax.js");
-
+            head.AppendChild(ourAjaxJs);
             // Include the invisible trigger element
             HtmlNode trigger = doc.CreateElement("div");
             trigger.SetAttributeValue("id", "rclink-trigger");
             body.AppendChild(trigger);
 
-            HtmlNodeCollection links = doc.DocumentNode.SelectNodes("//a");
+            HtmlNodeCollection links = doc.DocumentNode.SelectNodes("//a[not(node()[2])][text()]/@href");
             if (links != null)
             {
                 // Modify all links
