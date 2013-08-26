@@ -16,13 +16,17 @@
 				<a href="trotro.html"><img id="trotro_icon" src="img/icon.png" alt="trotro icon"/></a>
 			</h1>
 			<form method="post" action="login.html" onsubmit="return signup();">
-				<p class="login_hint">Please enter a username and password to signup.</p>
-				<p>Username:<input id="username" name="username" type="text" value=""/></p>
-				<p><span id="wrong_username" class="err_message"></span></p>
-				<p>Password:<input id="password1" name="password1" type="password" value=""/></p>
-				<p>Repeat Password:<input id="password2" name="password2" type="password" value=""/></p>
-				<p><span id="wrong_password" class="err_message"></span></p>
-				
+				<p class="login_hint">Please enter a login name and password to signup.</p>
+				<div class="signup_form">
+					<p>Login:<input id="username" name="username" type="text" value=""/><br>
+						<span id="wrong_username" class="err_message"></span>
+					</p>
+					<p>Password:<input id="password1" name="password1" type="password" value=""/>
+					</p>
+					<p>Repeat Password:<input id="password2" name="password2" type="password" value=""/><br>
+						<span id="wrong_password" class="err_message"></span>
+					</p>
+				</div>
 				<p> <input id="login" name="signupBtn" type="submit" value="Sign up"/></p>
 				<p class="err_message" id="wrong_setting"></p>
 			</form>
