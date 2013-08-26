@@ -278,11 +278,16 @@
 }
 
 /* Style for the HTML inside the tooltip. Satia */
-.rclinksuggestionOuterBox {
+.rclinksuggestion {
   text-align: left;
+  font-family: Arial, Helvetica, sans-serif;
+  text-decoration: none;
+  text-transform: none;
+}
+
+.rclinksuggestionOuterBox {
   font-size: 12pt;
   color: black;
-  font-family: Arial, Helvetica, sans-serif;
 }
 
 .rclinksuggestionInnerBox {
@@ -304,18 +309,27 @@ input.rclinksuggestionButton {
   border-color: black;
 }
 
-a.rclinksuggestion {
+a.rclinksuggestionLink {
   padding-left: 15px;
 }
 
-a.rclinksuggestion:link {
+a.rclinksuggestionLink:link {
   color:#0033cc;
   text-decoration:underline;
 }
 
 p.rclinksuggestionURL {
   font-size: 10pt;
-  color: #808080;
-  padding-top: 6px;
+  color:#555;
+  font-style:italic;
+  padding-left: 25px;
+  margin: 2px;
+}
+
+p.rclinksuggestionSnippet {
+  font-size: 10pt;
+  color: black;
+  margin-top: 2px;
+  margin-bottom: 10px;
   padding-left: 25px;
 }

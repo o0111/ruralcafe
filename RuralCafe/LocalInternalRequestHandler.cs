@@ -672,9 +672,13 @@ namespace RuralCafe
 
                 // The query is: <targetURL> <referrerURL> <anchorText> <surroundingText>
                 string queryString = url + " " + RefererUri + " " + anchorText + " " + surroundingText;
+                // Remove all http:// or https:// from the query
+                queryString = queryString.Replace("http://", "");
+                queryString = queryString.Replace("https://", "");
+
                 // We want one result more, as we're obviously going to find the referrer page
                 SearchResults luceneResults = Proxy.IndexWrapper.Query(queryString,
-                Proxy.CachePath, 0, amount + 1, false);
+                    Proxy.CachePath, 0, amount + 1, true);
 
                 // remove the referrer page from the reults
                 for (int i = 0; i < luceneResults.Results.Count; i++)

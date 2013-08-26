@@ -208,15 +208,15 @@ function showSuggestionsXML(xmlData, linknumber) {
     } else {
         // Search box
         var searchBoxValue = suggestions.getAttribute("anchorText");
-        rcHtml = '<div class="rclinksuggestionOuterBox">';
+        rcHtml = '<div class="rclinksuggestion rclinksuggestionOuterBox">';
         rcHtml += '<form method="get" action="http://www.ruralcafe.net/result-offline.html">' +
-            '<input class="rclinksuggestionSearchField" id="rcsearch_input' + linknumber + '"   type="text" name="s" value="' + searchBoxValue + '">' +
-            '<input class="rclinksuggestionButton" type="submit" value="Local Search">' +
+            '<input class="rclinksuggestion rclinksuggestionSearchField" id="rcsearch_input' + linknumber + '"   type="text" name="s" value="' + searchBoxValue + '">' +
+            '<input class="rclinksuggestion rclinksuggestionButton" type="submit" value="Local Search">' +
             '</form>';
         
         var status = suggestions.getAttribute("status");
         // Link suggestions
-        rcHtml += '<div class="rclinksuggestionInnerBox">';
+        rcHtml += '<div class="rclinksuggestion rclinksuggestionInnerBox">';
         rcHtml += "Your internet is " + status + ".";
         
         if (suggestions.children.length > 0) {
@@ -242,8 +242,9 @@ function showSuggestionsXML(xmlData, linknumber) {
                 var snippet = suggestions.children[i].getElementsByTagName('snippet')[0].firstChild ?
                     suggestions.children[i].getElementsByTagName('snippet')[0].firstChild.nodeValue : "";
                 
-                rcHtml += '<a class="rclinksuggestion" href="http://'+ url + '">' + title + '</a>';
-                rcHtml += '<p class="rclinksuggestionURL">' + shortUrl + '</p>';
+                rcHtml += '<a class="rclinksuggestion rclinksuggestionLink" href="http://'+ url + '">' + title + '</a>';
+                rcHtml += '<p class="rclinksuggestion rclinksuggestionURL">' + shortUrl + '</p>';
+                rcHtml += '<p class="rclinksuggestion rclinksuggestionSnippet">' + snippet + '</p>';
             }   
         }
         rcHtml += '</div></div>'
