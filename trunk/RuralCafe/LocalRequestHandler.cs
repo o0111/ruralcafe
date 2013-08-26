@@ -235,7 +235,7 @@ namespace RuralCafe
 
                     string redirectUrl = RC_PAGE +
                         "trotro-user.html"
-                        + "?t=" + title + "&a=" + id;
+                        + "?t=" + title + "&a=" + id + "&ref=" + RefererUri;
                     _clientHttpContext.Response.Redirect(redirectUrl);
                 }
             }
