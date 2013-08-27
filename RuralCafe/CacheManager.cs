@@ -1030,12 +1030,7 @@ namespace RuralCafe
                 }
                 catch (Exception e)
                 {
-                    _proxy.Logger.Error("Could not create database file. Deleting what we got so far.", e);
-                    try
-                    {
-                        File.Delete(dbFile);
-                    }
-                    catch (Exception) { }
+                    _proxy.Logger.Error("Could not create database file. Please retry.", e);
                     return false;
                 }
             }
@@ -1061,12 +1056,7 @@ namespace RuralCafe
                 }
                 catch (Exception e1)
                 {
-                    _proxy.Logger.Error("Could not create database file. Deleting what we got so far.", e1);
-                    try
-                    {
-                        File.Delete(dbFile);
-                    }
-                    catch (Exception) { }
+                    _proxy.Logger.Error("Could not create database file. Please retry.", e1);
                     return false;
                 }
             }
@@ -1081,12 +1071,7 @@ namespace RuralCafe
                 }
                 catch (Exception e)
                 {
-                    _proxy.Logger.Error("Could not create database file. Deleting what we got so far.", e);
-                    try
-                    {
-                        File.Delete(dbFile);
-                    }
-                    catch (Exception) { }
+                    _proxy.Logger.Error("Could not create database file.Please retry.", e);
                     return false;
                 }
 
@@ -1253,9 +1238,11 @@ namespace RuralCafe
                     databaseContext.Dispose();
                     databaseContext = GetNewDatabaseContext(false);
                     // Save creation file
-                    StreamWriter writer = new StreamWriter(Utils.CreateFile(dbCreationTextFile));
-                    writer.WriteLine(subDirInfo.Name + " "+ subsubDirInfo.Name + " " + currentCacheSize);
-                    writer.Close();
+                    using(FileStream stream = Utils.CreateFile(dbCreationTextFile))
+                    using (StreamWriter writer = new StreamWriter(stream))
+                    {
+                        writer.WriteLine(subDirInfo.Name + " " + subsubDirInfo.Name + " " + currentCacheSize);
+                    }
                 }
             }
             
@@ -1358,7 +1345,7 @@ namespace RuralCafe
             // add item
             databaseContext.GlobalCacheItem.Add(cacheItem);
 
-            
+            /* FIXME uncomment lucene
             // If we're on the local proxy, we want to add text documents to the Lucene index.
             if (_proxy is RCLocalProxy && GetHTTPMethodFromRelCacheFileName(filename).Equals("GET") &&
                 (headers["Content-Type"].Contains("text/html") || headers["Content-Type"].Contains("text/plain")))
@@ -1393,7 +1380,7 @@ namespace RuralCafe
                     _proxy.Logger.Warn("Could not add document to index.", e);
                 }
             }
-             
+             */
         }
 
         /// <summary>
