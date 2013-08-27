@@ -70,6 +70,7 @@ namespace RuralCafe
         public const string CLUSTERS_XML_FILE_NAME = "clusters.xml";
 
         private const string DATABASE_FILE_NAME = "RCDatabase.sdf";
+        private const string DATABASE_CREATION_TEXTFILE = "RCDatabase_creation.txt";
         private const int DATABASE_MAX_SIZE_MB = 4000;
         private const int DATABASE_BUFFER_MAX_SIZE_KB = 8192;
         private const int DATABASE_BULK_INSERT_THRESHOLD = 100;
@@ -1001,7 +1002,10 @@ namespace RuralCafe
         {
             string dbFile = _proxy.ProxyPath + DATABASE_FILE_NAME;
             _proxy.Logger.Info("Creating a new database file. This may take up to several hours!");
-            File.Copy(EMPTY_DATABASE_FILE_NAME, dbFile);
+            if (!File.Exists(dbFile))
+            {
+                File.Copy(EMPTY_DATABASE_FILE_NAME, dbFile);
+            }
             // We must fill the database with the current cache content!
             FillDatabaseFromCache();
         }
@@ -1015,9 +1019,10 @@ namespace RuralCafe
         private bool InitializeDatabase()
         {
             string dbFile = _proxy.ProxyPath + DATABASE_FILE_NAME;
-            if (!File.Exists(dbFile))
+            string dbCreationTextFile = _proxy.ProxyPath + DATABASE_CREATION_TEXTFILE;
+            if (!File.Exists(dbFile) || File.Exists(dbCreationTextFile))
             {
-                _proxy.Logger.Info("No database file found.");
+                _proxy.Logger.Info("No database file found or database creation not completed last time.");
                 try
                 {
                     CreateNewDatabase();
@@ -1142,6 +1147,19 @@ namespace RuralCafe
         private void FillDatabaseFromCache()
         {
             long currentCacheSize = 0;
+            string currentSubDir = null;
+            string currentSubSubDir = null;
+
+            string dbCreationTextFile = _proxy.ProxyPath + DATABASE_CREATION_TEXTFILE;
+            if (File.Exists(dbCreationTextFile))
+            {
+                string[] dbCreationFileContentArray = Utils.ReadFileAsString(dbCreationTextFile).Split(' ');
+                currentSubDir = dbCreationFileContentArray[0];
+                currentSubSubDir = dbCreationFileContentArray[1];
+                currentCacheSize = Int64.Parse(dbCreationFileContentArray[2]);
+            }
+
+            
             // We loop through each sub-sub-directory, so we don't have all fileInfos in
             // memory at a time
             DirectoryInfo cacheDirInfo = new DirectoryInfo(_cachePath);
@@ -1150,8 +1168,20 @@ namespace RuralCafe
 
             foreach (DirectoryInfo subDirInfo in cacheDirInfo.EnumerateDirectories())
             {
+                if (currentSubDir != null && subDirInfo.Name.CompareTo(currentSubDir) < 0)
+                {
+                    // We have done this dir already
+                    continue;
+                }
+
                 foreach (DirectoryInfo subsubDirInfo in subDirInfo.EnumerateDirectories())
                 {
+                    if (currentSubSubDir != null && subsubDirInfo.Name.CompareTo(currentSubSubDir) <= 0)
+                    {
+                        // We have done this dir already
+                        continue;
+                    }
+
                     List<FileInfo> files = subsubDirInfo.EnumerateFiles("*", SearchOption.AllDirectories).ToList();
                     if (files.Count == 0)
                     {
@@ -1199,7 +1229,7 @@ namespace RuralCafe
                         }
                         else
                         {
-                            // Warn and leave the old antry as it is
+                            // Warn and leave the old entry as it is
                             _proxy.Logger.Warn(String.Format("Duplicate entry in database, not adding again: {0}", relFileName));
                         }
 
@@ -1214,6 +1244,18 @@ namespace RuralCafe
                         }
                          
                     }
+
+                    // All files of that directory have been added
+                    // Save DB
+                    _proxy.Logger.Info(counter + " new files added. Directory " + subDirInfo.Name + " "
+                        + subsubDirInfo.Name + " completed. Saving database changes made so far.");
+                    databaseContext.SaveChanges();
+                    databaseContext.Dispose();
+                    databaseContext = GetNewDatabaseContext(false);
+                    // Save creation file
+                    StreamWriter writer = new StreamWriter(Utils.CreateFile(dbCreationTextFile));
+                    writer.WriteLine(subDirInfo.Name + " "+ subsubDirInfo.Name + " " + currentCacheSize);
+                    writer.Close();
                 }
             }
             
@@ -1222,6 +1264,8 @@ namespace RuralCafe
             databaseContext.SaveChanges();
             _proxy.Logger.Info("Saved " + CachedItems(databaseContext) + " items in the database.");
             databaseContext.Dispose();
+            // Delete creation file
+            Utils.DeleteFile(dbCreationTextFile);
         }
 
         /// <summary>
@@ -1314,6 +1358,7 @@ namespace RuralCafe
             // add item
             databaseContext.GlobalCacheItem.Add(cacheItem);
 
+            
             // If we're on the local proxy, we want to add text documents to the Lucene index.
             if (_proxy is RCLocalProxy && GetHTTPMethodFromRelCacheFileName(filename).Equals("GET") &&
                 (headers["Content-Type"].Contains("text/html") || headers["Content-Type"].Contains("text/plain")))
@@ -1348,6 +1393,7 @@ namespace RuralCafe
                     _proxy.Logger.Warn("Could not add document to index.", e);
                 }
             }
+             
         }
 
         /// <summary>
