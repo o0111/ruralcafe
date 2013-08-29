@@ -191,7 +191,7 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Unpacks the package contents and indexes them.
+        /// Unpacks the package contents and indexes them. Throws an Exception if anything goes wrong.
         /// </summary>
         /// <param name="requestHandler">Calling handler for this method.</param>
         /// <param name="rcheaders">The rc specific headers.</param>
@@ -203,8 +203,7 @@ namespace RuralCafe
             if (packageIndexSize == 0 || packageContentSize == 0)
             {
                 // This is an internal error that should not happen!
-                requestHandler.Logger.Warn("problem unpacking: package index or content size is 0.");
-                return -1;
+                throw new Exception("problem unpacking: package index or content size is 0.");
             }
             
             string packageFileName = requestHandler.PackageFileName;
@@ -223,8 +222,7 @@ namespace RuralCafe
                 if(read == 0)
                 {
                     // This should not happen
-                    requestHandler.Logger.Warn("problem unpacking: could not read index.");
-                    return -1;
+                    throw new Exception("problem unpacking: could not read index.");
                 }
                 bytesOfIndexRead += read;
             }
@@ -249,8 +247,7 @@ namespace RuralCafe
 
                     if (firstLineArray.Length != 3)
                     {
-                        requestHandler.Logger.Error("unparseable entry: " + packageContentArr[i]);
-                        return -1;
+                        throw new Exception("unparseable entry: " + packageContentArr[i]);
                     }
                     short statusCode;
                     long fileSize;
@@ -259,37 +256,27 @@ namespace RuralCafe
                         statusCode = Int16.Parse(firstLineArray[0]);
                         fileSize = Int64.Parse(firstLineArray[1]);
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
-                        requestHandler.Logger.Warn("problem unpacking: " + packageContentArr[i], e);
-                        return -1;
+                        throw new Exception("unparseable entry: " + packageContentArr[i]);
                     }
                     string fileName = firstLineArray[2];
-                    //string currUri = firstLineArray[2];
 
                     string headersJson = packageContentArr[i + 1];
                     NameValueCollection headers = JsonConvert.DeserializeObject<NameValueCollection>(headersJson,
                         new NameValueCollectionConverter());
 
-                    try
+                    if (requestHandler.Proxy.ProxyCacheManager.CreateOrUpdateFileAndWrite(fileName,
+                        fileSize, packageFs))
                     {
-                        if (requestHandler.Proxy.ProxyCacheManager.CreateOrUpdateFileAndWrite(fileName,
-                            fileSize, packageFs))
-                        {
-                            unpackedBytes += fileSize;
+                        unpackedBytes += fileSize;
 
-                            GlobalCacheItemToAdd newItem = new GlobalCacheItemToAdd();
-                            newItem.filename = fileName;
-                            newItem.headers = headers;
-                            newItem.statusCode = statusCode;
+                        GlobalCacheItemToAdd newItem = new GlobalCacheItemToAdd();
+                        newItem.filename = fileName;
+                        newItem.headers = headers;
+                        newItem.statusCode = statusCode;
 
-                            itemsToAdd.Add(newItem);
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        requestHandler.Logger.Warn("Problem unpacking: ", e);
-                        return -1;
+                        itemsToAdd.Add(newItem);
                     }
                 }
             }
@@ -303,7 +290,7 @@ namespace RuralCafe
                 if (!requestHandler.Proxy.ProxyCacheManager.AddCacheItemsForExistingFiles(itemsToAdd))
                 {
                     // Adding to the DB failed
-                    unpackedBytes = - 1;
+                    throw new Exception("Adding an item to the database failed.");
                 }
             }
 

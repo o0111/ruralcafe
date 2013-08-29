@@ -98,6 +98,7 @@ namespace RuralCafe
         {
             if (!CheckIfBlackListedOrInvalidUri())
             {
+                SendErrorPage(HttpStatusCode.InternalServerError, "Blacklisted or invalid URL.");
                 DisconnectSocket();
                 return;
             }
@@ -132,7 +133,7 @@ namespace RuralCafe
                 {
                     errmsg += " " + _originalRequest.RawUrl.ToString();
                 }
-                Logger.Warn(errmsg, e);
+                errmsg += " " + e.Message;
                 SendErrorPage(HttpStatusCode.InternalServerError, errmsg);
             }
             finally
@@ -143,7 +144,6 @@ namespace RuralCafe
                 }
                 LogResponse();
             }
-
             // do NOT close the socket for queued items till dispatcher is done.
         }
 
@@ -171,11 +171,18 @@ namespace RuralCafe
             Logger.Debug("dispatching to content servers: " + RequestUri);
             if (RecursivelyDownloadPage(RCRequest, richness, 0))
             {
-                RCRequest.FileSize = SendResponsePackage();
+                try
+                {
+                    RCRequest.FileSize = SendResponsePackage();
+                }
+                catch (Exception e)
+                {
+                    RCRequest.FileSize = -1;
+                    SendErrorPage(HttpStatusCode.InternalServerError, e.Message);
+                }
             }
 
             DisconnectSocket();
-
             // thread dies upon return
         }
 
@@ -310,8 +317,13 @@ namespace RuralCafe
         /// <returns>Wheter something was downloaded successfully.</returns>
         public bool RecursivelyDownloadPage(RCRequest rcRequest, Richness richness, int depth)
         {
-            if (_killYourself ||_quota < DEFAULT_LOW_WATERMARK)
+            if (_killYourself || _quota < DEFAULT_LOW_WATERMARK)
             {
+                // Send error page if we're on top level
+                if (depth == 0)
+                {
+                    SendErrorPage(HttpStatusCode.InternalServerError, "Request aborted or it does not fit in quota.");
+                }
                 return false;
             }
 
@@ -343,22 +355,36 @@ namespace RuralCafe
             }
 
             // Only download for POST/... or not already existing items
-            bool success;
             if (!IsGetOrHeadHeader() || !_proxy.ProxyCacheManager.IsCached(rcRequest.RelCacheFileName))
             {
                 // Download!
-                success = rcRequest.DownloadToCache();
+                try
+                {
+                    rcRequest.DownloadToCache();
+                }
+                catch (Exception e)
+                {
+                    Logger.Warn("[depth = " + depth + "] error downloading: " + rcRequest.Uri + " " + e.Message);
+                    // Send error page if we're on top level
+                    if (depth == 0)
+                    {
+                        if (e is WebException)
+                        {
+                            WebException exp = e as WebException;
+                            HttpWebResponse response = (e as WebException).Response as HttpWebResponse;
+                            SendErrorPage(response != null ? response.StatusCode : HttpStatusCode.InternalServerError, e.Message);
+                        }
+                        else
+                        {
+                            SendErrorPage(HttpStatusCode.InternalServerError, e.Message);
+                        }
+                    }
+                    return false;
+                }
             }
             else
             {
-                success = true;
                 Logger.Debug("Already existed: " + rcRequest.Uri);
-            }
-            
-            if (!success)
-            {
-                Logger.Warn("[depth = " + depth + "] error downloading: " + rcRequest.Uri);
-                return false;
             }
 
             // add to the package
@@ -381,7 +407,7 @@ namespace RuralCafe
             {
                 return true;
             }
-            // Getting embedded objects and recursing only makes sence for html pages.
+            // Getting embedded objects and recursing only makes sense for html pages.
             Uri baseUri = new Uri(rcRequest.Uri);
             string htmlContent = Utils.ReadFileAsString(rcRequest.CacheFileName).ToLower();
 
@@ -442,70 +468,6 @@ namespace RuralCafe
             embeddedObjects = filteredEmbeddedObjects;
 
             return DownloadObjectsInParallel(rcRequest, embeddedObjects);
-        }
-
-        /// <summary>
-        /// Downloads a set of URIs in series.
-        /// 
-        /// DEPRECATED
-        /// </summary>
-        /// <param name="parentRequest">Root request.</param>
-        /// <param name="children">Children requests to be downloaded.</param>
-        /// <returns>List of downloaded requests.</returns>
-        private LinkedList<RCRequest> DownloadObjects(RCRequest parentRequest, LinkedList<RCRequest> children)
-        {
-            LinkedList<RCRequest> addedObjects = new LinkedList<RCRequest>();
-
-            if (children.Count == 0)
-            {
-                return addedObjects;
-            }
-
-            parentRequest.ResetEvents = new ManualResetEvent[children.Count];
-
-            try
-            {
-                // queue up worker threads to download URIs
-                for (int i = 0; i < children.Count; i++)
-                {
-                    RCRequest currChild = children.ElementAt(i);
-                    // make sure we haven't downloaded this before
-                    if (_package.RCRequests.Contains(currChild))
-                    {
-                        // skip it
-                        parentRequest.SetDone();
-                        continue;
-                    }
-
-                    // reduce the timer
-                    DateTime currTime = DateTime.Now;
-                    DateTime endTime = parentRequest.StartTime.AddMilliseconds(RequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT);
-                    if (endTime.CompareTo(currTime) > 0)
-                    {
-                        currChild.GenericWebRequest.Timeout = (int)(endTime.Subtract(currTime)).TotalMilliseconds;
-                    }
-                    else
-                    {
-                        currChild.GenericWebRequest.Timeout = 0;
-                    } 
-                     
-                    // download the page
-                    currChild.DownloadToCache();
-
-                    if (IsTimedOut())
-                    {
-                        break;
-                    }
-                }
-
-                addedObjects = _package.Pack(this, children, ref _quota);
-            }
-            catch (Exception e)
-            {
-                Logger.Warn("unable to download embeddedObjects.", e);
-            }
-
-            return addedObjects;
         }
 
         /// <summary>
@@ -607,7 +569,11 @@ namespace RuralCafe
                     if (!_proxy.ProxyCacheManager.IsCached(request.RelCacheFileName))
                     {
                         // Download!
-                        request.DownloadToCache();
+                        try
+                        {
+                            request.DownloadToCache();
+                        }
+                        catch { } // Ignore
                     }
                 }
                 else
@@ -617,7 +583,6 @@ namespace RuralCafe
             }
 
             // mark this thread as done
-            //LogDebug("Child Number: " + request.ChildNumber + " done.");
             request.SetDone();
         }
 
@@ -631,17 +596,10 @@ namespace RuralCafe
         public long SendResponsePackage()
         {
             // build the package index
-            try
-            {
-                _package.BuildPackageIndex(PackageFileName, Proxy.ProxyCacheManager);
-            }
-            catch (Exception e)
-            {
-                Logger.Warn("Could not create package file: ", e);
-                return -1;
-            }
+            _package.BuildPackageIndex(PackageFileName, Proxy.ProxyCacheManager);
 
-            Logger.Debug("sending results package: " + (_package.IndexSize + _package.ContentSize) + " bytes at " + _proxy.MAXIMUM_DOWNLINK_BANDWIDTH + " bytes per second.");
+            Logger.Debug("sending results package: " + (_package.IndexSize + _package.ContentSize) +
+                " bytes at " + _proxy.MAXIMUM_DOWNLINK_BANDWIDTH + " bytes per second.");
 
             // Add response headers
             RCSpecificResponseHeaders headers = new RCSpecificResponseHeaders(_package.IndexSize, _package.ContentSize);

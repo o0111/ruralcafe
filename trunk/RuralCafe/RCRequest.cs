@@ -359,7 +359,7 @@ namespace RuralCafe
             long bytesDownloaded = 0;
             using (writeFile)
             {
-                // No text. Read buffered.
+                // Read buffered.
                 int bytesRead = contentStream.Read(readBuffer, 0, readBuffer.Length);
                 while (bytesRead != 0)
                 {
@@ -372,10 +372,8 @@ namespace RuralCafe
             }
             _requestHandler.Logger.Debug("received: " + _webResponse.ResponseUri + " "
                     + bytesDownloaded + " bytes.");
-            // TODO instead of using the download size to detect errors,
-            // we should use HTTP status codes on the remote side, if something goes wrong
-            // and surround _webRequest.GetResponse() with try/catch and handle errors
-            // accordingly
+            // Generelly we should receive more than 0 bytes, if there was no exception.
+            // We keep this anyway, in case we overlooked something.
             return bytesDownloaded > 0;
         }
 
@@ -384,9 +382,10 @@ namespace RuralCafe
         /// Used for both local and remote proxy requests.
         /// 
         /// Replaces existing files.
+        /// 
+        /// Cleans up, but rethrows any exceptions. Also throws own exceptions, if something goes wrong.
         /// </summary>
-        /// <returns>True for success, false for failure.</returns>
-        public bool DownloadToCache()
+        public void DownloadToCache()
         {
             CacheManager cacheManager = _requestHandler.GenericProxy.ProxyCacheManager;
 
@@ -437,7 +436,7 @@ namespace RuralCafe
                     {
                         _requestHandler.Logger.Debug("Already exists: " +
                             _webResponse.Method + " " + uri);
-                        return true;
+                        return;
                     }
                 }
 
@@ -446,8 +445,8 @@ namespace RuralCafe
                 {
                     // clean up the (partial) download
                     cacheManager.RemoveCacheItemFromDisk(_cacheFileName);
-                    _requestHandler.Logger.Debug("failed: " + Uri);
-                    return false;
+                    _requestHandler.Logger.Debug("failed, could not add item to the database or cache: " + Uri);
+                    throw new Exception("Could not add item to the database or cache.");
                 }
             }
             catch (Exception e)
@@ -456,10 +455,8 @@ namespace RuralCafe
                 // clean up the (partial) download
                 cacheManager.RemoveCacheItemFromDisk(_cacheFileName);
                 _requestHandler.Logger.Debug("failed: " + Uri, e);
-                return false;
+                throw;
             }
-
-            return true;
         }
     }
 }
