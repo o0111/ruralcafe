@@ -33,6 +33,7 @@ using RuralCafe.Util;
 using Microsoft.Win32;
 using RuralCafe.Json;
 using RuralCafe.Wiki;
+using System.Xml;
 
 namespace RuralCafe
 {
@@ -314,6 +315,9 @@ namespace RuralCafe
             // Log cache metrics
             _cacheManager.LogCacheMetrics();
 
+            // Log number of registered users
+            LogNumberOfUsers();
+
             // Clustering
             DateTime now = DateTime.Now;
 
@@ -340,6 +344,18 @@ namespace RuralCafe
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Logs the number of registered users.
+        /// </summary>
+        private void LogNumberOfUsers()
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.Load(UIPagesPath + "users.xml");
+
+            int num = doc.DocumentElement.ChildNodes.Count;
+            Logger.Metric("Registered users: " + num);
         }
         
         #region Network status detection

@@ -42,6 +42,7 @@ Metrics logging (done)
   - per user (done)
 - self reported user satisfaction (done)
 - total number of cached objects (done)
+- number of registered users (done)
 - network speed + status (done)
 
 Tests
