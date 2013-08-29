@@ -450,8 +450,11 @@ namespace RuralCafe
         /// </summary>
         public void LogCacheMetrics()
         {
-            _proxy.Logger.Metric("Cache Items: " + AllFiles().Count);
-            _proxy.Logger.Metric("Cache Items with text/html mimetype: " + TextFiles().Count);
+            using (RCDatabaseEntities databaseContext = GetNewDatabaseContext(false))
+            {
+                _proxy.Logger.Metric("Cache Items: " + CachedItems(databaseContext));
+                _proxy.Logger.Metric("Cache Items with text/html mimetype: " + TextFiles(databaseContext).Count);
+            }
         }
 
         /// <summary>
@@ -1687,8 +1690,9 @@ namespace RuralCafe
         /// Gets all files that have Content-Type: text/html or text/plain
         /// The database IS used.
         /// </summary>
+        /// <param name="databaseContext">The database context.</param>
         /// <returns>A list of filenames of all text files in the cache.</returns>
-        private List<string> TextFiles()
+        private List<string> TextFiles(RCDatabaseEntities databaseContext)
         {
             // Old version without DB
             //List<string> dirResults = Directory.EnumerateFiles(_cachePath, "*", SearchOption.AllDirectories)
@@ -1698,16 +1702,13 @@ namespace RuralCafe
             // Request all filenames where the header has the specified content type. Contains looks dirty
             // as we save the headers in JSON format. This is faster as deserializing before testing,
             // as SQL can do it for as.
-            using (RCDatabaseEntities databaseContext = GetNewDatabaseContext(false))
-            {
-                List<string> dbResults = (from gci in databaseContext.GlobalCacheItem
-                                          where gci.responseHeaders.Contains("\"Content-Type\":[\"text/html") ||
-                                            gci.responseHeaders.Contains("\"Content-Type\":[\"text/plain")
-                                          select gci.filename).ToList();
-                // Convert relative to global filenames (extra step as the above is converted into SQL, where this
-                // cannot be done)
-                return (from relFile in dbResults select _cachePath + relFile).ToList();
-            }
+            List<string> dbResults = (from gci in databaseContext.GlobalCacheItem
+                                      where gci.responseHeaders.Contains("\"Content-Type\":[\"text/html") ||
+                                        gci.responseHeaders.Contains("\"Content-Type\":[\"text/plain")
+                                      select gci.filename).ToList();
+            // Convert relative to global filenames (extra step as the above is converted into SQL, where this
+            // cannot be done)
+            return (from relFile in dbResults select _cachePath + relFile).ToList();
         }
 
         /// <summary>
@@ -1747,7 +1748,10 @@ namespace RuralCafe
             // get files
             _proxy.Logger.Debug("Clustering (1/6): Getting all text files.");
             stopwatch.Start();
-            textFiles = TextFiles();
+            using (RCDatabaseEntities databaseContext = GetNewDatabaseContext(false))
+            {
+                textFiles = TextFiles(databaseContext);
+            }
             stopwatch.Stop();
             _proxy.Logger.Debug("Custering (1/6): Getting all text files took: " + stopwatch.Elapsed.TotalSeconds + "s");
 

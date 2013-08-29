@@ -31,7 +31,7 @@ namespace RuralCafe
         }
 
         // Constants
-        private const long sessionTimeoutS = 60 * 60 * 24 * 14; // 2 weeks
+        private const long SESSION_TIMEOUT_S = 60 * 60 * 24; // 24 hours
         
         // TODO auto remove aufter timeout
         // All users currently logged in.
@@ -77,7 +77,7 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Gets the user id of a logged in user by its ip or -1.
+        /// Gets the user id of a logged in user by its IP or -1.
         /// </summary>
         /// <param name="ip">The IP address of the client.</param>
         /// <returns>The user id or -1.</returns>
@@ -86,6 +86,14 @@ namespace RuralCafe
             LoggedInUser user;
             if(usersLoggedIn.TryGetValue(ip, out user))
             {
+                // Check if the user session is expired!
+                if (user.timeOfLogin.AddSeconds(SESSION_TIMEOUT_S).CompareTo(DateTime.Now) < 0)
+                {
+                    // Expired. Log the user out and return -1
+                    LogUserOut(user.userId);
+                    return -1;
+                }
+
                 return user.userId;
             }
             return -1;

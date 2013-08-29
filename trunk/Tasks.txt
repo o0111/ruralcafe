@@ -11,6 +11,7 @@ Mayor tasks
 	- Directory hashes - better solution ideas?
 
 Minor tasks
+- Move Login/Logout mechanism completely to Server side.
 - Use unix file names to support longer file names: http://blogs.msdn.com/b/bclteam/archive/2007/02/13/long-paths-in-net-part-1-of-3-kim-hamilton.aspx
 - Limit outgoing requests like incoming (_activeRequests)
 - At first hardcoded percentage of _maxInflightRequests that have to be non-streamed ones.
@@ -33,14 +34,14 @@ Code piece integration
 	- Run crawler button in UI, to build a download a cache based on predefined topics ?
 	- Integrate the database creation into the crawler.
 
-Metrics logging
+Metrics logging (done)
 - Save IP per userId (done)
 - login/logout request (just let the server know) (done)
-  - sync cookie timeout and server "session" timeout
+  - sync cookie timeout and server "session" timeout (done)
 - log all requests (done)
   - per user (done)
 - self reported user satisfaction (done)
-- total number of cached objects (done, commented out, needs to be repeated in intervals)
+- total number of cached objects (done)
 - network speed + status (done)
 
 Tests

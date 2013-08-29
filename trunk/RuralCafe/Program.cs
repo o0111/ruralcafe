@@ -290,9 +290,6 @@ namespace RuralCafe
             // load the blacklisted domains
             localProxy.LoadBlacklist("blacklist.txt");
 
-            // Log cache metrics
-            // localProxy.ProxyCacheManager.LogCacheMetrics();
-
             // start local listener thread
             Thread localListenerThread = new Thread(new ThreadStart(localProxy.StartListener));
             localListenerThread.Name = "localListenerThread";
@@ -308,8 +305,8 @@ namespace RuralCafe
             localRequesterThread.Name = "localRequesterThread";
             localRequesterThread.Start();
 
-            // Start the clustering timer
-            localProxy.StartClusteringTimer();            
+            // Start the timer
+            localProxy.StartPeriodicTimer();            
 
             // listen for cc connection
             return localProxy;

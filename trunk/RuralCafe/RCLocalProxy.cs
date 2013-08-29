@@ -62,9 +62,10 @@ namespace RuralCafe
         private const double THRESHOLD_PERCENT_ANTI_FLAPPING = 0.1;
         // .. for clustering XXX customizable?
 
-        // This is the interval the time is being checked. The clustering is run once daily
-        // between 5 and 6 o' clock.
-        private static readonly TimeSpan CLUSTERING_INTERVAL = new TimeSpan(1, 0, 0);
+        // This is the interval in which certain periodic things are done:
+        // * The time is being checked and if it's between 5 a.m. and 6 a.m. the clustering is run.
+        // * The cache metrics are logged.
+        private static readonly TimeSpan PERIODIC_INTERVAL = new TimeSpan(1, 0, 0);
         private const int CLUSTERING_K = 20;
         private const bool CLUSTERING_HIERARCHICAL = true;
         private const int CLUSTERING_CAT_NFEATURES = 2;
@@ -106,9 +107,9 @@ namespace RuralCafe
         /// </summary>
         private Timer _changeNetworkStatusTimer;
         /// <summary>
-        /// The timer that does the clustering.
+        /// The timer that does the periodic stuff mentioned above.
         /// </summary>
-        private Timer _clusteringTimer;
+        private Timer _periodicTimer;
         /// <summary>
         /// A variable telling whether the clustering is currently running.
         /// </summary>
@@ -287,28 +288,33 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Starts the clustering timer.
+        /// Starts the periodic timer.
         /// </summary>
-        public void StartClusteringTimer()
+        public void StartPeriodicTimer()
         {
-            // Every x hours, re-cluster the cache in an own thread.
-            _clusteringTimer = new Timer(StartClustering, null, CLUSTERING_INTERVAL, CLUSTERING_INTERVAL);
+            // Every 1 hour do the stuff we have to do.
+            _periodicTimer = new Timer(PeriodicTasks, null, PERIODIC_INTERVAL, PERIODIC_INTERVAL);
             // Start the clustering now and pass true. Like this, the method knows
             // it should check if the old file is older than one day.
-            StartClustering(true);
+            PeriodicTasks(true);
         }
 
         /// <summary>
-        /// Starts the clustering. This method is called periodically
-        /// by a timer in a new thread.
+        /// This method is called periodically by a timer in a new thread.
+        /// 
+        /// Logs the cache metrics.
         /// 
         /// Starts the clustering if it is between 5 and 6 or if the last creation is more than a day ago.
         /// Only starts if the clustering is not currently running.
         /// </summary>
         /// <param name="o">When this is null, the time must be between 5 and 6 to run the clustering.
         /// If this is not null, the old file must be older than one day.</param>
-        private void StartClustering(object o)
+        private void PeriodicTasks(object o)
         {
+            // Log cache metrics
+            _cacheManager.LogCacheMetrics();
+
+            // Clustering
             DateTime now = DateTime.Now;
 
             // if (false)
@@ -317,7 +323,7 @@ namespace RuralCafe
                 (ProxyCacheManager.GetClusteringTimeStamp().AddDays(1).CompareTo(now) < 0))
             {
                 bool doClustering = false;
-                lock (_clusteringTimer)
+                lock (_periodicTimer)
                 {
                     if (!clusteringRunning)
                     {
@@ -328,7 +334,7 @@ namespace RuralCafe
                 {
                     ProxyCacheManager.CreateClusters(CLUSTERING_K, CLUSTERING_CAT_NFEATURES, CLUSTERING_SUBCAT_NFEATURES,
                     CLUSTERING_HIERARCHICAL, CLUSTERING_MAXCATEGORIES);
-                    lock (_clusteringTimer)
+                    lock (_periodicTimer)
                     {
                         clusteringRunning = false;
                     }
