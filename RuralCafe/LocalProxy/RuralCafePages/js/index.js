@@ -6,8 +6,8 @@ var ixhttp = 0;		//ajax request for retrieving index topics
 var lvl1noc=10; 	// level1: max number of categories
 var lvl1nos=5;		// level1: max number of subcategories per category
 var lvl2nos=10; 	// level2: max number of subcategories
-var lvl2nol=5;		// level2: max number of links per subcategory
-var lvl3nol=20;		// level3: max number of links
+var lvl2nol=3;		// level2: max number of links per subcategory
+var lvl3nol=10;		// level3: max number of links
 
 //initiate the index page
 window.onload=function () {

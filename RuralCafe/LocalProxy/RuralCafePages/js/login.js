@@ -2,6 +2,7 @@
 
 var xmlDoc = 0;	//xml object for user accounts
 var xhttp = 0;	//ajax request for checking user account
+var session_timeout_ms = 1000 * 60 * 60 * 24; // 24 hours
 
 //display error messages for empty fields, if user does not exist or wrong password
 function redirectUser() {
@@ -34,9 +35,13 @@ function redirectUser() {
 							document.location = "trotro-user.html?u="+xmlId+'&'+path.slice(index);
 						else
 							document.location = "trotro-user.html?u="+xmlId;
-						document.cookie = "uid="+xmlId;
-						document.cookie = "uname="+xmlUser;
-						
+							
+						// Set cookies
+						var date = new Date();
+						date.setTime(date.getTime() + session_timeout_ms);
+						var cookieExp = "; expires=" + date.toGMTString() + "; path=/";
+						document.cookie = "uid=" + xmlId + cookieExp;
+						document.cookie = "uname=" + xmlUser + cookieExp;
 						
 						// let the server know
 						var loginRequest= new ajaxRequest();       
