@@ -522,7 +522,16 @@ namespace RuralCafe
             HttpUtils.CopyWebResponse(_clientHttpContext.Response, serverResponse);
 
             // Stream 
-            long length = StreamToClient(serverResponse.GetResponseStream());
+            long length;
+            try
+            {
+                length = StreamToClient(serverResponse.GetResponseStream());
+            }
+            catch (Exception e)
+            {
+                length = -1;
+                SendErrorPage(HttpStatusCode.InternalServerError, e.Message);
+            }
 
             if (serverResponse.ContentLength != -1)
             {
@@ -601,11 +610,9 @@ namespace RuralCafe
                 long bytes = Utils.Stream(ms, output);
                 return bytes;
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                // XXX: don't think this is the way to handle such an error.
-                SendErrorPage(HttpStatusCode.InternalServerError, 
-                    "problem streaming the package from disk to client: " + e.StackTrace + " " + e.Message);
+                throw;
             }
             finally
             {
@@ -614,7 +621,6 @@ namespace RuralCafe
                     ms.Close();
                 }
             }
-            return -1;
         }
 
         /// <summary>
@@ -627,12 +633,12 @@ namespace RuralCafe
         protected Status StreamToCacheAndClient()
         {
             Logger.Debug("streaming: " + _rcRequest.GenericWebRequest.RequestUri + " to cache and client.");
-            // Download, which potentially also replaces
-            bool downloadSuccessful = _rcRequest.DownloadToCache();
             try
             {
+                // Download, which potentially also replaces
+                _rcRequest.DownloadToCache();
                 FileInfo f = new FileInfo(_rcRequest.CacheFileName);
-                if (downloadSuccessful && f.Exists)
+                if (f.Exists)
                 {
                     try
                     {
@@ -648,14 +654,15 @@ namespace RuralCafe
                 }
                 else
                 {
+                    SendErrorPage(HttpStatusCode.InternalServerError, "File does not exist.");
                     return Status.Failed;
                 }
             }
-            catch
+            catch (Exception e)
             {
-                // do nothing
+                SendErrorPage(HttpStatusCode.InternalServerError, e.Message);
+                return Status.Failed;
             }
-            return Status.Failed;
         }
 
         #endregion
@@ -832,7 +839,6 @@ namespace RuralCafe
         /// Sends a string to the client socket. Must not be called more than once per request!
         /// </summary>
         /// <param name="strMessage">The string message to send.</param>
-        /// <returns>Returns the length of the message sent or -1 if failed.</returns>
         protected void SendMessage(string strMessage)
         {
             try

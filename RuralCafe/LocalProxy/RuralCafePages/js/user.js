@@ -47,12 +47,12 @@ addLoadEvent(loadOffline);
 //initiate the user queue
 function loadQueue(requestURL){
 	clearCountDown();
-    xhttp= new ajaxRequest();
+	xhttp= new ajaxRequest();
 	if (xhttp.overrideMimeType)
 		xhttp.overrideMimeType('text/xml');
-    xhttp.onreadystatechange = showXML;        
-    xhttp.open("GET",requestURL,true);
-    xhttp.send(null);
+	xhttp.onreadystatechange = showXML;        
+	xhttp.open("GET",requestURL,true);
+	xhttp.send(null);
 }
 
 //add a new request with given item title and item url 
@@ -123,9 +123,8 @@ function showXML(searchString){
 			var innerHtml='';
 			results=xmldata.getElementsByTagName("item");
 			for (i=results.length-1;i>=Math.max(0,results.length-ipp);i--){
-				innerHtml+=itemHTML(i);
+				innerHtml += itemHTML(i);
 			}
-			//i=1
 			document.getElementById('update_area').innerHTML=innerHtml;
 			document.getElementById('left_btn').style.display="none";
 			if (results.length<=ipp)
@@ -145,25 +144,37 @@ function itemHTML(index){
 	var itemTitle=results[index].getElementsByTagName('title')[0].firstChild.nodeValue;
 	var itemURL=results[index].getElementsByTagName('url')[0].firstChild.nodeValue;
 	var itemStatus=results[index].getElementsByTagName('status')[0].firstChild.nodeValue;
-	var itemSize=results[index].getElementsByTagName('size')[0].firstChild.nodeValue;	
+	var itemSize=results[index].getElementsByTagName('size')[0].firstChild.nodeValue; //ignored ATM
+	var itemStatusCode=results[index].getElementsByTagName('statusCode')[0].firstChild != null ?
+		results[index].getElementsByTagName('statusCode')[0].firstChild.nodeValue : "OK";
+	var itemErrorMessage=results[index].getElementsByTagName('errorMessage')[0].firstChild != null?
+		results[index].getElementsByTagName('errorMessage')[0].firstChild.nodeValue : "";
+	
 	var itemhtml="";
         // make sure it fits on display
         if (itemTitle.length > 20)
                 itemTitle=itemTitle.slice(0, 20);
-	if (itemStatus=="Completed")
+	if (itemStatus=="Completed") {
 		itemhtml= '<div id="'+itemId+'" class="complete_item"><div class="cancel_btn" onclick="removeRequest('+itemId+');"></div><span class="open_btn"  onclick="openPage(\''+itemURL+'\');"><span class="item_title">'+itemTitle+'</span><span class="status '+itemStatus+'" id="status_'+itemId+'">'+itemStatus+'</span></span><div class="queue_detail">'+itemTitle+
 			'<br/><br/><span id="url_'+itemId+'"><a href='+itemURL+' target="_blank">'+itemURL+'</a></span>';
-	else if (itemStatus=="Downloading")
+	}
+	else if (itemStatus=="Downloading") {
 		itemhtml= '<div id="'+itemId+'" class="queue_item"><div class="cancel_btn" onclick="removeRequest('+itemId+');"></div><span class="item_title">'+itemTitle+'</span><span class="status '+itemStatus+'" id="status_'+itemId+'"><img src="img/downloading.gif"/> '+itemStatus+'</span><div class="queue_detail">'+itemTitle+'<br/><br/><span id="url_'+itemId+'">'+itemURL+'</span>';
-        else
+	}
+        else {
 		itemhtml= '<div id="'+itemId+'" class="queue_item"><div class="cancel_btn" onclick="removeRequest('+itemId+');"></div><span class="item_title">'+itemTitle+'</span><span class="status '+itemStatus+'" id="status_'+itemId+'">'+itemStatus+'</span><div class="queue_detail">'+itemTitle+'<br/><br/><span id="url_'+itemId+'">'+itemURL+'</span>';
-	if (itemStatus!="Pending")
-		itemhtml+='<br/><br/>Size: '+itemSize;
+        }
+	
+	if (itemStatus=="Failed") {
+		itemhtml += "<br/><br/><b>" + itemStatusCode  + "</b><br/>" + itemErrorMessage;
+	}
 	itemhtml+='</div></div>';
 	//pending
-	if (status!="offline")
-		if (itemStatus=="Downloading" || itemStatus=="Pending")
+	if (status!="offline") {
+		if (itemStatus=="Downloading" || itemStatus=="Pending") {
 			startCountDown(itemId);
+		}
+	}
 	return itemhtml;
 }
 

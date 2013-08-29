@@ -309,21 +309,24 @@ namespace RuralCafe
             {
                 RCSpecificResponseHeaders headers = GetRCSpecificResponseHeaders();
 
-                long unpackedBytes = Package.Unpack(this, headers);
-                if (unpackedBytes > 0)
+                try
                 {
+                    long unpackedBytes = Package.Unpack(this, headers);
                     Logger.Debug("unpacked: " + RequestUri);
                     RCRequest.FileSize = unpackedBytes;
                     RequestStatus = RequestHandler.Status.Completed;
                 }
-                else
+                catch (Exception e)
                 {
-                    Logger.Warn("failed to unpack: " + RequestUri);
+                    Logger.Warn("failed to unpack: " + RequestUri + " " + e.Message);
+                    RCRequest.StatusCode = HttpStatusCode.InternalServerError;
+                    RCRequest.ErrorMessage = e.Message;
                     RequestStatus = RequestHandler.Status.Failed;
                 }
             }
             else
             {
+                // in this case RCRequest statusCode and error message have already been set.
                 RequestStatus = RequestHandler.Status.Failed;
             }
 

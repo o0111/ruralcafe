@@ -22,7 +22,6 @@ Minor tasks
 - Handle 304 correctly (done for StreamTransparently, missing for DownloadToCache, but it doesn't seem to happen there)
 - Configure Windows Firewall correct and write an article in the Wiki.
 - How to react to other server responses than 200 (e.g. 500), if the content is still useful?
-- If a request failed, provide more information (Server error (statuscode) vs. RC error (reason))
 - Create more sub-namespaces and restructure the .cs files.
 - "Search later when I'm online" functionality.
 - Blacklist an URL being requested more than 10 times in an interval shorter than 10s.
