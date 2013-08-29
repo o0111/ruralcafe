@@ -109,7 +109,7 @@ function showXMLLevel2(categories) {
 			if( title == "") {
 				title = url;
 			}
-			var snippet = item.getElementsByTagName("snippet")[0].innerHTML;
+			var snippet = item.getElementsByTagName('snippet')[0].firstChild?item.getElementsByTagName('snippet')[0].firstChild.nodeValue:"";
 			//innerHtml += '<div class="index_page"><p><a href="'+url+'" target="_blank">'+title+'</a></p></div>';
 			innerHtml += '<div class="index_page"><p><a href="'+url+'" target="_blank">'+title+'</a><img class="cached_icon" alt="cached" src="img/cached.png" /></p><p class="url">'+url+
 			'</p><p>'+snippet+'</p></div>';

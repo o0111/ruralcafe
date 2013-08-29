@@ -46,8 +46,10 @@ function showXML() {
 			var xmldata = xhttp.responseXML; //retrieve result as an XML object
 			var total = xmldata.getElementsByTagName("search").item(0).attributes[0].nodeValue;
 			document.getElementById('count').innerHTML = 'Search returns '+total+' <span class="imp">local</span> results. ';
-			if (typeof xmlDocl == 'undefined') 
-				document.getElementById('count').innerHTML += '<span id="offline-search">Search for <a href="#">"'+decodeURIComponent(searchString)+'"</a> later when I am online.</span>';
+			if (typeof xmlDocl == 'undefined') {
+				// TODO uncommented, until we actually provide that functionality.
+				//document.getElementById('count').innerHTML += '<span id="offline-search">Search for <a href="#">"'+decodeURIComponent(searchString)+'"</a> later when I am online.</span>';
+			}
 			var innerHtml = "";
 			var results = xmldata.getElementsByTagName("item");
 			for (var i = 0; i < results.length; i++) {

@@ -1,66 +1,60 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta http-equiv="pragma" content="no-cache"/>
-<meta http-equiv="expires" content="-1"/>
-<meta http-equiv="cache-control" content="no-cache"/>
-<title>Trotro</title>
-<link href="css/default-login.css" rel="stylesheet" type="text/css" media="all"/>
-<script type="text/javascript" src="js/default.js">
-</script>
-<script type="text/javascript" src="js/ajax.js">
-</script>
-<script type="text/javascript" src="js/status.js">
-</script>
-<script type="text/javascript" src="js/user.js">
-</script>
-</head>
-
-<body>
-<div id="search_div">
-
-	<div id="logo">
-		<a href="index.html" alt="trotro homepage" onclick="return gotoPage(this.href);"><img id="trotro_icon" src="img/icon.png"/></a>
-    </div>
-    
-    <div id="search_box">
-   	<form action="" method="get" id="tsearch" onsubmit="return tSearch('offline');">
-    	<input type="text" id="search_input" name="s" value=""/>
-        <input type="submit" id="search_btn" name="search_btn" value="local"/>
-    </form>
-    </div>
-    
-    <div id="right_box">
-        <div id="internet_signin"><a href="login.html">Sign in</a>
-        </div>
-		<div id="close_box" onclick="closeFrame();"></div>
-    </div>
-    
-</div>
-
-<div id="queue_div">
-<div id="download_animation"></div>
-<div id="queue_box">
-<div id="downloadtag">
-<ul id="optionbar" class="nav">
-<li><img src="img/option_btn.png" id="option_icon" alt="options" />
-<ul>
-<li><a href="#" onclick="setRichness('normal');">Download all</a></li>
-<li><a href="#" onclick="setRichness('low');">Download text-only content</a></li>
-<li><a href="#">Show all requests</a></li>
-</ul>
-</li>
-</ul>
-</div>
-<div class="nav_btn"><a href="" id="left_btn"></a></div>
-<div id="update_area">
-</div>
-<div class="nav_btn"><a href="" id="right_btn"></a></div>
-</div>
-</div>
-<div id="main_div">
-	<iframe id="main_frame" frameBorder="0" src="index.html?x=offline" />
-</div>
-</body>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<meta http-equiv="pragma" content="no-cache"/>
+		<meta http-equiv="expires" content="-1"/>
+		<meta http-equiv="cache-control" content="no-cache"/>
+		<title>Trotro</title>
+		<link href="css/default-login.css" rel="stylesheet" type="text/css" media="all"/>
+		<script type="text/javascript" src="js/default.js"></script>
+		<script type="text/javascript" src="js/ajax.js"></script>
+		<script type="text/javascript" src="js/status.js"></script>
+		<script type="text/javascript" src="js/user.js"></script>
+	</head>
+	<body>
+	<div id="search_div">
+		<div id="logo">
+			<a href="index.html" alt="trotro homepage" onclick="return gotoPage(this.href);"><img id="trotro_icon" src="img/icon.png"/></a>
+		</div>
+	    
+		<div id="search_box">
+			<form action="" method="get" id="tsearch" onsubmit="return tSearch('offline');">
+			<input type="text" id="search_input" name="s" value=""/>
+			<input type="submit" id="search_btn" name="search_btn" value="local"/>
+		</form>
+		</div>
+	    
+		<div id="right_box">
+			<div id="internet_signin"><a href="login.html">Sign in</a></div>
+			<div id="close_box" onclick="closeFrame();"></div>
+		</div>
+	    
+	</div>
+	
+	<div id="queue_div">
+		<div id="download_animation"></div>
+		<div id="queue_box">
+			<div id="downloadtag">
+				<ul id="optionbar" class="nav">
+					<li>
+						<img src="img/option_btn.png" id="option_icon" alt="options" />
+						<ul>
+							<li><a href="#" onclick="setRichness('normal');">Download all</a></li>
+							<li><a href="#" onclick="setRichness('low');">Download text-only content</a></li>
+							<li><a href="#">Show all requests</a></li>
+						</ul>
+					</li>
+				</ul>
+			</div>
+			<div class="nav_btn"><a href="" id="left_btn"></a></div>
+			<div id="update_area"></div>
+			<div class="nav_btn"><a href="" id="right_btn"></a></div>
+		</div>
+	</div>
+	
+	<div id="main_div">
+		<iframe id="main_frame" frameBorder="0" src="index.html?x=offline" />
+	</div>
+	</body>
 </html>

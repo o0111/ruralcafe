@@ -66,7 +66,19 @@ function addRequest(itemTitle,itemURL){
 				//check whether item with that id is already added
 				if (itemReferer && itemReferer!=''){		
 					loadQueue('request/queue.xml?v=0');
-					document.getElementById('main_frame').src="newrequest.html";
+					var mainframe = document.getElementById('main_frame');
+					var getNewRequestRequest=new ajaxRequest()
+					getNewRequestRequest.onreadystatechange=function() {
+						if (getNewRequestRequest.readyState==4){
+								if (getNewRequestRequest.status==200){
+										mainframe.contentWindow.document.documentElement.innerHTML = getNewRequestRequest.responseText;
+								}
+						}
+					}
+					getNewRequestRequest.open("GET", "newrequest.html", true);
+				    getNewRequestRequest.send(null);
+					
+					//mainframe.src="newrequest.html";
 					startAnimation();
 				}
 			}
