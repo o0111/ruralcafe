@@ -807,7 +807,7 @@ namespace RuralCafe
         /// <returns></returns>
         public Response LoginRequest()
         {
-            Logger.Info("User " + UserIDCookieValue + " logs in.");
+            Logger.Metric(UserIDCookieValue, "Login.");
             Proxy.SessionManager.LogUserIn(ClientIP, UserIDCookieValue);
             return new Response();
         }
@@ -821,7 +821,7 @@ namespace RuralCafe
         /// <returns></returns>
         public Response LogoutRequest()
         {
-            Logger.Info("User " + UserIDCookieValue + " logs out.");
+            Logger.Metric(UserIDCookieValue, "Logout.");
             Proxy.SessionManager.LogUserOut(UserIDCookieValue);
             return new Response();
         }
