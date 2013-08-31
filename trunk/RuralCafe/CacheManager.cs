@@ -452,8 +452,10 @@ namespace RuralCafe
         {
             using (RCDatabaseEntities databaseContext = GetNewDatabaseContext(false))
             {
-                _proxy.Logger.Metric("Cache Items: " + CachedItems(databaseContext));
-                _proxy.Logger.Metric("Cache Items with text/html mimetype: " + TextFiles(databaseContext).Count);
+                // TODO solve ContextSwitchDeadlock
+                // TODO uncomment this and Lucene code!
+                //_proxy.Logger.Metric("Cache Items: " + CachedItems(databaseContext));
+                //_proxy.Logger.Metric("Cache Items with text/html mimetype: " + TextFiles(databaseContext).Count);
             }
         }
 
@@ -1348,7 +1350,6 @@ namespace RuralCafe
             // add item
             databaseContext.GlobalCacheItem.Add(cacheItem);
 
-            /* FIXME uncomment lucene
             // If we're on the local proxy, we want to add text documents to the Lucene index.
             if (_proxy is RCLocalProxy && GetHTTPMethodFromRelCacheFileName(filename).Equals("GET") &&
                 (headers["Content-Type"].Contains("text/html") || headers["Content-Type"].Contains("text/plain")))
@@ -1383,7 +1384,6 @@ namespace RuralCafe
                     _proxy.Logger.Warn("Could not add document to index.", e);
                 }
             }
-             */
         }
 
         /// <summary>
@@ -1393,6 +1393,9 @@ namespace RuralCafe
         /// <returns>The current cache size.</returns>
         private long CacheSize(RCDatabaseEntities databaseContext)
         {
+            // XXX CacheSize takes too long...
+            return 0;
+
             long dbSize = new FileInfo(_proxy.ProxyPath + DATABASE_FILE_NAME).Length;
             IQueryable<long> fileSizes = from gci in databaseContext.GlobalCacheItem select gci.filesize;
             return fileSizes.Count() > 0 ? fileSizes.Sum() + dbSize : dbSize;

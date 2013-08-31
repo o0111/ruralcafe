@@ -29,6 +29,7 @@ using Lucene.Net.QueryParsers;
 using System.Net;
 using Lucene.Net.Highlight;
 using RuralCafe.Util;
+using System.Collections.Specialized;
 
 namespace RuralCafe.Lucenenet
 {
@@ -126,86 +127,97 @@ namespace RuralCafe.Lucenenet
         /// Removes all dead links from the index.
         /// </summary>
         /// <param name="proxy">The proxy, to log and to gain access to the cache manager.</param>
-        //public void RemoveAllDeadLinks(RCLocalProxy proxy)
-        //{
-        //    proxy.Logger.Info("Deleting all dead links from index...");
-        //    Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(_indexPath));
-        //    IndexReader reader = IndexReader.Open(directory, false);
-        //    IndexWriter writer = new IndexWriter(_indexPath, _analyzer, false);
-        //    for (int i = 0; i < reader.MaxDoc(); i++)
-        //    {
-        //        proxy.Logger.Warn(i + " files scanned out of: " + reader.MaxDoc());
-                
-        //        if (reader.IsDeleted(i))
-        //        {
-        //            continue;
-        //        }
-        //        Document doc = reader.Document(i);
+        public void RemoveAllDeadLinks(RCLocalProxy proxy)
+        {
+            proxy.Logger.Info(String.Format("The index contains {0} documents.",
+                        IndexItemCount()));
 
-        //        string uri = doc.Get("uri");
-        //        FixIndexLink(proxy, writer, uri, doc.Get("title"));
-        //    }
-        //    reader.Close();
-        //    writer.Close();
-        //    proxy.Logger.Info("Deleted all dead links from index.");
-        //}
+            proxy.Logger.Info("Deleting all dead links from index...");
+            Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(_indexPath));
+            IndexReader reader = IndexReader.Open(directory, true);
+            IndexWriter writer = new IndexWriter(_indexPath, _analyzer, false);
 
-        //public void FixIndexLink(RCLocalProxy proxy, string uri)
-        //{
-        //    Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(_indexPath));
-        //    IndexWriter writer = new IndexWriter(_indexPath, _analyzer, false);
-        //    FixIndexLink(proxy, writer, uri);
-        //}
+            int deleted = 0;
+            int cacheFailures = 0;
 
-        //public void FixIndexLink(RCLocalProxy proxy, IndexWriter writer, string uri, string title = "")
-        //{
-        //    if (!proxy.ProxyCacheManager.IsCached("GET", uri))
-        //    {
-        //        string uri2 = CacheManager.FilePathToUri(CacheManager.GetRelativeCacheFileName(uri, "GET"));
+            for (int i = 0; i < reader.MaxDoc(); i++)
+            {
+                if (reader.IsDeleted(i))
+                {
+                    continue;
+                }
+                proxy.Logger.Debug(i + " files scanned out of: " + reader.MaxDoc());
+                Document doc = reader.Document(i);
 
-        //        bool delete = true;
+                string uri = doc.Get("uri");
+                string relFileName = CacheManager.GetRelativeCacheFileName(uri, "GET");
+                string absFileName = proxy.ProxyCacheManager.CachePath + relFileName;
 
-        //        string fileName = proxy.ProxyCacheManager.CachePath +
-        //            CacheManager.GetRelativeCacheFileName(uri, "GET");
-        //        if (File.Exists(fileName))
-        //        {
-        //            if (!uri.Equals(uri2))
-        //            {
-        //                proxy.Logger.Debug("Deleting " + uri + " from the lucene index and adding " + uri2);
-        //                // Save new and delete old
-        //                Document doc2 = new Document();
-        //                doc2.Add(new Field("uri", uri2, Field.Store.YES, Field.Index.NOT_ANALYZED));
-        //                doc2.Add(new Field("title", title, Field.Store.YES, Field.Index.ANALYZED));
-        //                doc2.Add(new Field("content", Utils.ReadFileAsString(fileName), Field.Store.NO, Field.Index.ANALYZED));
+                if (!proxy.ProxyCacheManager.IsCached(relFileName))
+                {
+                    if (File.Exists(absFileName))
+                    {
+                        cacheFailures++;
+                        proxy.Logger.Warn(String.Format(
+                            "Cache Failure {0}. Not cached but file exists: {1}",
+                        cacheFailures, relFileName));
 
-        //                writer.AddDocument(doc2);
-        //                writer.DeleteDocuments(new Term("uri", uri));
-        //                writer.Commit();
-        //            }
-        //            else
-        //            {
-        //                if (proxy.ProxyCacheManager.AddCacheItemsForExistingFiles(
-        //                    new HashSet<GlobalCacheItemToAdd>() { proxy.ProxyCacheManager.
-        //                        RecoverInfoFromFile(fileName, fileName.Substring(proxy.ProxyCacheManager.CachePath.Length)) }))
-        //                {
-        //                    delete = false;
-        //                    proxy.Logger.Debug(uri + " is now cached: " + proxy.ProxyCacheManager.IsCached("GET", uri));
-        //                }
-        //            }
-        //        }
-        //        if (delete)
-        //        {
-        //            proxy.Logger.Debug("Deleting " + uri + " from the lucene index.");
-        //            writer.DeleteDocuments(new Term("uri", uri));
-        //            writer.Commit();
-        //        }
-        //        /* XXX: removed for runtime
-        //        if ((i % 100) == 99)
-        //        {
-        //            writer.Commit();
-        //        }*/
-        //    }
-        //}
+                        NameValueCollection headers = new NameValueCollection()
+                        {
+                            // We need to include content-type, as we always want that header!
+                            { "Content-Type", "text/html"}
+                        };
+
+                        GlobalCacheItemToAdd newItem = new GlobalCacheItemToAdd();
+                        newItem.filename = relFileName;
+                        newItem.headers = headers;
+                        newItem.statusCode = 200;
+
+                        // Add file to the database
+                        proxy.ProxyCacheManager.AddCacheItemsForExistingFiles(new HashSet<GlobalCacheItemToAdd>() { newItem });
+                        continue;
+                    }
+
+                     deleted++;
+                     proxy.Logger.Info(String.Format("This is doc number {0} we delete. Deleting {1} from the lucene index.",
+                        deleted, relFileName));
+                    writer.DeleteDocuments(new Term("uri", uri));
+                    if (deleted % 100 == 0)
+                    {
+                        writer.Commit();
+                    }
+                }
+            }
+
+            writer.Commit();
+            reader.Close();
+            writer.Close();
+            proxy.Logger.Info(String.Format(
+                "Deleted all dead links from index. Deleted {0} index items and added {1} DB items.",
+                deleted, cacheFailures));
+        }
+
+        /// <summary>
+        /// Counts all non-deleted documents in the index.
+        /// </summary>
+        /// <returns>The number of documents.</returns>
+        public int IndexItemCount()
+        {
+            Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(_indexPath));
+            IndexReader reader = IndexReader.Open(directory, false);
+
+             int items = 0;
+
+             for (int i = 0; i < reader.MaxDoc(); i++)
+             {
+                 if (reader.IsDeleted(i))
+                 {
+                     continue;
+                 }
+                 items++;
+             }
+             return items;
+        }
 
         /// <summary>
         /// Queries the index for a list of results.
