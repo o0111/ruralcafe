@@ -304,9 +304,7 @@ namespace RuralCafe
         /// <summary>
         /// This method is called periodically by a timer in a new thread.
         /// 
-        /// Estimates the cache size each time (every hour).
-        /// 
-        /// Logs the cache metrics once a day between 5 and 6.
+        /// Estimates the cache size each time  and logs the cache metrics once a day between 5 and 6.
         /// 
         /// Starts the clustering if it is between 5 and 6 or if the last creation is more than a day ago.
         /// Only starts if the clustering is not currently running.
@@ -315,11 +313,12 @@ namespace RuralCafe
         /// If this is not null, the old file must be older than one day.</param>
         private void PeriodicTasks(object o)
         {
-            _cacheManager.EstimateCacheSize();
-
             DateTime now = DateTime.Now;
             if (now.Hour == 5)
             {
+                // Estimate the cache size.
+                _cacheManager.EstimateCacheSize();
+
                 // Log cache metrics
                 _cacheManager.LogCacheMetrics();
 
