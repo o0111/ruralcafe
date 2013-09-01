@@ -205,7 +205,11 @@ namespace RuralCafe
             : base(LOCAL_PROXY_NAME, listenAddress, listenPort, proxyPath,
             maxCacheSize, cachePath, packagesPath)
         {
-            _uiPagesPath = proxyPath + "RuralCafePages" + Path.DirectorySeparatorChar;
+            // The UI pages are not stored in the proxy path.
+            _uiPagesPath = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar +
+                 "LocalProxy" + Path.DirectorySeparatorChar +
+                 "RuralCafePages" + Path.DirectorySeparatorChar;
+
             _wikiDumpPath = wikiDumpPath;
             _clientRequestsMap = new Dictionary<int, List<LocalRequestHandler>>();
             _requestsWithoutUser = new IntKeyedCollection<LocalRequestHandler>();

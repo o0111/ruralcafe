@@ -193,7 +193,7 @@ namespace RuralCafe.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("index-computer_studies-test")]
+        [global::System.Configuration.DefaultSettingValueAttribute("index-computer_studies")]
         public string INDEX_PATH {
             get {
                 return ((string)(this["INDEX_PATH"]));
@@ -205,7 +205,7 @@ namespace RuralCafe.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("files-computer_studies-test")]
+        [global::System.Configuration.DefaultSettingValueAttribute("files-computer_studies")]
         public string LOCAL_CACHE_PATH {
             get {
                 return ((string)(this["LOCAL_CACHE_PATH"]));
@@ -229,13 +229,13 @@ namespace RuralCafe.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string WIKI_DUMP_DIR {
+        [global::System.Configuration.DefaultSettingValueAttribute("C:\\RuralCafe")]
+        public string BASE_DIR {
             get {
-                return ((string)(this["WIKI_DUMP_DIR"]));
+                return ((string)(this["BASE_DIR"]));
             }
             set {
-                this["WIKI_DUMP_DIR"] = value;
+                this["BASE_DIR"] = value;
             }
         }
         
