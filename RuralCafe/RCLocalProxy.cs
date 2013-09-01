@@ -333,7 +333,7 @@ namespace RuralCafe
             // if (false)
             if(o == null ? 
                 (now.Hour == 5) : 
-                (ProxyCacheManager.GetClusteringTimeStamp().AddDays(1).CompareTo(now) < 0))
+                (ProxyCacheManager.GetClusteringTimeStamp().CompareTo(now.Subtract(new TimeSpan(1, 0, 0, 0))) < 0))
             {
                 bool doClustering = false;
                 lock (_periodicTimer)

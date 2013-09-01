@@ -40,6 +40,8 @@ namespace RuralCafe.Clusters
         private const string INDEX_LEVEL_XML_NAME = "level";
         private const string INDEX_ONLY_LEAF_CHILDS_TITLE = "Other";
         private const string INDEX_ONLY_LEAF_CHILDS_ID = "-1";
+        private const string CLUSTERS_TIME_NO_OVERRIDE_VALUE = "DO_NOT_OVERRIDE";
+        private const string CLUSTERS_TIME_ATTRIBUTE_XML_NAME = "time";
                 
         /// <summary>
         /// Path to vcluster.exe
@@ -612,9 +614,15 @@ namespace RuralCafe.Clusters
                 XmlDocument doc = new XmlDocument();
                 doc.Load(new XmlTextReader(xmlFileName));
 
-                string dateString = doc.DocumentElement.GetAttribute("time");
+                string dateString = doc.DocumentElement.GetAttribute(CLUSTERS_TIME_ATTRIBUTE_XML_NAME);
                 if (!String.IsNullOrEmpty(dateString))
                 {
+                    if (dateString.Equals(CLUSTERS_TIME_NO_OVERRIDE_VALUE))
+                    {
+                        // Return the latest possible.
+                        return DateTime.MaxValue;
+                    }
+
                     long dateFileTime;
                     if (Int64.TryParse(dateString, out dateFileTime))
                     {
@@ -723,10 +731,10 @@ namespace RuralCafe.Clusters
 
                 if (categoryElement.ChildNodes[i].ChildNodes.Count == 0)
                 {
-                    // Do a Lucene search, if there are no items.
+                    // Do a Lucene search, if there are no items. No content snippets on level 2
                     SearchResults luceneResults = proxy.IndexWrapper.Query(
                         (categoryElement.ChildNodes[i] as XmlElement).GetAttribute(CLUSTER_FEATURES_XML_NAME),
-                        proxy.CachePath, 0, maxItems, true);
+                        proxy.CachePath, 0, maxItems, false);
 
                     // Add the results to the XML
                     LocalInternalRequestHandler.AppendSearchResultsXMLElements(luceneResults, indexDoc, subCategory as XmlElement);
