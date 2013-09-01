@@ -98,6 +98,10 @@ namespace RuralCafe
         /// The maximum size of the cache in bytes.
         /// </summary>
         private long _maxCacheSize;
+        /// <summary>
+        /// The current size of the cache in bytes. Updated in intervals.
+        /// </summary>
+        private long _cacheSize;
 
         /// <summary>
         /// The proxy.
@@ -452,10 +456,21 @@ namespace RuralCafe
         {
             using (RCDatabaseEntities databaseContext = GetNewDatabaseContext(false))
             {
-                // TODO solve ContextSwitchDeadlock
-                // TODO uncomment this and Lucene code!
-                //_proxy.Logger.Metric("Cache Items: " + CachedItems(databaseContext));
-                //_proxy.Logger.Metric("Cache Items with text/html mimetype: " + TextFiles(databaseContext).Count);
+                _proxy.Logger.Metric("Cache Items: " + CachedItems(databaseContext));
+                int textFileCount = (from gci in databaseContext.GlobalCacheItem
+                                     where gci.responseHeaders.Contains("\"Content-Type\":[\"text/html") ||
+                                       gci.responseHeaders.Contains("\"Content-Type\":[\"text/plain")
+                                     select 1).Count();
+                _proxy.Logger.Metric("Cache Items with text/html mimetype: " + textFileCount);
+
+                //int htmlFileCount = (from gci in databaseContext.GlobalCacheItem
+                //                     where
+                //                       gci.filename.Substring(gci.filename.Length - 5).Equals(".html") ||
+                //                       gci.filename.Substring(gci.filename.Length - 4).Equals(".htm") ||
+                //                       gci.filename.Substring(gci.filename.Length - 4).Equals(".php") ||
+                //                       gci.filename.Substring(gci.filename.Length - 4).Equals(".asp")
+                //                     select 1).Count();
+                //_proxy.Logger.Metric("Cache Items with '.html'/'.htm'/'.asp'/'.php': " + htmlFileCount);
             }
         }
 
@@ -646,26 +661,22 @@ namespace RuralCafe
                 headers["Content-Type"] = "application/octet-stream";
             }
 
-            long cacheSize, itemSize;
+            long itemSize;
             // Get the cache and the file size
             try
             {
-                //cacheSize = 0;// XXX: hackery too slow.
-                // Satia: How long does it take on your system?
-                // I might implement something to update it in intervals...
-                cacheSize = CacheSize(databaseContext);
                 itemSize = CacheItemFileSize(relFileName);
             }
             catch (Exception e)
             {
-                _proxy.Logger.Warn("Could not compute cache or file size.", e);
+                _proxy.Logger.Warn("Could not compute file size.", e);
                 return false;
             }
 
             GlobalCacheItem existingCacheItem = GetGlobalCacheItem(relFileName, databaseContext);
 
             // Look if we have to evict cache items first.
-            long cacheOversize = cacheSize + itemSize - _maxCacheSize;
+            long cacheOversize = _cacheSize + itemSize - _maxCacheSize;
             if (existingCacheItem != null)
             {
                 cacheOversize -= -existingCacheItem.filesize;
@@ -884,6 +895,19 @@ namespace RuralCafe
             finally
             {
                 ReleaseLockFor(filename, true);
+            }
+        }
+
+        /// <summary>
+        /// Estimates and saves the current cache size by summing up all file sizes and the DB file size.
+        /// </summary>
+        public void EstimateCacheSize()
+        {
+            using (RCDatabaseEntities databaseContext = GetNewDatabaseContext(false))
+            {
+                long dbSize = new FileInfo(_proxy.ProxyPath + DATABASE_FILE_NAME).Length;
+                IQueryable<long> fileSizes = from gci in databaseContext.GlobalCacheItem select gci.filesize;
+                _cacheSize = fileSizes.Count() > 0 ? fileSizes.Sum() + dbSize : dbSize;
             }
         }
 
@@ -1384,21 +1408,6 @@ namespace RuralCafe
                     _proxy.Logger.Warn("Could not add document to index.", e);
                 }
             }
-        }
-
-        /// <summary>
-        /// Gets the current cache size by summing up all file sizes and the DB file size.
-        /// </summary>
-        /// <param name="databaseContext">The database context.</param>
-        /// <returns>The current cache size.</returns>
-        private long CacheSize(RCDatabaseEntities databaseContext)
-        {
-            // XXX CacheSize takes too long...
-            return 0;
-
-            long dbSize = new FileInfo(_proxy.ProxyPath + DATABASE_FILE_NAME).Length;
-            IQueryable<long> fileSizes = from gci in databaseContext.GlobalCacheItem select gci.filesize;
-            return fileSizes.Count() > 0 ? fileSizes.Sum() + dbSize : dbSize;
         }
 
         /// <summary>

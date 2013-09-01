@@ -45,11 +45,7 @@ Metrics logging (done)
 - number of registered users (done)
 - network speed + status (done)
 
-Tests
-- Test search avg. time with >100 local search results
-
 Bugs
-- ContextSwitchDeadlock
 - Estimated network speed is sometimes negative!?
 - "DB file does not exist" when clicking a (Wikipedia) hyperlink in offline mode (Aaron).
 - en.wikipedia.org/wiki/Bananas*! (bad chars...)

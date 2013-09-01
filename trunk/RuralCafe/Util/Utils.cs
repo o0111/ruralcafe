@@ -164,8 +164,6 @@ namespace RuralCafe.Util
             {
                 return _extMap[extension];
             }
-            // JAY: not sure how squid or whatever does this
-            // content/unknown, but the problem is that after caching how do we know the content type without the extension in place
             return "content/unknown";
         }
 
