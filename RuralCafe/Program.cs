@@ -49,11 +49,10 @@ namespace RuralCafe
         private const int LOW_WATERMARK_DIVIDOR_QUOTA = 20;
 
         // Path Settings
-        private static readonly string LOCAL_PROXY_PATH = Directory.GetCurrentDirectory()
-            + Path.DirectorySeparatorChar + "LocalProxy" + Path.DirectorySeparatorChar;
-        private static readonly string REMOTE_PROXY_PATH = Directory.GetCurrentDirectory()
-            + Path.DirectorySeparatorChar + "RemoteProxy" + Path.DirectorySeparatorChar;
         private static readonly string PACKAGE_PATH = "Packages" + Path.DirectorySeparatorChar;
+        private static readonly string LOCAL_PROXY_PATH = "LocalProxy" + Path.DirectorySeparatorChar;
+        private static readonly string REMOTE_PROXY_PATH = "RemoteProxy" + Path.DirectorySeparatorChar;
+
         // FIXME this should not be public, but we have an ugly workaround
         /// <summary>The path to the index for the local proxy.</summary>
         public static string INDEX_PATH;
@@ -236,23 +235,22 @@ namespace RuralCafe
             INDEX_PATH = Properties.Settings.Default.INDEX_PATH + Path.DirectorySeparatorChar;
             if (!INDEX_PATH.Contains(":\\"))
             {
-                INDEX_PATH = LOCAL_PROXY_PATH + INDEX_PATH;
+                INDEX_PATH = Properties.Settings.Default.BASE_DIR + Path.DirectorySeparatorChar + LOCAL_PROXY_PATH + INDEX_PATH;
             }
             LOCAL_CACHE_PATH = Properties.Settings.Default.LOCAL_CACHE_PATH + Path.DirectorySeparatorChar;
             if (!LOCAL_CACHE_PATH.Contains(":\\"))
             {
-                LOCAL_CACHE_PATH = LOCAL_PROXY_PATH + LOCAL_CACHE_PATH;
+                LOCAL_CACHE_PATH = Properties.Settings.Default.BASE_DIR + Path.DirectorySeparatorChar + LOCAL_PROXY_PATH + LOCAL_CACHE_PATH;
             }
             REMOTE_CACHE_PATH = Properties.Settings.Default.REMOTE_CACHE_PATH + Path.DirectorySeparatorChar;
             if (!REMOTE_CACHE_PATH.Contains(":\\"))
             {
-                REMOTE_CACHE_PATH = REMOTE_PROXY_PATH + REMOTE_CACHE_PATH;
+                REMOTE_CACHE_PATH = Properties.Settings.Default.BASE_DIR + Path.DirectorySeparatorChar + REMOTE_PROXY_PATH + REMOTE_CACHE_PATH;
             }
-            WIKI_DUMP_FILE =  Properties.Settings.Default.WIKI_DUMP_DIR
-                + Path.DirectorySeparatorChar + Properties.Settings.Default.WIKI_DUMP_FILE;
+            WIKI_DUMP_FILE = Properties.Settings.Default.WIKI_DUMP_FILE;
             if(!WIKI_DUMP_FILE.Contains(":\\"))
             {
-                WIKI_DUMP_FILE = LOCAL_PROXY_PATH + WIKI_DUMP_FILE;
+                WIKI_DUMP_FILE = Properties.Settings.Default.BASE_DIR + Path.DirectorySeparatorChar + LOCAL_PROXY_PATH + WIKI_DUMP_FILE;
             }
         }
 
@@ -262,10 +260,15 @@ namespace RuralCafe
         public static RCLocalProxy StartLocalProxy()
         {
             // create the proxy
-            RCLocalProxy localProxy = new RCLocalProxy(IPAddress.Parse(Properties.Settings.Default.LOCAL_PROXY_IP_ADDRESS),
-                Properties.Settings.Default.LOCAL_PROXY_LISTEN_PORT, LOCAL_PROXY_PATH, INDEX_PATH,
-                ((long)(Properties.Settings.Default.LOCAL_MAX_CACHE_SIZE_MIB)) * 1024 * 1024, LOCAL_CACHE_PATH,
-                WIKI_DUMP_FILE, PACKAGE_PATH);
+            RCLocalProxy localProxy = new RCLocalProxy(
+                IPAddress.Parse(Properties.Settings.Default.LOCAL_PROXY_IP_ADDRESS),
+                Properties.Settings.Default.LOCAL_PROXY_LISTEN_PORT,
+                Properties.Settings.Default.BASE_DIR + Path.DirectorySeparatorChar + LOCAL_PROXY_PATH,
+                INDEX_PATH,
+                ((long)(Properties.Settings.Default.LOCAL_MAX_CACHE_SIZE_MIB)) * 1024 * 1024,
+                LOCAL_CACHE_PATH,
+                WIKI_DUMP_FILE,
+                PACKAGE_PATH);
 
             // set the remote proxy
             localProxy.SetRemoteProxy(IPAddress.Parse(Properties.Settings.Default.REMOTE_PROXY_IP_ADDRESS), 
@@ -318,10 +321,13 @@ namespace RuralCafe
         public static RCRemoteProxy StartRemoteProxy()
         {
             // create the proxy
-            RCRemoteProxy remoteProxy = new RCRemoteProxy(IPAddress.Parse(Properties.Settings.Default.REMOTE_PROXY_IP_ADDRESS),
+            RCRemoteProxy remoteProxy = new RCRemoteProxy(
+                IPAddress.Parse(Properties.Settings.Default.REMOTE_PROXY_IP_ADDRESS),
                 Properties.Settings.Default.REMOTE_PROXY_LISTEN_PORT,
-                REMOTE_PROXY_PATH, ((long)(Properties.Settings.Default.REMOTE_MAX_CACHE_SIZE_MIB)) * 1024 * 1024,
-                REMOTE_CACHE_PATH, PACKAGE_PATH);
+                Properties.Settings.Default.BASE_DIR + Path.DirectorySeparatorChar + REMOTE_PROXY_PATH,
+                ((long)(Properties.Settings.Default.REMOTE_MAX_CACHE_SIZE_MIB)) * 1024 * 1024,
+                REMOTE_CACHE_PATH, 
+                PACKAGE_PATH);
 
             /*
             // XXX: buggy...
@@ -344,9 +350,6 @@ namespace RuralCafe
 
             // set the default low watermark for each request
             RemoteRequestHandler.DEFAULT_LOW_WATERMARK = Properties.Settings.Default.DEFAULT_QUOTA / LOW_WATERMARK_DIVIDOR_QUOTA;
-
-            // Log cache metrics
-            // remoteProxy.ProxyCacheManager.LogCacheMetrics();
 
             // start remote listener thread
             Thread remoteListenerThread = new Thread(new ThreadStart(remoteProxy.StartListener));

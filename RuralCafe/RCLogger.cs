@@ -60,6 +60,9 @@ namespace RuralCafe
         /// </summary>
         public static void InitLogger()
         {
+            // Save the "BaseDir" setting to log4net
+            log4net.GlobalContext.Properties["BaseDir"] = Properties.Settings.Default.BASE_DIR;
+
             // Configure based on app.config
             XmlConfigurator.Configure();
             // Get root logger

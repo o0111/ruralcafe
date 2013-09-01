@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -42,7 +43,7 @@ namespace RuralCafe
             this.textBox11.Text = Properties.Settings.Default.EXTERNAL_PROXY_LOGIN;
             this.textBox13.Text = Properties.Settings.Default.INDEX_PATH;
             this.textBox14.Text = Properties.Settings.Default.WIKI_DUMP_FILE;
-            this.textBox15.Text = Properties.Settings.Default.WIKI_DUMP_DIR;
+            this.textBox2.Text = Properties.Settings.Default.BASE_DIR;
             this.textBox20.Text = Properties.Settings.Default.DEFAULT_SEARCH_PAGE;
             this.numericUpDown1.Value = Properties.Settings.Default.LOCAL_PROXY_LISTEN_PORT;
             this.numericUpDown2.Value = Properties.Settings.Default.EXTERNAL_PROXY_LISTEN_PORT;
@@ -71,6 +72,7 @@ namespace RuralCafe
         /// <param name="e"></param>
         private void button1_Click(object sender, EventArgs e)
         {
+            // Check if settings are valid.
             // Dummy for out parameter
             IPAddress ipAddressDummy;
             if (!this.textBox1.Text.Equals("") && !IPAddress.TryParse(this.textBox1.Text, out ipAddressDummy))
@@ -91,6 +93,15 @@ namespace RuralCafe
                     MessageBoxButtons.OK);
                 return;
             }
+            // Remove all trailing slashes from paths
+            foreach (TextBox textBox in new TextBox[] { this.textBox2, this.textBox3, this.textBox7, this.textBox13 })
+            {
+                if (textBox.Text.EndsWith("" + Path.DirectorySeparatorChar))
+                {
+                    textBox.Text = textBox.Text.Substring(0, textBox.Text.Length - 1);
+                }
+            }
+
             // Save all settings
             Properties.Settings.Default.LOCAL_PROXY_IP_ADDRESS = this.textBox1.Text;
             Properties.Settings.Default.LOCAL_CACHE_PATH = this.textBox3.Text;
@@ -101,7 +112,7 @@ namespace RuralCafe
             Properties.Settings.Default.EXTERNAL_PROXY_LOGIN = this.textBox11.Text;
             Properties.Settings.Default.INDEX_PATH = this.textBox13.Text;
             Properties.Settings.Default.WIKI_DUMP_FILE = this.textBox14.Text;
-            Properties.Settings.Default.WIKI_DUMP_DIR = this.textBox15.Text;
+            Properties.Settings.Default.BASE_DIR = this.textBox2.Text;
             Properties.Settings.Default.DEFAULT_SEARCH_PAGE = this.textBox20.Text;
             Properties.Settings.Default.LOCAL_PROXY_LISTEN_PORT = (int)this.numericUpDown1.Value;
             Properties.Settings.Default.EXTERNAL_PROXY_LISTEN_PORT = (int)this.numericUpDown2.Value;
