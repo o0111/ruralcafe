@@ -296,14 +296,17 @@ namespace RuralCafe
             // Every 1 hour do the stuff we have to do.
             _periodicTimer = new Timer(PeriodicTasks, null, PERIODIC_INTERVAL, PERIODIC_INTERVAL);
             // Start the clustering now and pass true. Like this, the method knows
-            // it should check if the old file is older than one day.
-            PeriodicTasks(true);
+            // it should check if the old file is older than one day. This MUST be done in an own thread,
+            // as the operation is very costly and everything will block otherwise.
+            (new Thread(() => PeriodicTasks(true))).Start();
         }
 
         /// <summary>
         /// This method is called periodically by a timer in a new thread.
         /// 
-        /// Logs the cache metrics.
+        /// Estimates the cache size each time (every hour).
+        /// 
+        /// Logs the cache metrics once a day between 5 and 6.
         /// 
         /// Starts the clustering if it is between 5 and 6 or if the last creation is more than a day ago.
         /// Only starts if the clustering is not currently running.
@@ -312,14 +315,17 @@ namespace RuralCafe
         /// If this is not null, the old file must be older than one day.</param>
         private void PeriodicTasks(object o)
         {
-            // Log cache metrics
-            _cacheManager.LogCacheMetrics();
+            _cacheManager.EstimateCacheSize();
 
-            // Log number of registered users
-            LogNumberOfUsers();
-
-            // Clustering
             DateTime now = DateTime.Now;
+            if (now.Hour == 5)
+            {
+                // Log cache metrics
+                _cacheManager.LogCacheMetrics();
+
+                // Log number of registered users
+                LogNumberOfUsers();
+            }
 
             // if (false)
             if(o == null ? 
