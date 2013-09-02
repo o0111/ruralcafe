@@ -270,12 +270,9 @@ namespace RuralCafe
                         fileSize, packageFs))
                     {
                         unpackedBytes += fileSize;
-
-                        GlobalCacheItemToAdd newItem = new GlobalCacheItemToAdd();
-                        newItem.filename = fileName;
-                        newItem.headers = headers;
-                        newItem.statusCode = statusCode;
-
+                        // We index only if (i==0), which means only the first file of the package. This is the main
+                        // page that has been requested. Embedded pages won't be indexed.
+                        GlobalCacheItemToAdd newItem = new GlobalCacheItemToAdd(fileName, headers, statusCode, i == 0);
                         itemsToAdd.Add(newItem);
                     }
                 }

@@ -1,7 +1,9 @@
 ﻿using log4net;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Xml;
 
@@ -76,6 +78,16 @@ namespace RuralCafe.Util
             {
                 element.RemoveChild(element.ChildNodes[i]);
             }
+        }
+
+        /// <summary>
+        /// Converts a cookie into a string that can be used in Headers.Add.
+        /// Only "expires" and "path" are set apart from the name/value pair.
+        /// </summary>
+        /// <returns>The cookie string.</returns>
+        public static string ToCookieString(this Cookie cookie)
+        {
+            return cookie.ToString() + "; expires=" + cookie.Expires.ToUniversalTime().ToString("r") + " ; path=" + cookie.Path;
         }
     }
 }

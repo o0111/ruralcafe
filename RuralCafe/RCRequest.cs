@@ -418,11 +418,8 @@ namespace RuralCafe
                         // We need to include content-type, as we always want that header!
                         { "Content-Type", "text/plain"}
                     };
-
-                    GlobalCacheItemToAdd newItem = new GlobalCacheItemToAdd();
-                    newItem.filename = _relCacheFileName;
-                    newItem.headers = redirHeaders;
-                    newItem.statusCode = 301;
+                    // We won't index redir files.
+                    GlobalCacheItemToAdd newItem = new GlobalCacheItemToAdd(_relCacheFileName, redirHeaders, 301, false);
 
                     // Add redir file to the database
                     cacheManager.AddCacheItemsForExistingFiles(new HashSet<GlobalCacheItemToAdd>() { newItem });

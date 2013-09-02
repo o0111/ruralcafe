@@ -219,7 +219,7 @@ namespace RuralCafe
             // XXX: Should be defaulted to something then fluctuate based on connection management
             _maxInflightRequests = Properties.Settings.Default.LOCAL_MAX_INFLIGHT_REQUESTS;
 
-            _sessionManager = new SessionManager();
+            _sessionManager = new SessionManager(this);
 
             _wikiWrapper = new WikiWrapper(wikiDumpPath);
 
@@ -313,8 +313,8 @@ namespace RuralCafe
         /// Starts the clustering if it is between 5 and 6 or if the last creation is more than a day ago.
         /// Only starts if the clustering is not currently running.
         /// </summary>
-        /// <param name="o">When this is null, the time must be between 5 and 6 to run the clustering.
-        /// If this is not null, the old file must be older than one day.</param>
+        /// <param name="o">When this not null, the old file must be older than one day.
+        /// If this is null, additionally, the time must be between 5 and 6 to run the clustering.</param>
         private void PeriodicTasks(object o)
         {
             DateTime now = DateTime.Now;
@@ -327,7 +327,7 @@ namespace RuralCafe
                 _cacheManager.LogCacheMetrics();
 
                 // Log number of registered users
-                LogNumberOfUsers();
+                Logger.Metric("Registered users: " + SessionManager.UsersNumber());
             }
 
             if((o == null ? (now.Hour == 5) : true ) &&
@@ -351,18 +351,6 @@ namespace RuralCafe
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// Logs the number of registered users.
-        /// </summary>
-        private void LogNumberOfUsers()
-        {
-            XmlDocument doc = new XmlDocument();
-            doc.Load(UIPagesPath + "users.xml");
-
-            int num = doc.DocumentElement.ChildNodes.Count;
-            Logger.Metric("Registered users: " + num);
         }
         
         #region Network status detection
