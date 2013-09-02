@@ -1,0 +1,13 @@
+#summary Introduction for non-developers that want to use RuralCafe
+
+= Installation and startup =
+
+  * Go to our publish server http://195.229.110.133/ftp/RuralCafe/ and download "setup.exe". You can do this via right click and "Save as".
+  * Execute "setup.exe". This will install !RuralCafe along with any other requirements including .NET.
+  * This will also immediately start !RuralCafe after the installation. Do start it another time, use the Desktop icon or Start Menu entry.
+  * To stop !RuralCafe, just click the X or press CLTR+C, while the window is active in the foreground.
+  * !RuralCafe will automatically check for updates, either on startup or in intervals, depending on the current deployment setting. If a new update is available, you will be asked if you want to download and install this update.
+
+= Configuration =
+
+After starting a setting window will appear. See *[Configuration]* for explanation on the settings.

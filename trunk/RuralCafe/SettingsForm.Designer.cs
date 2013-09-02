@@ -29,6 +29,7 @@ namespace RuralCafe
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.panel1 = new System.Windows.Forms.Panel();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
             this.numericUpDown8 = new System.Windows.Forms.NumericUpDown();
@@ -36,6 +37,8 @@ namespace RuralCafe
             this.button2 = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.textBox2 = new System.Windows.Forms.TextBox();
+            this.label15 = new System.Windows.Forms.Label();
             this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.label22 = new System.Windows.Forms.Label();
             this.comboBox3 = new System.Windows.Forms.ComboBox();
@@ -85,8 +88,7 @@ namespace RuralCafe
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
-            this.textBox2 = new System.Windows.Forms.TextBox();
-            this.label15 = new System.Windows.Forms.Label();
+            this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.panel1.SuspendLayout();
             this.groupBox5.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown8)).BeginInit();
@@ -141,6 +143,7 @@ namespace RuralCafe
             this.numericUpDown8.Name = "numericUpDown8";
             this.numericUpDown8.Size = new System.Drawing.Size(182, 20);
             this.numericUpDown8.TabIndex = 1;
+            this.toolTip1.SetToolTip(this.numericUpDown8, "The default time to live for positive DNS cache entries.");
             // 
             // label23
             // 
@@ -195,6 +198,23 @@ namespace RuralCafe
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Shared";
             // 
+            // textBox2
+            // 
+            this.textBox2.Location = new System.Drawing.Point(138, 97);
+            this.textBox2.Name = "textBox2";
+            this.textBox2.Size = new System.Drawing.Size(183, 20);
+            this.textBox2.TabIndex = 30;
+            this.toolTip1.SetToolTip(this.textBox2, "All dynamically changing files are stored here.");
+            // 
+            // label15
+            // 
+            this.label15.AutoSize = true;
+            this.label15.Location = new System.Drawing.Point(5, 100);
+            this.label15.Name = "label15";
+            this.label15.Size = new System.Drawing.Size(74, 13);
+            this.label15.TabIndex = 31;
+            this.label15.Text = "Base directory";
+            // 
             // checkBox1
             // 
             this.checkBox1.AutoSize = true;
@@ -202,6 +222,7 @@ namespace RuralCafe
             this.checkBox1.Name = "checkBox1";
             this.checkBox1.Size = new System.Drawing.Size(15, 14);
             this.checkBox1.TabIndex = 29;
+            this.toolTip1.SetToolTip(this.checkBox1, "Should the network status be detected automatically based on the download speed?");
             this.checkBox1.UseVisualStyleBackColor = true;
             this.checkBox1.CheckedChanged += new System.EventHandler(this.checkBox1_CheckedChanged);
             // 
@@ -222,6 +243,7 @@ namespace RuralCafe
             this.comboBox3.Name = "comboBox3";
             this.comboBox3.Size = new System.Drawing.Size(184, 21);
             this.comboBox3.TabIndex = 27;
+            this.toolTip1.SetToolTip(this.comboBox3, "The minimum loevel for logs to be printed.");
             // 
             // label21
             // 
@@ -240,6 +262,8 @@ namespace RuralCafe
             this.comboBox2.Name = "comboBox2";
             this.comboBox2.Size = new System.Drawing.Size(181, 21);
             this.comboBox2.TabIndex = 25;
+            this.toolTip1.SetToolTip(this.comboBox2, "The default richness (images /sounds/videos or not). Each other can change this f" +
+        "or himself.");
             // 
             // comboBox1
             // 
@@ -249,6 +273,7 @@ namespace RuralCafe
             this.comboBox1.Name = "comboBox1";
             this.comboBox1.Size = new System.Drawing.Size(181, 21);
             this.comboBox1.TabIndex = 24;
+            this.toolTip1.SetToolTip(this.comboBox1, "Set a fixed network status.");
             // 
             // numericUpDown7
             // 
@@ -261,6 +286,7 @@ namespace RuralCafe
             this.numericUpDown7.Name = "numericUpDown7";
             this.numericUpDown7.Size = new System.Drawing.Size(182, 20);
             this.numericUpDown7.TabIndex = 23;
+            this.toolTip1.SetToolTip(this.numericUpDown7, "The quota per user.");
             // 
             // numericUpDown6
             // 
@@ -273,6 +299,7 @@ namespace RuralCafe
             this.numericUpDown6.Name = "numericUpDown6";
             this.numericUpDown6.Size = new System.Drawing.Size(182, 20);
             this.numericUpDown6.TabIndex = 22;
+            this.toolTip1.SetToolTip(this.numericUpDown6, "The depth for prefetching pages to download.");
             // 
             // label16
             // 
@@ -427,6 +454,7 @@ namespace RuralCafe
             this.numericUpDown10.Name = "numericUpDown10";
             this.numericUpDown10.Size = new System.Drawing.Size(182, 20);
             this.numericUpDown10.TabIndex = 23;
+            this.toolTip1.SetToolTip(this.numericUpDown10, "The maximum allowed size for the cache in MiB.");
             // 
             // numericUpDown5
             // 
@@ -439,6 +467,7 @@ namespace RuralCafe
             this.numericUpDown5.Name = "numericUpDown5";
             this.numericUpDown5.Size = new System.Drawing.Size(182, 20);
             this.numericUpDown5.TabIndex = 21;
+            this.toolTip1.SetToolTip(this.numericUpDown5, "The maximum allowed download speed in bytes/s.");
             // 
             // label25
             // 
@@ -460,6 +489,7 @@ namespace RuralCafe
             this.numericUpDown3.Name = "numericUpDown3";
             this.numericUpDown3.Size = new System.Drawing.Size(182, 20);
             this.numericUpDown3.TabIndex = 20;
+            this.toolTip1.SetToolTip(this.numericUpDown3, "The HTTP port for the remote proxy.");
             // 
             // label19
             // 
@@ -476,6 +506,8 @@ namespace RuralCafe
             this.textBox7.Name = "textBox7";
             this.textBox7.Size = new System.Drawing.Size(183, 20);
             this.textBox7.TabIndex = 11;
+            this.toolTip1.SetToolTip(this.textBox7, "The path to the cache. Can be either relative to <Base directory>\\RemoteProxy or " +
+        "absolute.");
             // 
             // label7
             // 
@@ -501,6 +533,7 @@ namespace RuralCafe
             this.textBox5.Name = "textBox5";
             this.textBox5.Size = new System.Drawing.Size(184, 20);
             this.textBox5.TabIndex = 10;
+            this.toolTip1.SetToolTip(this.textBox5, "The IP address for the remote proxy.");
             // 
             // label4
             // 
@@ -547,6 +580,7 @@ namespace RuralCafe
             this.numericUpDown9.Name = "numericUpDown9";
             this.numericUpDown9.Size = new System.Drawing.Size(182, 20);
             this.numericUpDown9.TabIndex = 21;
+            this.toolTip1.SetToolTip(this.numericUpDown9, "The maximum allowed size for the cache in MiB.");
             // 
             // label24
             // 
@@ -568,6 +602,7 @@ namespace RuralCafe
             this.numericUpDown4.Name = "numericUpDown4";
             this.numericUpDown4.Size = new System.Drawing.Size(182, 20);
             this.numericUpDown4.TabIndex = 19;
+            this.toolTip1.SetToolTip(this.numericUpDown4, "The maximum number of active requests at a time.");
             // 
             // numericUpDown1
             // 
@@ -580,6 +615,7 @@ namespace RuralCafe
             this.numericUpDown1.Name = "numericUpDown1";
             this.numericUpDown1.Size = new System.Drawing.Size(182, 20);
             this.numericUpDown1.TabIndex = 18;
+            this.toolTip1.SetToolTip(this.numericUpDown1, "The HTTP port for the local proxy.");
             // 
             // textBox20
             // 
@@ -587,6 +623,7 @@ namespace RuralCafe
             this.textBox20.Name = "textBox20";
             this.textBox20.Size = new System.Drawing.Size(183, 20);
             this.textBox20.TabIndex = 17;
+            this.toolTip1.SetToolTip(this.textBox20, "The search page used.");
             // 
             // label20
             // 
@@ -603,6 +640,8 @@ namespace RuralCafe
             this.textBox14.Name = "textBox14";
             this.textBox14.Size = new System.Drawing.Size(183, 20);
             this.textBox14.TabIndex = 15;
+            this.toolTip1.SetToolTip(this.textBox14, "The path to the wiki dump file. Can be either relative to <Base directory>\\LocalP" +
+        "roxy or absolute.");
             // 
             // label14
             // 
@@ -619,6 +658,8 @@ namespace RuralCafe
             this.textBox13.Name = "textBox13";
             this.textBox13.Size = new System.Drawing.Size(183, 20);
             this.textBox13.TabIndex = 11;
+            this.toolTip1.SetToolTip(this.textBox13, "The path to the index. Can be either relative to <Base directory>\\LocalProxy or a" +
+        "bsolute.");
             // 
             // label13
             // 
@@ -644,6 +685,8 @@ namespace RuralCafe
             this.textBox3.Name = "textBox3";
             this.textBox3.Size = new System.Drawing.Size(183, 20);
             this.textBox3.TabIndex = 7;
+            this.toolTip1.SetToolTip(this.textBox3, "The path to the cache. Can be either relative to <Base directory>\\LocalProxy or a" +
+        "bsolute.");
             // 
             // label3
             // 
@@ -660,6 +703,7 @@ namespace RuralCafe
             this.textBox1.Name = "textBox1";
             this.textBox1.Size = new System.Drawing.Size(183, 20);
             this.textBox1.TabIndex = 4;
+            this.toolTip1.SetToolTip(this.textBox1, "The IP address for the local proxy.");
             // 
             // label2
             // 
@@ -678,22 +722,6 @@ namespace RuralCafe
             this.label1.Size = new System.Drawing.Size(57, 13);
             this.label1.TabIndex = 1;
             this.label1.Text = "IP address";
-            // 
-            // textBox2
-            // 
-            this.textBox2.Location = new System.Drawing.Point(138, 97);
-            this.textBox2.Name = "textBox2";
-            this.textBox2.Size = new System.Drawing.Size(183, 20);
-            this.textBox2.TabIndex = 30;
-            // 
-            // label15
-            // 
-            this.label15.AutoSize = true;
-            this.label15.Location = new System.Drawing.Point(5, 100);
-            this.label15.Name = "label15";
-            this.label15.Size = new System.Drawing.Size(74, 13);
-            this.label15.TabIndex = 31;
-            this.label15.Text = "Base directory";
             // 
             // SettingsForm
             // 
@@ -791,5 +819,6 @@ namespace RuralCafe
         private System.Windows.Forms.Label label25;
         private System.Windows.Forms.TextBox textBox2;
         private System.Windows.Forms.Label label15;
+        private System.Windows.Forms.ToolTip toolTip1;
     }
 }

@@ -1,0 +1,50 @@
+#summary Explanation of the various settings of RuralCafe
+= Configuration =
+
+If you are running the local proxy and the remote proxy on different machines, you might need to disable or configure your firewall to accept in/outcoming requests on that port for !RuralCafe and/or Visual Studio. If you are using the Windows Firewall, see *WindowsFirewall* for an explanation how to configure it correctly.
+
+To interact with !RuralCafe, the browser must be configured to use !RuralCafe as the proxy using the IP address and port of the local proxy set in the configuration (below). These settings can be found in the connection settings of any modern browser (IE, Firefox, Chrome). Also, set the browser's homepage to http://www.ruralcafe.net/
+
+The configuration fields are fairly straightforward and are defaulted to work as a standalone service on a single machine (as in this example). In the case where the local and remote proxies are setup on seperate machines, the configuration should be identical on both machines.
+
+The local proxy settings are where !RuralCafe listens to requests from the browser, these are the IP address and port settings that the browser should be configured with to use !RuralCafe. In addition, the maximum number of active requests can be configured.
+
+ * LOCAL_PROXY_IP_ADDRESS=127.0.0.1
+ * LOCAL_PROXY_LISTEN_PORT=8080
+ * LOCAL_MAXIMUM_ACTIVE_REQUESTS=50
+
+The remote proxy settings are where !RuralCafe's remote proxy listens to requests from the local proxy. These settings are also used by the local proxy to know where to forward requests to the remote proxy.
+
+ * REMOTE_PROXY_IP_ADDRESS=127.0.0.1
+ * REMOTE_PROXY_LISTEN_PORT=8081
+
+The external proxy settings are used by the remote proxy to connect to the Internet if there is another upstream proxy in the network.
+
+ * EXTERNAL_PROXY_IP_ADDRESS=
+ * EXTERNAL_PROXY_LISTEN_PORT=
+ * EXTERNAL_PROXY_LOGIN=
+ * EXTERNAL_PROXY_PASS=
+
+The following settings are for setting !RuralCafe's behaviors. The DEFAULT_SEARCH_PAGE may be changed to "cip.html" if !RuralCafe is to be used in a completely disconnected fashion as an information portal. The default quota is how many bytes of data to download per query by the remote proxy. The default depth is how much prefetching depth to download per query by the remote proxy. The maximum download speed is used to throttle the transfer between the local and remote proxies if the bandwidth is constrained and some moderation is necessary.
+
+ * DEFAULT_SEARCH_PAGE=searchpage.html
+ * DEFAULT_QUOTA=2000000
+ * DEFAULT_DEPTH=1
+ * MAXIMUM_DOWNLOAD_SPEED=5000000
+
+The INDEX and cache path configuration settings are to let !RuralCafe know where to store the caches and indices used by the proxies for local caching and search. In the case of a completely disconnected !RuralCafe information portal, these settings must be changed to point to existing sources (i.e. the output from a focused crawler). Relative paths (to !LocalProxy or !RemoteProxy) are acceptable.
+
+ * INDEX_PATH=c:\cygwin\home\jchen\index-mathematics\
+ * LOCAL_CACHE_PATH=c:\cygwin\home\jchen\files-mathematics\
+ * REMOTE_CACHE_PATH=Cache\
+
+Finally, if a local copy of Wikipedia is available, the WIKI_DUMP_FILE may be set to point to it. Relative paths to !LocalProxy are OK. Note that to be able to use this wikipedia image, it must first be indexed by !BzReader (below).
+
+ * WIKI_DUMP_FILE=d:\wikipedia\enwiki-20090520-pages-articles.xml.bz2
+ 
+= Wikipedia Indexing =
+
+You can download wikipedia dumps here: http://en.wikipedia.org/wiki/Wikipedia:Database_download#English-language_Wikipedia
+I recommend, if you have a good Internet connection, using the most recent torrent, as this will be way faster than downloaing it from Wikipedia directly.
+
+Prior to being able to use a wikipedia image dump from wikipedia.org, the image dump must be first indexed. To do this, install !BzReader using the `BzReader.v1.0.13.msi` in the repository in the !BzReader folder. Start !BzReader and open the downloaded dump. The indexing can take several hours.

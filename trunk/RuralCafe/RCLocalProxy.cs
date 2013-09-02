@@ -330,10 +330,8 @@ namespace RuralCafe
                 LogNumberOfUsers();
             }
 
-            // if (false)
-            if(o == null ? 
-                (now.Hour == 5) : 
-                (ProxyCacheManager.GetClusteringTimeStamp().CompareTo(now.Subtract(new TimeSpan(1, 0, 0, 0))) < 0))
+            if((o == null ? (now.Hour == 5) : true ) &&
+                ProxyCacheManager.GetClusteringTimeStamp().CompareTo(now.Subtract(new TimeSpan(1, 0, 0, 0))) < 0)
             {
                 bool doClustering = false;
                 lock (_periodicTimer)
