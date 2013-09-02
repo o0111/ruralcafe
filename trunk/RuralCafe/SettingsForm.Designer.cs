@@ -89,6 +89,10 @@ namespace RuralCafe
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.checkBox2 = new System.Windows.Forms.CheckBox();
+            this.label26 = new System.Windows.Forms.Label();
+            this.checkBox3 = new System.Windows.Forms.CheckBox();
+            this.label27 = new System.Windows.Forms.Label();
             this.panel1.SuspendLayout();
             this.groupBox5.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown8)).BeginInit();
@@ -118,14 +122,14 @@ namespace RuralCafe
             this.panel1.Controls.Add(this.groupBox1);
             this.panel1.Location = new System.Drawing.Point(13, 13);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(687, 536);
+            this.panel1.Size = new System.Drawing.Size(687, 561);
             this.panel1.TabIndex = 0;
             // 
             // groupBox5
             // 
             this.groupBox5.Controls.Add(this.numericUpDown8);
             this.groupBox5.Controls.Add(this.label23);
-            this.groupBox5.Location = new System.Drawing.Point(4, 450);
+            this.groupBox5.Location = new System.Drawing.Point(4, 481);
             this.groupBox5.Name = "groupBox5";
             this.groupBox5.Size = new System.Drawing.Size(666, 48);
             this.groupBox5.TabIndex = 6;
@@ -157,7 +161,7 @@ namespace RuralCafe
             // button2
             // 
             this.button2.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.button2.Location = new System.Drawing.Point(596, 504);
+            this.button2.Location = new System.Drawing.Point(595, 535);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(75, 23);
             this.button2.TabIndex = 5;
@@ -167,7 +171,7 @@ namespace RuralCafe
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(515, 504);
+            this.button1.Location = new System.Drawing.Point(514, 535);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 4;
@@ -191,7 +195,7 @@ namespace RuralCafe
             this.groupBox4.Controls.Add(this.label12);
             this.groupBox4.Controls.Add(this.label18);
             this.groupBox4.Controls.Add(this.label17);
-            this.groupBox4.Location = new System.Drawing.Point(3, 319);
+            this.groupBox4.Location = new System.Drawing.Point(3, 350);
             this.groupBox4.Name = "groupBox4";
             this.groupBox4.Size = new System.Drawing.Size(666, 125);
             this.groupBox4.TabIndex = 3;
@@ -218,7 +222,7 @@ namespace RuralCafe
             // checkBox1
             // 
             this.checkBox1.AutoSize = true;
-            this.checkBox1.Location = new System.Drawing.Point(465, 14);
+            this.checkBox1.Location = new System.Drawing.Point(463, 18);
             this.checkBox1.Name = "checkBox1";
             this.checkBox1.Size = new System.Drawing.Size(15, 14);
             this.checkBox1.TabIndex = 29;
@@ -347,7 +351,7 @@ namespace RuralCafe
             this.groupBox3.Controls.Add(this.textBox9);
             this.groupBox3.Controls.Add(this.label8);
             this.groupBox3.Controls.Add(this.label9);
-            this.groupBox3.Location = new System.Drawing.Point(3, 240);
+            this.groupBox3.Location = new System.Drawing.Point(4, 271);
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.Size = new System.Drawing.Size(666, 73);
             this.groupBox3.TabIndex = 2;
@@ -436,7 +440,7 @@ namespace RuralCafe
             this.groupBox2.Controls.Add(this.label5);
             this.groupBox2.Controls.Add(this.textBox5);
             this.groupBox2.Controls.Add(this.label4);
-            this.groupBox2.Location = new System.Drawing.Point(3, 137);
+            this.groupBox2.Location = new System.Drawing.Point(4, 168);
             this.groupBox2.Name = "groupBox2";
             this.groupBox2.Size = new System.Drawing.Size(666, 97);
             this.groupBox2.TabIndex = 1;
@@ -546,6 +550,10 @@ namespace RuralCafe
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.checkBox3);
+            this.groupBox1.Controls.Add(this.label27);
+            this.groupBox1.Controls.Add(this.checkBox2);
+            this.groupBox1.Controls.Add(this.label26);
             this.groupBox1.Controls.Add(this.numericUpDown9);
             this.groupBox1.Controls.Add(this.label24);
             this.groupBox1.Controls.Add(this.numericUpDown4);
@@ -564,7 +572,7 @@ namespace RuralCafe
             this.groupBox1.Controls.Add(this.label1);
             this.groupBox1.Location = new System.Drawing.Point(4, 7);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(666, 124);
+            this.groupBox1.Size = new System.Drawing.Size(666, 155);
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Local Proxy";
@@ -723,13 +731,51 @@ namespace RuralCafe
             this.label1.TabIndex = 1;
             this.label1.Text = "IP address";
             // 
+            // checkBox2
+            // 
+            this.checkBox2.AutoSize = true;
+            this.checkBox2.Location = new System.Drawing.Point(140, 123);
+            this.checkBox2.Name = "checkBox2";
+            this.checkBox2.Size = new System.Drawing.Size(15, 14);
+            this.checkBox2.TabIndex = 31;
+            this.toolTip1.SetToolTip(this.checkBox2, "Force the user to login for all actions, including searching?");
+            this.checkBox2.UseVisualStyleBackColor = true;
+            // 
+            // label26
+            // 
+            this.label26.AutoSize = true;
+            this.label26.Location = new System.Drawing.Point(5, 123);
+            this.label26.Name = "label26";
+            this.label26.Size = new System.Drawing.Size(59, 13);
+            this.label26.TabIndex = 30;
+            this.label26.Text = "Force login";
+            // 
+            // checkBox3
+            // 
+            this.checkBox3.AutoSize = true;
+            this.checkBox3.Location = new System.Drawing.Point(463, 124);
+            this.checkBox3.Name = "checkBox3";
+            this.checkBox3.Size = new System.Drawing.Size(15, 14);
+            this.checkBox3.TabIndex = 33;
+            this.toolTip1.SetToolTip(this.checkBox3, "Show the user satisfaction survey in the midlle/at the end of sessions?");
+            this.checkBox3.UseVisualStyleBackColor = true;
+            // 
+            // label27
+            // 
+            this.label27.AutoSize = true;
+            this.label27.Location = new System.Drawing.Point(328, 124);
+            this.label27.Name = "label27";
+            this.label27.Size = new System.Drawing.Size(68, 13);
+            this.label27.TabIndex = 32;
+            this.label27.Text = "Show survey";
+            // 
             // SettingsForm
             // 
             this.AcceptButton = this.button1;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.button2;
-            this.ClientSize = new System.Drawing.Size(716, 559);
+            this.ClientSize = new System.Drawing.Size(716, 586);
             this.Controls.Add(this.panel1);
             this.Name = "SettingsForm";
             this.Text = "RuralCafe Settings";
@@ -820,5 +866,9 @@ namespace RuralCafe
         private System.Windows.Forms.TextBox textBox2;
         private System.Windows.Forms.Label label15;
         private System.Windows.Forms.ToolTip toolTip1;
+        private System.Windows.Forms.CheckBox checkBox3;
+        private System.Windows.Forms.Label label27;
+        private System.Windows.Forms.CheckBox checkBox2;
+        private System.Windows.Forms.Label label26;
     }
 }
