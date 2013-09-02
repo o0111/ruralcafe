@@ -60,6 +60,8 @@ namespace RuralCafe
             this.comboBox3.DataSource = Enum.GetValues(typeof(LogLevel));
             this.checkBox1.Checked = Properties.Settings.Default.DETECT_NETWORK_AUTO;
             checkBox1_CheckedChanged(null, null);
+            this.checkBox2.Checked = Properties.Settings.Default.FORCE_LOGIN;
+            this.checkBox3.Checked = Properties.Settings.Default.SHOW_SURVEY;
             this.comboBox1.SelectedItem = Properties.Settings.Default.NETWORK_STATUS;
             this.comboBox2.SelectedItem = Properties.Settings.Default.DEFAULT_RICHNESS;
             this.comboBox3.SelectedItem = Properties.Settings.Default.LOGLEVEL;
@@ -125,6 +127,8 @@ namespace RuralCafe
             Properties.Settings.Default.LOCAL_MAX_CACHE_SIZE_MIB = (int)this.numericUpDown9.Value;
             Properties.Settings.Default.REMOTE_MAX_CACHE_SIZE_MIB = (int)this.numericUpDown10.Value;
             Properties.Settings.Default.DETECT_NETWORK_AUTO = this.checkBox1.Checked;
+            Properties.Settings.Default.FORCE_LOGIN = this.checkBox2.Checked;
+            Properties.Settings.Default.SHOW_SURVEY = this.checkBox3.Checked;
             Properties.Settings.Default.NETWORK_STATUS = (RCLocalProxy.NetworkStatusCode)this.comboBox1.SelectedItem;
             Properties.Settings.Default.DEFAULT_RICHNESS = (RequestHandler.Richness)this.comboBox2.SelectedItem;
             Properties.Settings.Default.LOGLEVEL = (LogLevel)this.comboBox3.SelectedItem;

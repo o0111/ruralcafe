@@ -83,5 +83,11 @@
     <Setting Name="REMOTE_MAX_CACHE_SIZE_MIB" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">153600</Value>
     </Setting>
+    <Setting Name="FORCE_LOGIN" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="SHOW_SURVEY" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

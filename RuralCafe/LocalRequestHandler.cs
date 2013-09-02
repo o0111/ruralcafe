@@ -212,10 +212,7 @@ namespace RuralCafe
 
                 if (Proxy.NetworkStatus != RCLocalProxy.NetworkStatusCode.Online)
                 {
-                    // Uncached links should be redirected to
-                    // /trotro-user.html?t=title&a=id (GET/HEAD) or (because they should have been prefetched)
-                    // /request/add?t=title&a=id (POST/...) (because prefetching POSTs is impossible) (XXX: Not necessary!?)
-                    // when the system mode is slow or offline
+                    // Uncached links should be redirected to /trotro-user.html?t=title&a=id when the system mode is slow or offline
                     // Parse parameters to get title
                     NameValueCollection qscoll = HttpUtility.ParseQueryString(_originalRequest.Url.Query);
                     string title = qscoll.Get("trotro");
@@ -231,7 +228,7 @@ namespace RuralCafe
                     }
 
                     // Save the request in the "without user" queue
-                    string id = "" + Proxy.AddRequestWithoutUser(this);
+                    int id = Proxy.AddRequestWithoutUser(this);
 
                     string redirectUrl = RC_PAGE +
                         "trotro-user.html"

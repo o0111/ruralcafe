@@ -21,7 +21,6 @@ Minor tasks
 - DNS cache hit/miss logging (César: Packet sniffing)
 - Domain name & Search query clustering
 - Handle 304 correctly (done for StreamTransparently, missing for DownloadToCache, but it doesn't seem to happen there)
-- Configure Windows Firewall correct and write an article in the Wiki.
 - How to react to other server responses than 200 (e.g. 500), if the content is still useful?
 - Create more sub-namespaces and restructure the .cs files.
 - "Search later when I'm online" functionality.

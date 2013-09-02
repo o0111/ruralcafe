@@ -265,6 +265,27 @@ namespace RuralCafe
             return new Response(fileName, true);
         }
 
+        /// <summary>Serves the RuralCafe search page.</summary>
+        public Response HomePage()
+        {
+            if (Properties.Settings.Default.FORCE_LOGIN && UserIDCookieValue == -1)
+            {
+                // We redirect to login.html
+                _clientHttpContext.Response.Redirect("login.html");
+                return new Response();
+            }
+
+            string pageUri = Proxy.RCSearchPage;
+            string fileName = pageUri;
+            int offset = pageUri.LastIndexOf('/');
+            if (offset >= 0 && offset < (pageUri.Length - 1))
+            {
+                fileName = pageUri.Substring(offset + 1);
+            }
+
+            return new Response(UIPagesPath + fileName, true);
+        }
+
         /// <summary>
         /// Returns the newrequest.html frame, but let's the back link point to the original
         /// referer, if available.
@@ -476,20 +497,6 @@ namespace RuralCafe
             }
             PrepareXMLRequestAnswer();
             return new Response(xmlDoc.InnerXml);
-        }
-
-        /// <summary>Serves the RuralCafe search page.</summary>
-        public Response HomePage()
-        {
-            string pageUri = Proxy.RCSearchPage;
-            string fileName = pageUri;
-            int offset = pageUri.LastIndexOf('/');
-            if (offset >= 0 && offset < (pageUri.Length - 1))
-            {
-                fileName = pageUri.Substring(offset + 1);
-            }
-
-            return new Response(UIPagesPath + fileName, true);
         }
 
         /// <summary>
