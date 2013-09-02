@@ -57,9 +57,9 @@ namespace RuralCafe
             routines.Add("/request/eta", new RoutineMethod("ServeETARequest",
                 new string[] { "i" }, new Type[] { typeof(string) }));
             routines.Add("/request/signup", new RoutineMethod("SignupRequest",
-                new string[] { "u", "p", "i" }, new Type[] { typeof(string), typeof(string), typeof(int) }));
+                new string[] { "user", "pw" }, new Type[] { typeof(string), typeof(string) }));
             routines.Add("/request/login", new RoutineMethod("LoginRequest",
-                new string[] { }, new Type[] { }));
+                new string[] { "user", "pw" }, new Type[] { typeof(string), typeof(string) }));
             routines.Add("/request/logout", new RoutineMethod("LogoutRequest",
                 new string[] { }, new Type[] { }));
             routines.Add("/request/userSatisfaction", new RoutineMethod("UserSatisfactionRequest",
@@ -72,20 +72,12 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// The path to the UI pages.
-        /// </summary>
-        private string UIPagesPath;
-
-        /// <summary>
         /// Constructor for a local internal proxy's request handler.
         /// </summary>
         /// <param name="proxy">Proxy this request handler belongs to.</param>
         /// <param name="context">Client context.</param>
         public LocalInternalRequestHandler(RCLocalProxy proxy, HttpListenerContext context)
-            : base(proxy, context, routines, defaultMethod)
-        {
-            UIPagesPath = Proxy.UIPagesPath;
-        }
+            : base(proxy, context, routines, defaultMethod) { }
 
         /// <summary>The proxy that this request belongs to.</summary>
         public RCLocalProxy Proxy
@@ -258,7 +250,7 @@ namespace RuralCafe
         {
             string fileName = _originalRequest.Url.LocalPath.Substring(1);
             fileName = fileName.Replace('/', Path.DirectorySeparatorChar);
-            fileName = UIPagesPath + fileName;
+            fileName = Proxy.UIPagesPath + fileName;
             string contentType = Utils.GetContentTypeOfFile(fileName);
 
             _clientHttpContext.Response.ContentType = contentType;
@@ -283,7 +275,7 @@ namespace RuralCafe
                 fileName = pageUri.Substring(offset + 1);
             }
 
-            return new Response(UIPagesPath + fileName, true);
+            return new Response(Proxy.UIPagesPath + fileName, true);
         }
 
         /// <summary>
@@ -300,7 +292,7 @@ namespace RuralCafe
                 return DefaultPage();
             }
 
-            string fileName = UIPagesPath + "newrequest.html";
+            string fileName = Proxy.UIPagesPath + "newrequest.html";
 
             HtmlDocument doc = new HtmlDocument();
             doc.Load(fileName);
@@ -777,59 +769,110 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Client signs up for a new account. Preconditions have already been checked in JS.
+        /// Client signs up for a new account.
         /// </summary>
         /// <param name="username">The username.</param>
-        /// <param name="pw">The password</param>
-        /// <param name="custid">The new id of the user.</param>
-        public Response SignupRequest(string username, string pw, int custid)
+        /// <param name="password">The password</param>
+        public Response SignupRequest(string username, string password)
         {
-            // Append zeros
-            String custidStr = custid.ToString("D3");
-
-            // Open users.xml
-            String filename = UIPagesPath + "users.xml";
-            XmlDocument doc = new XmlDocument();
-            doc.Load(filename);
-            XmlNode custsNode = doc.SelectSingleNode("customers");
-            // Add new user
-            custsNode.AppendChild(custsNode.LastChild.CloneNode(true));
-            custsNode.LastChild.Attributes["custid"].Value = custidStr;
-            custsNode.LastChild.SelectSingleNode("user").InnerText = username;
-            custsNode.LastChild.SelectSingleNode("pwd").InnerText = pw;
-            //Save
-            doc.Save(filename);
+            int userID = Proxy.SessionManager.UserID(username);
+            if (userID != -1)
+            {
+                return PageWithErrorMessage("signup.html", "wrong_username", "Username exists already.", username);
+            }
+            // Sign up
+            int custid = Proxy.SessionManager.SignUpUser(username, password);
             // Log
             Logger.Info("A new user signed up with id " + custid + ": " + username);
-            return new Response("Signup successful.");
+
+            // Send log page (actually without error message), but with username already in login field.
+            return PageWithErrorMessage("login.html", "wrong_username", "", username);
         }
 
         /// <summary>
-        /// At the moment this just lets the server know someone logged in.
-        /// The server than attached the IP to the user ID in the cookie.
-        /// 
-        /// Lates this should be changed so that the server actually logs the persons in 
-        /// and performs the pw checks, etc.
+        /// Tries to log a user in.
         /// </summary>
+        /// <param name="username">The username.</param>
+        /// <param name="password">The password.</param>
         /// <returns></returns>
-        public Response LoginRequest()
+        public Response LoginRequest(string username, string password)
         {
-            Logger.Metric(UserIDCookieValue, "Login.");
-            Proxy.SessionManager.LogUserIn(ClientIP, UserIDCookieValue);
+            int userID = Proxy.SessionManager.UserID(username);
+            if (userID == -1)
+            {
+                return PageWithErrorMessage("login.html", "wrong_username", "Username does not exist.", username);
+            }
+            else if (!Proxy.SessionManager.IsCorrectPW(username, password))
+            {
+                return PageWithErrorMessage("login.html", "wrong_password", "Password is incorrect.", username);
+            }
+
+            // User+PW correct
+            Logger.Metric(userID, "Login.");
+            Proxy.SessionManager.LogUserIn(ClientIP, userID);
+
+            // Set cookies.
+            Cookie idCookie = new Cookie("uid", "" + userID, "/");
+            Cookie nameCookie = new Cookie("uname", username, "/");
+            DateTime expiryDate = Proxy.SessionManager.GetSessionExpiryDate(userID);
+            idCookie.Expires = expiryDate;
+            nameCookie.Expires = expiryDate;
+
+            // We must use Headers.Add (Not AddHeader, not SetCookie and not AppendCookie)
+            // as in the other cases only a comma separated list in one Set-Cookie would be created,
+            // which browsers do not understand. C# sucks.
+            _clientHttpContext.Response.Headers.Add("Set-Cookie", idCookie.ToCookieString());
+            _clientHttpContext.Response.Headers.Add("Set-Cookie", nameCookie.ToCookieString());
+            
+            // Redirect to the Homepage.
+            _clientHttpContext.Response.Redirect("/");
             return new Response();
         }
 
         /// <summary>
-        /// At the moment this just lets the server know someone logged out.
-        /// The server than detaches the IP from the user ID in the cookie.
-        /// 
-        /// Later this should be changed so that the server actually logs the persons out.
+        /// Sends a page (login or signup), but embeds an error message and puts the username back into the field.
+        /// </summary>
+        /// <param name="pageName">The name of the page. Should be "login.html" or "signup.html".</param>
+        /// <param name="spanId">The span id for the error message.</param>
+        /// <param name="errorMessage">The error message.</param>
+        /// <param name="username">The username.</param>
+        private Response PageWithErrorMessage(string pageName, string spanId, string errorMessage, string username)
+        {
+            string fileName = Proxy.UIPagesPath + pageName;
+
+            HtmlDocument doc = new HtmlDocument();
+            doc.Load(fileName);
+            HtmlNode errorNode = doc.DocumentNode.SelectSingleNode(String.Format("//span[@id='{0}']", spanId));
+            errorNode.InnerHtml = errorMessage;
+            HtmlNode usernameNode = doc.DocumentNode.SelectSingleNode("//input[@id='user']");
+            usernameNode.SetAttributeValue("value", username);
+
+            _clientHttpContext.Response.ContentType = "text/html";
+            return new Response(doc.DocumentNode.OuterHtml, false);
+        }
+
+        /// <summary>
+        /// Logs a user out.
         /// </summary>
         /// <returns></returns>
         public Response LogoutRequest()
         {
             Logger.Metric(UserIDCookieValue, "Logout.");
             Proxy.SessionManager.LogUserOut(UserIDCookieValue);
+            // Set cookies.
+            Cookie idCookie = new Cookie("uid", "" , "/");
+            Cookie nameCookie = new Cookie("uname", "", "/");
+            Cookie statusCookie = new Cookie("status", "", "/");
+            // Expiry date in the past.
+            DateTime expiryDate = DateTime.Now.AddDays(-1);
+            idCookie.Expires = expiryDate;
+            nameCookie.Expires = expiryDate;
+            statusCookie.Expires = expiryDate;
+
+            _clientHttpContext.Response.Headers.Add("Set-Cookie", idCookie.ToCookieString());
+            _clientHttpContext.Response.Headers.Add("Set-Cookie", nameCookie.ToCookieString());
+            _clientHttpContext.Response.Headers.Add("Set-Cookie", statusCookie.ToCookieString());
+
             return new Response();
         }
 

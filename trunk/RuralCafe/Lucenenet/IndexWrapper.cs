@@ -168,10 +168,8 @@ namespace RuralCafe.Lucenenet
                             { "Content-Type", "text/html"}
                         };
 
-                        GlobalCacheItemToAdd newItem = new GlobalCacheItemToAdd();
-                        newItem.filename = relFileName;
-                        newItem.headers = headers;
-                        newItem.statusCode = 200;
+                        // The index entry already exists, so we don't want to create a new one here.
+                        GlobalCacheItemToAdd newItem = new GlobalCacheItemToAdd(relFileName, headers, 200, false);
 
                         // Add file to the database
                         proxy.ProxyCacheManager.AddCacheItemsForExistingFiles(new HashSet<GlobalCacheItemToAdd>() { newItem });

@@ -4,33 +4,35 @@
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 		<title>Trotro</title>
 		<!-- uses same design as login page -->
-		<link href="css/login.css" rel="stylesheet" type="text/css" media="all"/>
-		<script type="text/javascript" src="js/ajax.js"></script>
-		<script type="text/javascript" src="js/signup.js"></script>
-		<script type="text/javascript" src="js/user.js" ></script>
+		<!-- 	IMPORTANT: Use only absolute paths (starting with "/") in this file!
+				Otherwise the references don't work when this page is displayed as
+				/request/signup.
+		-->
+		<link href="/css/login.css" rel="stylesheet" type="text/css" media="all"/>
+		<script type="text/javascript" src="/js/signup.js"></script>
 	</head>
 
 	<body>
 		<div id="login_box">
 			<h1>
-				<a href="trotro.html"><img id="trotro_icon" src="img/icon.png" alt="trotro icon"/></a>
+				<a href="/"><img id="trotro_icon" src="/img/icon.png" alt="trotro icon"/></a>
 			</h1>
-			<form method="post" action="login.html" onsubmit="return signup();">
+			<form method="get" action="/request/signup" onsubmit="return checkFields();">
 				<p class="login_hint">Please enter a login name and password to signup.</p>
 				<div class="signup_form">
-					<p>Login:<input id="username" name="username" type="text" value=""/><br>
+					<p>Login:<input id="user" name="user" type="text" value=""/><br>
 						<span id="wrong_username" class="err_message"></span>
 					</p>
-					<p>Password:<input id="password1" name="password1" type="password" value=""/>
+					<p>Password:<input id="password1" name="pw" type="password" value=""/>
 					</p>
-					<p>Repeat Password:<input id="password2" name="password2" type="password" value=""/><br>
+					<p>Repeat Password:<input id="password2" type="password" value=""/><br>
 						<span id="wrong_password" class="err_message"></span>
 					</p>
 				</div>
-				<p> <input id="login" name="signupBtn" type="submit" value="Sign up"/></p>
+				<p> <input id="login" type="submit" value="Sign up"/></p>
 				<p class="err_message" id="wrong_setting"></p>
 			</form>
-			<p class="login_hint"> <a href="login.html">back to previous page</a></p>
+			<p class="login_hint"> <a href="/login.html">back to previous page</a></p>
 		</div>
 	</body>
 </html>

@@ -24,11 +24,37 @@ namespace RuralCafe
     public class GlobalCacheItemToAdd
     {
         /// <summary>The filename.</summary>
-        public string filename;
+        public string Filename
+        {
+            get;
+            private set;
+        }
         /// <summary>The headers.</summary>
-        public NameValueCollection headers;
+        public NameValueCollection Headers
+        {
+            get;
+            private set;
+        }
         /// <summary>The status code.</summary>
-        public short statusCode;
+        public short StatusCode
+        {
+            get;
+            private set;
+        }
+        /// <summary>Whether an index entry should be created for this item.</summary>
+        public bool AddToIndex
+        {
+            get;
+            private set;
+        }
+
+        public GlobalCacheItemToAdd(string filename, NameValueCollection headers, short statusCode, bool addToIndex)
+        {
+            this.Filename = filename;
+            this.Headers = headers;
+            this.StatusCode = statusCode;
+            this.AddToIndex = addToIndex;
+        }
 
         public override bool Equals(object obj)
         {
@@ -38,12 +64,12 @@ namespace RuralCafe
             }
             GlobalCacheItemToAdd other = obj as GlobalCacheItemToAdd;
 
-            return filename.ToLower().Equals(other.filename.ToLower());
+            return Filename.ToLower().Equals(other.Filename.ToLower());
         }
 
         public override int GetHashCode()
         {
-            return filename.ToLower().GetHashCode();
+            return Filename.ToLower().GetHashCode();
         }
     }
 
@@ -616,7 +642,7 @@ namespace RuralCafe
                 {
                     foreach (GlobalCacheItemToAdd item in items)
                     {
-                        if (!AddCacheItemForExistingFile(item.filename, item.headers, item.statusCode, databaseContext))
+                        if (!AddCacheItemForExistingFile(item.Filename, item.Headers, item.StatusCode, item.AddToIndex, databaseContext))
                         {
                             returnValue = false;
                             break;
@@ -648,10 +674,11 @@ namespace RuralCafe
         /// <param name="relFileName">The filename.</param>
         /// <param name="headers">The headers.</param>
         /// <param name="statusCode">The status code.</param>
+        /// <param name="addToIndex">Whether a text/html file should be added to the Lucene index.</param>
         /// <param name="databaseContext">The database context.</param>
         /// <returns>True for success and false for failure.</returns>
         private bool AddCacheItemForExistingFile(string relFileName,
-            NameValueCollection headers, short statusCode, RCDatabaseEntities databaseContext)
+            NameValueCollection headers, short statusCode, bool addToIndex, RCDatabaseEntities databaseContext)
         {
             // If the headers do not contain "Content-Type", which should practically not happen,
             // (but servers are actually not required to send it) we set it to the default:
@@ -704,7 +731,7 @@ namespace RuralCafe
                 try
                 {
                     AddCacheItemToDatabase(relFileName, headers, statusCode,
-                       itemSize, databaseContext);
+                       itemSize, addToIndex, databaseContext);
                 }
                 catch (Exception e)
                 {
@@ -738,12 +765,10 @@ namespace RuralCafe
         /// <returns>True for success and false for failure.</returns>
         public bool AddCacheItem(HttpWebResponse webResponse, string fileName)
         {
-            GlobalCacheItemToAdd newItem = new GlobalCacheItemToAdd();
-
-            newItem.filename = fileName;
-            newItem.headers = webResponse.Headers;
-            newItem.statusCode = (short)webResponse.StatusCode;
-
+            // This is called on the remote side and when streaming. We want to index all text files
+            // when streaming.
+            GlobalCacheItemToAdd newItem = new GlobalCacheItemToAdd(
+                fileName, webResponse.Headers, (short)webResponse.StatusCode, true);
 
             // Add file to the disk
             if (!AddCacheItemToDisk(webResponse))
@@ -763,18 +788,14 @@ namespace RuralCafe
         /// <returns>A global cache item to add.</returns>
         public GlobalCacheItemToAdd RecoverInfoFromFile(string fileName, string relFileName)
         {
-            GlobalCacheItemToAdd result = new GlobalCacheItemToAdd();
             // We cannot recover the headers, but we look at the file to determine its content-type,
             // as we always want this header!
-            result.headers = new NameValueCollection()
+            NameValueCollection headers = new NameValueCollection()
             {
                 { "Content-Type", Utils.GetContentTypeOfFile(fileName)}
             };
-            // We assume it was a request with a 200 OK answer.
-            result.statusCode = 200;
-            result.filename = relFileName;
-
-            return result;
+            // We index all text/html files
+            return new GlobalCacheItemToAdd(relFileName, headers, 200, true);
         }
 
         /// <summary>
@@ -1238,8 +1259,8 @@ namespace RuralCafe
                         if (existingCacheItem == null)
                         {
                             // Add database entry.
-                            AddCacheItemToDatabase(relFileName, newItem.headers, newItem.statusCode,
-                                fileInfo.Length, databaseContext);
+                            AddCacheItemToDatabase(relFileName, newItem.Headers, newItem.StatusCode,
+                                fileInfo.Length, newItem.AddToIndex, databaseContext);
                         }
                         else
                         {
@@ -1327,9 +1348,10 @@ namespace RuralCafe
         /// <param name="headers">The headers.</param>
         /// <param name="statusCode">The status code.</param>
         /// <param name="fileSize">The file size.</param>
+        /// <param name="addToIndex">Whether a text/html file should be added to the Lucene index.</param>
         /// <param name="databaseContext">The database context.</param>
         private void AddCacheItemToDatabase(string filename,
-            NameValueCollection headers, short statusCode,long fileSize,
+            NameValueCollection headers, short statusCode,long fileSize, bool addToIndex,
             RCDatabaseEntities databaseContext)
         {
             // We disable cookies for non-streamed requests
@@ -1375,7 +1397,7 @@ namespace RuralCafe
             databaseContext.GlobalCacheItem.Add(cacheItem);
 
             // If we're on the local proxy, we want to add text documents to the Lucene index.
-            if (_proxy is RCLocalProxy && GetHTTPMethodFromRelCacheFileName(filename).Equals("GET") &&
+            if (addToIndex && _proxy is RCLocalProxy && GetHTTPMethodFromRelCacheFileName(filename).Equals("GET") &&
                 (headers["Content-Type"].Contains("text/html") || headers["Content-Type"].Contains("text/plain")))
             {
                 RCLocalProxy proxy = ((RCLocalProxy)_proxy);
@@ -1390,8 +1412,6 @@ namespace RuralCafe
                     // initialize the index
                     proxy.IndexWrapper.EnsureIndexExists();
                 }
-
-                // add the file to Lucene, if it is a GET text or HTML file.
                 // We have made sure the content-type header is always present in the DB!
 
                 // XXX reading the file we just wrote. Not perfect.
@@ -1401,6 +1421,7 @@ namespace RuralCafe
                 // Use whole document, so we can also find results with tags, etc.
                 try
                 {
+                    proxy.Logger.Debug("Adding to index: " + filename);
                     proxy.IndexWrapper.IndexDocument(FilePathToUri(filename), title, document);
                 }
                 catch (Exception e)
@@ -1890,9 +1911,9 @@ namespace RuralCafe
         /// <param name="items">The items to get locks for.</param>
         private void GetLocksFor(IEnumerable<GlobalCacheItemToAdd> items)
         {
-            foreach (GlobalCacheItemToAdd item in items.OrderBy(item => item.filename))
+            foreach (GlobalCacheItemToAdd item in items.OrderBy(item => item.Filename))
             {
-                GetLockFor(item.filename, true);
+                GetLockFor(item.Filename, true);
             }
         }
 
@@ -1943,7 +1964,7 @@ namespace RuralCafe
         {
             foreach (GlobalCacheItemToAdd item in items)
             {
-                ReleaseLockFor(item.filename, true);
+                ReleaseLockFor(item.Filename, true);
             }
         }
 
