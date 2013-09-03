@@ -14,30 +14,38 @@ namespace RuralCafe
     public class SessionManager
     {
         /// <summary>
-        /// A logged in user. Contains his id and the time of login.
+        /// A logged in user. Contains his id and the time of login and the time of last activity.
         /// </summary>
         private class LoggedInUser
         {
             public int userId;
+            public DateTime timeOfLogin;
             public DateTime timeOfLastActivity;
 
-            public LoggedInUser(int userId, DateTime timeOfLastActivity)
+            public LoggedInUser(int userId, DateTime timeOfLogin)
             {
                 this.userId = userId;
-                this.timeOfLastActivity = timeOfLastActivity;
+                this.timeOfLogin = timeOfLogin;
+                this.timeOfLastActivity = timeOfLogin;
             }
         }
 
         // Constants
-        private const long SESSION_TIMEOUT_S = 60 * 20; // 20 minutes
+        private readonly TimeSpan SESSION_TIMEOUT = new TimeSpan(0, 20, 0); // 20 minutes
+        private readonly TimeSpan DEFAULT_SESSION_LENGTH = new TimeSpan(0, 20, 0); // 20 minutes
+        private const double SESSION_LENGTH_EXP_DECAY_VALUE = 0.8;
 
         // The proxy
         private RCLocalProxy _proxy;
 
+        // The path to users.xml
         private string _usersXML;
         
         // All users currently logged in.
-        private Dictionary<IPAddress, LoggedInUser> usersLoggedIn = new Dictionary<IPAddress,LoggedInUser>();
+        private Dictionary<IPAddress, LoggedInUser> _usersLoggedIn = new Dictionary<IPAddress,LoggedInUser>();
+
+        // The avg. session length of each user. Not actually the avg., but using exponential decay
+        private Dictionary<int, TimeSpan> _avgSessionLengths = new Dictionary<int, TimeSpan>();
 
         /// <summary>
         /// A new SessionManager.
@@ -49,6 +57,38 @@ namespace RuralCafe
             this._usersXML = proxy.ProxyPath + "users.xml";
         }
 
+        #region session length stuff
+
+        /// <summary>
+        /// Gets the average session length of a user, or the default if this is the user's first session.
+        /// </summary>
+        /// <param name="userId">The user id.</param>
+        /// <returns>The user's avg. session length.</returns>
+        public TimeSpan GetAvgSessionLength(int userId)
+        {
+            return _avgSessionLengths.ContainsKey(userId) ? _avgSessionLengths[userId] : DEFAULT_SESSION_LENGTH;
+        }
+
+        /// <summary>
+        /// Includes a session length in the user's average.
+        /// </summary>
+        /// <param name="userId">The user id.</param>
+        /// <param name="sessionLength">The session length.</param>
+        private void IncludeSessionLengthInAvg(int userId, TimeSpan sessionLength)
+        {
+            if (_avgSessionLengths.ContainsKey(userId))
+            {
+                long ticksAvg = (long)(_avgSessionLengths[userId].Ticks * SESSION_LENGTH_EXP_DECAY_VALUE
+                    + sessionLength.Ticks * (1 - SESSION_LENGTH_EXP_DECAY_VALUE));
+                _avgSessionLengths[userId] = new TimeSpan(ticksAvg);
+            }
+            else
+            {
+                _avgSessionLengths[userId] = sessionLength;
+            }
+        }
+
+        #endregion
         #region IP adress stuff
 
         /// <summary>
@@ -58,27 +98,30 @@ namespace RuralCafe
         /// <param name="userId">The user id.</param>
         public void LogUserIn(IPAddress ip, int userId)
         {
-            lock (usersLoggedIn)
+            lock (_usersLoggedIn)
             {
-                // Log out user (may be loggin in here or elsewhere
+                // Log out user (may be logged in here or elsewhere)
                 LogUserOutNoLock(userId);
 
-                if (usersLoggedIn.ContainsKey(ip))
+                if (_usersLoggedIn.ContainsKey(ip))
                 {
                     // Log out old user using that machine
-                    LogUserOutNoLock(usersLoggedIn[ip].userId);
+                    LogUserOutNoLock(_usersLoggedIn[ip].userId);
                 }
-                usersLoggedIn[ip] = new LoggedInUser(userId, DateTime.Now);
+                _usersLoggedIn[ip] = new LoggedInUser(userId, DateTime.Now);
             }
         }
 
         private void LogUserOutNoLock(int userId)
         {
             // Remove all IPs that map to the userId (normally one)
-            IPAddress ip;
-            while ((ip = usersLoggedIn.FirstOrDefault(x => x.Value.userId == userId).Key) != null)
+            KeyValuePair<IPAddress,LoggedInUser> ipAndUser;
+            while ((ipAndUser = _usersLoggedIn.FirstOrDefault(x => x.Value.userId == userId)).Key != null)
             {
-                usersLoggedIn.Remove(ip);
+                // Remove from active sessions
+                _usersLoggedIn.Remove(ipAndUser.Key);
+                // Save session length
+                IncludeSessionLengthInAvg(ipAndUser.Value.userId, DateTime.Now.Subtract(ipAndUser.Value.timeOfLogin));
             }
         }
 
@@ -88,7 +131,7 @@ namespace RuralCafe
         /// <param name="userId">The user id.</param>
         public void LogUserOut(int userId)
         {
-            lock (usersLoggedIn)
+            lock (_usersLoggedIn)
             {
                 LogUserOutNoLock(userId);
             }
@@ -100,10 +143,10 @@ namespace RuralCafe
         /// <param name="ip">The client IP.</param>
         public void UpdateLastActivityTime(IPAddress ip)
         {
-            lock (usersLoggedIn)
+            lock (_usersLoggedIn)
             {
                 LoggedInUser user;
-                if (usersLoggedIn.TryGetValue(ip, out user))
+                if (_usersLoggedIn.TryGetValue(ip, out user))
                 {
                     user.timeOfLastActivity = DateTime.Now;
                 }
@@ -118,10 +161,10 @@ namespace RuralCafe
         public int GetUserId(IPAddress ip)
         {
             LoggedInUser user;
-            if(usersLoggedIn.TryGetValue(ip, out user))
+            if(_usersLoggedIn.TryGetValue(ip, out user))
             {
                 // Check if the user session is expired!
-                if (user.timeOfLastActivity.AddSeconds(SESSION_TIMEOUT_S).CompareTo(DateTime.Now) < 0)
+                if (user.timeOfLastActivity.Add(SESSION_TIMEOUT).CompareTo(DateTime.Now) < 0)
                 {
                     // Expired. Log the user out and return -1
                     LogUserOut(user.userId);
@@ -140,12 +183,27 @@ namespace RuralCafe
         /// <returns>The session expiry DateTime.</returns>
         public DateTime GetSessionExpiryDate(int userId)
         {
-            LoggedInUser user = usersLoggedIn.FirstOrDefault(x => x.Value.userId == userId).Value;
+            LoggedInUser user = _usersLoggedIn.FirstOrDefault(x => x.Value.userId == userId).Value;
             if (user == null)
             {
                 throw new Exception("User not logged in.");
             }
-            return user.timeOfLastActivity.AddSeconds(SESSION_TIMEOUT_S);
+            return user.timeOfLastActivity.Add(SESSION_TIMEOUT);
+        }
+
+        /// <summary>
+        /// Gets the DateTime the user logged in.
+        /// </summary>
+        /// <param name="userId">The user id.</param>
+        /// <returns>The time of login.</returns>
+        public DateTime GetTimeOfLogin(int userId)
+        {
+            LoggedInUser user = _usersLoggedIn.FirstOrDefault(x => x.Value.userId == userId).Value;
+            if (user == null)
+            {
+                throw new Exception("User not logged in.");
+            }
+            return user.timeOfLogin;
         }
 
         #endregion

@@ -517,6 +517,9 @@
     <Content Include="LocalProxy\RuralCafePages\js\status.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="LocalProxy\RuralCafePages\js\survey.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="LocalProxy\RuralCafePages\js\trotro.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

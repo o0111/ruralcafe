@@ -26,9 +26,13 @@ namespace RuralCafe
         // Constants
         private const string LINK_SUGGESTIONS_CACHED_TEXT = "cached";
         private readonly string[] REDIR_PAGES = new string[] { "", "trotro.html", "trotro-user.html" };
+        private readonly TimeSpan MIN_SURVEY_INTERVAL = new TimeSpan(24, 0, 0); // 1 day
 
         private static Dictionary<String, RoutineMethod> routines = new Dictionary<String, RoutineMethod>();
         private static RoutineMethod defaultMethod = new RoutineMethod("DefaultPage");
+
+        // The time when each user last did the satisfaction survey.
+        private static Dictionary<int, DateTime> _timesOfLastSurvey = new Dictionary<int, DateTime>();
 
         /// <summary>
         /// Static Constructor. Defines routines.
@@ -61,8 +65,9 @@ namespace RuralCafe
                 new string[] { "user", "pw" }, new Type[] { typeof(string), typeof(string) }, false));
             routines.Add("/request/login", new RoutineMethod("LoginRequest",
                 new string[] { "user", "pw" }, new Type[] { typeof(string), typeof(string) }, false));
-            routines.Add("/request/logout", new RoutineMethod("LogoutRequest",
-                new string[] { }, new Type[] { }));
+            routines.Add("/request/logout", new RoutineMethod("LogoutRequest"));
+            routines.Add("/request/isSurveyDue", new RoutineMethod("IsSurveyDue",
+                new string[] { "endOfSession" }, new Type[] { typeof(bool) }));
             routines.Add("/request/userSatisfaction", new RoutineMethod("UserSatisfactionRequest",
                 new string[] { "rating", "hadIssues", "problems", "comments" }, 
                 new Type[] { typeof(int), typeof(bool), typeof(string), typeof(string) }));
@@ -87,6 +92,25 @@ namespace RuralCafe
         }
 
         #region helper methods
+
+        /// <summary>
+        /// Gets the time the user with the given id last did the survey.
+        /// </summary>
+        /// <param name="userId">The user ID.</param>
+        /// <returns>The time when he last did the survey.</returns>
+        private DateTime GetLastSurveyTime(int userId)
+        {
+            return _timesOfLastSurvey.ContainsKey(userId) ? _timesOfLastSurvey[userId] : DateTime.MinValue;
+        }
+
+        /// <summary>
+        /// Sets the time when the user with given id last did the survey to now.
+        /// </summary>
+        /// <param name="userId">The user ID.</param>
+        private void SetLastSurveyTime(int userId)
+        {
+            _timesOfLastSurvey[userId] = DateTime.Now;
+        }
 
         /// <summary>
         /// Prepares an XML answer by setting content type and headers accordingly.
@@ -601,15 +625,6 @@ namespace RuralCafe
                     // We will have to look at the same index again.
                     i--;
                 }
-
-                // XXX: super hackery
-                //string uri2 = CacheManager.FilePathToUri(CacheManager.GetRelativeCacheFileName(luceneResults.Results[i].URI, "GET"));
-                //if (!Proxy.ProxyCacheManager.IsCached("GET", luceneResults.Results[i].URI) && !Proxy.ProxyCacheManager.IsCached("GET", uri2))
-                //{
-                //    luceneResults.RemoveDocument(i);
-                //    // We will have to look at the same index again.
-                //    i--;
-                //}
             }
 
             // Log result num
@@ -809,6 +824,29 @@ namespace RuralCafe
                 status = "online";
             }
             return new Response(status);
+        }
+
+        /// <summary>
+        /// Asks if the user satisfaction survey is due to be shown.
+        /// </summary>
+        /// <param name="endOfSession">True, if we know that this is the end of the session.</param>
+        public Response IsSurveyDue(bool endOfSession)
+        {
+            _clientHttpContext.Response.ContentType = "text/plain";
+            if ( // The setting must be true
+                Properties.Settings.Default.SHOW_SURVEY
+                // The survey must not have been shown alredy that day
+                && GetLastSurveyTime(UserIDCookieValue).Add(MIN_SURVEY_INTERVAL).CompareTo(DateTime.Now) < 0
+                // It must be at the end of the session or after the middle of an avg. session length of that user
+                && (endOfSession || Proxy.SessionManager.GetTimeOfLogin(UserIDCookieValue).
+                    Add(new TimeSpan(Proxy.SessionManager.GetAvgSessionLength(UserIDCookieValue).Ticks / 2)).
+                    CompareTo(DateTime.Now) < 0))
+            {
+                // The client will show the survey.
+                SetLastSurveyTime(UserIDCookieValue);
+                return new Response("True");
+            }
+            return new Response("False");
         }
 
         /// <summary>

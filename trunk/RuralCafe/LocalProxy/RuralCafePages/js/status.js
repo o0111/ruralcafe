@@ -4,13 +4,10 @@ var status="offline";	//the network status, can either be "offline", "online", o
 var statusInterval=30000;
 
 //check the network status every statusInterval milliseconds
-//check login every statusInterval milliseconds
-function initiateInterval(){
+function initiateStatusInterval(){
 	checkStatus();
 	window.setInterval('checkStatus()', statusInterval);
 	loginGreeting();
-	checkLogin();
-	window.setInterval('checkLogin()', statusInterval);
 }
 
 //send a ajax request to check for the network status
@@ -39,17 +36,7 @@ function loginGreeting(){
 		greetingMsg();
 }
 
-//check whether user is logged in
-function checkLogin(){
-		var path = document.location.pathname;
-		if (get_cookie('uname')=="" &&
-			path != "/" && path.slice(0, 12) != "/trotro.html") {
-			// Change to trotro from trotro-user
-			document.location = "trotro.html";
-		}
-}
-
-addLoadEvent(initiateInterval);
+addLoadEvent(initiateStatusInterval);
 
 //load the network status, register search function according to the network status 
 function loadStatus(){
