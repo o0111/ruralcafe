@@ -1,4 +1,4 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -16,7 +16,7 @@
 			<h1>
 				<a href="/"><img id="trotro_icon" src="/img/icon.png" alt="trotro icon"/></a>
 			</h1>
-			<form method="get" action="/request/login" onsubmit="return checkFields();">
+			<form method="post" action="/request/login" onsubmit="return checkFields();">
 				<p class="login_hint">You are required to login before you can start downloading pages.</p>
 				<div class="login_form">
 					<p>Login:<input id="user" name="user" type="text" value=""/><br>
@@ -27,7 +27,7 @@
 					</p>
 				</div>
 				<p> <input id="login" type="submit" value="Login"/></p><br>
-				<p class="login_hint">Do not have a username? Please <a href="signup.html">sign up</a> here.</p>
+				<p class="login_hint">Do not have a username? Please <a href="/signup.html">sign up</a> here.</p>
 			</form>
 			<p class="login_hint"> <a href="/">back to previous page</a></p>
 		</div>

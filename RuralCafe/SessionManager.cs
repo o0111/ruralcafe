@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -28,7 +29,7 @@ namespace RuralCafe
         }
 
         // Constants
-        private const long SESSION_TIMEOUT_S = 60 * 60 * 24; // 24 hours
+        private const long SESSION_TIMEOUT_S = 60 * 20; // 20 minutes
 
         // The proxy
         private RCLocalProxy _proxy;
@@ -45,7 +46,7 @@ namespace RuralCafe
         public SessionManager(RCLocalProxy proxy)
         {
             this._proxy = proxy;
-            this._usersXML = proxy.UIPagesPath + "users.xml"; // FIXME
+            this._usersXML = proxy.ProxyPath + "users.xml";
         }
 
         #region IP adress stuff
@@ -90,6 +91,22 @@ namespace RuralCafe
             lock (usersLoggedIn)
             {
                 LogUserOutNoLock(userId);
+            }
+        }
+
+        /// <summary>
+        /// Updates the time of last activity to now.
+        /// </summary>
+        /// <param name="ip">The client IP.</param>
+        public void UpdateLastActivityTime(IPAddress ip)
+        {
+            lock (usersLoggedIn)
+            {
+                LoggedInUser user;
+                if (usersLoggedIn.TryGetValue(ip, out user))
+                {
+                    user.timeOfLastActivity = DateTime.Now;
+                }
             }
         }
 
@@ -141,6 +158,10 @@ namespace RuralCafe
         /// <returns>His user ID or -1.</returns>
         public int UserID(string username)
         {
+            if (!File.Exists(_usersXML))
+            {
+                return -1;
+            }
             XmlDocument doc = new XmlDocument();
             doc.Load(_usersXML);
 
@@ -161,6 +182,10 @@ namespace RuralCafe
         /// <returns>If the combination is correct.</returns>
         public bool IsCorrectPW(string username, string password)
         {
+            if (!File.Exists(_usersXML))
+            {
+                return false;
+            }
             XmlDocument doc = new XmlDocument();
             doc.Load(_usersXML);
 
@@ -183,21 +208,37 @@ namespace RuralCafe
         public int SignUpUser(string username, string password)
         {
             XmlDocument doc = new XmlDocument();
-            doc.Load(_usersXML);
+            if (File.Exists(_usersXML))
+            {
+                doc.Load(_usersXML);
+            }
+            else
+            {
+                doc.AppendChild(doc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
+                doc.AppendChild(doc.CreateElement("customers"));
+            }
 
             XmlNode custsNode = doc.DocumentElement;
             // Get new id
             int custid = custsNode.ChildNodes.Count + 1; // IDs start with 1
             // Append zeros
             String custidStr = custid.ToString("D3");
+
             // Add new user
-            custsNode.AppendChild(custsNode.LastChild.CloneNode(true));
-            custsNode.LastChild.Attributes["custid"].Value = custidStr;
-            custsNode.LastChild.SelectSingleNode("user").InnerText = username;
-            custsNode.LastChild.SelectSingleNode("pwd").InnerText = password;
+            XmlElement customerNode = doc.CreateElement("customer");
+            customerNode.SetAttribute("custid", custidStr);
+            custsNode.AppendChild(customerNode);
+
+            XmlElement userNode = doc.CreateElement("user");
+            XmlElement pwdNode = doc.CreateElement("pwd");
+            userNode.InnerText = username;
+            pwdNode.InnerText = password;
+            customerNode.AppendChild(userNode);
+            customerNode.AppendChild(pwdNode);
+            
+
             //Save
             doc.Save(_usersXML);
-
             return custid;
         }
 
@@ -207,6 +248,10 @@ namespace RuralCafe
         /// <returns>The number of users.</returns>
         public int UsersNumber()
         {
+            if (!File.Exists(_usersXML))
+            {
+                return 0;
+            }
             XmlDocument doc = new XmlDocument();
             doc.Load(_usersXML);
             return doc.DocumentElement.ChildNodes.Count;
