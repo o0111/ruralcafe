@@ -17,6 +17,7 @@ Minor tasks
 - Queue also streaming requests at the RP ??
 	- Duplicate IsStreaming()-Check at the moment.
 - RequestHandlers are considered equal, if URL is equal. They should not be equal if HTTP method is different or body (for POSTs e.g.) is different.
+- RequestId not unique!
 - DNS cache hit/miss logging (César: Packet sniffing)
 - Domain name & Search query clustering
 - Handle 304 correctly (done for StreamTransparently, missing for DownloadToCache, but it doesn't seem to happen there)
@@ -26,24 +27,9 @@ Minor tasks
 - Blacklist an URL being requested more than 10 times in an interval shorter than 10s.
 - Login/security
   - Save pseudo-randomly generated session id in the cookie, not the user id
-
-Code piece integration
-- Clustering
-- Link recommendation
-- Crawler
-	- Run crawler button in UI, to build a download a cache based on predefined topics ?
-	- Integrate the database creation into the crawler.
-
-Metrics logging (done)
-- Save IP per userId (done)
-- login/logout request (just let the server know) (done)
-  - sync cookie timeout and server "session" timeout (done)
-- log all requests (done)
-  - per user (done)
-- self reported user satisfaction (done)
-- total number of cached objects (done)
-- number of registered users (done)
-- network speed + status (done)
+- https
+  - _maxInflightRequests
+  - Install directions.
 
 Bugs
 - Estimated network speed is sometimes negative!?
@@ -59,6 +45,23 @@ Bugs
   - Embed opened pages instead of new tabs. Page inside main frame. At the moment, if you do that, you end up having Trotro inside Trotro .... (not sure we can fix this one.)
   - Click search results makes links open in the TroTro tab, this is inconsistent with opening in a new tab. (fixed for cached results, the problem with new results is that it gets redirected to the queue. this should be changed so the RCproxy filters out live results that are actually cached)
 - wrong https links (e.g. http://https//twitter.com/ )
+
+Code piece integration
+- Crawler
+	- Run crawler button in UI, to build a download a cache based on predefined topics ?
+	- Integrate the database creation into the crawler.
+	- Integrate new URL<->Filepath conversion into the crawler.
+
+Metrics logging (done)
+- Save IP per userId (done)
+- login/logout request (just let the server know) (done)
+  - sync cookie timeout and server "session" timeout (done)
+- log all requests (done)
+  - per user (done)
+- self reported user satisfaction (done)
+- total number of cached objects (done)
+- number of registered users (done)
+- network speed + status (done)
 
 Webpage issues
 - http://favstar.fm/users/ubershitfacts (Infinite requests for the same item)
