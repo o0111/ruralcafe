@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Security.Cryptography;
 using System.Text;
 using System.Xml;
 
@@ -34,6 +35,8 @@ namespace RuralCafe
         private readonly TimeSpan SESSION_TIMEOUT = new TimeSpan(0, 20, 0); // 20 minutes
         private readonly TimeSpan DEFAULT_SESSION_LENGTH = new TimeSpan(0, 20, 0); // 20 minutes
         private const double SESSION_LENGTH_EXP_DECAY_VALUE = 0.8;
+        private const int PWD_KEY_LENGTH = 256;
+        private const int PWD_SALT_LENTH = 64;
 
         // The proxy
         private RCLocalProxy _proxy;
@@ -254,7 +257,15 @@ namespace RuralCafe
             }
 
             XmlNode pwdNode = userNode.NextSibling;
-            return pwdNode.InnerText.Equals(password);
+            XmlNode saltNode = pwdNode.NextSibling;
+            byte[] key = Convert.FromBase64String(pwdNode.InnerText);
+            byte[] salt = Convert.FromBase64String(saltNode.InnerText);
+
+            using (var deriveBytes = new Rfc2898DeriveBytes(password, salt))
+            {
+                byte[] newKey = deriveBytes.GetBytes(PWD_KEY_LENGTH);  // derive a new key
+                return newKey.SequenceEqual(key);
+            }
         }
 
         /// <summary>
@@ -289,10 +300,20 @@ namespace RuralCafe
 
             XmlElement userNode = doc.CreateElement("user");
             XmlElement pwdNode = doc.CreateElement("pwd");
+            XmlElement saltNode = doc.CreateElement("salt");
             userNode.InnerText = username;
-            pwdNode.InnerText = password;
+            using (var deriveBytes = new Rfc2898DeriveBytes(password, PWD_SALT_LENTH))
+            {
+                byte[] salt = deriveBytes.Salt;
+                byte[] key = deriveBytes.GetBytes(PWD_KEY_LENGTH);  // derive a new key
+
+                // save salt and key to database
+                pwdNode.InnerText = Convert.ToBase64String(key);
+                saltNode.InnerText = Convert.ToBase64String(salt);
+            }
             customerNode.AppendChild(userNode);
             customerNode.AppendChild(pwdNode);
+            customerNode.AppendChild(saltNode);
             
 
             //Save

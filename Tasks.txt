@@ -25,7 +25,6 @@ Minor tasks
 - "Search later when I'm online" functionality.
 - Blacklist an URL being requested more than 10 times in an interval shorter than 10s.
 - Login/security
-  - Save passwords hashed, not plain
   - Save pseudo-randomly generated session id in the cookie, not the user id
 
 Code piece integration
