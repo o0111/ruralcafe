@@ -607,9 +607,6 @@
     <Content Include="LocalProxy\RuralCafePages\trotro.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="LocalProxy\RuralCafePages\users.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\DataSources\" />
@@ -706,16 +703,6 @@
       <FileType>File</FileType>
     </PublishFile>
     <PublishFile Include="LocalProxy\RuralCafePages\result.xml">
-      <Visible>False</Visible>
-      <Group>
-      </Group>
-      <TargetPath>
-      </TargetPath>
-      <PublishState>Include</PublishState>
-      <IncludeHash>True</IncludeHash>
-      <FileType>File</FileType>
-    </PublishFile>
-    <PublishFile Include="LocalProxy\RuralCafePages\users.xml">
       <Visible>False</Visible>
       <Group>
       </Group>

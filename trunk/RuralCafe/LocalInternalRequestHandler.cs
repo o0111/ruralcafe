@@ -25,6 +25,7 @@ namespace RuralCafe
     {
         // Constants
         private const string LINK_SUGGESTIONS_CACHED_TEXT = "cached";
+        private readonly string[] REDIR_PAGES = new string[] { "", "trotro.html", "trotro-user.html" };
 
         private static Dictionary<String, RoutineMethod> routines = new Dictionary<String, RoutineMethod>();
         private static RoutineMethod defaultMethod = new RoutineMethod("DefaultPage");
@@ -57,9 +58,9 @@ namespace RuralCafe
             routines.Add("/request/eta", new RoutineMethod("ServeETARequest",
                 new string[] { "i" }, new Type[] { typeof(string) }));
             routines.Add("/request/signup", new RoutineMethod("SignupRequest",
-                new string[] { "user", "pw" }, new Type[] { typeof(string), typeof(string) }));
+                new string[] { "user", "pw" }, new Type[] { typeof(string), typeof(string) }, false));
             routines.Add("/request/login", new RoutineMethod("LoginRequest",
-                new string[] { "user", "pw" }, new Type[] { typeof(string), typeof(string) }));
+                new string[] { "user", "pw" }, new Type[] { typeof(string), typeof(string) }, false));
             routines.Add("/request/logout", new RoutineMethod("LogoutRequest",
                 new string[] { }, new Type[] { }));
             routines.Add("/request/userSatisfaction", new RoutineMethod("UserSatisfactionRequest",
@@ -244,6 +245,55 @@ namespace RuralCafe
         #region RC display and handling Methods
 
         /// <summary>
+        /// Some preprocessing.
+        /// </summary>
+        protected override Response PreProcess()
+        {
+            // Log the user out at the client side, if he is already logged out at the server side.
+            if (UserIDCookieValue != Proxy.SessionManager.GetUserId(ClientIP))
+            {
+                SendLogoutCookies();
+            }
+
+            // Redirect to login if we force login and user is not logged in.
+            if (Properties.Settings.Default.FORCE_LOGIN && UserIDCookieValue == -1
+                && REDIR_PAGES.Contains(_originalRequest.Url.LocalPath.Substring(1)))
+            {
+                // We redirect to login.html
+                _clientHttpContext.Response.Redirect("login.html");
+                return new Response();
+            }
+
+            // Update time of last activity for logged in users
+            if (UserIDCookieValue != -1)
+            {
+                Proxy.SessionManager.UpdateLastActivityTime(ClientIP);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Sends expired cookies, so they will be deleted at the client side.
+        /// </summary>
+        private void SendLogoutCookies()
+        {
+            // Set cookies.
+            Cookie idCookie = new Cookie("uid", "", "/");
+            Cookie nameCookie = new Cookie("uname", "", "/");
+            Cookie statusCookie = new Cookie("status", "", "/");
+            // Expiry date in the past.
+            DateTime expiryDate = DateTime.Now.AddDays(-1);
+            idCookie.Expires = expiryDate;
+            nameCookie.Expires = expiryDate;
+            statusCookie.Expires = expiryDate;
+
+            _clientHttpContext.Response.Headers.Add("Set-Cookie", idCookie.ToCookieString());
+            _clientHttpContext.Response.Headers.Add("Set-Cookie", nameCookie.ToCookieString());
+            _clientHttpContext.Response.Headers.Add("Set-Cookie", statusCookie.ToCookieString());
+        }
+
+        /// <summary>
         /// For everything else.
         /// </summary>
         public Response DefaultPage()
@@ -260,13 +310,6 @@ namespace RuralCafe
         /// <summary>Serves the RuralCafe search page.</summary>
         public Response HomePage()
         {
-            if (Properties.Settings.Default.FORCE_LOGIN && UserIDCookieValue == -1)
-            {
-                // We redirect to login.html
-                _clientHttpContext.Response.Redirect("login.html");
-                return new Response();
-            }
-
             string pageUri = Proxy.RCSearchPage;
             string fileName = pageUri;
             int offset = pageUri.LastIndexOf('/');
@@ -859,19 +902,7 @@ namespace RuralCafe
         {
             Logger.Metric(UserIDCookieValue, "Logout.");
             Proxy.SessionManager.LogUserOut(UserIDCookieValue);
-            // Set cookies.
-            Cookie idCookie = new Cookie("uid", "" , "/");
-            Cookie nameCookie = new Cookie("uname", "", "/");
-            Cookie statusCookie = new Cookie("status", "", "/");
-            // Expiry date in the past.
-            DateTime expiryDate = DateTime.Now.AddDays(-1);
-            idCookie.Expires = expiryDate;
-            nameCookie.Expires = expiryDate;
-            statusCookie.Expires = expiryDate;
-
-            _clientHttpContext.Response.Headers.Add("Set-Cookie", idCookie.ToCookieString());
-            _clientHttpContext.Response.Headers.Add("Set-Cookie", nameCookie.ToCookieString());
-            _clientHttpContext.Response.Headers.Add("Set-Cookie", statusCookie.ToCookieString());
+            SendLogoutCookies();
 
             return new Response();
         }
@@ -947,6 +978,10 @@ namespace RuralCafe
         {
             // remove it locally
             LocalRequestHandler removedLRH = Proxy.RemoveRequest(UserIDCookieValue, requestId);
+            if (removedLRH == null)
+            {
+                return new Response("Request did not exist");
+            }
 
             if (removedLRH.RequestStatus == Status.Downloading && removedLRH.OutstandingRequests == 0)
             {

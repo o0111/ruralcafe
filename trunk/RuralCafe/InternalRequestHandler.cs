@@ -32,21 +32,38 @@ namespace RuralCafe
             }
 
             /// <summary>
-            /// A routine with parameters.
+            /// A GET routine with parameters.
             /// </summary>
             /// <param name="methodName">The method name.</param>
             /// <param name="parameterNames">The names of the parameters in the URI.</param>
             /// <param name="parameterTypes">The types of the parameters.</param>
             public RoutineMethod(String methodName, String[] parameterNames,
-                Type[] parameterTypes)
+                Type[] parameterTypes) : this(methodName, parameterNames, parameterTypes, true) { }
+
+            /// <summary>
+            /// A GET/POST routine with parameters.
+            /// </summary>
+            /// <param name="methodName">The method name.</param>
+            /// <param name="parameterNames">The names of the parameters in the URI.</param>
+            /// <param name="parameterTypes">The types of the parameters.</param>
+            /// <param name="GETParameters">True for GET parameters, false for POST parameters.</param>
+            public RoutineMethod(String methodName, String[] parameterNames,
+                Type[] parameterTypes, bool GETParameters)
             {
                 this.MethodName = methodName;
                 this.ParameterNames = parameterNames;
                 this.ParameterTypes = parameterTypes;
+                this.GETParameters = GETParameters;
             }
 
             /// <summary>The name of the method.</summary>
             public String MethodName
+            {
+                get;
+                private set;
+            }
+            /// <summary>True for GET parameters, false for POST parameters.</summary>
+            public bool GETParameters
             {
                 get;
                 private set;
@@ -192,6 +209,16 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// Subclasses can override this method to do any preprocessing, that should take place in
+        /// every RoutineMethod. HttpException can be thrown.
+        /// </summary>
+        /// <returns>Null, if the actual method should be invoked and a reponse otherwise.</returns>
+        protected virtual Response PreProcess()
+        {
+            return null;
+        }
+
+        /// <summary>
         /// Handles an RC internal request.
         /// </summary>
         /// <returns>The status.</returns>
@@ -222,10 +249,23 @@ namespace RuralCafe
                 Object result;
                 try
                 {
-                    result = mInfo.Invoke(this, GetParameters(method));
+                    // preprocessing
+                    if ((result = PreProcess()) == null)
+                    {
+                        // actual method
+                        result = mInfo.Invoke(this, GetParameters(method));
+                    }
                 }
                 catch (Exception e)
                 {
+                    if (e is HttpException)
+                    {
+                        // an intended Exception
+                        HttpException httpe = (HttpException)e;
+                        SendErrorPage(httpe.Status, httpe.Text);
+                        return;
+                    }
+
                     // Get inner Exception
                     Exception innerE = e.InnerException;
                     if (innerE is HttpException)
@@ -240,7 +280,6 @@ namespace RuralCafe
                         string message = innerE != null ? innerE.Message : e.Message;
                         SendErrorPage(HttpStatusCode.InternalServerError, message);
                     }
-
                     return;
                 }
 
@@ -298,8 +337,14 @@ namespace RuralCafe
             }
             Object[] result = new Object[method.ParameterNames.Length];
 
-            // Parse parameters
-            NameValueCollection parameterCollection = HttpUtility.ParseQueryString(_originalRequest.Url.Query);
+            // Retrieve parameters
+            string parameters = method.GETParameters ?
+                _originalRequest.Url.Query :
+                Encoding.UTF8.GetString(HttpUtils.ReceiveBody(_originalRequest));
+
+            // Parse GET or POST parameters
+            NameValueCollection parameterCollection = HttpUtility.ParseQueryString(parameters);
+            
             for (int i = 0; i < method.ParameterNames.Length; i++)
             {
                 String parameterName = method.ParameterNames[i];
