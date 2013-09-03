@@ -2,17 +2,12 @@
 
 function logOut() {
 	// Uncomment this if you don't want to show the user satisfaction survey
-	showSurvey();
+	showSurveyIfDue(true);
 	
 	// Send logout request to server
 	var xhttp= new ajaxRequest();       
 	xhttp.open("GET","request/logout",true);
 	xhttp.send(null);
-	
-}
-
-function showSurvey() {
-	window.showModalDialog('survey.html','','dialogHeight:400px;dialogWidth:300px;')
 }
 
 window.onload = logOut;

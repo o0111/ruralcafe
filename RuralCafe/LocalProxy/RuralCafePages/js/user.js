@@ -6,6 +6,8 @@ var ipp = 7;	//request items shown per page
 var i;			//index of first item in the queue
 var results;	//loaded requests
 
+var userInterval=60000;
+
 //initiate the page, send a ajax request to fetch requests in user queue
 function loadOffline(){	
 	document.getElementById('left_btn').onclick=scrollLeft;
@@ -42,7 +44,26 @@ function loadOffline(){
 	}
 }
 
+//check tif the user is still logged in
+// and if the survey is due every statusInterval milliseconds
+function initiateUserInterval(){
+	checkLogin();
+	window.setInterval('checkLogin()', userInterval);
+	window.setInterval('showSurveyIfDue(false)', userInterval);
+}
+
+//check whether user is logged in
+function checkLogin(){
+		var path = document.location.pathname;
+		if (get_cookie('uname')=="" &&
+			path != "/" && path.slice(0, 12) != "/trotro.html") {
+			// Change to trotro from trotro-user
+			document.location = "trotro.html";
+		}
+}
+
 addLoadEvent(loadOffline);
+addLoadEvent(initiateUserInterval);
 
 //initiate the user queue
 function loadQueue(requestURL){
