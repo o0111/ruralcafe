@@ -53,11 +53,17 @@ function showXMLl(){
 			for (var i=0;i<results.length;i++){
 				//if url is not empty
 				if(results[i].getElementsByTagName('url')[0].firstChild){
-					var itemURL=results[i].getElementsByTagName('url')[0].firstChild.nodeValue;
+					var itemLink = results[i].getElementsByTagName('url')[0].firstChild.nodeValue;
+					var itemURL = itemLink;
+					if (itemURL.slice(0,7) == "http://") {
+						itemURL = itemURL.substring(7);
+					} else if (itemURL.slice(0,8) == "https://") {
+						itemURL = itemURL.substring(8);
+					}
 					
 					var itemTitle=results[i].getElementsByTagName('title')[0].firstChild?results[i].getElementsByTagName('title')[0].firstChild.nodeValue:itemURL;
 					var itemSnippet=results[i].getElementsByTagName('snippet')[0].firstChild?results[i].getElementsByTagName('snippet')[0].firstChild.nodeValue:"";
-					innerHtml+='<div class="result_page"><p><a href="http://'+itemURL+'" target="_parent">'+itemTitle+'</a></p><p class="url">'+itemURL+'</p><p>'+itemSnippet+'</p></div>';
+					innerHtml+='<div class="result_page"><p><a href="'+itemLink+'" target="_parent">'+itemTitle+'</a></p><p class="url">'+itemURL+'</p><p>'+itemSnippet+'</p></div>';
 				}
 			}
 			document.getElementById('live_updateArea').innerHTML=innerHtml;

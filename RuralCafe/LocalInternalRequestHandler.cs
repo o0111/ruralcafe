@@ -217,9 +217,6 @@ namespace RuralCafe
                         currUri = currUri.Trim();
                     }
 
-                    // instead of translating to absolute, prepend http:// to make webrequest constructor happy
-                    currUri = HttpUtils.AddHttpPrefix(currUri);
-
                     if (!HttpUtils.IsValidUri(currUri))
                     {
                         continue;
@@ -650,7 +647,7 @@ namespace RuralCafe
             foreach (SearchResult result in results)
             {
                 elem.AppendChild(BuildSearchResultXmlElement(doc,
-                    result.Title, HttpUtils.RemoveHttpPrefix(result.URI), result.ContentSnippet));
+                    result.Title, result.URI, result.ContentSnippet));
             }
         }
 
@@ -691,7 +688,7 @@ namespace RuralCafe
                     foreach (RCRequest linkObject in resultLinkUris)
                     {
                         searchXml.AppendChild(BuildSearchResultXmlElement(xmlDoc,
-                            linkObject.AnchorText, HttpUtils.RemoveHttpPrefix(linkObject.Uri), linkObject.ContentSnippet));
+                            linkObject.AnchorText, linkObject.Uri, linkObject.ContentSnippet));
                     }
 
                     PrepareXMLRequestAnswer();
@@ -724,7 +721,7 @@ namespace RuralCafe
             titleXml.InnerText = title;
             itemXml.AppendChild(titleXml);
             XmlElement urlXml = doc.CreateElement("url");
-            urlXml.InnerText = HttpUtils.RemoveHttpPrefix(url);
+            urlXml.InnerText = url;
             itemXml.AppendChild(urlXml);
             XmlElement snippetXml = doc.CreateElement("snippet");
             snippetXml.InnerText = snippet;

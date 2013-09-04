@@ -42,7 +42,6 @@ Bugs
   - When clicking next on either local or google results, the other results should not be loaded again.
   - Embed opened pages instead of new tabs. Page inside main frame. At the moment, if you do that, you end up having Trotro inside Trotro .... (not sure we can fix this one.)
   - Click search results makes links open in the TroTro tab, this is inconsistent with opening in a new tab. (fixed for cached results, the problem with new results is that it gets redirected to the queue. this should be changed so the RCproxy filters out live results that are actually cached)
-- wrong https links (e.g. http://https//twitter.com/ )
 
 Code piece integration
 - Crawler
