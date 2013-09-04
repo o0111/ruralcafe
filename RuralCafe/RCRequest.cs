@@ -244,9 +244,9 @@ namespace RuralCafe
 
             string fileName = CacheManager.UriToFilePath(_webRequest.RequestUri.ToString());
             string hashPath = CacheManager.GetHashPath(fileName);
-            _requestId = hashPath.Replace(Path.DirectorySeparatorChar.ToString(), "");
             // Cache file name like ./GET/2876/627/...
             _relCacheFileName = request.Method + Path.DirectorySeparatorChar + hashPath + fileName;
+            _requestId = _relCacheFileName.Replace(Path.DirectorySeparatorChar.ToString(), "");
             _cacheFileName = requestHandler.GenericProxy.CachePath + _relCacheFileName;
 
             _packageFileName = requestHandler.GenericProxy.PackagesPath + hashPath + fileName + ".gzip";
@@ -280,11 +280,12 @@ namespace RuralCafe
             return this.Uri.Equals(other.Uri) && this._webRequest.Method.Equals(other._webRequest.Method)
                 && this.Body == other.Body;
         }
-        /// <summary>Override object hash code for request matching.
-        /// XXX Body can be null!</summary>
+        /// <summary>Override object hash code for request matching.</summary>
         public override int GetHashCode()
         {
-            return Uri.GetHashCode() * _webRequest.Method.GetHashCode() * Body.GetHashCode();
+            int res = Uri.GetHashCode() * _webRequest.Method.GetHashCode();
+
+            return Body == null ? res : res * Body.GetHashCode();
         }
 
         /// <summary>Set the reset event.</summary>

@@ -45,8 +45,6 @@ namespace RuralCafe
     {
         /// <summary>
         /// The status for a request.
-        /// 
-        /// TODO: downloading and offline: waiting (new status) ???
         /// </summary>
         public enum Status
         {
