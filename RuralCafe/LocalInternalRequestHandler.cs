@@ -608,9 +608,18 @@ namespace RuralCafe
             // Query our RuralCafe index
             SearchResults luceneResults = Proxy.IndexWrapper.Query(queryString, 
                 Proxy.CachePath, offsets[0], resultAmounts[0], true);
-            // Query the Wiki index
-            SearchResults wikiResults = Proxy.WikiWrapper.
-                Query(queryString, offsets[1], resultAmounts[1]);
+            // Query the Wiki index (this can throw timeout Exception)
+            SearchResults wikiResults;
+            try
+            {
+                wikiResults = Proxy.WikiWrapper.
+                    Query(queryString, offsets[1], resultAmounts[1]);
+            }
+            catch (Exception e)
+            {
+                Logger.Debug("Wiki search failed: ", e);
+                wikiResults = new SearchResults();
+            }
 
             // remove blacklisted lucene results
             for (int i = 0; i < luceneResults.Results.Count; i++ )
