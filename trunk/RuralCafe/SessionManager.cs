@@ -36,7 +36,7 @@ namespace RuralCafe
         private readonly TimeSpan DEFAULT_SESSION_LENGTH = new TimeSpan(0, 20, 0); // 20 minutes
         private const double SESSION_LENGTH_EXP_DECAY_VALUE = 0.8;
         private const int PWD_KEY_LENGTH = 256;
-        private const int PWD_SALT_LENTH = 64;
+        private const int PWD_SALT_LENGTH = 64;
 
         // The proxy
         private RCLocalProxy _proxy;
@@ -124,7 +124,7 @@ namespace RuralCafe
                 // Remove from active sessions
                 _usersLoggedIn.Remove(ipAndUser.Key);
                 // Save session length
-                IncludeSessionLengthInAvg(ipAndUser.Value.userId, DateTime.Now.Subtract(ipAndUser.Value.timeOfLogin));
+                IncludeSessionLengthInAvg(ipAndUser.Value.userId, ipAndUser.Value.timeOfLastActivity.Subtract(ipAndUser.Value.timeOfLogin));
             }
         }
 
@@ -302,7 +302,7 @@ namespace RuralCafe
             XmlElement pwdNode = doc.CreateElement("pwd");
             XmlElement saltNode = doc.CreateElement("salt");
             userNode.InnerText = username;
-            using (var deriveBytes = new Rfc2898DeriveBytes(password, PWD_SALT_LENTH))
+            using (var deriveBytes = new Rfc2898DeriveBytes(password, PWD_SALT_LENGTH))
             {
                 byte[] salt = deriveBytes.Salt;
                 byte[] key = deriveBytes.GetBytes(PWD_KEY_LENGTH);  // derive a new key

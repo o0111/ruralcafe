@@ -303,6 +303,7 @@ namespace RuralCafe.Util
             FileStream fs;
             try
             {
+                fileName = @"\\?\" + fileName;
                 fs = new FileStream(fileName, FileMode.Create);
                 if (fs.CanSeek)
                 {
