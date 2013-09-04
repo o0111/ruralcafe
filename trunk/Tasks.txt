@@ -33,7 +33,6 @@ Bugs
 - Estimated network speed is sometimes negative!?
 - "DB file does not exist" when clicking a (Wikipedia) hyperlink in offline mode (Aaron).
 - en.wikipedia.org/wiki/Bananas*! (bad chars...)
-- "Failed finishing the search work item due to timeout." Indexer:809
 - http://jsfiddle.net/mpRmV/5/
 - InvalidDataException in GzipWrapper:121
 - Trotro

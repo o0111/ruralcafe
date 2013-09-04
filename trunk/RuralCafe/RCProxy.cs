@@ -647,13 +647,19 @@ namespace RuralCafe
                 StreamReader clientReader = new StreamReader(clientStream);
                 StreamWriter clientWriter = new StreamWriter(clientStream);
 
-                // Read first line
-                string requestLine0 = clientReader.ReadLine();
-                if (requestLine0 == null)
+                // Read initial request.
+                List<String> connectRequest = new List<string>();
+                string line;
+                while (!String.IsNullOrEmpty(line = clientReader.ReadLine()))
+                {
+                    connectRequest.Add(line);
+                }
+                if (connectRequest.Count == 0)
                 {
                     return;
                 }
-                string[] requestLine0Split = requestLine0.Split(' ');
+
+                string[] requestLine0Split = connectRequest[0].Split(' ');
                 if (requestLine0Split.Length < 3)
                 {
                     return;
@@ -680,105 +686,35 @@ namespace RuralCafe
                 StreamWriter serverWriter = new StreamWriter(serverStream);
                 StreamReader serverReader = new StreamReader(serverStream);
 
-                serverWriter.WriteLine(requestLine0);
+                // Send 200 Connection Established to Client
+                clientWriter.WriteLine("HTTP/1.0 200 Connection established\r\n\r\n");
+                clientWriter.Flush();
 
-                Thread clientThread = new Thread(() =>
-                {
-                    // Stream buffered to server
-                    char[] buffer = new char[4096];
-                    int read;
-                    while (true)
-                    {
-                        lock (inClient)
-                        {
-                            if (inClient.Connected)
-                            {
-                                read = clientReader.Read(buffer, 0, buffer.Length);
-                            }
-                            else
-                            {
-                                break;
-                            }
-                        }
-                        lock (outClient)
-                        {
-                            if (outClient.Connected)
-                            {
-                                serverWriter.Write(buffer, 0, read);
-                                serverWriter.Flush();
-                            }
-                            else
-                            {
-                                break;
-                            }
-                        }
-                    }
-                    // Disconnect all open connections
-                    lock (outClient)
-                    {
-                        if (outClient.Connected)
-                        {
-                            outClient.Close();
-                        }
-                    }
-                    lock (inClient)
-                    {
-                        if (inClient.Connected)
-                        {
-                            inClient.Close();
-                        }
-                    }
-                });
-                clientThread.Start();
+                Logger.Debug("Established TCP connection for " + host + ":" + port);
 
-                Thread serverThread = new Thread(() =>
+                //serverWriter.WriteLine("GET / HTTP/1.1");
+                //serverWriter.WriteLine("Host: www.google.de");
+                //serverWriter.WriteLine("User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) Gecko/20100101 Firefox/23.0");
+                //serverWriter.WriteLine("Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+                //serverWriter.WriteLine("Accept-Language: de-de,de;q=0.8,en-us;q=0.5,en;q=0.3");
+                //serverWriter.WriteLine();
+                
+                // XXX maybe it was better reading each a line.
+                while (true)
                 {
-                    // Stream buffered to client
-                    char[] buffer = new char[4096];
-                    int read;
-                    while (true)
+                    while ((line = clientReader.ReadLine()) != null)
                     {
-                        lock (outClient)
-                        {
-                            if (outClient.Connected)
-                            {
-                                read = serverReader.Read(buffer, 0, buffer.Length);
-                            }
-                            else
-                            {
-                                break;
-                            }
-                        }
-                        lock (inClient)
-                        {
-                            if (inClient.Connected)
-                            {
-                                clientWriter.Write(buffer, 0, read);
-                                clientWriter.Flush();
-                            }
-                            else
-                            {
-                                break;
-                            }
-                        }
+                        Logger.Debug("->Server: " + line);
+                        serverWriter.WriteLine(line);
                     }
-                    // Disconnect all open connections
-                    lock (outClient)
+                    serverWriter.Flush();
+                    while ((line = serverReader.ReadLine()) != null)
                     {
-                        if (outClient.Connected)
-                        {
-                            outClient.Close();
-                        }
+                        Logger.Debug("->Client: " + line);
+                        clientWriter.WriteLine(line);
                     }
-                    lock (inClient)
-                    {
-                        if (inClient.Connected)
-                        {
-                            inClient.Close();
-                        }
-                    }
-                });
-                serverThread.Start();
+                    clientWriter.Flush();
+                }
             }
             catch(Exception)
             {
