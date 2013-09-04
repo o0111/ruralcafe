@@ -120,7 +120,7 @@ function itemHTML(index) {
 	var itemURL = results[index].getElementsByTagName('url')[0].firstChild.nodeValue;
 	var itemStatus = results[index].getElementsByTagName('status')[0].firstChild.nodeValue;
 	var itemSize = results[index].getElementsByTagName('size')[0].firstChild.nodeValue;		
-	return '<div id="'+itemId+'" class="queue_item"><span class="cancel_btn" onclick="removeRequest('+itemId+');"></span><span class="item_title">'+itemTitle+'</span><span class="status '+itemStatus+'">'+itemStatus+'</span><div class="queue_detail">'+itemTitle+'<br/><br/>'+itemURL+'</div></div>';
+	return '<div id="'+itemId+'" class="queue_item"><span class="cancel_btn" onclick="removeRequest(\''+itemId+'\');"></span><span class="item_title">'+itemTitle+'</span><span class="status '+itemStatus+'">'+itemStatus+'</span><div class="queue_detail">'+itemTitle+'<br/><br/>'+itemURL+'</div></div>';
 }
 
 function scrollRight() {
