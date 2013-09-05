@@ -81,6 +81,20 @@ namespace RuralCafe
         /// The name of the directory where the current state is saved.
         /// </summary>
         public const string STATE_FILENAME = "State.json";
+        // .. for network speed (detection)
+        /// <summary>
+        /// Each time a new download is considered, the bytes used for calculation
+        /// so far are multiplicated with this factor.
+        /// </summary>
+        private const double NETWORK_SPEED_REDUCTION_FACTOR = 0.8;
+        // The time will actually always be ~10s, so this is just to say how much the should be weighted different
+        // when the bytes downloaded are dieffernt
+        private const double NETWORK_SPEED_TIME_WEIGHT = 0.3;
+        private static readonly TimeSpan NETWORK_DETECTION_INTERVAL = new TimeSpan(0, 5, 0);
+        // FIXME do some tests to find good default value! Customizable!?
+        private const long MIN_BYTES_PER_SECOND_PER_REQUEST = 5120; // 5 kb/s
+        // The mininum acceptable number for the limit of parallel requests.
+        private const int MIN_MAX_INFLIGHT_REQUESTS = 3;
 
         /// <summary>
         /// notifies that a new request has arrived or a request has completed
@@ -113,10 +127,36 @@ namespace RuralCafe
         /// <summary>The maximum number of threads being used.</summary>
         protected int _maxThreads = 1000; 
 
+        // network speed stuff
         /// <summary>
         /// The network status
         /// </summary>
-        private NetworkStatusCode _networkStatus;
+        protected NetworkStatusCode _networkStatus;
+        /// <summary>
+        /// The network usage detector.
+        /// </summary>
+        protected NetworkUsageDetector _networkUsageDetector;
+        /// <summary>
+        /// The currently determined download speed in byte/s.
+        /// </summary>
+        protected long _networkSpeedBS;
+        /// <summary>
+        /// The number of bytes that have been used to determine the network speed.
+        /// </summary>
+        protected long _speedCalculationBytesUsed;
+        /// <summary>
+        /// The number of seconds that have been used to determine the network speed.
+        /// </summary>
+        protected double _speedCalculationSecondsUsed;
+        /// <summary>
+        /// Object used to lock for network speed calculations.
+        /// </summary>
+        protected object _speedLockObj = new object();
+        /// <summary>
+        /// The timer that prints the speed and, does the periodic stuff depeding on 
+        /// the current speed.
+        /// </summary>
+        protected Timer _changeNetworkStatusTimer;
         
         // bandwidth measurement
         // lock object
@@ -148,7 +188,7 @@ namespace RuralCafe
         /// <summary>
         /// A list of the active requests
         /// </summary>
-        protected Dictionary<string, RequestHandler> _activeRequests = new Dictionary<string, RequestHandler>();
+        protected List<string> _activeRequests = new List<string>();
 
         # region Property Accessors
 
@@ -183,6 +223,12 @@ namespace RuralCafe
             get { return _networkStatus; }
             set { _networkStatus = value; }
         }
+        /// <summary>The network status.</summary>
+        public NetworkUsageDetector NetworkUsageDetector
+        {
+            get { return _networkUsageDetector; }
+            set { _networkUsageDetector = value; }
+        }
         /// <summary>The maximum number of threads in the threadpool.</summary>
         public int MaxThreads
         {
@@ -195,7 +241,7 @@ namespace RuralCafe
             get { return _maxInflightRequests; }
             set { _maxInflightRequests = value; }
         }
-        /// <summary>The maximum number of inflight requests.</summary>
+        /// <summary>The current number of inflight requests.</summary>
         public int NumInflightRequests
         {
             get { return _activeRequests.Count; }
@@ -248,6 +294,13 @@ namespace RuralCafe
             {
                 _logger.Warn("Error initializing the " + name + " packages cache.");
             }
+
+            // initialize the network usage detector
+            _networkUsageDetector = new NetworkUsageDetector(this);
+            // Start the timer that logs the network speed and so on.
+            _changeNetworkStatusTimer
+                           = new Timer(LogSpeedAndApplyNetworkSpeedSettings,
+                               null, NETWORK_DETECTION_INTERVAL, NETWORK_DETECTION_INTERVAL);
 
             // Restore old state
             LoadState();
@@ -546,7 +599,7 @@ namespace RuralCafe
             {
                 // check whether we have another request and are allowed to handle another request
                 RequestHandler requestHandler = GetFirstGlobalRequest();
-                if (requestHandler != null || NumInflightRequests >= MaxInflightRequests)
+                if (requestHandler != null)
                 {
                     if (_name == REMOTE_PROXY_NAME || (_name == LOCAL_PROXY_NAME && NetworkStatus == NetworkStatusCode.Slow))
                     {
@@ -577,19 +630,21 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Add active request
+        /// Add active request.
         /// </summary>
-        public void AddActiveRequest(RequestHandler requestHandler)
+        /// <param name="requestId">The request id.</param>
+        public void AddActiveRequest(string requestId)
         {
-            _activeRequests.Add(requestHandler.RequestId, requestHandler);
+            _activeRequests.Add(requestId);
         }
 
         /// <summary>
-        /// Remove active request
+        /// Remove active request.
         /// </summary>
-        public void RemoveActiveRequest(RequestHandler requestHandler)
+        /// <param name="requestId">The request id.</param>
+        public void RemoveActiveRequest(string requestId)
         {
-            _activeRequests.Remove(requestHandler.RequestId);
+            _activeRequests.Remove(requestId);
         }
 
         /// <summary>
@@ -734,6 +789,72 @@ namespace RuralCafe
                 {
                     Logger.Warn("Could not close the tcp connection: ", e);
                 }
+            }
+        }
+
+        #endregion
+        #region Network speed calculation detection
+
+        /// <summary>
+        /// Includes a download into the network speed statistics.
+        /// </summary>
+        /// <param name="results">The speed results.</param>
+        public void IncludeDownloadInCalculation(NetworkUsageDetector.NetworkUsageResults results)
+        {
+            Logger.Debug(String.Format("Speed: {0} for {1} bytes in {2:0.00} seconds.",
+                results.SpeedBs, results.BytesDownloaded, results.ElapsedSeconds));
+            lock (_speedLockObj)
+            {
+                // the bytes and seconds used so far are multiplicated with NETWORK_SPEED_REDUCTION_FACTOR
+                // (exponential decay)
+                _speedCalculationSecondsUsed = _speedCalculationSecondsUsed * NETWORK_SPEED_REDUCTION_FACTOR;
+                _speedCalculationBytesUsed = (int)(_speedCalculationBytesUsed * NETWORK_SPEED_REDUCTION_FACTOR);
+
+                // New values
+                double newSpeedCalcSecondsUsed = _speedCalculationSecondsUsed + results.ElapsedSeconds;
+                long newSpeedCalcBytesUsed = _speedCalculationBytesUsed + results.BytesDownloaded;
+
+                // In percent of how much the already existing values are weighted
+                double weightOfOldResults = 1;
+                double weightOfNewResults;
+                if (_speedCalculationBytesUsed == 0 || _speedCalculationSecondsUsed == 0)
+                {
+                    weightOfOldResults = 0;
+                    weightOfNewResults = 1;
+                }
+                else
+                {
+                    weightOfNewResults = NETWORK_SPEED_TIME_WEIGHT * (results.ElapsedSeconds / _speedCalculationSecondsUsed)
+                        + (1 - NETWORK_SPEED_TIME_WEIGHT) * (results.BytesDownloaded / _speedCalculationBytesUsed);
+                }
+
+                // Save new speed value
+                _networkSpeedBS = (long)((_networkSpeedBS + results.SpeedBs * weightOfNewResults)
+                    / (weightOfOldResults + weightOfNewResults));
+
+                // Save new values
+                _speedCalculationSecondsUsed = newSpeedCalcSecondsUsed;
+                _speedCalculationBytesUsed = newSpeedCalcBytesUsed;
+
+                Logger.Debug("Detected current overall speed: " + _networkSpeedBS + " bytes/s.");
+            }
+        }
+
+        /// <summary>
+        /// Logs the speed.
+        /// 
+        /// TODO change _maxInflightRequests.
+        /// </summary>
+        /// <param name="o">Ignored</param>
+        public virtual void LogSpeedAndApplyNetworkSpeedSettings(object o)
+        {
+            Logger.Metric("Current network speed is: " + _networkSpeedBS + " bytes/s.");
+
+            if(_networkSpeedBS > 0)
+            {
+                // Change _maxInflightRequests accordingly.
+                _maxInflightRequests = Math.Max((int)(_networkSpeedBS / MIN_BYTES_PER_SECOND_PER_REQUEST), MIN_MAX_INFLIGHT_REQUESTS);
+                Logger.Info("Changing max inflight requests to: " + _maxInflightRequests);
             }
         }
 

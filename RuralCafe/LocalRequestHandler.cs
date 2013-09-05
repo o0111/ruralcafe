@@ -177,13 +177,8 @@ namespace RuralCafe
                 {
                     // We're streaming through the remote proxy.
                     SetStreamToRemoteProxy();
-                    // Tell the network usage detector we're downloading now
-                    NetworkUsageDetector.DownloadStarted();
                     // Stream
                     Status result = SelectMethodAndStream();
-                    // Tell the network usage detector we're done downloading
-                    NetworkUsageDetector.DownloadStopped();
-
                     return;
                 }
 
@@ -264,20 +259,18 @@ namespace RuralCafe
             }
 
             // Tell the network usage detector we're downloading now
-            NetworkUsageDetector.DownloadStarted();
-
+            _proxy.NetworkUsageDetector.DownloadStarted();
             // add to active set of connections
-            _proxy.AddActiveRequest(this);
+            _proxy.AddActiveRequest(RequestId);
 
             // download the request file as a package
             RequestStatus = RequestHandler.Status.Downloading;
             bool downloadSuccessful = RCRequest.DownloadPackage();
             
             // remove from active set of connections
-            _proxy.RemoveActiveRequest(this);
-
+            _proxy.RemoveActiveRequest(RequestId);
             // Tell the network usage detector we're done downloading
-            NetworkUsageDetector.DownloadStopped();
+            _proxy.NetworkUsageDetector.DownloadStopped();
 
             // check results and unpack
             if (downloadSuccessful)

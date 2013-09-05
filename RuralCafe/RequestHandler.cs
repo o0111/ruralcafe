@@ -406,37 +406,6 @@ namespace RuralCafe
             }
         }
 
-        /*
-        /// <summary>
-        /// Main entry point for listener threads for a HttpWebRequest.
-        /// </summary>
-        public void Go(object nullObj)
-        {
-
-            // save start time for ETA calculation
-            StartTime = DateTime.Now;
-            try
-            {
-
-            }
-            catch (Exception e)
-            {
-                RequestStatus = RequestHandler.Status.Failed;
-                String errmsg = "error handling request: ";
-                if (_originalRequest != null)
-                {
-                    errmsg += " " + _originalRequest.RawUrl.ToString(); ;
-                }
-                Logger.Warn(errmsg, e);
-            }
-            finally
-            {
-                DisconnectSocket();
-            }
-
-            // returning from this method will terminate the thread
-        }*/
-
         /// <summary>
         /// Creates RCRequest object for the request. Entry point for new RequestHandler objects.
         /// </summary>
@@ -469,10 +438,15 @@ namespace RuralCafe
             // Check for admission control
             while (_proxy.NumInflightRequests >= _proxy.MaxInflightRequests)
             {
-                Thread.Sleep(100);
+                // Instead of keeping the client waiting, just send him a page to retry in a couple of minutes.
+                SendErrorPage(HttpStatusCode.ServiceUnavailable, "No connection slots available, please try again in a couple of minutes.");
+                return result;
             }
+
+            // Tell the network usage detector we're downloading now
+            _proxy.NetworkUsageDetector.DownloadStarted();
             // add to active set of connections
-            _proxy.AddActiveRequest(this);
+            _proxy.AddActiveRequest(RequestId);
 
             if (IsCacheable())
             {
@@ -487,7 +461,9 @@ namespace RuralCafe
             }
 
             //remove from active set of connections
-            _proxy.RemoveActiveRequest(this);
+            _proxy.RemoveActiveRequest(RequestId);
+            // Tell the network usage detector we're done downloading
+            _proxy.NetworkUsageDetector.DownloadStopped();
 
             return result;
         }

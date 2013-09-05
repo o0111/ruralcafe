@@ -453,6 +453,18 @@ namespace RuralCafe
                 // clean up the (partial) download
                 cacheManager.RemoveCacheItemFromDisk(_cacheFileName);
                 _requestHandler.Logger.Debug("failed: " + Uri, e);
+
+                // if this is a webexception, let's throw our own exception include the Remote Proxy's message:
+                if (e is WebException)
+                {
+                    WebException exp = e as WebException;
+                    if (exp.Response != null)
+                    {
+                        throw new WebException(exp.Message + ": " + new StreamReader(exp.Response.GetResponseStream()).ReadToEnd(),
+                            exp, exp.Status, exp.Response);
+                    }
+                }
+
                 throw;
             }
         }

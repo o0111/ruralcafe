@@ -45,36 +45,25 @@ namespace RuralCafe
         // Constants
         private const int REQUESTS_WITHOUT_USER_CAPACITY = 50;
         private const string QUEUES_FILENAME = "Queues.json";
-        private const int SPEED_ONLINE_THRESHOLD_BS = 32768; // 32 KB/s
-        // .. for network speed detection
-        /// <summary>
-        /// Each time a new download is considered, the bytes used for calculation
-        /// so far are multiplicated with this factor.
-        /// </summary>
-        private const double NETWORK_SPEED_REDUCTION_FACTOR = 0.8;
-        // The time will actually always be ~10s, so this is just to say how much the should be weighted different
-        // when the bytes downloaded are dieffernt
-        private const double NETWORK_SPEED_TIME_WEIGHT = 0.3;
-        // FIXME do some tests to find good default value! Customizable!?
-        private const long BYTES_PER_SECOND_ONLINE_THRESHOLD = 10240; // 10 kb/s
-        private static readonly TimeSpan NETWORK_DETECTION_INTERVAL = new TimeSpan(0, 5, 0);
-        /// <summary>
-        /// The status will only be changed if up, if we're above THRESHOLD * (1 + THRESHOLD_PERCENT_ANTI_FLAPPING)
-        /// and only down if we're below THRESHOLD * (1 - THRESHOLD_PERCENT_ANTI_FLAPPING)
-        /// </summary>
-        private const double THRESHOLD_PERCENT_ANTI_FLAPPING = 0.1;
-        // .. for clustering XXX customizable?
-
         // This is the interval in which certain periodic things are done:
         // * The time is being checked and if it's between 5 a.m. and 6 a.m. the clustering is run.
         // * The cache metrics are logged.
         private static readonly TimeSpan PERIODIC_INTERVAL = new TimeSpan(1, 0, 0);
+        // .. for clustering
         private const int CLUSTERING_K = 20;
         private const bool CLUSTERING_HIERARCHICAL = true;
         private const int CLUSTERING_CAT_NFEATURES = 2;
         private const int CLUSTERING_SUBCAT_NFEATURES = 4;
         private const int CLUSTERING_MAXCATEGORIES = 8;
         private const string CLUSTERS_FOLDER = "clusters";
+        // ... for network speed
+        // FIXME do some tests to find good default value! Customizable!?
+        private const long BYTES_PER_SECOND_ONLINE_THRESHOLD = 10240; // 10 kb/s
+        /// <summary>
+        /// The status will only be changed if up, if we're above THRESHOLD * (1 + THRESHOLD_PERCENT_ANTI_FLAPPING)
+        /// and only down if we're below THRESHOLD * (1 - THRESHOLD_PERCENT_ANTI_FLAPPING)
+        /// </summary>
+        private const double THRESHOLD_PERCENT_ANTI_FLAPPING = 0.1;
 
         // RuralCafe pages path
         private string _uiPagesPath;
@@ -85,32 +74,13 @@ namespace RuralCafe
         private WebProxy _remoteProxy;
 
         /// <summary>
-        /// Automatically detect the network status
+        /// Automatically detect the network status?
         /// </summary>
         private bool _detectNetworkStatusAuto;
+        
+        
         /// <summary>
-        /// The currently determined download speed in byte/s.
-        /// </summary>
-        private long _networkSpeedBS;
-        /// <summary>
-        /// The number of bytes that have been used to determine the network speed.
-        /// </summary>
-        private long _speedCalculationBytesUsed;
-        /// <summary>
-        /// The number of seconds that have been used to determine the network speed.
-        /// </summary>
-        private double _speedCalculationSecondsUsed;
-        /// <summary>
-        /// Object used to lock for network speed calculations.
-        /// </summary>
-        private object _speedLockObj = new object();
-        /// <summary>
-        /// The timer that prints the speed and, if (_detectNetworkStatusAuto)
-        /// changes the network status accordingly.
-        /// </summary>
-        private Timer _changeNetworkStatusTimer;
-        /// <summary>
-        /// The timer that does the periodic stuff mentioned above.
+        /// The timer that does the periodic stuff mentioned further above.
         /// </summary>
         private Timer _periodicTimer;
         /// <summary>
@@ -218,7 +188,6 @@ namespace RuralCafe
             _random = new Random();
             _averageTimePerRequest = new TimeSpan(0);
 
-            // XXX: Should be defaulted to something then fluctuate based on connection management
             _maxInflightRequests = Properties.Settings.Default.LOCAL_MAX_INFLIGHT_REQUESTS;
 
             _sessionManager = new SessionManager(this);
@@ -246,15 +215,6 @@ namespace RuralCafe
             DeserializeQueue();
             // Tell the program to serialize the queue before shutdown
             Program.AddShutDownDelegate(SerializeQueue);
-
-            // Start the timer that logs the network speed and if auto-change is enabled
-            // also changes the network status accordingly.
-            _changeNetworkStatusTimer
-                           = new Timer(LogSpeedAndChangeNetworkStatusAccordingly,
-                               null, NETWORK_DETECTION_INTERVAL, NETWORK_DETECTION_INTERVAL);
-
-            // Initialize the Network usage detector
-            NetworkUsageDetector.Initialize(this);
         }
 
         /// <summary>
@@ -357,64 +317,16 @@ namespace RuralCafe
                 }
             }
         }
-        
-        #region Network status detection
 
         /// <summary>
-        /// Includes a download into the network speed statistics.
-        /// </summary>
-        /// <param name="results">The speed results.</param>
-        public void IncludeDownloadInCalculation(NetworkUsageDetector.NetworkUsageResults results)
-        {
-            Logger.Debug(String.Format("Speed: {0} for {1} bytes in {2:0.00} seconds.",
-                results.SpeedBs, results.BytesDownloaded, results.ElapsedSeconds));
-            lock (_speedLockObj)
-            {
-                // the bytes and seconds used so far are multiplicated with NETWORK_SPEED_REDUCTION_FACTOR
-                // (exponential decay)
-                _speedCalculationSecondsUsed = _speedCalculationSecondsUsed * NETWORK_SPEED_REDUCTION_FACTOR;
-                _speedCalculationBytesUsed = (int)(_speedCalculationBytesUsed * NETWORK_SPEED_REDUCTION_FACTOR);
-
-                // New values
-                double newSpeedCalcSecondsUsed = _speedCalculationSecondsUsed + results.ElapsedSeconds;
-                long newSpeedCalcBytesUsed = _speedCalculationBytesUsed + results.BytesDownloaded;
-
-                // In percent of how much the already existing values are weighted
-                double weightOfOldResults = 1;
-                double weightOfNewResults;
-                if(_speedCalculationBytesUsed == 0 || _speedCalculationSecondsUsed == 0)
-                {
-                    weightOfOldResults = 0;
-                    weightOfNewResults = 1;
-                } 
-                else
-                {
-                    weightOfNewResults = NETWORK_SPEED_TIME_WEIGHT * (results.ElapsedSeconds / _speedCalculationSecondsUsed)
-                        + (1 - NETWORK_SPEED_TIME_WEIGHT) * (results.BytesDownloaded / _speedCalculationBytesUsed);
-                }
-
-                // Save new speed value
-                _networkSpeedBS = (long) ((_networkSpeedBS + results.SpeedBs * weightOfNewResults)
-                    / (weightOfOldResults + weightOfNewResults));
-
-                // Save new values
-                _speedCalculationSecondsUsed = newSpeedCalcSecondsUsed;
-                _speedCalculationBytesUsed = newSpeedCalcBytesUsed;
-
-                Logger.Debug("Detected current overall speed: " + _networkSpeedBS + " bytes/s.");
-            }
-        }
-
-        /// <summary>
-        /// Logs the speed.
-        /// 
         /// If _detectNetworkStatusAuto: Changes the network status
         /// if the speed is too low or too high for the current status.
         /// </summary>
         /// <param name="o">Ignored</param>
-        public void LogSpeedAndChangeNetworkStatusAccordingly(object o)
+        public override void LogSpeedAndApplyNetworkSpeedSettings(object o)
         {
-            Logger.Metric("Current network speed is: " + _networkSpeedBS + " bytes/s.");
+            // call base method
+            base.LogSpeedAndApplyNetworkSpeedSettings(null);
 
             if (_detectNetworkStatusAuto)
             {
@@ -438,7 +350,6 @@ namespace RuralCafe
             }
         }
 
-        #endregion
         # region Request queues interface
 
         /// <summary>
