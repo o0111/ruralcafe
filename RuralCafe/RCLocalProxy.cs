@@ -51,8 +51,10 @@ namespace RuralCafe
         /// Each time a new download is considered, the bytes used for calculation
         /// so far are multiplicated with this factor.
         /// </summary>
-        private const double NETWORK_SPEED_REDUCTION_FACTOR = 0.9;
-        private const double NETWORK_SPEED_TIME_WEIGHT = 0.7;
+        private const double NETWORK_SPEED_REDUCTION_FACTOR = 0.8;
+        // The time will actually always be ~10s, so this is just to say how much the should be weighted different
+        // when the bytes downloaded are dieffernt
+        private const double NETWORK_SPEED_TIME_WEIGHT = 0.3;
         // FIXME do some tests to find good default value! Customizable!?
         private const long BYTES_PER_SECOND_ONLINE_THRESHOLD = 10240; // 10 kb/s
         private static readonly TimeSpan NETWORK_DETECTION_INTERVAL = new TimeSpan(0, 5, 0);
@@ -250,6 +252,9 @@ namespace RuralCafe
             _changeNetworkStatusTimer
                            = new Timer(LogSpeedAndChangeNetworkStatusAccordingly,
                                null, NETWORK_DETECTION_INTERVAL, NETWORK_DETECTION_INTERVAL);
+
+            // Initialize the Network usage detector
+            NetworkUsageDetector.Initialize(this);
         }
 
         /// <summary>

@@ -47,7 +47,6 @@ function loadOffline(){
 //check tif the user is still logged in
 // and if the survey is due every statusInterval milliseconds
 function initiateUserInterval(){
-	checkLogin();
 	window.setInterval('checkLogin()', userInterval);
 	window.setInterval('showSurveyIfDue(false)', userInterval);
 }
