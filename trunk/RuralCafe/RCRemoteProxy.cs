@@ -53,79 +53,8 @@ namespace RuralCafe
             maxCacheSize, cachePath, packagesPath)
         {
             _userSettings = new Dictionary<IPEndPoint, Dictionary<int, RCUserSettings>>();
-            // XXX: Should be defaulted to something then fluctuate based on connection management
             _maxInflightRequests = Properties.Settings.Default.REMOTE_MAX_INFLIGHT_REQUESTS;
         }
-
-        /*
-        /// <summary>
-        /// Starts the listener for connections from local proxy.
-        /// The remote proxy could potentially serve multiple local proxies.
-        /// </summary>
-        public override void StartListener()
-        {
-           _logger.Info("Started Listener on " + _listenAddress + ":" + _listenPort);
-            try
-            {
-                // create a listener for the proxy port
-                HttpListener listener = new HttpListener();
-                // prefix URL at which the listener will listen
-                listener.Prefixes.Add("http://*:" + _listenPort + "/");
-                listener.Start();
-
-                // loop and listen for the next connection request
-                while (true)
-                {
-                    if (_activeRequests >= Properties.Settings.Default.LOCAL_MAXIMUM_ACTIVE_REQUESTS)
-                    {
-                        _logger.Debug("Waiting. Active Requests: " + _activeRequests);
-                        while (_activeRequests >= Properties.Settings.Default.LOCAL_MAXIMUM_ACTIVE_REQUESTS)
-                        {
-                            Thread.Sleep(100);
-                        }
-                    }
-
-                    // accept connections on the proxy port (blocks)
-                    HttpListenerContext context = listener.GetContext();
-
-                    // create the handler for the request and queue it up for processing
-                    RequestHandler requestHandler = RequestHandler.PrepareNewRequestHandler(this, context);
-
-                    // Start own method StartRequestHandler in the thread, which also in- and decreases _activeRequests
-                    Thread proxyThread = new Thread(new ParameterizedThreadStart(requestHandler.Go));
-                    proxyThread.Start(requestHandler);
-                }
-            }
-            catch (SocketException e)
-            {
-                _logger.Fatal("SocketException in StartListener, errorcode: " + e.NativeErrorCode, e);
-            }
-            catch (Exception e)
-            {
-                _logger.Fatal("Exception in StartListener", e);
-            }
-        }
-        */
-        /*
-        /// <summary>
-        /// Returns the first global request in the queue or null if no request exists.
-        /// </summary>
-        /// <returns>The first unsatisfied request by the next user or null if no request exists.</returns>
-        public RequestHandler GetFirstGlobalRequest()
-        {
-            RequestHandler requestHandler = null;
-
-            // lock to make sure nothing is added or removed
-            lock (_globalRequestQueue)
-            {
-                if (_globalRequestQueue.Count > 0)
-                {
-                    requestHandler = _globalRequestQueue[0];
-                }
-            }
-            return requestHandler;
-        }
-        */
 
         /// <summary>
         /// Gets the setting of the user with the given id. Creates a new settings object

@@ -157,6 +157,12 @@ namespace RuralCafe
             {
                 _rcRequest.SetProxyAndTimeout(Proxy.GatewayProxy, _requestTimeout);
             }
+
+            // wait for admission control
+            while (_proxy.NumInflightRequests >= _proxy.MaxInflightRequests)
+            {
+                Thread.Sleep(100);
+            }
             
             // check user richness setting
             RequestHandler.Richness richness = Proxy.GetUserSettings(Context.Request.RemoteEndPoint,
@@ -167,9 +173,21 @@ namespace RuralCafe
                 richness = Properties.Settings.Default.DEFAULT_RICHNESS;
             }
 
+            // Tell the network usage detector we're downloading now
+            _proxy.NetworkUsageDetector.DownloadStarted();
+            // add to active set of connections
+            _proxy.AddActiveRequest(RequestId);
+
             // download the package and return it to local proxy
             Logger.Debug("dispatching to content servers: " + RequestUri);
-            if (RecursivelyDownloadPage(RCRequest, richness, 0))
+            bool success = RecursivelyDownloadPage(RCRequest, richness, 0);
+
+            // remove from active set of connections
+            _proxy.RemoveActiveRequest(RequestId);
+            // Tell the network usage detector we're done downloading
+            _proxy.NetworkUsageDetector.DownloadStopped();
+
+            if (success)
             {
                 try
                 {
