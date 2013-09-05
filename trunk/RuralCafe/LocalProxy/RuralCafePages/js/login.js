@@ -12,5 +12,9 @@ function checkFields() {
 		document.getElementById("wrong_password").innerHTML="Enter a password";
 		return false;
 	}
+	
+	// Set the location value
+	document.getElementById('search').value = document.location.search;
+	
 	return true;
 }

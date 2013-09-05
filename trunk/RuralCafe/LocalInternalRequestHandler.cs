@@ -64,7 +64,7 @@ namespace RuralCafe
             routines.Add("/request/signup", new RoutineMethod("SignupRequest",
                 new string[] { "user", "pw" }, new Type[] { typeof(string), typeof(string) }, false));
             routines.Add("/request/login", new RoutineMethod("LoginRequest",
-                new string[] { "user", "pw" }, new Type[] { typeof(string), typeof(string) }, false));
+                new string[] { "user", "pw", "search" }, new Type[] { typeof(string), typeof(string), typeof(string) }, false));
             routines.Add("/request/logout", new RoutineMethod("LogoutRequest"));
             routines.Add("/request/isSurveyDue", new RoutineMethod("IsSurveyDue",
                 new string[] { "endOfSession" }, new Type[] { typeof(bool) }));
@@ -881,8 +881,9 @@ namespace RuralCafe
         /// </summary>
         /// <param name="username">The username.</param>
         /// <param name="password">The password.</param>
+        /// <param name="search">The search part of the location where to redirect to on success.</param>
         /// <returns></returns>
-        public Response LoginRequest(string username, string password)
+        public Response LoginRequest(string username, string password, string search)
         {
             int userID = Proxy.SessionManager.UserID(username);
             if (userID == -1)
@@ -911,8 +912,8 @@ namespace RuralCafe
             _clientHttpContext.Response.Headers.Add("Set-Cookie", idCookie.ToCookieString());
             _clientHttpContext.Response.Headers.Add("Set-Cookie", nameCookie.ToCookieString());
             
-            // Redirect to the Homepage.
-            _clientHttpContext.Response.Redirect("/");
+            // Redirect to the User Homepage.
+            _clientHttpContext.Response.Redirect("/trotro-user.html" + search);
             return new Response();
         }
 

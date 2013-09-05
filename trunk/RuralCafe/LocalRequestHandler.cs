@@ -177,26 +177,12 @@ namespace RuralCafe
                 {
                     // We're streaming through the remote proxy.
                     SetStreamToRemoteProxy();
-                    // Try to start measuring the speed
-                    bool measuring = NetworkUsageDetector.
-                        StartMeasuringIfNotRunningWithCallback(Proxy.IncludeDownloadInCalculation);
-
+                    // Tell the network usage detector we're downloading now
+                    NetworkUsageDetector.DownloadStarted();
+                    // Stream
                     Status result = SelectMethodAndStream();
-
-                    // Only get the results if this thread was measuring.
-                    if (measuring)
-                    {
-                        // Take speed into calculation, if successful
-                        if (result == Status.Completed)
-                        {
-                            NetworkUsageDetector.MarkReadyForCallback();
-                        }
-                        else
-                        {
-                            // Abort. Speed will not be considered.
-                            NetworkUsageDetector.AbortCallback();
-                        }
-                    }
+                    // Tell the network usage detector we're done downloading
+                    NetworkUsageDetector.DownloadStopped();
 
                     return;
                 }
@@ -277,8 +263,8 @@ namespace RuralCafe
                 Thread.Sleep(100);
             }
 
-            // Try to start measuring the speed
-            bool measuring = NetworkUsageDetector.StartMeasuringIfNotRunning();
+            // Tell the network usage detector we're downloading now
+            NetworkUsageDetector.DownloadStarted();
 
             // add to active set of connections
             _proxy.AddActiveRequest(this);
@@ -290,16 +276,8 @@ namespace RuralCafe
             // remove from active set of connections
             _proxy.RemoveActiveRequest(this);
 
-            // Only get the results if this thread was measuring.
-            if (measuring)
-            {
-                NetworkUsageDetector.NetworkUsageResults results = NetworkUsageDetector.GetMeasuringResults();
-                if (downloadSuccessful)
-                {
-                    // If request successful, we save the results
-                    Proxy.IncludeDownloadInCalculation(results);
-                }
-            }
+            // Tell the network usage detector we're done downloading
+            NetworkUsageDetector.DownloadStopped();
 
             // check results and unpack
             if (downloadSuccessful)

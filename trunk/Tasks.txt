@@ -1,4 +1,4 @@
-Mayor tasks
+Wishlist
 - Inter-Proxy-Protocol
 	- Async requests ??
 		- We need a listener for responses from the RP at the LP side
@@ -10,9 +10,9 @@ Mayor tasks
 		- intelligent eviction, timeout, etc. (also for subcomponents)
 	- Directory hashes - better solution ideas?
 
-Minor tasks
+Tasks
+- Implement offline detection + back online detection.
 - Long file name support. See http://blogs.msdn.com/b/bclteam/archive/2007/02/13/long-paths-in-net-part-1-of-3-kim-hamilton.aspx and http://zetalongpaths.codeplex.com/
-- Limit outgoing requests like incoming (_activeRequests)
 - At first hardcoded percentage of _maxInflightRequests that have to be non-streamed ones.
 - Queue also streaming requests at the RP ??
 	- Duplicate IsStreaming()-Check at the moment.
@@ -31,6 +31,7 @@ Minor tasks
 
 Bugs
 - Estimated network speed is sometimes negative!?
+- If there are two local networks (LAN + Wifi), not the right one might be used to measure download speed.
 - "DB file does not exist" when clicking a (Wikipedia) hyperlink in offline mode (Aaron).
 - en.wikipedia.org/wiki/Bananas*! (bad chars...)
 - http://jsfiddle.net/mpRmV/5/
