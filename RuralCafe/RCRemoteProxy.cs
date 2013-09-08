@@ -36,7 +36,7 @@ namespace RuralCafe
         /// <summary>
         /// local proxy IP:Port -> (user id -> user settings)
         /// </summary>
-        private Dictionary<IPEndPoint, Dictionary<int, RCUserSettings>> _userSettings;
+        private Dictionary<IPEndPoint, Dictionary<int, RCProperties>> _Properties;
 
         /// <summary>
         /// Constructor for remote proxy.
@@ -52,8 +52,8 @@ namespace RuralCafe
             : base(REMOTE_PROXY_NAME, listenAddress, listenPort, proxyPath, 
             maxCacheSize, cachePath, packagesPath)
         {
-            _userSettings = new Dictionary<IPEndPoint, Dictionary<int, RCUserSettings>>();
-            _maxInflightRequests = Properties.Settings.Default.REMOTE_MAX_INFLIGHT_REQUESTS;
+            _Properties = new Dictionary<IPEndPoint, Dictionary<int, RCProperties>>();
+            _maxInflightRequests = Properties.Network.Default.REMOTE_MAX_INFLIGHT_REQUESTS;
         }
 
         /// <summary>
@@ -63,21 +63,21 @@ namespace RuralCafe
         /// <param name="localProxyIP">The local proxy's IP address and port.</param>
         /// <param name="userID">The users id.</param>
         /// <returns>The user's settings.</returns>
-        public RCUserSettings GetUserSettings(IPEndPoint localProxyIP, int userID)
+        public RCProperties GetProperties(IPEndPoint localProxyIP, int userID)
         {
-            lock (_userSettings)
+            lock (_Properties)
             {
                 // Add Dictionary for the IP, if not yet there
-                if(!_userSettings.ContainsKey(localProxyIP))
+                if(!_Properties.ContainsKey(localProxyIP))
                 {
-                    _userSettings[localProxyIP] = new Dictionary<int, RCUserSettings>();
+                    _Properties[localProxyIP] = new Dictionary<int, RCProperties>();
                 }
                 // Add empty settings for the user, if settings not yet there
-                if (!_userSettings[localProxyIP].ContainsKey(userID))
+                if (!_Properties[localProxyIP].ContainsKey(userID))
                 {
-                    _userSettings[localProxyIP][userID] = new RCUserSettings();
+                    _Properties[localProxyIP][userID] = new RCProperties();
                 }
-                return _userSettings[localProxyIP][userID];
+                return _Properties[localProxyIP][userID];
             }
         }
         # region Queue

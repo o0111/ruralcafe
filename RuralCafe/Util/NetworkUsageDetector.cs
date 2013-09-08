@@ -103,11 +103,11 @@ namespace RuralCafe.Util
         /// <summary>
         /// Only the best (fastest) n % of the chunks are considered. With 10 % for 10 s this means only 1 chunk.
         /// </summary>
-        private const double BEST_N_PERCENT = 0.1; // XXX maybe 1 chunk is not so good...
+        private const double BEST_N_PERCENT = 0.05; // XXX maybe 1 chunk is not so good...
         /// <summary>
-        /// The default time to measure for calls. 10 s.
+        /// The default time to measure for calls. 1 min.
         /// </summary>
-        private static readonly TimeSpan MEASUREMENT_DEFAULT_TIME = new TimeSpan(0, 0, 10);
+        private static readonly TimeSpan MEASUREMENT_DEFAULT_TIME = new TimeSpan(0, 1, 0);
 
         /// <summary>
         /// The network interface used for the local IP address.

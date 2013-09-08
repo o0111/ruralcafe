@@ -196,8 +196,8 @@ namespace RuralCafe
 
             bool localProxyStarted = false;
             // start the local proxy
-            if (Properties.Settings.Default.LOCAL_PROXY_IP_ADDRESS != null 
-                && !Properties.Settings.Default.LOCAL_PROXY_IP_ADDRESS.Equals(""))
+            if (Properties.Connection.Default.LOCAL_PROXY_IP_ADDRESS != null
+                && !Properties.Connection.Default.LOCAL_PROXY_IP_ADDRESS.Equals(""))
             {
                 localProxyStarted = true;
                 StartLocalProxy();
@@ -205,11 +205,11 @@ namespace RuralCafe
 
             // start the remote proxy only if we're not starting the local proxy
             // or both proxies are running on the same box
-            if ((!localProxyStarted || 
-                Properties.Settings.Default.LOCAL_PROXY_IP_ADDRESS.Equals(
-                Properties.Settings.Default.REMOTE_PROXY_IP_ADDRESS)) &&
-                Properties.Settings.Default.REMOTE_PROXY_IP_ADDRESS != null
-                && !Properties.Settings.Default.REMOTE_PROXY_IP_ADDRESS.Equals(""))
+            if ((!localProxyStarted ||
+                Properties.Connection.Default.LOCAL_PROXY_IP_ADDRESS.Equals(
+                Properties.Connection.Default.REMOTE_PROXY_IP_ADDRESS)) &&
+                Properties.Connection.Default.REMOTE_PROXY_IP_ADDRESS != null
+                && !Properties.Connection.Default.REMOTE_PROXY_IP_ADDRESS.Equals(""))
             {
                 StartRemoteProxy();
             }
@@ -220,9 +220,23 @@ namespace RuralCafe
         /// </summary>
         private static void LogConfiguration()
         {
+            // Setting.settings
             foreach (SettingsPropertyValue currentProperty in Properties.Settings.Default.PropertyValues)
             {
                 _logger.Info(currentProperty.Name + ": " + currentProperty.PropertyValue);
+            }
+            // all other .settings files in Properties
+            foreach (SettingsPropertyValue currentProperty in Properties.Connection.Default.PropertyValues)
+            {
+                _logger.Info("Connection - " + currentProperty.Name + ": " + currentProperty.PropertyValue);
+            }
+            foreach (SettingsPropertyValue currentProperty in Properties.Files.Default.PropertyValues)
+            {
+                _logger.Info("Files - " + currentProperty.Name + ": " + currentProperty.PropertyValue);
+            }
+            foreach (SettingsPropertyValue currentProperty in Properties.Network.Default.PropertyValues)
+            {
+                _logger.Info("Network - " + currentProperty.Name + ": " + currentProperty.PropertyValue);
             }
         }
 
@@ -232,25 +246,25 @@ namespace RuralCafe
         public static void SaveConfigs()
         {
             // Path and stuff Configuration Settings
-            INDEX_PATH = Properties.Settings.Default.INDEX_PATH + Path.DirectorySeparatorChar;
+            INDEX_PATH = Properties.Files.Default.LOCAL_INDEX_PATH + Path.DirectorySeparatorChar;
             if (!INDEX_PATH.Contains(":\\"))
             {
-                INDEX_PATH = Properties.Settings.Default.BASE_DIR + Path.DirectorySeparatorChar + LOCAL_PROXY_PATH + INDEX_PATH;
+                INDEX_PATH = Properties.Files.Default.BASE_DIR + Path.DirectorySeparatorChar + LOCAL_PROXY_PATH + INDEX_PATH;
             }
-            LOCAL_CACHE_PATH = Properties.Settings.Default.LOCAL_CACHE_PATH + Path.DirectorySeparatorChar;
+            LOCAL_CACHE_PATH = Properties.Files.Default.LOCAL_CACHE_PATH + Path.DirectorySeparatorChar;
             if (!LOCAL_CACHE_PATH.Contains(":\\"))
             {
-                LOCAL_CACHE_PATH = Properties.Settings.Default.BASE_DIR + Path.DirectorySeparatorChar + LOCAL_PROXY_PATH + LOCAL_CACHE_PATH;
+                LOCAL_CACHE_PATH = Properties.Files.Default.BASE_DIR + Path.DirectorySeparatorChar + LOCAL_PROXY_PATH + LOCAL_CACHE_PATH;
             }
-            REMOTE_CACHE_PATH = Properties.Settings.Default.REMOTE_CACHE_PATH + Path.DirectorySeparatorChar;
+            REMOTE_CACHE_PATH = Properties.Files.Default.REMOTE_CACHE_PATH + Path.DirectorySeparatorChar;
             if (!REMOTE_CACHE_PATH.Contains(":\\"))
             {
-                REMOTE_CACHE_PATH = Properties.Settings.Default.BASE_DIR + Path.DirectorySeparatorChar + REMOTE_PROXY_PATH + REMOTE_CACHE_PATH;
+                REMOTE_CACHE_PATH = Properties.Files.Default.BASE_DIR + Path.DirectorySeparatorChar + REMOTE_PROXY_PATH + REMOTE_CACHE_PATH;
             }
-            WIKI_DUMP_FILE = Properties.Settings.Default.WIKI_DUMP_FILE;
+            WIKI_DUMP_FILE = Properties.Files.Default.LOCAL_WIKI_DUMP_FILE;
             if(!WIKI_DUMP_FILE.Contains(":\\"))
             {
-                WIKI_DUMP_FILE = Properties.Settings.Default.BASE_DIR + Path.DirectorySeparatorChar + LOCAL_PROXY_PATH + WIKI_DUMP_FILE;
+                WIKI_DUMP_FILE = Properties.Files.Default.BASE_DIR + Path.DirectorySeparatorChar + LOCAL_PROXY_PATH + WIKI_DUMP_FILE;
             }
         }
 
@@ -261,22 +275,22 @@ namespace RuralCafe
         {
             // create the proxy
             RCLocalProxy localProxy = new RCLocalProxy(
-                IPAddress.Parse(Properties.Settings.Default.LOCAL_PROXY_IP_ADDRESS),
-                Properties.Settings.Default.LOCAL_PROXY_LISTEN_PORT,
-                Properties.Settings.Default.BASE_DIR + Path.DirectorySeparatorChar + LOCAL_PROXY_PATH,
+                IPAddress.Parse(Properties.Connection.Default.LOCAL_PROXY_IP_ADDRESS),
+                Properties.Connection.Default.LOCAL_PROXY_LISTEN_PORT,
+                Properties.Files.Default.BASE_DIR + Path.DirectorySeparatorChar + LOCAL_PROXY_PATH,
                 INDEX_PATH,
-                ((long)(Properties.Settings.Default.LOCAL_MAX_CACHE_SIZE_MIB)) * 1024 * 1024,
+                ((long)(Properties.Files.Default.LOCAL_MAX_CACHE_SIZE_MIB)) * 1024 * 1024,
                 LOCAL_CACHE_PATH,
                 WIKI_DUMP_FILE,
                 PACKAGE_PATH);
 
             // set the remote proxy
-            localProxy.SetRemoteProxy(IPAddress.Parse(Properties.Settings.Default.REMOTE_PROXY_IP_ADDRESS), 
-                Properties.Settings.Default.REMOTE_PROXY_LISTEN_PORT);
+            localProxy.SetRemoteProxy(IPAddress.Parse(Properties.Connection.Default.REMOTE_PROXY_IP_ADDRESS),
+                Properties.Connection.Default.REMOTE_PROXY_LISTEN_PORT);
 
             // XXX: currently this doesn't work if the remote proxy must be reached through a firewall/gateway.
             // XXX: it would be a chain of 2 proxies anyway and needs tunneling support
-            if (Properties.Settings.Default.REMOTE_PROXY_IP_ADDRESS != Properties.Settings.Default.LOCAL_PROXY_IP_ADDRESS)
+            if (Properties.Connection.Default.REMOTE_PROXY_IP_ADDRESS != Properties.Connection.Default.LOCAL_PROXY_IP_ADDRESS)
             {
                 // FIXME Either we must require a gateway to be set in this case or check if one is given...
                 // set the gateway proxy info and login for the local proxy
@@ -285,10 +299,10 @@ namespace RuralCafe
             }
 
             // set the RC search page
-            localProxy.SetRCSearchPage(Properties.Settings.Default.DEFAULT_SEARCH_PAGE);
+            localProxy.SetRCSearchPage(Properties.Files.Default.DEFAULT_SEARCH_PAGE);
             // Set network status and auto detection
-            localProxy.NetworkStatus = Properties.Settings.Default.NETWORK_STATUS;
-            localProxy.DetectNetworkStatusAuto = Properties.Settings.Default.DETECT_NETWORK_AUTO;
+            localProxy.NetworkStatus = Properties.Network.Default.NETWORK_STATUS;
+            localProxy.DetectNetworkStatusAuto = Properties.Network.Default.DETECT_NETWORK_AUTO;
 
             // load the blacklisted domains
             localProxy.LoadBlacklist("blacklist.txt");
@@ -322,10 +336,10 @@ namespace RuralCafe
         {
             // create the proxy
             RCRemoteProxy remoteProxy = new RCRemoteProxy(
-                IPAddress.Parse(Properties.Settings.Default.REMOTE_PROXY_IP_ADDRESS),
-                Properties.Settings.Default.REMOTE_PROXY_LISTEN_PORT,
-                Properties.Settings.Default.BASE_DIR + Path.DirectorySeparatorChar + REMOTE_PROXY_PATH,
-                ((long)(Properties.Settings.Default.REMOTE_MAX_CACHE_SIZE_MIB)) * 1024 * 1024,
+                IPAddress.Parse(Properties.Connection.Default.REMOTE_PROXY_IP_ADDRESS),
+                Properties.Connection.Default.REMOTE_PROXY_LISTEN_PORT,
+                Properties.Files.Default.BASE_DIR + Path.DirectorySeparatorChar + REMOTE_PROXY_PATH,
+                ((long)(Properties.Files.Default.REMOTE_MAX_CACHE_SIZE_MIB)) * 1024 * 1024,
                 REMOTE_CACHE_PATH, 
                 PACKAGE_PATH);
 
@@ -339,11 +353,11 @@ namespace RuralCafe
                                             GATEWAY_PROXY_LOGIN, GATEWAY_PROXY_PASS);
             }*/
 
-            // default remote proxy network status to online
-            remoteProxy.NetworkStatus = global::RuralCafe.RCLocalProxy.NetworkStatusCode.Online;
+            // Remote Proxy is always online.
+            remoteProxy.NetworkStatus = RCProxy.NetworkStatusCode.Online;
 
             // set the maximum downlink speed to the local proxy
-            remoteProxy.MAXIMUM_DOWNLINK_BANDWIDTH = Properties.Settings.Default.MAXIMUM_DOWNLOAD_SPEED;
+            remoteProxy.MAXIMUM_DOWNLINK_BANDWIDTH = Properties.Network.Default.MAXIMUM_DOWNLOAD_SPEED;
 
             // load the blacklisted domains
             remoteProxy.LoadBlacklist("blacklist.txt");

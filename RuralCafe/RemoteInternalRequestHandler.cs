@@ -65,7 +65,7 @@ namespace RuralCafe
                 throw new HttpException(HttpStatusCode.BadRequest, "unknown richness setting: " + richnessString);
             }
             // Get the user settings
-            RCUserSettings settings = Proxy.GetUserSettings(Context.Request.RemoteEndPoint, userid);
+            RCProperties settings = Proxy.GetProperties(Context.Request.RemoteEndPoint, userid);
             // and change richness
             settings.richness = richness;
             Logger.Debug("Richness of user " + userid + " from Local Proxy " + 
