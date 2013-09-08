@@ -70,6 +70,7 @@ namespace RuralCafe
 
         // remoteProxy
         private WebProxy _remoteProxy;
+        private int _remoteProxyHttpsPort;
 
         /// <summary>
         /// Automatically detect the network status?
@@ -124,6 +125,12 @@ namespace RuralCafe
         public WebProxy RemoteProxy
         {
             get { return _remoteProxy; }
+        }
+        /// <summary>HTTPS port for the remote proxy.</summary>
+        public int RemoteProxyHTTPSPort
+        {
+            get { return _remoteProxyHttpsPort; }
+            set { _remoteProxyHttpsPort = value; }
         }
         /// <summary>The wiki wrapper.</summary>
         public WikiWrapper WikiWrapper
@@ -345,6 +352,51 @@ namespace RuralCafe
                     Logger.Metric(String.Format("Speed is {0}, that is above {1}, switching to online mode.",
                         _networkSpeedBS, upThreshold));
                     NetworkStatus = NetworkStatusCode.Online;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Handles a TCP request. The local proxy does not behave like a normal HTTPS proxy:
+        /// It just forwards everything to the remote proxy.
+        /// </summary>
+        /// <param name="clientObject">The tcp client from the accepted connection.</param>
+        protected override void HandleTCPRequest(object clientObject)
+        {
+            TcpClient inClient = clientObject as TcpClient;
+            TcpClient outClient = null;
+
+            try
+            {
+                // Connect to remote proxy
+                outClient = new TcpClient(_remoteProxy.Address.Host, _remoteProxyHttpsPort);
+
+                Logger.Debug("Established TCP connection.");
+
+                Thread clientThread = new Thread(() => TunnelTCP(inClient, outClient));
+                Thread serverThread = new Thread(() => TunnelTCP(outClient, inClient));
+
+                clientThread.Start();
+                serverThread.Start();
+            }
+            catch (Exception)
+            {
+                // Disconnent if connections still alive
+                Logger.Debug("Closing TCP connection.");
+                try
+                {
+                    if (inClient.Connected)
+                    {
+                        inClient.Close();
+                    }
+                    if (outClient != null && outClient.Connected)
+                    {
+                        outClient.Close();
+                    }
+                }
+                catch (Exception e)
+                {
+                    Logger.Warn("Could not close the tcp connection: ", e);
                 }
             }
         }

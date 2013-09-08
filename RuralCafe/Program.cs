@@ -288,6 +288,7 @@ namespace RuralCafe
             // set the remote proxy
             localProxy.SetRemoteProxy(IPAddress.Parse(Properties.Connection.Default.REMOTE_PROXY_IP_ADDRESS),
                 Properties.Connection.Default.REMOTE_PROXY_LISTEN_PORT);
+            localProxy.RemoteProxyHTTPSPort = Properties.Connection.Default.REMOTE_PROXY_HTTPS_PORT;
 
             // XXX: currently this doesn't work if the remote proxy must be reached through a firewall/gateway.
             // XXX: it would be a chain of 2 proxies anyway and needs tunneling support
@@ -371,6 +372,11 @@ namespace RuralCafe
             Thread remoteListenerThread = new Thread(new ThreadStart(remoteProxy.StartListener));
             remoteListenerThread.Name = String.Format("remoteListenerThread");
             remoteListenerThread.Start();
+
+            // start remote HTTPS listener thread
+            Thread remoteHttpsListenerThread = new Thread(new ThreadStart(remoteProxy.StartHttpsListener));
+            remoteHttpsListenerThread.Name = "remoteHTTPSListenerThread";
+            remoteHttpsListenerThread.Start();
 
             // start remote requester thread
             Thread remoteRequesterThread = new Thread(new ThreadStart(remoteProxy.StartDispatcher));
