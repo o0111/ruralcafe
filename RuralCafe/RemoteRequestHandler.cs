@@ -159,10 +159,7 @@ namespace RuralCafe
             }
 
             // wait for admission control
-            while (_proxy.NumInflightRequests >= _proxy.MaxInflightRequests)
-            {
-                Thread.Sleep(100);
-            }
+            _proxy.WaitForAdmissionControl();
             
             // check user richness setting
             RequestHandler.Richness richness = Proxy.GetProperties(Context.Request.RemoteEndPoint,

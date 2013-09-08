@@ -454,8 +454,8 @@ namespace RuralCafe
                 cacheManager.RemoveCacheItemFromDisk(_cacheFileName);
                 _requestHandler.Logger.Debug("failed: " + Uri, e);
 
-                // if this is a webexception, let's throw our own exception include the Remote Proxy's message:
-                if (e is WebException)
+                // if this is a webexception, let's throw our own exception include the Remote Proxy's message (on the local side only!):
+                if (_requestHandler.GenericProxy is RCLocalProxy && e is WebException)
                 {
                     WebException exp = e as WebException;
                     if (exp.Response != null)
