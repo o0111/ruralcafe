@@ -143,7 +143,8 @@ namespace RuralCafe
         // timeouts, all in milliseconds
         /// <summary>Time until a local request is aborted.</summary>
         public const int LOCAL_REQUEST_PACKAGE_DEFAULT_TIMEOUT = Timeout.Infinite;
-        /// <summary>Time until a remote request is aborted.</summary>
+        /// <summary>Time until a remote request is aborted.
+        /// FIXME this value is actually only used if there's a gateway proxy after the remote. Is this correct?</summary>
         public const int REMOTE_REQUEST_PACKAGE_DEFAULT_TIMEOUT = 180000;
         /// <summary>Time until a web request (from remote proxy) is aborted.</summary>
         public const int WEB_REQUEST_DEFAULT_TIMEOUT = 60000;
@@ -372,7 +373,9 @@ namespace RuralCafe
             // check for blacklist
             if (IsBlacklisted(OriginalRequest.RawUrl))
             {
-                Logger.Debug("ignoring blacklisted: " + OriginalRequest.RawUrl);
+                // For requests being repeated over and over this logging would be bad.
+                // XXX SendErrorPage Logs. As this is also for items requested too often,
+                // there shouldn't be any log message.
                 SendErrorPage(HttpStatusCode.NotFound, "blacklisted: " + OriginalRequest.RawUrl);
                 return false;
             }
@@ -435,8 +438,9 @@ namespace RuralCafe
         {
             Status result = Status.Failed;
             
-            // Check for admission control
-            while (_proxy.NumInflightRequests >= _proxy.MaxInflightRequests)
+            // Check for admission control, only if we're not online
+            while (_proxy.NetworkStatus != RCProxy.NetworkStatusCode.Online &&
+                _proxy.NumInflightRequests >= _proxy.MaxInflightRequests)
             {
                 // Instead of keeping the client waiting, just send him a page to retry in a couple of minutes.
                 SendErrorPage(HttpStatusCode.ServiceUnavailable, "No connection slots available, please try again in a couple of minutes.");

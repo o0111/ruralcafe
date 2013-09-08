@@ -165,7 +165,7 @@ namespace RuralCafe
             }
             
             // check user richness setting
-            RequestHandler.Richness richness = Proxy.GetUserSettings(Context.Request.RemoteEndPoint,
+            RequestHandler.Richness richness = Proxy.GetProperties(Context.Request.RemoteEndPoint,
                 GetRCSpecificRequestHeaders().RCUserID).richness;
             if (richness == 0)
             {

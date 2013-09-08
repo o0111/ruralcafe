@@ -57,8 +57,6 @@ namespace RuralCafe
         private const int CLUSTERING_MAXCATEGORIES = 8;
         private const string CLUSTERS_FOLDER = "clusters";
         // ... for network speed
-        // FIXME do some tests to find good default value! Customizable!?
-        private const long BYTES_PER_SECOND_ONLINE_THRESHOLD = 10240; // 10 kb/s
         /// <summary>
         /// The status will only be changed if up, if we're above THRESHOLD * (1 + THRESHOLD_PERCENT_ANTI_FLAPPING)
         /// and only down if we're below THRESHOLD * (1 - THRESHOLD_PERCENT_ANTI_FLAPPING)
@@ -188,7 +186,7 @@ namespace RuralCafe
             _random = new Random();
             _averageTimePerRequest = new TimeSpan(0);
 
-            _maxInflightRequests = Properties.Settings.Default.LOCAL_MAX_INFLIGHT_REQUESTS;
+            _maxInflightRequests = Properties.Network.Default.LOCAL_MAX_INFLIGHT_REQUESTS;
 
             _sessionManager = new SessionManager(this);
 
@@ -330,8 +328,8 @@ namespace RuralCafe
 
             if (_detectNetworkStatusAuto)
             {
-                long downThreshold = (long)(BYTES_PER_SECOND_ONLINE_THRESHOLD * (1 - THRESHOLD_PERCENT_ANTI_FLAPPING));
-                long upThreshold = (long)(BYTES_PER_SECOND_ONLINE_THRESHOLD * (1 + THRESHOLD_PERCENT_ANTI_FLAPPING));
+                long downThreshold = (long)(Properties.Network.Default.BYTES_PER_SECOND_ONLINE_THRESHOLD * (1 - THRESHOLD_PERCENT_ANTI_FLAPPING));
+                long upThreshold = (long)(Properties.Network.Default.BYTES_PER_SECOND_ONLINE_THRESHOLD * (1 + THRESHOLD_PERCENT_ANTI_FLAPPING));
 
                 if (NetworkStatus == NetworkStatusCode.Online
                     && _networkSpeedBS < downThreshold)

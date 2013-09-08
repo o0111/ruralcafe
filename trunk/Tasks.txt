@@ -13,14 +13,11 @@ Wishlist
 Tasks
 - Implement offline detection + back online detection.
 - Long file name support. See http://blogs.msdn.com/b/bclteam/archive/2007/02/13/long-paths-in-net-part-1-of-3-kim-hamilton.aspx and http://zetalongpaths.codeplex.com/
-
 - Queue also streaming requests at the RP ??
 	- Duplicate IsStreaming()-Check at the moment.
 - DNS cache hit/miss logging (César: Packet sniffing)
 - Domain name & Search query clustering
 - Handle 304 correctly (done for StreamTransparently, missing for DownloadToCache, but it doesn't seem to happen there)
-- How to react to other server responses than 200 (e.g. 500), if the content is still useful?
-- Create more sub-namespaces and restructure the .cs files.
 - "Search later when I'm online" functionality.
 - Blacklist an URL being requested more than 10 times in an interval shorter than 10s.
 - Login/security
@@ -31,8 +28,7 @@ Tasks
 - NetworkSpeedDetection / InflightRequests Control
   - At first hardcoded percentage of _maxInflightRequests that have to be non-streamed ones. Better fairness policy later.
   - Non-busy-waiting when waiting for admission control
-  - Find a way so that the detected speed does not decrease abnormally if 1 requests takes very long and eventually just time out or gets 500 back.
-  - Put all the KB/s and minMaxInflightRequests stuff in the properties, instead of having constants.
+  - RP: Admission control when streaming?
 
 Bugs
 - Estimated network speed is sometimes negative!?

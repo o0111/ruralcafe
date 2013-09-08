@@ -89,12 +89,8 @@ namespace RuralCafe
         private const double NETWORK_SPEED_REDUCTION_FACTOR = 0.8;
         // The time will actually always be ~10s, so this is just to say how much the should be weighted different
         // when the bytes downloaded are dieffernt
-        private const double NETWORK_SPEED_TIME_WEIGHT = 0.3;
+        private const double NETWORK_SPEED_TIME_WEIGHT = 0.5;
         private static readonly TimeSpan NETWORK_DETECTION_INTERVAL = new TimeSpan(0, 5, 0);
-        // FIXME do some tests to find good default value! Customizable!?
-        private const long MIN_BYTES_PER_SECOND_PER_REQUEST = 5120; // 5 kb/s
-        // The mininum acceptable number for the limit of parallel requests.
-        private const int MIN_MAX_INFLIGHT_REQUESTS = 3;
 
         /// <summary>
         /// notifies that a new request has arrived or a request has completed
@@ -843,17 +839,18 @@ namespace RuralCafe
         /// <summary>
         /// Logs the speed.
         /// 
-        /// TODO change _maxInflightRequests.
+        /// Changes _maxInflightRequests according to the network speed.
         /// </summary>
         /// <param name="o">Ignored</param>
         public virtual void LogSpeedAndApplyNetworkSpeedSettings(object o)
         {
             Logger.Metric("Current network speed is: " + _networkSpeedBS + " bytes/s.");
 
-            if(_networkSpeedBS > 0)
+            if (_networkSpeedBS > 0 && Properties.Network.Default.FLUCTUATE_MAX_REQUESTS)
             {
                 // Change _maxInflightRequests accordingly.
-                _maxInflightRequests = Math.Max((int)(_networkSpeedBS / MIN_BYTES_PER_SECOND_PER_REQUEST), MIN_MAX_INFLIGHT_REQUESTS);
+                _maxInflightRequests = Math.Max((int)(_networkSpeedBS / Properties.Network.Default.MIN_BYTES_PER_SECOND_PER_REQUEST), 
+                    Properties.Network.Default.MIN_MAX_INFLIGHT_REQUESTS);
                 Logger.Info("Changing max inflight requests to: " + _maxInflightRequests);
             }
         }

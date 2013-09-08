@@ -8,7 +8,7 @@ namespace RuralCafe
     /// <summary>
     /// Data class used by the RCRemote Proxy that saves settings for a user
     /// </summary>
-    public class RCUserSettings
+    public class RCProperties
     {
         /// <summary>
         /// The richness.

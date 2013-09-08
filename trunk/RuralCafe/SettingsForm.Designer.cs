@@ -72,9 +72,12 @@ namespace RuralCafe
             this.textBox5 = new System.Windows.Forms.TextBox();
             this.label4 = new System.Windows.Forms.Label();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.checkBox3 = new System.Windows.Forms.CheckBox();
+            this.label27 = new System.Windows.Forms.Label();
+            this.checkBox2 = new System.Windows.Forms.CheckBox();
+            this.label26 = new System.Windows.Forms.Label();
             this.numericUpDown9 = new System.Windows.Forms.NumericUpDown();
             this.label24 = new System.Windows.Forms.Label();
-            this.numericUpDown4 = new System.Windows.Forms.NumericUpDown();
             this.numericUpDown1 = new System.Windows.Forms.NumericUpDown();
             this.textBox20 = new System.Windows.Forms.TextBox();
             this.label20 = new System.Windows.Forms.Label();
@@ -82,17 +85,12 @@ namespace RuralCafe
             this.label14 = new System.Windows.Forms.Label();
             this.textBox13 = new System.Windows.Forms.TextBox();
             this.label13 = new System.Windows.Forms.Label();
-            this.label6 = new System.Windows.Forms.Label();
             this.textBox3 = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.checkBox2 = new System.Windows.Forms.CheckBox();
-            this.label26 = new System.Windows.Forms.Label();
-            this.checkBox3 = new System.Windows.Forms.CheckBox();
-            this.label27 = new System.Windows.Forms.Label();
             this.panel1.SuspendLayout();
             this.groupBox5.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown8)).BeginInit();
@@ -107,7 +105,6 @@ namespace RuralCafe
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown3)).BeginInit();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown9)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown4)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -556,7 +553,6 @@ namespace RuralCafe
             this.groupBox1.Controls.Add(this.label26);
             this.groupBox1.Controls.Add(this.numericUpDown9);
             this.groupBox1.Controls.Add(this.label24);
-            this.groupBox1.Controls.Add(this.numericUpDown4);
             this.groupBox1.Controls.Add(this.numericUpDown1);
             this.groupBox1.Controls.Add(this.textBox20);
             this.groupBox1.Controls.Add(this.label20);
@@ -564,7 +560,6 @@ namespace RuralCafe
             this.groupBox1.Controls.Add(this.label14);
             this.groupBox1.Controls.Add(this.textBox13);
             this.groupBox1.Controls.Add(this.label13);
-            this.groupBox1.Controls.Add(this.label6);
             this.groupBox1.Controls.Add(this.textBox3);
             this.groupBox1.Controls.Add(this.label3);
             this.groupBox1.Controls.Add(this.textBox1);
@@ -577,9 +572,47 @@ namespace RuralCafe
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Local Proxy";
             // 
+            // checkBox3
+            // 
+            this.checkBox3.AutoSize = true;
+            this.checkBox3.Location = new System.Drawing.Point(463, 124);
+            this.checkBox3.Name = "checkBox3";
+            this.checkBox3.Size = new System.Drawing.Size(15, 14);
+            this.checkBox3.TabIndex = 33;
+            this.toolTip1.SetToolTip(this.checkBox3, "Show the user satisfaction survey in the midlle/at the end of sessions?");
+            this.checkBox3.UseVisualStyleBackColor = true;
+            // 
+            // label27
+            // 
+            this.label27.AutoSize = true;
+            this.label27.Location = new System.Drawing.Point(328, 124);
+            this.label27.Name = "label27";
+            this.label27.Size = new System.Drawing.Size(68, 13);
+            this.label27.TabIndex = 32;
+            this.label27.Text = "Show survey";
+            // 
+            // checkBox2
+            // 
+            this.checkBox2.AutoSize = true;
+            this.checkBox2.Location = new System.Drawing.Point(140, 123);
+            this.checkBox2.Name = "checkBox2";
+            this.checkBox2.Size = new System.Drawing.Size(15, 14);
+            this.checkBox2.TabIndex = 31;
+            this.toolTip1.SetToolTip(this.checkBox2, "Force the user to login for all actions, including searching?");
+            this.checkBox2.UseVisualStyleBackColor = true;
+            // 
+            // label26
+            // 
+            this.label26.AutoSize = true;
+            this.label26.Location = new System.Drawing.Point(5, 123);
+            this.label26.Name = "label26";
+            this.label26.Size = new System.Drawing.Size(59, 13);
+            this.label26.TabIndex = 30;
+            this.label26.Text = "Force login";
+            // 
             // numericUpDown9
             // 
-            this.numericUpDown9.Location = new System.Drawing.Point(462, 95);
+            this.numericUpDown9.Location = new System.Drawing.Point(141, 93);
             this.numericUpDown9.Maximum = new decimal(new int[] {
             2147483647,
             0,
@@ -593,24 +626,11 @@ namespace RuralCafe
             // label24
             // 
             this.label24.AutoSize = true;
-            this.label24.Location = new System.Drawing.Point(327, 98);
+            this.label24.Location = new System.Drawing.Point(6, 96);
             this.label24.Name = "label24";
             this.label24.Size = new System.Drawing.Size(108, 13);
             this.label24.TabIndex = 20;
             this.label24.Text = "Max cache size (MiB)";
-            // 
-            // numericUpDown4
-            // 
-            this.numericUpDown4.Location = new System.Drawing.Point(140, 69);
-            this.numericUpDown4.Maximum = new decimal(new int[] {
-            65535,
-            0,
-            0,
-            0});
-            this.numericUpDown4.Name = "numericUpDown4";
-            this.numericUpDown4.Size = new System.Drawing.Size(182, 20);
-            this.numericUpDown4.TabIndex = 19;
-            this.toolTip1.SetToolTip(this.numericUpDown4, "The maximum number of active requests at a time.");
             // 
             // numericUpDown1
             // 
@@ -627,7 +647,7 @@ namespace RuralCafe
             // 
             // textBox20
             // 
-            this.textBox20.Location = new System.Drawing.Point(139, 95);
+            this.textBox20.Location = new System.Drawing.Point(140, 69);
             this.textBox20.Name = "textBox20";
             this.textBox20.Size = new System.Drawing.Size(183, 20);
             this.textBox20.TabIndex = 17;
@@ -636,7 +656,7 @@ namespace RuralCafe
             // label20
             // 
             this.label20.AutoSize = true;
-            this.label20.Location = new System.Drawing.Point(5, 98);
+            this.label20.Location = new System.Drawing.Point(6, 72);
             this.label20.Name = "label20";
             this.label20.Size = new System.Drawing.Size(103, 13);
             this.label20.TabIndex = 16;
@@ -677,15 +697,6 @@ namespace RuralCafe
             this.label13.Size = new System.Drawing.Size(57, 13);
             this.label13.TabIndex = 10;
             this.label13.Text = "Index path";
-            // 
-            // label6
-            // 
-            this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(5, 72);
-            this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(126, 13);
-            this.label6.TabIndex = 8;
-            this.label6.Text = "Maximum active requests";
             // 
             // textBox3
             // 
@@ -731,44 +742,6 @@ namespace RuralCafe
             this.label1.TabIndex = 1;
             this.label1.Text = "IP address";
             // 
-            // checkBox2
-            // 
-            this.checkBox2.AutoSize = true;
-            this.checkBox2.Location = new System.Drawing.Point(140, 123);
-            this.checkBox2.Name = "checkBox2";
-            this.checkBox2.Size = new System.Drawing.Size(15, 14);
-            this.checkBox2.TabIndex = 31;
-            this.toolTip1.SetToolTip(this.checkBox2, "Force the user to login for all actions, including searching?");
-            this.checkBox2.UseVisualStyleBackColor = true;
-            // 
-            // label26
-            // 
-            this.label26.AutoSize = true;
-            this.label26.Location = new System.Drawing.Point(5, 123);
-            this.label26.Name = "label26";
-            this.label26.Size = new System.Drawing.Size(59, 13);
-            this.label26.TabIndex = 30;
-            this.label26.Text = "Force login";
-            // 
-            // checkBox3
-            // 
-            this.checkBox3.AutoSize = true;
-            this.checkBox3.Location = new System.Drawing.Point(463, 124);
-            this.checkBox3.Name = "checkBox3";
-            this.checkBox3.Size = new System.Drawing.Size(15, 14);
-            this.checkBox3.TabIndex = 33;
-            this.toolTip1.SetToolTip(this.checkBox3, "Show the user satisfaction survey in the midlle/at the end of sessions?");
-            this.checkBox3.UseVisualStyleBackColor = true;
-            // 
-            // label27
-            // 
-            this.label27.AutoSize = true;
-            this.label27.Location = new System.Drawing.Point(328, 124);
-            this.label27.Name = "label27";
-            this.label27.Size = new System.Drawing.Size(68, 13);
-            this.label27.TabIndex = 32;
-            this.label27.Text = "Show survey";
-            // 
             // SettingsForm
             // 
             this.AcceptButton = this.button1;
@@ -799,7 +772,6 @@ namespace RuralCafe
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown9)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown4)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).EndInit();
             this.ResumeLayout(false);
 
@@ -819,7 +791,6 @@ namespace RuralCafe
         private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.Label label6;
         private System.Windows.Forms.TextBox textBox7;
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.TextBox textBox10;
@@ -846,7 +817,6 @@ namespace RuralCafe
         private System.Windows.Forms.NumericUpDown numericUpDown1;
         private System.Windows.Forms.NumericUpDown numericUpDown2;
         private System.Windows.Forms.NumericUpDown numericUpDown3;
-        private System.Windows.Forms.NumericUpDown numericUpDown4;
         private System.Windows.Forms.NumericUpDown numericUpDown5;
         private System.Windows.Forms.NumericUpDown numericUpDown6;
         private System.Windows.Forms.NumericUpDown numericUpDown7;
