@@ -118,6 +118,7 @@ namespace RuralCafe
         /// <summary>The cache manager.</summary>
         protected CacheManager _cacheManager;
         // XXX: probably don't want to hard-code this as the number of port threads should be proportional to line speed.
+        // Satia: it should not be proportional to line speed - we have _maxInflightRequests for that.
         // XXX: We also should not use ThreadPool static, as then we cannot have different setting for Local and Remote
         // and they share the same ThreadPool...
         /// <summary>The maximum number of threads being used.</summary>
@@ -164,6 +165,10 @@ namespace RuralCafe
         /// maximum inflight requests
         /// </summary>
         protected int _maxInflightRequests;
+        /// <summary>
+        /// An event to wake up threads waiting for admission control.
+        /// </summary>
+        private ManualResetEvent _admissionEvent = new ManualResetEvent(false);
 
         /// <summary>
         /// Blacklist.
@@ -533,7 +538,7 @@ namespace RuralCafe
                     // create the request handler
                     RequestHandler requestHandler = RequestHandler.PrepareNewRequestHandler(this, context);
 
-                    // Start own method StartRequestHandler in the thread, which also in- and decreases _activeRequests
+                    // Start own method HandleRequest in the thread, which also in- and decreases _activeRequests
                     ThreadPool.QueueUserWorkItem(new WaitCallback(requestHandler.HandleRequest), null);
                 }
             }
@@ -575,19 +580,7 @@ namespace RuralCafe
         public void StartDispatcher()
         {
             ThreadPool.SetMaxThreads(MaxThreads, MaxThreads);
-            /*
-            int workerThreads;
-            int portThreads;
-             
-            ThreadPool.GetMaxThreads(out workerThreads, out portThreads);
-            Console.WriteLine("\nMaximum worker threads: \t{0}" +
-                "\nMaximum completion port threads: {1}",
-                workerThreads, portThreads);
-            ThreadPool.GetAvailableThreads(out workerThreads, out portThreads);
-            Console.WriteLine("\nAvailable worker threads: \t{0}" +
-                "\nAvailable completion port threads: {1}\n",
-                workerThreads, portThreads);
-            */
+
             _logger.Info("Started Dispatcher");
 
             // go through the outstanding requests forever
@@ -631,7 +624,10 @@ namespace RuralCafe
         /// <param name="requestId">The request id.</param>
         public void AddActiveRequest(string requestId)
         {
-            _activeRequests.Add(requestId);
+            lock (_activeRequests)
+            {
+                _activeRequests.Add(requestId);
+            }
         }
 
         /// <summary>
@@ -640,7 +636,35 @@ namespace RuralCafe
         /// <param name="requestId">The request id.</param>
         public void RemoveActiveRequest(string requestId)
         {
-            _activeRequests.Remove(requestId);
+            lock (_activeRequests)
+            {
+                _activeRequests.Remove(requestId);
+                // Wake up waiting threads
+                _admissionEvent.Set();
+            }
+        }
+
+        /// <summary>
+        /// Checks if the thread is admitted. Blocks in a loop, until it is.
+        /// </summary>
+        public void WaitForAdmissionControl()
+        {
+            while (true)
+            {
+                lock (_activeRequests)
+                {
+                    if (NumInflightRequests >= MaxInflightRequests)
+                    {
+                        _admissionEvent.Reset();
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                _admissionEvent.WaitOne();
+            }
+            
         }
 
         /// <summary>

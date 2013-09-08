@@ -253,10 +253,7 @@ namespace RuralCafe
             }
 
             // wait for admission control
-            while (_proxy.NumInflightRequests >= _proxy.MaxInflightRequests)
-            {
-                Thread.Sleep(100);
-            }
+            _proxy.WaitForAdmissionControl();
 
             // Tell the network usage detector we're downloading now
             _proxy.NetworkUsageDetector.DownloadStarted();

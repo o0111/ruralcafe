@@ -27,7 +27,6 @@ Tasks
   - Install directions.
 - NetworkSpeedDetection / InflightRequests Control
   - At first hardcoded percentage of _maxInflightRequests that have to be non-streamed ones. Better fairness policy later.
-  - Non-busy-waiting when waiting for admission control
   - RP: Admission control when streaming?
 
 Bugs
