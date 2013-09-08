@@ -164,15 +164,16 @@ namespace RuralCafe
         /// </summary>
         /// <param name="listenAddress">Address to listen for requests on.</param>
         /// <param name="listenPort">Port to listen for requests on.</param>
+        /// <param name="httpsListenPort">Port the proxy listens on for HTTPS</param>
         /// <param name="proxyPath">Path to the proxy's executable.</param>
         /// <param name="maxCacheSize">The max cache size in bytes.</param>
         /// <param name="indexPath">Path to the proxy's index.</param>
         /// <param name="cachePath">Path to the proxy's cache.</param>
         /// <param name="wikiDumpPath">Path to the wiki dump file.</param>
         /// <param name="packagesPath">Path to the downloaded packages.</param>
-        public RCLocalProxy(IPAddress listenAddress, int listenPort, string proxyPath, string indexPath,
+        public RCLocalProxy(IPAddress listenAddress, int listenPort, int httpsListenPort, string proxyPath, string indexPath,
             long maxCacheSize, string cachePath, string wikiDumpPath, string packagesPath)
-            : base(LOCAL_PROXY_NAME, listenAddress, listenPort, proxyPath,
+            : base(LOCAL_PROXY_NAME, listenAddress, listenPort, httpsListenPort, proxyPath,
             maxCacheSize, cachePath, packagesPath)
         {
             // The UI pages are not stored in the proxy path.

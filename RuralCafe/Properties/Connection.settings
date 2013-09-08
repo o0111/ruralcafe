@@ -26,5 +26,11 @@
     <Setting Name="EXTERNAL_PROXY_PASS" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
+    <Setting Name="LOCAL_PROXY_HTTPS_PORT" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">8443</Value>
+    </Setting>
+    <Setting Name="REMOTE_PROXY_HTTPS_PORT" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">8444</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

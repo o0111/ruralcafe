@@ -118,5 +118,29 @@ namespace RuralCafe.Properties {
                 this["EXTERNAL_PROXY_PASS"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("8443")]
+        public int LOCAL_PROXY_HTTPS_PORT {
+            get {
+                return ((int)(this["LOCAL_PROXY_HTTPS_PORT"]));
+            }
+            set {
+                this["LOCAL_PROXY_HTTPS_PORT"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("8444")]
+        public int REMOTE_PROXY_HTTPS_PORT {
+            get {
+                return ((int)(this["REMOTE_PROXY_HTTPS_PORT"]));
+            }
+            set {
+                this["REMOTE_PROXY_HTTPS_PORT"] = value;
+            }
+        }
     }
 }

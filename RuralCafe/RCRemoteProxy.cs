@@ -43,13 +43,14 @@ namespace RuralCafe
         /// </summary>
         /// <param name="listenAddress">Address to listen for requests on.</param>
         /// <param name="listenPort">Port to listen for requests on.</param>
+        /// <param name="httpsListenPort">Port the proxy listens on for HTTPS</param>
         /// <param name="proxyPath">Path to the proxy's executable.</param>
         /// <param name="maxCacheSize">The max cache size in bytes.</param>
         /// <param name="cachePath">Path to the proxy's cache.</param>
         /// <param name="packagesPath">Path to the proxy's packages</param>
-        public RCRemoteProxy(IPAddress listenAddress, int listenPort, string proxyPath,
+        public RCRemoteProxy(IPAddress listenAddress, int listenPort, int httpsListenPort, string proxyPath,
             long maxCacheSize, string cachePath, string packagesPath)
-            : base(REMOTE_PROXY_NAME, listenAddress, listenPort, proxyPath, 
+            : base(REMOTE_PROXY_NAME, listenAddress, listenPort, httpsListenPort, proxyPath, 
             maxCacheSize, cachePath, packagesPath)
         {
             _Properties = new Dictionary<IPEndPoint, Dictionary<int, RCProperties>>();

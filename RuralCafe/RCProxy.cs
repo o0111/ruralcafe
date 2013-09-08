@@ -28,6 +28,7 @@ using RuralCafe.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Reflection;
+using System.Net.Security;
 
 namespace RuralCafe
 {
@@ -107,6 +108,8 @@ namespace RuralCafe
         protected IPAddress _listenAddress;
         /// <summary>The port the proxy listens to.</summary>
         protected int _listenPort;
+        /// <summary>The port the proxy listens to for HTTPS connections.</summary>
+        protected int _httpsListenPort;
         /// <summary>The proxy's logger.</summary>
         protected readonly ILog _logger;
         /// <summary>The proxy's file path.</summary>
@@ -187,9 +190,9 @@ namespace RuralCafe
         protected List<RequestHandler> _globalRequests = new List<RequestHandler>();
 
         /// <summary>
-        /// A list of the active requests
+        /// The number of active requests.
         /// </summary>
-        protected List<string> _activeRequests = new List<string>();
+        protected int _activeRequests = 0;
 
         # region Property Accessors
 
@@ -245,7 +248,7 @@ namespace RuralCafe
         /// <summary>The current number of inflight requests.</summary>
         public int NumInflightRequests
         {
-            get { return _activeRequests.Count; }
+            get { return _activeRequests; }
         }
 
         /// <summary>The logger.</summary>
@@ -261,17 +264,19 @@ namespace RuralCafe
         /// <param name="name">Name of the proxy.</param>
         /// <param name="listenAddress">Address the proxy listens on.</param>
         /// <param name="listenPort">Port the proxy listens on.</param>
+        /// <param name="httpsListenPort">Port the proxy listens on for HTTPS</param>
         /// <param name="proxyPath">Directory path the proxy is running in.</param>
         /// <param name="maxCacheSize">The max cache size in bytes.</param>
         /// <param name="cachePath">Path to the proxy's cache</param>
         /// <param name="packageCachePath">Path to the proxy's packages</param>
-        protected RCProxy(string name, IPAddress listenAddress, int listenPort, 
+        protected RCProxy(string name, IPAddress listenAddress, int listenPort, int httpsListenPort,
             string proxyPath, long maxCacheSize, string cachePath, string packageCachePath)
         {
             _name = name;
             // setup proxy listener variables
             _listenAddress = listenAddress;
             _listenPort = listenPort;
+            _httpsListenPort = httpsListenPort;
             _proxyPath = proxyPath;
 
             // no pending requests
@@ -485,7 +490,7 @@ namespace RuralCafe
 
         public void StartHttpsListener()
         {
-            int _httpsListenPort = _listenPort + (443 - 80); // TODO own field
+            //int _httpsListenPort = _listenPort + (443 - 80); // TODO own field
 
             _logger.Info("Started HTTPS Listener on " + _listenAddress + ":" + _httpsListenPort);
             try
@@ -507,11 +512,11 @@ namespace RuralCafe
             }
             catch (SocketException e)
             {
-                _logger.Fatal("SocketException in StartListener, errorcode: " + e.NativeErrorCode, e);
+                _logger.Fatal("SocketException in StartHttpsListener, errorcode: " + e.NativeErrorCode, e);
             }
             catch (Exception e)
             {
-                _logger.Fatal("Exception in StartListener", e);
+                _logger.Fatal("Exception in StartHttpsListener", e);
             }
         }
 
@@ -551,27 +556,6 @@ namespace RuralCafe
                 _logger.Fatal("Exception in StartListener", e);
             }
         }
-        /*
-        /// <summary>
-        /// Invokes the <see cref="RequestHandler.HandleRequest"/> method. While it is running, the number of
-        /// active requests is increased.
-        /// </summary>
-        /// <param name="requestHandler">The request handler of type
-        /// <see cref="RequestHandler"/></param>
-        private void StartRequestHandler(Object requestHandler)
-        {
-            if (!(requestHandler is RequestHandler))
-            {
-                throw new ArgumentException("requestHandler must be of type RequestHandler");
-            }
-            // Increment number of active requests
-            //System.Threading.Interlocked.Increment(ref _activeRequests);
-            // Start request handler
-            ((RequestHandler)requestHandler).HandleRequest();
-            // Decrement number of active requests
-            //System.Threading.Interlocked.Decrement(ref _activeRequests);
-        }*/
-
 
         /// <summary>
         /// Starts the dispatcher which requests pages from the remote proxy.
@@ -624,9 +608,9 @@ namespace RuralCafe
         /// <param name="requestId">The request id.</param>
         public void AddActiveRequest(string requestId)
         {
-            lock (_activeRequests)
+            lock (_admissionEvent)
             {
-                _activeRequests.Add(requestId);
+                _activeRequests++;
             }
         }
 
@@ -636,9 +620,9 @@ namespace RuralCafe
         /// <param name="requestId">The request id.</param>
         public void RemoveActiveRequest(string requestId)
         {
-            lock (_activeRequests)
+            lock (_admissionEvent)
             {
-                _activeRequests.Remove(requestId);
+                _activeRequests--;
                 // Wake up waiting threads
                 _admissionEvent.Set();
             }
@@ -651,7 +635,7 @@ namespace RuralCafe
         {
             while (true)
             {
-                lock (_activeRequests)
+                lock (_admissionEvent)
                 {
                     if (NumInflightRequests >= MaxInflightRequests)
                     {
@@ -711,6 +695,10 @@ namespace RuralCafe
 
         #region HTTPS TCP Proxy
 
+        /// <summary>
+        /// Handles a TCP request.
+        /// </summary>
+        /// <param name="clientObject">The tcp client from the accepted connection.</param>
         protected void HandleTCPRequest(object clientObject)
         {
             TcpClient inClient = clientObject as TcpClient;
@@ -731,35 +719,32 @@ namespace RuralCafe
                 }
                 if (connectRequest.Count == 0)
                 {
-                    return;
+                    throw new Exception();
                 }
 
                 string[] requestLine0Split = connectRequest[0].Split(' ');
                 if (requestLine0Split.Length < 3)
                 {
-                    return;
+                    throw new Exception();
                 }
                 // Check if it is CONNECT
                 string method = requestLine0Split[0];
                 if (!method.Equals("CONNECT"))
                 {
-                    return;
+                    throw new Exception();
                 }
                 // Get host and port
                 string requestUri = requestLine0Split[1];
                 string[] uriSplit = requestUri.Split(new char[] { ':' }, StringSplitOptions.RemoveEmptyEntries);
                 if (uriSplit.Length < 2)
                 {
-                    return;
+                    throw new Exception();
                 }
                 string host = uriSplit[0];
                 int port = Int32.Parse(uriSplit[1]);
 
                 // Connect to server
                 outClient = new TcpClient(host, port);
-                NetworkStream serverStream = outClient.GetStream();
-                StreamWriter serverWriter = new StreamWriter(serverStream);
-                StreamReader serverReader = new StreamReader(serverStream);
 
                 // Send 200 Connection Established to Client
                 clientWriter.WriteLine("HTTP/1.0 200 Connection established\r\n\r\n");
@@ -767,33 +752,16 @@ namespace RuralCafe
 
                 Logger.Debug("Established TCP connection for " + host + ":" + port);
 
-                //serverWriter.WriteLine("GET / HTTP/1.1");
-                //serverWriter.WriteLine("Host: www.google.de");
-                //serverWriter.WriteLine("User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) Gecko/20100101 Firefox/23.0");
-                //serverWriter.WriteLine("Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-                //serverWriter.WriteLine("Accept-Language: de-de,de;q=0.8,en-us;q=0.5,en;q=0.3");
-                //serverWriter.WriteLine();
-                
-                // XXX maybe it was better reading each a line.
-                while (true)
-                {
-                    while ((line = clientReader.ReadLine()) != null)
-                    {
-                        Logger.Debug("->Server: " + line);
-                        serverWriter.WriteLine(line);
-                    }
-                    serverWriter.Flush();
-                    while ((line = serverReader.ReadLine()) != null)
-                    {
-                        Logger.Debug("->Client: " + line);
-                        clientWriter.WriteLine(line);
-                    }
-                    clientWriter.Flush();
-                }
+                Thread clientThread =  new Thread(() => TunnelTCP(inClient, outClient));
+                Thread serverThread = new Thread(() => TunnelTCP(outClient, inClient));
+
+                clientThread.Start();
+                serverThread.Start();
             }
             catch(Exception)
             {
                 // Disconnent if connections still alive
+                Logger.Debug("Closing TCP connection.");
                 try
                 {
                     if (inClient.Connected)
@@ -808,6 +776,53 @@ namespace RuralCafe
                 catch (Exception e)
                 {
                     Logger.Warn("Could not close the tcp connection: ", e);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Tunnels a TCP connection.
+        /// </summary>
+        /// <param name="inClient">The client to read from.</param>
+        /// <param name="outClient">The client to write to.</param>
+        public void TunnelTCP(TcpClient inClient, TcpClient outClient)
+        {
+            NetworkStream inStream = inClient.GetStream();
+            NetworkStream outStream = outClient.GetStream();
+            byte[] buffer = new byte[1024];
+            int read;
+            try
+            {
+                while (inClient.Connected && outClient.Connected)
+                {
+                    if (inStream.DataAvailable && (read = inStream.Read(buffer, 0, buffer.Length)) != 0)
+                    {
+                        outStream.Write(buffer, 0, read);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Debug("TCP connection error: ", e);
+            }
+            finally
+            {
+                Logger.Debug("Closing TCP connection.");
+                // Disconnent if connections still alive
+                try
+                {
+                    if (inClient.Connected)
+                    {
+                        inClient.Close();
+                    }
+                    if (outClient.Connected)
+                    {
+                        outClient.Close();
+                    }
+                }
+                catch (Exception e1)
+                {
+                    Logger.Warn("Could not close the tcp connection: ", e1);
                 }
             }
         }
