@@ -3,7 +3,7 @@
 
 If you are running the local proxy and the remote proxy on different machines, you might need to disable or configure your firewall to accept in/outcoming requests on that port for !RuralCafe and/or Visual Studio. If you are using the Windows Firewall, see *WindowsFirewall* for an explanation how to configure it correctly.
 
-To interact with !RuralCafe, the browser must be configured to use !RuralCafe as the proxy using the IP address and port of the local proxy set in the configuration (below). These settings can be found in the connection settings of any modern browser (IE, Firefox, Chrome). Also, set the browser's homepage to http://www.ruralcafe.net/
+To interact with !RuralCafe, the browser must be configured to use !RuralCafe as the proxy using the IP address and port of the local proxy set in the configuration (below). The  LOCAL_PROXY_LISTEN_PORT should be used as the HTTP port, and the LOCAL_PROXY_HTTPS_PORT as HTTPS or SSL port. These settings can be found in the connection settings of any modern browser (IE, Firefox, Chrome). Also, set the browser's homepage to http://www.ruralcafe.net/
 
 The configuration fields are fairly straightforward and are defaulted to work as a standalone service on a single machine (as in this example). In the case where the local and remote proxies are setup on seperate machines, the configuration should be identical on both machines.
 

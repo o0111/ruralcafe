@@ -23,8 +23,9 @@ Tasks
 - Login/security
   - Save pseudo-randomly generated session id in the cookie, not the user id
 - https
-  - _maxInflightRequests
-  - Install directions.
+  - _maxInflightRequests (?)
+  - Connections don't get closed.
+  - blacklist?
 - NetworkSpeedDetection / InflightRequests Control
   - At first hardcoded percentage of _maxInflightRequests that have to be non-streamed ones. Better fairness policy later.
   - RP: Admission control when streaming?
