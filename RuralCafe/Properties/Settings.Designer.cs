@@ -106,5 +106,17 @@ namespace RuralCafe.Properties {
                 this["SHOW_SURVEY"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool USE_ONTOLOGY {
+            get {
+                return ((bool)(this["USE_ONTOLOGY"]));
+            }
+            set {
+                this["USE_ONTOLOGY"] = value;
+            }
+        }
     }
 }

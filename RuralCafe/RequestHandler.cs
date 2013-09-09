@@ -438,8 +438,8 @@ namespace RuralCafe
         {
             Status result = Status.Failed;
             
-            // Check for admission control, only if we're not online
-            while (_proxy.NetworkStatus != RCProxy.NetworkStatusCode.Online &&
+            // Check for admission control, but on the local side not if we're not online
+            if ((_proxy is RCRemoteProxy || _proxy.NetworkStatus != RCProxy.NetworkStatusCode.Online) &&
                 _proxy.NumInflightRequests >= _proxy.MaxInflightRequests)
             {
                 // Instead of keeping the client waiting, just send him a page to retry in a couple of minutes.

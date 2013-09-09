@@ -21,28 +21,16 @@ namespace RuralCafe.Clusters
     {
         // Constants
         private const int VCLUSTER_TIMEOUT_MS = 1000 * 60 * 60 * 2; // 2 hours
+        private const string DOC_FILE_NAME = "docfile.txt";
+        private const string MAT_FILE_NAME = "cache.mat";
+        private const string CLUSTERS_FILE_NAME = "clusters";
+        private const string TREE_FILE_NAME = "tree";
+        /// <summary>The file name of the binary tree clusters xml file.</summary>
+        public const string CLUSTERS_BT_XML_FILE_NAME = "clustersBT.xml";
+        public const string CLUSTERS_BT_XML_NAME = "clusters";
+        public const string CLUSTERS_BT_NUMBEROFCLUSTERS_XML_NAME = "numberOfClusters";
+        public const string CLUSTERS_BT_HIERARCHICAL_XML_NAME = "hierarchical";
 
-        // XML name constants
-        private const string CLUSTERS_XML_NAME = "clusters";
-        private const string CLUSTERS_NUMBEROFCLUSTERS_XML_NAME = "numberOfClusters";
-        private const string CLUSTERS_HIERARCHICAL_XML_NAME = "hierarchical";
-        private const string PARENT_CLUSTER_XML_NAME = "category";
-        private const string CLUSTER_XML_NAME = "subcategory";
-        private const string CLUSTER_ID_XML_NAME = "id";
-        private const string CLUSTER_FEATURES_XML_NAME = "title";
-        private const string CLUSTER_SIZE_XML_NAME = "size";
-        private const string CLUSTER_FEATURES_JOIN_STRING = ", ";
-        private const string ITEM_XML_NAME = "item";
-        private const string ITEM_URL_XML_NAME = "url";
-        private const string ITEM_TITLE_XML_NAME = "title";
-        private const string ITEM_SNIPPET_XML_NAME = "snippet";
-        private const string INDEX_CATEGORIES_XML_NAME = "categories";
-        private const string INDEX_LEVEL_XML_NAME = "level";
-        private const string INDEX_ONLY_LEAF_CHILDS_TITLE = "Other";
-        private const string INDEX_ONLY_LEAF_CHILDS_ID = "-1";
-        private const string CLUSTERS_TIME_NO_OVERRIDE_VALUE = "DO_NOT_OVERRIDE";
-        private const string CLUSTERS_TIME_ATTRIBUTE_XML_NAME = "time";
-                
         /// <summary>
         /// Path to vcluster.exe
         /// </summary>
@@ -70,10 +58,7 @@ namespace RuralCafe.Clusters
         /// The blacklist words for clustering.
         /// </summary>
         private static HashSet<string> _blacklist = new HashSet<string>();
-        /// <summary>
-        /// The clusters.xml
-        /// </summary>
-        private static XmlDocument _clustersXMLDoc = new XmlDocument();
+
 
         /// <summary>
         /// Static Constructor. Fills _dictionary and _blacklist.
@@ -101,6 +86,140 @@ namespace RuralCafe.Clusters
         }
 
         /// <summary>
+        /// Creates the clusters.
+        /// 
+        /// </summary>
+        /// <param name="k">The number of clusters to create.</param>
+        /// <param name="catNFeatures">The maximum number of features for a category.</param>
+        /// <param name="subcatNFeatures">The maximum number of features for a subcategory.</param>
+        /// <param name="hierarchical">If the clusters should be organized hierarchical.</param>
+        /// <param name="maxCategories">The maximum number of categories.</param>
+        /// <param name="clustersPath">The path to the clusters folder.</param>
+        /// <param name="proxy">The proxy.</param>
+        public static void CreateClusters(int k, int catNFeatures, int subcatNFeatures, bool hierarchical,
+            int maxCategories, string clustersPath, RCLocalProxy proxy)
+        {
+            proxy.Logger.Info("Clustering: Creating clusters. This may take around an hour!");
+            // Measure what part takes what time
+            Stopwatch stopwatch = new Stopwatch();
+
+            // Filenames
+            string docFileName = clustersPath + DOC_FILE_NAME;
+            string matFileName = clustersPath + MAT_FILE_NAME;
+            string clustersFileName = clustersPath + CLUSTERS_FILE_NAME;
+            string xmlBTFileName = clustersPath + CLUSTERS_BT_XML_FILE_NAME;
+            string xmlFileName = clustersPath + IndexServer.CLUSTERS_XML_FILE_NAME;
+
+            // get files
+            proxy.Logger.Debug("Clustering (1/6): Getting all text files.");
+            stopwatch.Start();
+            List<string> textFiles = proxy.ProxyCacheManager.TextFiles();
+            stopwatch.Stop();
+            proxy.Logger.Debug("Custering (1/6): Getting all text files took: " + stopwatch.Elapsed.TotalSeconds + "s");
+
+            // Abort if we're having less than 2 text files
+            if (textFiles.Count < 2)
+            {
+                proxy.Logger.Debug("Clustering: Less than 2 text files, aborting.");
+                return;
+            }
+            // List number of text files
+            proxy.Logger.Debug(String.Format("Clustering (1/6): Using {0} text files.", textFiles.Count));
+
+            List<string> titles;
+            // files2doc
+            proxy.Logger.Debug("Clustering (2/6): Creating docfile.");
+            stopwatch.Restart();
+            try
+            {
+                titles = Cluster.CreateDocFile(textFiles, docFileName);
+            }
+            catch (IOException e)
+            {
+                proxy.Logger.Warn("Clustering: DocFile creation failed.", e);
+                return;
+            }
+            stopwatch.Stop();
+            proxy.Logger.Debug("Custering (2/6): Creating docfile took: " + stopwatch.Elapsed.TotalSeconds + "s");
+
+
+            // doc2mat
+            proxy.Logger.Debug("Clustering (3/6): Doc2Mat.");
+            stopwatch.Restart();
+            try
+            {
+                Doc2Mat.DoDoc2Mat(docFileName, matFileName);
+            }
+            catch (Exception e)
+            {
+                proxy.Logger.Warn("Clustering: Doc2Mat failed.", e);
+                return;
+            }
+            stopwatch.Stop();
+            proxy.Logger.Debug("Custering (3/6): Doc2Mat took: " + stopwatch.Elapsed.TotalSeconds + "s");
+
+            // ClutoClusters
+            proxy.Logger.Debug("Clustering (4/6): Cluto-Clustering.");
+            string treeFileName = null;
+            HashSet<string>[] features;
+            stopwatch.Restart();
+            try
+            {
+                if (hierarchical)
+                {
+                    treeFileName = clustersPath + TREE_FILE_NAME;
+                    features = Cluster.CreateClusters(matFileName, clustersFileName, k, true, treeFileName,
+                        catNFeatures, subcatNFeatures);
+                }
+                else
+                {
+                    features = Cluster.CreateClusters(matFileName, clustersFileName, k, false, "",
+                        catNFeatures, subcatNFeatures);
+                }
+            }
+            catch (Exception e)
+            {
+                proxy.Logger.Warn("Clustering: Cluto failed.", e);
+                return;
+            }
+            stopwatch.Stop();
+            proxy.Logger.Debug("Custering (4/6): Cluto-Clustering took: " + stopwatch.Elapsed.TotalSeconds + "s");
+
+            // Create binary tree XML file
+            proxy.Logger.Debug("Clustering (5/6): Creating clustersBT.xml.");
+            stopwatch.Restart();
+            try
+            {
+                Cluster.CreateClusterBTXMLFile(textFiles, features, clustersFileName, (hierarchical ? treeFileName : ""),
+                    xmlBTFileName, k, proxy.CachePath.Length, titles);
+            }
+            catch (Exception e)
+            {
+                proxy.Logger.Warn("Clustering: Creating XML failed.", e);
+                return;
+            }
+            stopwatch.Stop();
+            proxy.Logger.Debug("Clustering (5/6): Creating clustersBT.xml took " + stopwatch.Elapsed.TotalSeconds + " s");
+
+            // Create XML file
+            proxy.Logger.Debug("Clustering (6/6): Creating clusters.xml.");
+            stopwatch.Restart();
+            try
+            {
+                Cluster.CreateClusterXMLFile(xmlFileName, xmlBTFileName, maxCategories);
+            }
+            catch (Exception e)
+            {
+                proxy.Logger.Error("Clustering: Creating clusters.xml failed.", e);
+                return;
+            }
+            stopwatch.Stop();
+            proxy.Logger.Debug("Custering (6/6): Creating clusters.xml took: " + stopwatch.Elapsed.TotalSeconds + "s");
+
+            proxy.Logger.Info("Clustering: Finished successfully.");
+        }
+
+        /// <summary>
         /// Creates one doc file containing all the given files. This file will be input for Doc2Mat.
         /// 
         /// Throws IOException if anything goes wrong.
@@ -108,7 +227,7 @@ namespace RuralCafe.Clusters
         /// <param name="files">The text files to merge.</param>
         /// <param name="docFile">The docfile. Contains one file per line, text only.</param>
         /// <returns>The titles of all documents added to the docfile.</returns>
-        public static List<string> CreateDocFile(List<string> files, string docFile)
+        private static List<string> CreateDocFile(List<string> files, string docFile)
         {
             FileStream docFileStream = Utils.CreateFile(docFile);
             if (docFileStream == null)
@@ -179,7 +298,7 @@ namespace RuralCafe.Clusters
         /// <param name="catNFeatures">The maximum number of features for a category.</param>
         /// <param name="subcatNFeatures">The maximum number of features for a subcategory.</param>
         /// <returns>A set of string-lists. Each list contains the labels for the cluster.</returns>
-        public static HashSet<string>[] CreateClusters(string matFile, string clustersFile, int k,
+        private static HashSet<string>[] CreateClusters(string matFile, string clustersFile, int k,
             bool fulltree, string treefile, int catNFeatures, int subcatNFeatures)
         {
             // vcluster.exe -clmethod=rbr -nfeatures=<n> [-showtree -labeltree -treefile=<treefile>]
@@ -187,7 +306,7 @@ namespace RuralCafe.Clusters
             ProcessStartInfo clusterStartInfo = new ProcessStartInfo(VCLUSTERS_PATH);
             clusterStartInfo.Arguments = "-clmethod=rbr -nfeatures=" + subcatNFeatures + " ";
             clusterStartInfo.Arguments += fulltree ? "-showtree -labeltree -cltreefile=\"" + treefile + "\" " : "";
-            clusterStartInfo.Arguments += "-showfeatures -clustfile=\"" + clustersFile + "\" \"" + matFile + "\" " + k; 
+            clusterStartInfo.Arguments += "-showfeatures -clustfile=\"" + clustersFile + "\" \"" + matFile + "\" " + k;
 
             clusterStartInfo.UseShellExecute = false;
             clusterStartInfo.RedirectStandardOutput = true;
@@ -213,7 +332,7 @@ namespace RuralCafe.Clusters
                             outputWaitHandle.Set();
                         }
                         catch { }
-                        
+
                     }
                     else
                     {
@@ -331,7 +450,7 @@ namespace RuralCafe.Clusters
                 }
             }
             // Loop through all clusters
-            for (int i = clusterlineIndex; i < clusterlineIndex + (2*k-1); i++)
+            for (int i = clusterlineIndex; i < clusterlineIndex + (2 * k - 1); i++)
             {
                 // Get the cluster number
                 string nums = "0123456789";
@@ -375,15 +494,15 @@ namespace RuralCafe.Clusters
 
                     double percent = 0;
                     // This is displayed for empty clusters. For empty we clusters we don't extract the features.
-                    if(!featuresPlusPercent[1].Equals("-1.$%"))
+                    if (!featuresPlusPercent[1].Equals("-1.$%"))
                     {
                         percent = Double.Parse(featuresPlusPercent[1].Substring(0, featuresPlusPercent[1].Length - 1));
                         sortedFeatures.Add(new KeyValuePair<double, string>(percent, feature));
                     }
-                    
+
                 }
                 // Sort features by their percent value, descending
-                sortedFeatures.Sort((pair1, pair2) => (int) (pair2.Key - pair1.Key));
+                sortedFeatures.Sort((pair1, pair2) => (int)(pair2.Key - pair1.Key));
 
                 // Put into features until max is reached
                 // (We cannot just count until max, since there may be dups)
@@ -418,7 +537,7 @@ namespace RuralCafe.Clusters
         /// <param name="k">The number of clusters</param>
         /// <param name="cachePathLength">The length of a string containing the cache path root folder.</param>
         /// <param name="titles">The titles of the files in fileNames.</param>
-        public static void CreateClusterBTXMLFile(List<string> fileNames, HashSet<string>[] features,
+        private static void CreateClusterBTXMLFile(List<string> fileNames, HashSet<string>[] features,
             string clusterFile, string treeFile,
             string xmlFile, int k, int cachePathLength, List<string> titles)
         {
@@ -444,21 +563,21 @@ namespace RuralCafe.Clusters
             XmlDocument xmlDoc = new XmlDocument();
             xmlDoc.AppendChild(xmlDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
 
-            XmlElement rootXml = xmlDoc.CreateElement(CLUSTERS_XML_NAME);
+            XmlElement rootXml = xmlDoc.CreateElement(CLUSTERS_BT_XML_NAME);
             xmlDoc.AppendChild(rootXml);
-            rootXml.SetAttribute(CLUSTERS_NUMBEROFCLUSTERS_XML_NAME, String.Empty + k);
-            rootXml.SetAttribute(CLUSTERS_HIERARCHICAL_XML_NAME, String.Empty + hierarchical);
+            rootXml.SetAttribute(CLUSTERS_BT_NUMBEROFCLUSTERS_XML_NAME, String.Empty + k);
+            rootXml.SetAttribute(CLUSTERS_BT_HIERARCHICAL_XML_NAME, String.Empty + hierarchical);
 
             // Create a node for each cluster
             XmlElement[] clusters = new XmlElement[k];
             int[] sizes = new int[k];
             for (int i = 0; i < k; i++)
             {
-                clusters[i] = xmlDoc.CreateElement(CLUSTER_XML_NAME);
-                clusters[i].SetAttribute(CLUSTER_ID_XML_NAME, String.Empty + i);
+                clusters[i] = xmlDoc.CreateElement(IndexServer.INDEX_SUBCATEGORY_XML_NAME);
+                clusters[i].SetAttribute(IndexServer.INDEX_ID_XML_ATTR, String.Empty + i);
                 // Save cluster features
-                clusters[i].SetAttribute(CLUSTER_FEATURES_XML_NAME, 
-                    String.Join(CLUSTER_FEATURES_JOIN_STRING, features[i]));
+                clusters[i].SetAttribute(IndexServer.INDEX_FEATURES_XML_ATTR,
+                    String.Join(IndexServer.INDEX_FEATURES_JOIN_STRING, features[i]));
             }
             // Save each file in the corresponsing cluster
             for (int i = 0; i < fileNames.Count; i++)
@@ -473,18 +592,18 @@ namespace RuralCafe.Clusters
                 }
 
                 // Create an item with title, uri and snippet
-                XmlElement itemElement = xmlDoc.CreateElement(ITEM_XML_NAME);
+                XmlElement itemElement = xmlDoc.CreateElement(IndexServer.ITEM_XML_NAME);
                 clusters[clusterNumber].AppendChild(itemElement);
 
-                XmlElement titleElement = xmlDoc.CreateElement(ITEM_TITLE_XML_NAME);
+                XmlElement titleElement = xmlDoc.CreateElement(IndexServer.ITEM_TITLE_XML_NAME);
                 itemElement.AppendChild(titleElement);
                 titleElement.InnerText = titles[i];
 
-                XmlElement uriElement = xmlDoc.CreateElement(ITEM_URL_XML_NAME);
+                XmlElement uriElement = xmlDoc.CreateElement(IndexServer.ITEM_URL_XML_NAME);
                 itemElement.AppendChild(uriElement);
                 uriElement.InnerText = uri;
 
-                XmlElement snippetElement = xmlDoc.CreateElement(ITEM_SNIPPET_XML_NAME);
+                XmlElement snippetElement = xmlDoc.CreateElement(IndexServer.ITEM_SNIPPET_XML_NAME);
                 itemElement.AppendChild(snippetElement);
                 snippetElement.InnerText = ""; // XXX: maybe we want to support this sometime
 
@@ -494,7 +613,7 @@ namespace RuralCafe.Clusters
             // Save sizes
             for (int i = 0; i < k; i++)
             {
-                clusters[i].SetAttribute(CLUSTER_SIZE_XML_NAME, String.Empty + sizes[i]);
+                clusters[i].SetAttribute(IndexServer.INDEX_SIZE_XML_ATTR, String.Empty + sizes[i]);
             }
             // Add clusters flat or hierarchical to the document
             if (hierarchical)
@@ -503,15 +622,15 @@ namespace RuralCafe.Clusters
                 XmlElement[] parents = new XmlElement[k - 1];
                 for (int i = 0; i < parents.Length; i++)
                 {
-                    parents[i] = xmlDoc.CreateElement(PARENT_CLUSTER_XML_NAME);
+                    parents[i] = xmlDoc.CreateElement(IndexServer.INDEX_CATEGORY_XML_NAME);
                     // Parent numbers start at k
-                    parents[i].SetAttribute(CLUSTER_ID_XML_NAME, String.Empty + (k + i));
+                    parents[i].SetAttribute(IndexServer.INDEX_ID_XML_ATTR, String.Empty + (k + i));
                     // Save cluster features
-                    parents[i].SetAttribute(CLUSTER_FEATURES_XML_NAME, 
-                        String.Join(CLUSTER_FEATURES_JOIN_STRING, features[k + i]));
+                    parents[i].SetAttribute(IndexServer.INDEX_FEATURES_XML_ATTR,
+                        String.Join(IndexServer.INDEX_FEATURES_JOIN_STRING, features[k + i]));
                 }
                 // Add leafs to the parents
-                for(int i = 0; i < clusters.Length; i++)
+                for (int i = 0; i < clusters.Length; i++)
                 {
                     XmlElement elem = clusters[i];
                     int parentNum = Int32.Parse(parentNumbers[i]);
@@ -525,7 +644,7 @@ namespace RuralCafe.Clusters
                         // This is not a root cluster
                         parents[parentNum - k].AppendChild(elem);
                     }
-                    
+
                 }
                 // Arrange parents hierarchical
                 for (int i = 0; i < parents.Length; i++)
@@ -560,18 +679,25 @@ namespace RuralCafe.Clusters
         /// <param name="xmlFileName">The file where to store the result</param>
         /// <param name="xmlBTFileName">The file with the binary tree</param>
         /// <param name="maxCategories">The maximum number of categories.</param>
-        public static void CreateClusterXMLFile(string xmlFileName, string xmlBTFileName, int maxCategories)
+        private static void CreateClusterXMLFile(string xmlFileName, string xmlBTFileName, int maxCategories)
         {
             XmlDocument btDoc = new XmlDocument();
             btDoc.Load(new XmlTextReader(xmlBTFileName));
 
-            lock (_clustersXMLDoc)
+            XmlDocument newDoc = IndexServer.GetClustersXMLDocument(xmlFileName);
+            lock (newDoc)
             {
-                XmlDocument newXmlDoc = _clustersXMLDoc = new XmlDocument();
-                newXmlDoc.AppendChild(newXmlDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
-
-                XmlElement newRootXml = newXmlDoc.CreateElement(INDEX_CATEGORIES_XML_NAME);
-                newXmlDoc.AppendChild(newRootXml);
+                // Reset
+                if (newDoc.DocumentElement != null)
+                {
+                    newDoc.DocumentElement.RemoveAll();
+                }
+                else
+                {
+                    newDoc.AppendChild(newDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
+                    newDoc.AppendChild(newDoc.CreateElement(IndexServer.INDEX_CATEGORIES_XML_NAME));
+                }
+                XmlElement newRootXml = newDoc.DocumentElement;
 
                 XmlElement rootNode = (XmlElement)btDoc.DocumentElement.ChildNodes[0];
                 // Find up to maxCategories categories
@@ -591,228 +717,17 @@ namespace RuralCafe.Clusters
                     }
 
                     // Add category to newRootXml
-                    newRootXml.AppendChild(newXmlDoc.ImportNode(categoryElement, true));
+                    newRootXml.AppendChild(newDoc.ImportNode(categoryElement, true));
                 }
 
                 // Set timestamp for the new clusters.xml
                 newRootXml.SetAttribute("time", "" + DateTime.Now.ToFileTime());
 
                 // Save new xml
-                newXmlDoc.Save(xmlFileName);
+                newDoc.Save(xmlFileName);
             }
         }
 
-        /// <summary>
-        /// Gets the timestamp of the current clusters.xml, if existent.
-        /// </summary>
-        /// <param name="xmlFileName">The file name of the xml file.</param>
-        /// <returns>The timestamp.</returns>
-        public static DateTime GetClusteringTimeStamp(string xmlFileName)
-        {
-            if (File.Exists(xmlFileName))
-            {
-                XmlDocument doc = new XmlDocument();
-                doc.Load(new XmlTextReader(xmlFileName));
-
-                string dateString = doc.DocumentElement.GetAttribute(CLUSTERS_TIME_ATTRIBUTE_XML_NAME);
-                if (!String.IsNullOrEmpty(dateString))
-                {
-                    if (dateString.Equals(CLUSTERS_TIME_NO_OVERRIDE_VALUE))
-                    {
-                        // Return the latest possible.
-                        return DateTime.MaxValue;
-                    }
-
-                    long dateFileTime;
-                    if (Int64.TryParse(dateString, out dateFileTime))
-                    {
-                        // return the timestamp
-                        return DateTime.FromFileTime(dateFileTime);
-                    }
-                }
-            }
-
-            // Return the earliest possible.
-            return DateTime.MinValue;
-        }
-
-        #region index serving
-
-        /// <summary>
-        /// Gets the clusters xml document. Loads the content, if they are not already loaded.
-        /// </summary>
-        /// <param name="clusterXMLFile">The fileName</param>
-        /// <returns>The XML document.</returns>
-        private static XmlDocument GetClustersXMLDocument(string clusterXMLFile)
-        {
-            lock (_clustersXMLDoc)
-            {
-                if (_clustersXMLDoc.DocumentElement == null)
-                {
-                    _clustersXMLDoc.Load(new XmlTextReader(clusterXMLFile));
-                }
-
-                return _clustersXMLDoc;
-            }
-        }
-
-        /// <summary>
-        /// Computes the 1st level in the hierarchy.
-        /// </summary>
-        /// <param name="clusterXMLFile">The path to clusters.xml</param>
-        /// <param name="maxCategories">The maximum number of categories.</param>
-        /// <param name="maxSubCategories">The maximum number of subcategories per category.</param>
-        /// <returns>The index.xml string.</returns>
-        public static string Level1Index(string clusterXMLFile, int maxCategories, int maxSubCategories)
-        {
-            XmlDocument clustersDoc = GetClustersXMLDocument(clusterXMLFile);
-
-            XmlDocument indexDoc = new XmlDocument();
-            indexDoc.AppendChild(indexDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
-
-            XmlElement indexRootXml = indexDoc.CreateElement(INDEX_CATEGORIES_XML_NAME);
-            indexDoc.AppendChild(indexRootXml);
-            indexRootXml.SetAttribute(INDEX_LEVEL_XML_NAME, String.Empty + 1);
-
-            // Check for root node
-            if (clustersDoc.DocumentElement.ChildNodes.Count == 0)
-            {
-                throw new ArgumentException("No categories");
-            }
-            XmlElement rootNode = (XmlElement) clustersDoc.DocumentElement;
-            
-            // Import up to maxCategories categories
-            for (int i = 0; i < rootNode.ChildNodes.Count && (maxCategories == 0 || i < maxCategories); i++)
-            {
-                XmlNode category = indexRootXml.AppendChild(indexDoc.ImportNode(rootNode.ChildNodes[i], false));
-                // For each category import up to maxSubCategories subCategories
-                for (int j = 0; j < rootNode.ChildNodes[i].ChildNodes.Count && (maxSubCategories == 0 || j < maxSubCategories); j++)
-                {
-                    category.AppendChild(indexDoc.ImportNode(rootNode.ChildNodes[i].ChildNodes[j], false));
-                }
-            }
-
-            return indexDoc.InnerXml;
-        }
-
-        /// <summary>
-        /// Computes the 2nd level in the hierarchy for a given category.
-        /// </summary>
-        /// <param name="clusterXMLFile">The path to clusters.xml</param>
-        /// <param name="categoryId">The category id.</param>
-        /// <param name="maxSubCategories">The maximum number of subcategories.</param>
-        /// <param name="maxItems">The maximum number of items per subcategory.</param>
-        /// <param name="proxy">Proxy access to conduct a Lucene search.</param>
-        /// <returns>The index.xml string.</returns>
-        public static string Level2Index(string clusterXMLFile, string categoryId, int maxSubCategories, int maxItems,
-            RCLocalProxy proxy)
-        {
-            XmlDocument clustersDoc = GetClustersXMLDocument(clusterXMLFile);
-
-            XmlDocument indexDoc = new XmlDocument();
-            indexDoc.AppendChild(indexDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
-
-            XmlElement indexRootXml = indexDoc.CreateElement(INDEX_CATEGORIES_XML_NAME);
-            indexDoc.AppendChild(indexRootXml);
-            indexRootXml.SetAttribute(INDEX_LEVEL_XML_NAME, String.Empty + 2);
-
-            XmlElement categoryElement = FindCategory(clustersDoc.DocumentElement, categoryId);
-            if (categoryElement == null)
-            {
-                throw new ArgumentException("Could not find category with that id.");
-            }
-
-            // Import category
-            XmlNode category = indexRootXml.AppendChild(indexDoc.ImportNode(categoryElement, false));
-            // For the category import up to maxSubCategories subCategories
-            for (int i = 0; i < categoryElement.ChildNodes.Count && (maxSubCategories == 0 || i < maxSubCategories); i++)
-            {
-                XmlNode subCategory = category.AppendChild(indexDoc.ImportNode(categoryElement.ChildNodes[i], false));
-
-                if (categoryElement.ChildNodes[i].ChildNodes.Count == 0)
-                {
-                    // Do a Lucene search, if there are no items. No content snippets on level 2
-                    SearchResults luceneResults = proxy.IndexWrapper.Query(
-                        (categoryElement.ChildNodes[i] as XmlElement).GetAttribute(CLUSTER_FEATURES_XML_NAME),
-                        proxy.CachePath, 0, maxItems, false);
-
-                    // Add the results to the XML
-                    LocalInternalRequestHandler.AppendSearchResultsXMLElements(luceneResults, indexDoc, subCategory as XmlElement);
-                }
-                else
-                {
-                    // For each subCategory import up to maxItems items
-                    for (int j = 0; j < categoryElement.ChildNodes[i].ChildNodes.Count && (maxItems == 0 || j < maxItems); j++)
-                    {
-                        subCategory.AppendChild(indexDoc.ImportNode(categoryElement.ChildNodes[i].ChildNodes[j], true));
-                    }
-                }
-            }
-
-            return indexDoc.InnerXml;
-        }
-
-        /// <summary>
-        /// Computes the 3rd level in the hierarchy for a given category and subcategory.
-        /// </summary>
-        /// <param name="clusterXMLFile">The path to clusters.xml</param>
-        /// <param name="categoryId">The category id.</param>
-        /// <param name="subCategoryId">The subcategory id.</param>
-        /// <param name="maxItems">The maximum number of items for the subcategory.</param>
-        /// <param name="proxy">Proxy access to conduct a Lucene search.</param>
-        /// <returns>The index.xml string.</returns>
-        public static string Level3Index(string clusterXMLFile, string categoryId, string subCategoryId, int maxItems,
-            RCLocalProxy proxy)
-        {
-            XmlDocument clustersDoc = GetClustersXMLDocument(clusterXMLFile);
-
-            XmlDocument indexDoc = new XmlDocument();
-            indexDoc.AppendChild(indexDoc.CreateXmlDeclaration("1.0", "UTF-8", String.Empty));
-
-            XmlElement indexRootXml = indexDoc.CreateElement(INDEX_CATEGORIES_XML_NAME);
-            indexDoc.AppendChild(indexRootXml);
-            indexRootXml.SetAttribute(INDEX_LEVEL_XML_NAME, String.Empty + 3);
-
-            // Find category and subcategory element
-            XmlElement categoryElement, subCategoryElement;
-            categoryElement = FindCategory(clustersDoc.DocumentElement, categoryId);
-            if (categoryElement == null)
-            {
-                throw new ArgumentException("Could not find category with that id.");
-            }
-            subCategoryElement = FindCategory(categoryElement, subCategoryId);
-            if (subCategoryElement == null)
-            {
-                throw new ArgumentException("Could not find subcategory with that id.");
-            }
-
-            // Import category
-            XmlNode category = indexRootXml.AppendChild(indexDoc.ImportNode(categoryElement, false));
-            // Import subcategory
-            XmlNode subCategory = category.AppendChild(indexDoc.ImportNode(subCategoryElement, false));
-            if (subCategoryElement.ChildNodes.Count == 0)
-            {
-                // Do a Lucene search, if there are no items.
-                SearchResults luceneResults = proxy.IndexWrapper.Query(
-                    subCategoryElement.GetAttribute(CLUSTER_FEATURES_XML_NAME),
-                    proxy.CachePath, 0, maxItems, true);
-
-                // Add the results to the XML
-                LocalInternalRequestHandler.AppendSearchResultsXMLElements(luceneResults, indexDoc, subCategory as XmlElement);
-            }
-            else
-            {
-                // Import up to maxItems items
-                for (int i = 0; i < subCategoryElement.ChildNodes.Count && (maxItems == 0 || i < maxItems); i++)
-                {
-                    subCategory.AppendChild(indexDoc.ImportNode(subCategoryElement.ChildNodes[i], true));
-                }
-            }
-
-            return indexDoc.InnerXml;
-        }
-
-        #endregion
         #region XML helpers
 
         /// <summary>
@@ -829,7 +744,7 @@ namespace RuralCafe.Clusters
             {
                 XmlElement currentNode = nodesToLookAt[0];
                 nodesToLookAt.RemoveAt(0);
-                if (currentNode.Name.Equals(CLUSTER_XML_NAME))
+                if (currentNode.Name.Equals(IndexServer.INDEX_SUBCATEGORY_XML_NAME))
                 {
                     result.Add(currentNode);
                 }
@@ -842,24 +757,6 @@ namespace RuralCafe.Clusters
                 }
             }
             return result;
-        }
-
-        /// <summary>
-        /// Finds the (sub)category with the given id in all children of the supplied parent.
-        /// </summary>
-        /// <param name="parent">The element to search.</param>
-        /// <param name="id">The id to find.</param>
-        /// <returns>The category with the given id or null.</returns>
-        private static XmlElement FindCategory(XmlElement parent, string id)
-        {
-            foreach (XmlElement child in parent.ChildNodes)
-            {
-                if (id.Equals(child.GetAttribute(CLUSTER_ID_XML_NAME)))
-                {
-                    return child;
-                }
-            }
-            return null;
         }
 
         /// <summary>
@@ -903,7 +800,7 @@ namespace RuralCafe.Clusters
                         }
                         foreach (XmlElement child in node.ChildNodes)
                         {
-                            if (child.Name.Equals(CLUSTER_XML_NAME))
+                            if (child.Name.Equals(IndexServer.INDEX_SUBCATEGORY_XML_NAME))
                             {
                                 // This is the only leaf child
                                 onlyLeafChilds.Add(child);
@@ -931,10 +828,10 @@ namespace RuralCafe.Clusters
             if (onlyLeafChilds.Count != 0)
             {
                 // We will have to create a new category for the only leaf childs.
-                XmlElement onlyLeafChildsElement = doc.CreateElement(PARENT_CLUSTER_XML_NAME);
+                XmlElement onlyLeafChildsElement = doc.CreateElement(IndexServer.INDEX_CATEGORY_XML_NAME);
                 // It will id=-1 since it is not really a category.
-                onlyLeafChildsElement.SetAttribute(CLUSTER_ID_XML_NAME, INDEX_ONLY_LEAF_CHILDS_ID);
-                onlyLeafChildsElement.SetAttribute(ITEM_TITLE_XML_NAME, INDEX_ONLY_LEAF_CHILDS_TITLE);
+                onlyLeafChildsElement.SetAttribute(IndexServer.INDEX_ID_XML_ATTR, IndexServer.INDEX_ONLY_LEAF_CHILDS_ID);
+                onlyLeafChildsElement.SetAttribute(IndexServer.ITEM_TITLE_XML_NAME, IndexServer.INDEX_ONLY_LEAF_CHILDS_TITLE);
                 // Add all only leaf childs
                 foreach (XmlElement child in onlyLeafChilds)
                 {
@@ -957,7 +854,7 @@ namespace RuralCafe.Clusters
             int num = 0;
             foreach (XmlElement child in node.ChildNodes)
             {
-                if (child.Name.Equals(CLUSTER_XML_NAME))
+                if (child.Name.Equals(IndexServer.INDEX_SUBCATEGORY_XML_NAME))
                 {
                     num++;
                 }

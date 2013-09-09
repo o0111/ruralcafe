@@ -86,14 +86,6 @@ namespace RuralCafe
         // Constants
         /// <summary>The char to use for URI escaping.</summary>
         public const char URI_ESCAPE_CHAR = '§';
-        private const string DOC_FILE_NAME = "docfile.txt";
-        private const string MAT_FILE_NAME = "cache.mat";
-        private const string CLUSTERS_FILE_NAME = "clusters";
-        private const string TREE_FILE_NAME = "tree";
-        /// <summary>The file name of the binary tree clusters xml file.</summary>
-        public const string CLUSTERS_BT_XML_FILE_NAME = "clustersBT.xml";
-        /// <summary>The file name of the 3-level-hierarchy tree clusters xml file.</summary>
-        public const string CLUSTERS_XML_FILE_NAME = "clusters.xml";
 
         private const string DATABASE_FILE_NAME = "RCDatabase.sdf";
         private const string DATABASE_CREATION_TEXTFILE = "RCDatabase_creation.txt";
@@ -497,6 +489,34 @@ namespace RuralCafe
                 //                       gci.filename.Substring(gci.filename.Length - 4).Equals(".asp")
                 //                     select 1).Count();
                 //_proxy.Logger.Metric("Cache Items with '.html'/'.htm'/'.asp'/'.php': " + htmlFileCount);
+            }
+        }
+
+        /// <summary>
+        /// Gets all files that have Content-Type: text/html or text/plain
+        /// The database IS used.
+        /// </summary>
+        /// <param name="databaseContext">The database context.</param>
+        /// <returns>A list of filenames of all text files in the cache.</returns>
+        public List<string> TextFiles()
+        {
+            // Old version without DB
+            //List<string> dirResults = Directory.EnumerateFiles(_cachePath, "*", SearchOption.AllDirectories)
+            //    .Where(filename => new string[] { "text/html", "text/plain" }.
+            //        Contains(Utils.GetContentTypeOfFile(filename))).ToList();
+
+            // Request all filenames where the header has the specified content type. Contains looks dirty
+            // as we save the headers in JSON format. This is faster as deserializing before testing,
+            // as SQL can do it for as.
+            using (RCDatabaseEntities databaseContext = GetNewDatabaseContext(false))
+            {
+                List<string> dbResults = (from gci in databaseContext.GlobalCacheItem
+                                          where gci.responseHeaders.Contains("\"Content-Type\":[\"text/html") ||
+                                            gci.responseHeaders.Contains("\"Content-Type\":[\"text/plain")
+                                          select gci.filename).ToList();
+                // Convert relative to global filenames (extra step as the above is converted into SQL, where this
+                // cannot be done)
+                return (from relFile in dbResults select _cachePath + relFile).ToList();
             }
         }
 
@@ -934,6 +954,30 @@ namespace RuralCafe
 
         #endregion
         #region private cache file methods
+
+        /// <summary>
+        /// Gets all files that exist in the cache directory.
+        /// The database is NOT used.
+        /// </summary>
+        /// <returns>A list of filenames of all files in the cache.</returns>
+        private List<string> AllFiles()
+        {
+            return Directory.EnumerateFiles(_cachePath, "*", SearchOption.AllDirectories).ToList();
+        }
+
+        /// <summary>
+        /// Gets a list of all file infos of the files that exist in the cache directory.
+        /// This method should be preferred over AllFiles(), if additional info (e.g. filesize)
+        /// is needed.
+        /// 
+        /// The database is NOT used.
+        /// </summary>
+        /// <returns>A list of all file infos.</returns>
+        private List<FileInfo> AllFileInfos()
+        {
+            DirectoryInfo dirInfo = new DirectoryInfo(_cachePath);
+            return dirInfo.EnumerateFiles("*", SearchOption.AllDirectories).ToList();
+        }
 
         /// <summary>
         /// Gets the file size of a cache item.
@@ -1691,204 +1735,6 @@ namespace RuralCafe
         //        _proxy.Logger.Warn("Error deleting/updating bz2 entries: ", e);
         //    }
         //}
-
-        #endregion
-        #region analysis
-
-        /// <summary>
-        /// Gets all files that exist in the cache directory.
-        /// The database is NOT used.
-        /// </summary>
-        /// <returns>A list of filenames of all files in the cache.</returns>
-        private List<string> AllFiles()
-        {
-            return Directory.EnumerateFiles(_cachePath, "*", SearchOption.AllDirectories).ToList();
-        }
-
-        /// <summary>
-        /// Gets a list of all file infos of the files that exist in the cache directory.
-        /// This method should be preferred over AllFiles(), if additional info (e.g. filesize)
-        /// is needed.
-        /// 
-        /// The database is NOT used.
-        /// </summary>
-        /// <returns>A list of all file infos.</returns>
-        private List<FileInfo> AllFileInfos()
-        {
-            DirectoryInfo dirInfo = new DirectoryInfo(_cachePath);
-            return dirInfo.EnumerateFiles("*", SearchOption.AllDirectories).ToList();
-        }
-
-        /// <summary>
-        /// Gets all files that have Content-Type: text/html or text/plain
-        /// The database IS used.
-        /// </summary>
-        /// <param name="databaseContext">The database context.</param>
-        /// <returns>A list of filenames of all text files in the cache.</returns>
-        private List<string> TextFiles(RCDatabaseEntities databaseContext)
-        {
-            // Old version without DB
-            //List<string> dirResults = Directory.EnumerateFiles(_cachePath, "*", SearchOption.AllDirectories)
-            //    .Where(filename => new string[] { "text/html", "text/plain" }.
-            //        Contains(Utils.GetContentTypeOfFile(filename))).ToList();
-
-            // Request all filenames where the header has the specified content type. Contains looks dirty
-            // as we save the headers in JSON format. This is faster as deserializing before testing,
-            // as SQL can do it for as.
-            List<string> dbResults = (from gci in databaseContext.GlobalCacheItem
-                                      where gci.responseHeaders.Contains("\"Content-Type\":[\"text/html") ||
-                                        gci.responseHeaders.Contains("\"Content-Type\":[\"text/plain")
-                                      select gci.filename).ToList();
-            // Convert relative to global filenames (extra step as the above is converted into SQL, where this
-            // cannot be done)
-            return (from relFile in dbResults select _cachePath + relFile).ToList();
-        }
-
-        /// <summary>
-        /// Gets the timestamp of the current clusters.xml, if existent.
-        /// </summary>
-        /// <returns>The timestamp.</returns>
-        public DateTime GetClusteringTimeStamp()
-        {
-            string xmlFileName = _clustersPath + CLUSTERS_XML_FILE_NAME;
-            return Cluster.GetClusteringTimeStamp(xmlFileName);
-        }
-
-        /// <summary>
-        /// Creates the clusters.
-        /// 
-        /// </summary>
-        /// <param name="k">The number of clusters to create.</param>
-        /// <param name="catNFeatures">The maximum number of features for a category.</param>
-        /// <param name="subcatNFeatures">The maximum number of features for a subcategory.</param>
-        /// <param name="hierarchical">If the clusters should be organized hierarchical.</param>
-        /// <param name="maxCategories">The maximum number of categories.</param>
-        public void CreateClusters(int k, int catNFeatures, int subcatNFeatures, bool hierarchical, int maxCategories)
-        {
-            _proxy.Logger.Info("Clustering: Creating clusters. This may take around an hour!");
-            // Measure what part takes what time
-            Stopwatch stopwatch = new Stopwatch();
-
-            // Filenames
-            string docFileName = _clustersPath + DOC_FILE_NAME;
-            string matFileName = _clustersPath + MAT_FILE_NAME;
-            string clustersFileName = _clustersPath + CLUSTERS_FILE_NAME;
-            string xmlBTFileName = _clustersPath + CLUSTERS_BT_XML_FILE_NAME;
-            string xmlFileName = _clustersPath + CLUSTERS_XML_FILE_NAME;
-
-            List<string> textFiles;
-
-            // get files
-            _proxy.Logger.Debug("Clustering (1/6): Getting all text files.");
-            stopwatch.Start();
-            using (RCDatabaseEntities databaseContext = GetNewDatabaseContext(false))
-            {
-                textFiles = TextFiles(databaseContext);
-            }
-            stopwatch.Stop();
-            _proxy.Logger.Debug("Custering (1/6): Getting all text files took: " + stopwatch.Elapsed.TotalSeconds + "s");
-
-            // Abort if we're having less than 2 text files
-            if (textFiles.Count < 2)
-            {
-                _proxy.Logger.Debug("Clustering: Less than 2 text files, aborting.");
-                return;
-            }
-            // List number of text files
-            _proxy.Logger.Debug(String.Format("Clustering (1/6): Using {0} text files.", textFiles.Count));
-
-            List<string> titles;
-            // files2doc
-            _proxy.Logger.Debug("Clustering (2/6): Creating docfile.");
-            stopwatch.Restart();
-            try
-            {
-                titles = Cluster.CreateDocFile(textFiles, docFileName);
-            }
-            catch (IOException e)
-            {
-                _proxy.Logger.Warn("Clustering: DocFile creation failed.", e);
-                return;
-            }
-            stopwatch.Stop();
-            _proxy.Logger.Debug("Custering (2/6): Creating docfile took: " + stopwatch.Elapsed.TotalSeconds + "s");
-
-
-            // doc2mat
-            _proxy.Logger.Debug("Clustering (3/6): Doc2Mat.");
-            stopwatch.Restart();
-            try
-            {
-                Doc2Mat.DoDoc2Mat(docFileName, matFileName);
-            }
-            catch (Exception e)
-            {
-                _proxy.Logger.Warn("Clustering: Doc2Mat failed.", e);
-                return;
-            }
-            stopwatch.Stop();
-            _proxy.Logger.Debug("Custering (3/6): Doc2Mat took: " + stopwatch.Elapsed.TotalSeconds + "s");
-
-            // ClutoClusters
-            _proxy.Logger.Debug("Clustering (4/6): Cluto-Clustering.");
-            string treeFileName = null;
-            HashSet<string>[] features;
-            stopwatch.Restart();
-            try
-            {
-                if (hierarchical)
-                {
-                    treeFileName = _clustersPath + TREE_FILE_NAME;
-                    features = Cluster.CreateClusters(matFileName, clustersFileName, k, true, treeFileName,
-                        catNFeatures, subcatNFeatures);
-                }
-                else
-                {
-                    features = Cluster.CreateClusters(matFileName, clustersFileName, k, false, "",
-                        catNFeatures, subcatNFeatures);
-                }
-            }
-            catch (Exception e)
-            {
-                _proxy.Logger.Warn("Clustering: Cluto failed.", e);
-                return;
-            }
-            stopwatch.Stop();
-            _proxy.Logger.Debug("Custering (4/6): Cluto-Clustering took: " + stopwatch.Elapsed.TotalSeconds + "s");
-
-            // Create binary tree XML file
-            _proxy.Logger.Debug("Clustering (5/6): Creating clustersBT.xml.");
-            stopwatch.Restart();
-            try
-            {
-                Cluster.CreateClusterBTXMLFile(textFiles, features, clustersFileName, (hierarchical ? treeFileName : ""),
-                    xmlBTFileName, k, _cachePath.Length, titles);
-            }
-            catch (Exception e)
-            {
-                _proxy.Logger.Warn("Clustering: Creating XML failed.", e);
-                return;
-            }
-            stopwatch.Stop();
-            _proxy.Logger.Debug("Clustering (5/6): Creating clustersBT.xml took " + stopwatch.Elapsed.TotalSeconds + " s");
-
-            // Create XML file
-            _proxy.Logger.Debug("Clustering (6/6): Creating clusters.xml.");
-            stopwatch.Restart();
-            try
-            {
-                Cluster.CreateClusterXMLFile(xmlFileName, xmlBTFileName, maxCategories);
-            }
-            catch (Exception e)
-            {
-                _proxy.Logger.Error("Clustering: Creating clusters.xml failed.", e);
-                return;
-            }
-            stopwatch.Stop();
-            _proxy.Logger.Debug("Custering (6/6): Creating clusters.xml took: " + stopwatch.Elapsed.TotalSeconds + "s");
-
-            _proxy.Logger.Info("Clustering: Finished successfully.");
-        }
 
         #endregion
         #region synchronization

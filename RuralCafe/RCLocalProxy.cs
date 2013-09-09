@@ -34,6 +34,7 @@ using Microsoft.Win32;
 using RuralCafe.Json;
 using RuralCafe.Wiki;
 using System.Xml;
+using RuralCafe.Clusters;
 
 namespace RuralCafe
 {
@@ -49,13 +50,14 @@ namespace RuralCafe
         // * The time is being checked and if it's between 5 a.m. and 6 a.m. the clustering is run.
         // * The cache metrics are logged.
         private static readonly TimeSpan PERIODIC_INTERVAL = new TimeSpan(1, 0, 0);
-        // .. for clustering
+        // .. for clustering/classification
         private const int CLUSTERING_K = 20;
         private const bool CLUSTERING_HIERARCHICAL = true;
         private const int CLUSTERING_CAT_NFEATURES = 2;
         private const int CLUSTERING_SUBCAT_NFEATURES = 4;
         private const int CLUSTERING_MAXCATEGORIES = 8;
         private const string CLUSTERS_FOLDER = "clusters";
+
         // ... for network speed
         /// <summary>
         /// The status will only be changed if up, if we're above THRESHOLD * (1 + THRESHOLD_PERCENT_ANTI_FLAPPING)
@@ -284,7 +286,7 @@ namespace RuralCafe
         /// Starts the clustering if it is between 5 and 6 or if the last creation is more than a day ago.
         /// Only starts if the clustering is not currently running.
         /// </summary>
-        /// <param name="o">When this not null, the old file must be older than one day.
+        /// <param name="o">When this is not null, the old file must be older than one day.
         /// If this is null, additionally, the time must be between 5 and 6 to run the clustering.</param>
         private void PeriodicTasks(object o)
         {
@@ -302,7 +304,7 @@ namespace RuralCafe
             }
 
             if((o == null ? (now.Hour == 5) : true ) &&
-                ProxyCacheManager.GetClusteringTimeStamp().CompareTo(now.Subtract(new TimeSpan(1, 0, 0, 0))) < 0)
+                IndexServer.GetClusteringTimeStamp(ProxyCacheManager.ClustersPath).CompareTo(now.Subtract(new TimeSpan(1, 0, 0, 0))) < 0)
             {
                 bool doClustering = false;
                 lock (_periodicTimer)
@@ -314,8 +316,15 @@ namespace RuralCafe
                 }
                 if (doClustering)
                 {
-                    ProxyCacheManager.CreateClusters(CLUSTERING_K, CLUSTERING_CAT_NFEATURES, CLUSTERING_SUBCAT_NFEATURES,
-                    CLUSTERING_HIERARCHICAL, CLUSTERING_MAXCATEGORIES);
+                    if (Properties.Settings.Default.USE_ONTOLOGY)
+                    {
+                        Ontology.CreateWeights(ProxyCacheManager.ClustersPath, this);
+                    }
+                    else
+                    {
+                        Cluster.CreateClusters(CLUSTERING_K, CLUSTERING_CAT_NFEATURES, CLUSTERING_SUBCAT_NFEATURES,
+                        CLUSTERING_HIERARCHICAL, CLUSTERING_MAXCATEGORIES, ProxyCacheManager.ClustersPath, this);
+                    }
                     lock (_periodicTimer)
                     {
                         clusteringRunning = false;
@@ -379,10 +388,10 @@ namespace RuralCafe
                 clientThread.Start();
                 serverThread.Start();
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 // Disconnent if connections still alive
-                Logger.Debug("Closing TCP connection.");
+                Logger.Debug("Closing TCP connection: ", e);
                 try
                 {
                     if (inClient.Connected)
@@ -394,9 +403,9 @@ namespace RuralCafe
                         outClient.Close();
                     }
                 }
-                catch (Exception e)
+                catch (Exception e1)
                 {
-                    Logger.Warn("Could not close the tcp connection: ", e);
+                    Logger.Warn("Could not close the tcp connection: ", e1);
                 }
             }
         }

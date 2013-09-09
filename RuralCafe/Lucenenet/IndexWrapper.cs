@@ -218,6 +218,37 @@ namespace RuralCafe.Lucenenet
         }
 
         /// <summary>
+        /// Gets a query that searches for the given string.
+        /// </summary>
+        /// <param name="queryString">The string.</param>
+        /// <returns>The query.</returns>
+        private Query GetQuery(string queryString)
+        {
+            QueryParser parser = new QueryParser(Lucene.Net.Util.Version.LUCENE_CURRENT, "content", _analyzer);
+            string searchQuery = "(" + QueryParser.Escape(queryString.ToLower()) + ")";
+            return parser.Parse(searchQuery);
+        }
+
+        /// <summary>
+        /// Returns the number of results for a query.
+        /// </summary>
+        /// <param name="queryString">The query.</param>
+        /// <returns>The number of results.</returns>
+        public int NumberOfResults(string queryString)
+        {
+            Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(_indexPath));
+            IndexReader reader = IndexReader.Open(directory, true);
+            IndexSearcher searcher = new IndexSearcher(reader);
+
+            Query query = GetQuery(queryString);
+            // Request all results up to the page we actually need (this is quick)
+            TopDocs topDocs = searcher.Search(query, LUCENE_MAX_RESULTS);
+            ScoreDoc[] hits = topDocs.scoreDocs;
+            // Save num results
+            return hits.Length;
+        }
+
+        /// <summary>
         /// Queries the index for a list of results.
         /// </summary>
         /// <param name="queryString">String to query the index for.</param>
@@ -233,11 +264,8 @@ namespace RuralCafe.Lucenenet
             Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(_indexPath));
             IndexReader reader = IndexReader.Open(directory, true);
             IndexSearcher searcher = new IndexSearcher(reader);
-            QueryParser parser = new QueryParser(Lucene.Net.Util.Version.LUCENE_CURRENT, "content", _analyzer);
 
-            // the search function
-            string searchQuery = "(" + QueryParser.Escape(queryString) + ")";
-            Query query = parser.Parse(searchQuery);
+            Query query = GetQuery(queryString);
             // Request all results up to the page we actually need (this is quick)
             TopDocs topDocs = searcher.Search(query, LUCENE_MAX_RESULTS);
             ScoreDoc[] hits = topDocs.scoreDocs;
