@@ -376,8 +376,7 @@ namespace RuralCafe
         /// </summary> 		
         public Response ServeRCIndexPage(int numItems, int numCategories, string searchString)
         {
-            //return new Response();
-            if (!File.Exists(Proxy.ProxyCacheManager.ClustersPath + CacheManager.CLUSTERS_XML_FILE_NAME))
+            if (!File.Exists(Proxy.ProxyCacheManager.ClustersPath + IndexServer.CLUSTERS_XML_FILE_NAME))
             {
                 // We haven't done clustering yet or there are no files in the cache.
                 throw new HttpException(HttpStatusCode.NotFound, "No clusters computed.");
@@ -395,7 +394,7 @@ namespace RuralCafe
                 // Level 1
                 try
                 {
-                    xmlAnswer = Cluster.Level1Index(Proxy.ProxyCacheManager.ClustersPath + CacheManager.CLUSTERS_XML_FILE_NAME, 
+                    xmlAnswer = IndexServer.Level1Index(Proxy.ProxyCacheManager.ClustersPath + IndexServer.CLUSTERS_XML_FILE_NAME, 
                         numCategories, numItems);
                 }
                 catch (ArgumentException e)
@@ -408,7 +407,7 @@ namespace RuralCafe
                 // Level 2
                 try
                 {
-                    xmlAnswer = Cluster.Level2Index(Proxy.ProxyCacheManager.ClustersPath + CacheManager.CLUSTERS_XML_FILE_NAME,
+                    xmlAnswer = IndexServer.Level2Index(Proxy.ProxyCacheManager.ClustersPath + IndexServer.CLUSTERS_XML_FILE_NAME,
                         searchString, numCategories, numItems, Proxy);
                 }
                 catch (ArgumentException e)
@@ -431,7 +430,7 @@ namespace RuralCafe
 
                 try
                 {
-                    xmlAnswer = Cluster.Level3Index(Proxy.ProxyCacheManager.ClustersPath + CacheManager.CLUSTERS_XML_FILE_NAME,
+                    xmlAnswer = IndexServer.Level3Index(Proxy.ProxyCacheManager.ClustersPath + IndexServer.CLUSTERS_XML_FILE_NAME,
                         catId, subCatId, numItems, Proxy);
                 }
                 catch (ArgumentException e)

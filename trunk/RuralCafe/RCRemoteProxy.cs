@@ -106,26 +106,26 @@ namespace RuralCafe
                 }
                 if (connectRequest.Count == 0)
                 {
-                    throw new Exception();
+                    throw new Exception("Invalid or no CONNECT request.");
                 }
 
                 string[] requestLine0Split = connectRequest[0].Split(' ');
                 if (requestLine0Split.Length < 3)
                 {
-                    throw new Exception();
+                    throw new Exception("Invalid or no CONNECT request.");
                 }
                 // Check if it is CONNECT
                 string method = requestLine0Split[0];
                 if (!method.Equals("CONNECT"))
                 {
-                    throw new Exception();
+                    throw new Exception("Invalid or no CONNECT request.");
                 }
                 // Get host and port
                 string requestUri = requestLine0Split[1];
                 string[] uriSplit = requestUri.Split(new char[] { ':' }, StringSplitOptions.RemoveEmptyEntries);
                 if (uriSplit.Length < 2)
                 {
-                    throw new Exception();
+                    throw new Exception("Invalid or no CONNECT request.");
                 }
                 string host = uriSplit[0];
                 int port = Int32.Parse(uriSplit[1]);
@@ -145,10 +145,10 @@ namespace RuralCafe
                 clientThread.Start();
                 serverThread.Start();
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 // Disconnent if connections still alive
-                Logger.Debug("Closing TCP connection.");
+                Logger.Debug("Closing TCP connection: ", e);
                 try
                 {
                     if (inClient.Connected)
@@ -160,9 +160,9 @@ namespace RuralCafe
                         outClient.Close();
                     }
                 }
-                catch (Exception e)
+                catch (Exception e1)
                 {
-                    Logger.Warn("Could not close the tcp connection: ", e);
+                    Logger.Warn("Could not close the tcp connection: ", e1);
                 }
             }
         }

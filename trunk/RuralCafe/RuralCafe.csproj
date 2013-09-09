@@ -123,6 +123,8 @@
     <Compile Include="CacheManager.cs" />
     <Compile Include="Clusters\Cluster.cs" />
     <Compile Include="Clusters\Doc2Mat.cs" />
+    <Compile Include="Clusters\IndexServer.cs" />
+    <Compile Include="Clusters\Ontology.cs" />
     <Compile Include="Database\GlobalCacheItem.cs">
       <DependentUpon>RCDatabase.tt</DependentUpon>
     </Compile>
