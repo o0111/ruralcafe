@@ -19,7 +19,7 @@ namespace RuralCafe.Clusters
         /// <param name="proxy"></param>
         public static void CreateWeights(string path, RCLocalProxy proxy)
         {
-            proxy.Logger.Info("Ontology: Weighting ontology.");
+            proxy.Logger.Info("Ontology: Weighting ontology. This can take several minutes.");
             string xmlFileName = path + IndexServer.CLUSTERS_XML_FILE_NAME;
             XmlDocument xmlDoc = IndexServer.GetClustersXMLDocument(xmlFileName);
             lock (xmlDoc)
@@ -31,16 +31,17 @@ namespace RuralCafe.Clusters
                     proxy.Logger.Warn("Ontology: No proper clusters.xml with ontology. Aborting weighting.");
                 }
 
+                int limit = proxy.ProxyCacheManager.CachedItems();
                 int i = 1;
                 foreach (XmlElement categoryElement in rootXml.ChildNodes)
                 {
                     proxy.Logger.Debug(String.Format("Ontology: Calculating weights for category ({0}/{1}): {2}",
                       i, rootXml.ChildNodes.Count, categoryElement.GetAttribute(IndexServer.INDEX_FEATURES_XML_ATTR)));
                     // Determine the weight for the category and all subcategories
-                    DetermineWeight(categoryElement, proxy);
+                    DetermineWeight(categoryElement, proxy, limit);
                     foreach (XmlElement subcategoryElement in categoryElement.ChildNodes)
                     {
-                        DetermineWeight(subcategoryElement, proxy);
+                        DetermineWeight(subcategoryElement, proxy, limit);
                     }
                     i++;
                 }
@@ -98,11 +99,12 @@ namespace RuralCafe.Clusters
         /// Determines the weight for a (sub)category.
         /// </summary>
         /// <param name="element">The XML element</param>
+        /// <param name="limit">The upper limit for number of search results, which is used as weight.</param>
         /// <param name="proxy">The proxy.</param>
-        public static void DetermineWeight(XmlElement element, RCLocalProxy proxy)
+        public static void DetermineWeight(XmlElement element, RCLocalProxy proxy, int limit)
         {
             string title = element.GetAttribute(IndexServer.INDEX_FEATURES_XML_ATTR);
-            int weight = proxy.IndexWrapper.NumberOfResults(title);
+            int weight = proxy.IndexWrapper.NumberOfResults(title, limit);
             // Set weight
             element.SetAttribute(IndexServer.INDEX_WEIGHT_XML_ATTR, "" + weight);
         }

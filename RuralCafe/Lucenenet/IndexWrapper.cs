@@ -233,8 +233,9 @@ namespace RuralCafe.Lucenenet
         /// Returns the number of results for a query.
         /// </summary>
         /// <param name="queryString">The query.</param>
+        /// <param name="limit">The upper limit for number or results.</param>
         /// <returns>The number of results.</returns>
-        public int NumberOfResults(string queryString)
+        public int NumberOfResults(string queryString, int limit)
         {
             Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(_indexPath));
             IndexReader reader = IndexReader.Open(directory, true);
@@ -242,7 +243,7 @@ namespace RuralCafe.Lucenenet
 
             Query query = GetQuery(queryString);
             // Request all results up to the page we actually need (this is quick)
-            TopDocs topDocs = searcher.Search(query, LUCENE_MAX_RESULTS);
+            TopDocs topDocs = searcher.Search(query, limit);
             ScoreDoc[] hits = topDocs.scoreDocs;
             // Save num results
             return hits.Length;
