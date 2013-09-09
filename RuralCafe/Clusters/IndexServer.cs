@@ -159,6 +159,17 @@ namespace RuralCafe.Clusters
             {
                 throw new ArgumentException("Could not find category with that id.");
             }
+            if (Properties.Settings.Default.USE_ONTOLOGY)
+            {
+                lock (clustersDoc)
+                {
+                    // Update weight for this category
+                    Ontology.DetermineWeight(categoryElement, proxy);
+                    Ontology.SortByWeight(clustersDoc.DocumentElement);
+                    // Save new xml
+                    clustersDoc.Save(clusterXMLFile);
+                }
+            }
 
             // Import category
             XmlNode category = indexRootXml.AppendChild(indexDoc.ImportNode(categoryElement, false));
@@ -222,6 +233,18 @@ namespace RuralCafe.Clusters
             if (subCategoryElement == null)
             {
                 throw new ArgumentException("Could not find subcategory with that id.");
+            }
+            if (Properties.Settings.Default.USE_ONTOLOGY)
+            {
+                lock (clustersDoc)
+                {
+                    // Update weight for this category and subcategory
+                    Ontology.DetermineWeight(categoryElement, proxy);
+                    Ontology.DetermineWeight(subCategoryElement, proxy);
+                    Ontology.SortByWeight(clustersDoc.DocumentElement);
+                    // Save new xml
+                    clustersDoc.Save(clusterXMLFile);
+                }
             }
 
             // Import category

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Xml;
+using System.Xml.Linq;
 
 namespace RuralCafe.Clusters
 {
@@ -44,6 +45,8 @@ namespace RuralCafe.Clusters
                     i++;
                 }
 
+                SortByWeight(rootXml);
+
                 // Set timestamp for the new clusters.xml
                 rootXml.SetAttribute("time", "" + DateTime.Now.ToFileTime());
 
@@ -55,11 +58,48 @@ namespace RuralCafe.Clusters
         }
 
         /// <summary>
+        /// Sorts the categories and the subcategorie of each category be weight. Must be provided with a "categories" element.
+        /// </summary>
+        /// <param name="categoriesElement">The "categories" element.</param>
+        public static void SortByWeight(XmlElement categoriesElement)
+        {
+            // Convert to XElement so we can use LINQ2XML
+            XElement xCategoriesElement = XElement.Parse(categoriesElement.OuterXml);
+            // Sort the categories
+            IOrderedEnumerable<XElement> xOrderedChilds = xCategoriesElement.Elements().
+                OrderByDescending(SelectWeightFromXElement);
+            xCategoriesElement.ReplaceNodes(xOrderedChilds);
+
+            // Sort the subcategories for each category
+            foreach (XElement xCategoryElement in xCategoriesElement.Elements())
+            {
+                IOrderedEnumerable<XElement> xOrderedGrandChilds = xCategoryElement.Elements().
+                    OrderByDescending(SelectWeightFromXElement);
+                xCategoryElement.ReplaceNodes(xOrderedGrandChilds);
+            }
+            // Convert back
+            XmlReader reader = xCategoriesElement.CreateReader();
+            reader.MoveToContent();
+            categoriesElement.InnerXml = reader.ReadInnerXml();
+        }
+
+        /// <summary>
+        /// Selects the weight from an XElement.
+        /// </summary>
+        /// <param name="e">The XElement</param>
+        /// <returns>The weight.</returns>
+        private static int SelectWeightFromXElement(XElement e)
+        {
+            XAttribute attr = e.Attribute(IndexServer.INDEX_WEIGHT_XML_ATTR);
+            return attr == null ? 0 : Int32.Parse(attr.Value);
+        }
+
+        /// <summary>
         /// Determines the weight for a (sub)category.
         /// </summary>
         /// <param name="element">The XML element</param>
         /// <param name="proxy">The proxy.</param>
-        private static void DetermineWeight(XmlElement element, RCLocalProxy proxy)
+        public static void DetermineWeight(XmlElement element, RCLocalProxy proxy)
         {
             string title = element.GetAttribute(IndexServer.INDEX_FEATURES_XML_ATTR);
             int weight = proxy.IndexWrapper.NumberOfResults(title);
