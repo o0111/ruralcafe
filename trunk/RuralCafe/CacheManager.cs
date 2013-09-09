@@ -493,6 +493,18 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// Gets the number of cached items. There will be more GlobalCacheRCData items than this.
+        /// </summary>
+        /// <returns>The number of cached items.</returns>
+        public int CachedItems()
+        {
+            using (RCDatabaseEntities databaseContext = GetNewDatabaseContext(false))
+            {
+                return CachedItems(databaseContext);
+            }
+        }
+
+        /// <summary>
         /// Gets all files that have Content-Type: text/html or text/plain
         /// The database IS used.
         /// </summary>
