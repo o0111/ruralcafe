@@ -261,6 +261,22 @@ namespace RuralCafe.Lucenenet
         public SearchResults Query(string queryString, string cachePath,
             int offset, int resultAmount, bool includeContentSnippets)
         {
+            return Query(queryString, cachePath, offset, resultAmount, includeContentSnippets, LUCENE_MAX_RESULTS);
+        }
+
+        /// <summary>
+        /// Queries the index for a list of results.
+        /// </summary>
+        /// <param name="queryString">String to query the index for.</param>
+        /// <param name="cachePath">The path to the local cache.</param>
+        /// <param name="offset">The offset for the first result to return.</param>
+        /// <param name="resultAmount">The max number of results to return for the current page.</param>
+        /// <param name="includeContentSnippets">Whether the results should contain content snippets.</param>
+        /// <param name="limit">The upper limit for number or results.</param>
+        /// <returns>A list of search results.</returns>
+        public SearchResults Query(string queryString, string cachePath,
+            int offset, int resultAmount, bool includeContentSnippets, int limit)
+        {
             SearchResults results = new SearchResults();
             Lucene.Net.Store.FSDirectory directory = Lucene.Net.Store.FSDirectory.Open(new System.IO.DirectoryInfo(_indexPath));
             IndexReader reader = IndexReader.Open(directory, true);
@@ -268,7 +284,7 @@ namespace RuralCafe.Lucenenet
 
             Query query = GetQuery(queryString);
             // Request all results up to the page we actually need (this is quick)
-            TopDocs topDocs = searcher.Search(query, LUCENE_MAX_RESULTS);
+            TopDocs topDocs = searcher.Search(query, limit);
             ScoreDoc[] hits = topDocs.scoreDocs;
             // Save num results
             results.NumResults = hits.Length;

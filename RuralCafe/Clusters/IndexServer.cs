@@ -32,6 +32,13 @@ namespace RuralCafe.Clusters
         public const string INDEX_TIME_ATTRIBUTE_XML_NAME = "time";
         public const string INDEX_TIME_NO_OVERRIDE_VALUE = "DO_NOT_OVERRIDE";
 
+        // These define how many items appear on the index pages.
+        public const int NUMBER_OF_CATEGORIES = 10; // level 1
+        public const int NUMBER_OF_SUBCATEGORIES_PER_CATEGORY = 5; // level 1
+        public const int NUMBER_OF_SUBCATEGORIES = 10; // level 2
+        public const int NUMBER_OF_LINKS_PER_SUBCATEGORY = 3; // level 2
+        public const int NUMBER_OF_LINKS = 10; // level 3
+
         /// <summary>The file name of the 3-level-hierarchy tree clusters xml file.</summary>
         public const string CLUSTERS_XML_FILE_NAME = "clusters.xml";
 
@@ -98,10 +105,8 @@ namespace RuralCafe.Clusters
         /// Computes the 1st level in the hierarchy.
         /// </summary>
         /// <param name="clusterXMLFile">The path to clusters.xml</param>
-        /// <param name="maxCategories">The maximum number of categories.</param>
-        /// <param name="maxSubCategories">The maximum number of subcategories per category.</param>
         /// <returns>The index.xml string.</returns>
-        public static string Level1Index(string clusterXMLFile, int maxCategories, int maxSubCategories)
+        public static string Level1Index(string clusterXMLFile)
         {
             XmlDocument clustersDoc = GetClustersXMLDocument(clusterXMLFile);
 
@@ -120,11 +125,12 @@ namespace RuralCafe.Clusters
             XmlElement rootNode = (XmlElement)clustersDoc.DocumentElement;
 
             // Import up to maxCategories categories
-            for (int i = 0; i < rootNode.ChildNodes.Count && (maxCategories == 0 || i < maxCategories); i++)
+            for (int i = 0; i < rootNode.ChildNodes.Count && (NUMBER_OF_CATEGORIES == 0 || i < NUMBER_OF_CATEGORIES); i++)
             {
                 XmlNode category = indexRootXml.AppendChild(indexDoc.ImportNode(rootNode.ChildNodes[i], false));
                 // For each category import up to maxSubCategories subCategories
-                for (int j = 0; j < rootNode.ChildNodes[i].ChildNodes.Count && (maxSubCategories == 0 || j < maxSubCategories); j++)
+                for (int j = 0; j < rootNode.ChildNodes[i].ChildNodes.Count &&
+                    (NUMBER_OF_SUBCATEGORIES_PER_CATEGORY == 0 || j < NUMBER_OF_SUBCATEGORIES_PER_CATEGORY); j++)
                 {
                     category.AppendChild(indexDoc.ImportNode(rootNode.ChildNodes[i].ChildNodes[j], false));
                 }
@@ -138,12 +144,9 @@ namespace RuralCafe.Clusters
         /// </summary>
         /// <param name="clusterXMLFile">The path to clusters.xml</param>
         /// <param name="categoryId">The category id.</param>
-        /// <param name="maxSubCategories">The maximum number of subcategories.</param>
-        /// <param name="maxItems">The maximum number of items per subcategory.</param>
         /// <param name="proxy">Proxy access to conduct a Lucene search.</param>
         /// <returns>The index.xml string.</returns>
-        public static string Level2Index(string clusterXMLFile, string categoryId, int maxSubCategories, int maxItems,
-            RCLocalProxy proxy)
+        public static string Level2Index(string clusterXMLFile, string categoryId, RCLocalProxy proxy)
         {
             XmlDocument clustersDoc = GetClustersXMLDocument(clusterXMLFile);
 
@@ -159,23 +162,11 @@ namespace RuralCafe.Clusters
             {
                 throw new ArgumentException("Could not find category with that id.");
             }
-            // takes too long
-            //if (Properties.Settings.Default.USE_ONTOLOGY)
-            //{
-            //    lock (clustersDoc)
-            //    {
-            //        // Update weight for this category
-            //        Ontology.DetermineWeight(categoryElement, proxy);
-            //        Ontology.SortByWeight(clustersDoc.DocumentElement);
-            //        // Save new xml
-            //        clustersDoc.Save(clusterXMLFile);
-            //    }
-            //}
 
             // Import category
             XmlNode category = indexRootXml.AppendChild(indexDoc.ImportNode(categoryElement, false));
             // For the category import up to maxSubCategories subCategories
-            for (int i = 0; i < categoryElement.ChildNodes.Count && (maxSubCategories == 0 || i < maxSubCategories); i++)
+            for (int i = 0; i < categoryElement.ChildNodes.Count && (NUMBER_OF_SUBCATEGORIES == 0 || i < NUMBER_OF_SUBCATEGORIES); i++)
             {
                 XmlNode subCategory = category.AppendChild(indexDoc.ImportNode(categoryElement.ChildNodes[i], false));
 
@@ -184,7 +175,7 @@ namespace RuralCafe.Clusters
                     // Do a Lucene search, if there are no items. No content snippets on level 2
                     SearchResults luceneResults = proxy.IndexWrapper.Query(
                         (categoryElement.ChildNodes[i] as XmlElement).GetAttribute(INDEX_FEATURES_XML_ATTR),
-                        proxy.CachePath, 0, maxItems, false);
+                        proxy.CachePath, 0, NUMBER_OF_LINKS_PER_SUBCATEGORY, false);
 
                     // Add the results to the XML
                     LocalInternalRequestHandler.AppendSearchResultsXMLElements(luceneResults, indexDoc, subCategory as XmlElement);
@@ -192,7 +183,8 @@ namespace RuralCafe.Clusters
                 else
                 {
                     // For each subCategory import up to maxItems items
-                    for (int j = 0; j < categoryElement.ChildNodes[i].ChildNodes.Count && (maxItems == 0 || j < maxItems); j++)
+                    for (int j = 0; j < categoryElement.ChildNodes[i].ChildNodes.Count &&
+                        (NUMBER_OF_LINKS_PER_SUBCATEGORY == 0 || j < NUMBER_OF_LINKS_PER_SUBCATEGORY); j++)
                     {
                         subCategory.AppendChild(indexDoc.ImportNode(categoryElement.ChildNodes[i].ChildNodes[j], true));
                     }
@@ -208,11 +200,9 @@ namespace RuralCafe.Clusters
         /// <param name="clusterXMLFile">The path to clusters.xml</param>
         /// <param name="categoryId">The category id.</param>
         /// <param name="subCategoryId">The subcategory id.</param>
-        /// <param name="maxItems">The maximum number of items for the subcategory.</param>
         /// <param name="proxy">Proxy access to conduct a Lucene search.</param>
         /// <returns>The index.xml string.</returns>
-        public static string Level3Index(string clusterXMLFile, string categoryId, string subCategoryId, int maxItems,
-            RCLocalProxy proxy)
+        public static string Level3Index(string clusterXMLFile, string categoryId, string subCategoryId, RCLocalProxy proxy)
         {
             XmlDocument clustersDoc = GetClustersXMLDocument(clusterXMLFile);
 
@@ -235,19 +225,6 @@ namespace RuralCafe.Clusters
             {
                 throw new ArgumentException("Could not find subcategory with that id.");
             }
-            // takes too long
-            //if (Properties.Settings.Default.USE_ONTOLOGY)
-            //{
-            //    lock (clustersDoc)
-            //    {
-            //        // Update weight for this category and subcategory
-            //        Ontology.DetermineWeight(categoryElement, proxy);
-            //        Ontology.DetermineWeight(subCategoryElement, proxy);
-            //        Ontology.SortByWeight(clustersDoc.DocumentElement);
-            //        // Save new xml
-            //        clustersDoc.Save(clusterXMLFile);
-            //    }
-            //}
 
             // Import category
             XmlNode category = indexRootXml.AppendChild(indexDoc.ImportNode(categoryElement, false));
@@ -258,7 +235,7 @@ namespace RuralCafe.Clusters
                 // Do a Lucene search, if there are no items.
                 SearchResults luceneResults = proxy.IndexWrapper.Query(
                     subCategoryElement.GetAttribute(INDEX_FEATURES_XML_ATTR),
-                    proxy.CachePath, 0, maxItems, true);
+                    proxy.CachePath, 0, NUMBER_OF_LINKS, true);
 
                 // Add the results to the XML
                 LocalInternalRequestHandler.AppendSearchResultsXMLElements(luceneResults, indexDoc, subCategory as XmlElement);
@@ -266,7 +243,7 @@ namespace RuralCafe.Clusters
             else
             {
                 // Import up to maxItems items
-                for (int i = 0; i < subCategoryElement.ChildNodes.Count && (maxItems == 0 || i < maxItems); i++)
+                for (int i = 0; i < subCategoryElement.ChildNodes.Count && (NUMBER_OF_LINKS == 0 || i < NUMBER_OF_LINKS); i++)
                 {
                     subCategory.AppendChild(indexDoc.ImportNode(subCategoryElement.ChildNodes[i], true));
                 }
