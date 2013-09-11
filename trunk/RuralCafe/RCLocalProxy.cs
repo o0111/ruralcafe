@@ -318,7 +318,7 @@ namespace RuralCafe
                 {
                     if (Properties.Settings.Default.USE_ONTOLOGY)
                     {
-                        Ontology.CreateWeights(ProxyCacheManager.ClustersPath, this);
+                        Ontology.CreateWeightsAndSaveSearchResults(ProxyCacheManager.ClustersPath, this);
                     }
                     else
                     {

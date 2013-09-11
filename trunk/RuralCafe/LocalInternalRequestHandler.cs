@@ -43,7 +43,7 @@ namespace RuralCafe
                 new string[] { }, new Type[] { }));
 
             routines.Add("/request/index.xml", new RoutineMethod("ServeRCIndexPage", 		
- 	            new string[] { "n", "c", "s" }, new Type[] { typeof(int), typeof(int), typeof(string) }));
+ 	            new string[] { "s" }, new Type[] { typeof(string) }));
             routines.Add("/request/search-live.xml", new RoutineMethod("ServeRCLiveResultPage",
                 new string[] { "p", "s" }, new Type[] { typeof(int), typeof(string) }));
             routines.Add("/request/search-cache.xml", new RoutineMethod("ServeRCCacheResultPage",
@@ -375,13 +375,11 @@ namespace RuralCafe
         }
 
         /// <summary> 		
-        /// Sends the RC Index page to the client. 		
-        /// GET request will be sent to <![CDATA[request/index.xml?c=6&n=4&s=root]]> where 		
-        /// n is the maximum number of items in a category, the number of <![CDATA[<item>]]>.
-        /// c is the number of categories, the number of <![CDATA[<category>]]>. Only for level 1 and 2.
-        /// s is the upper level category which the user want to explore (the top level category is defined as 'root') 		
+        /// Sends the RC Index page to the client.	
         /// </summary> 		
-        public Response ServeRCIndexPage(int numItems, int numCategories, string searchString)
+        /// <param name="searchString">The search string. "root" for level 1, the id for level 2,
+        /// and two ids separated by a dot for level 3.</param>
+        public Response ServeRCIndexPage(string searchString)
         {
             if (!File.Exists(Proxy.ProxyCacheManager.ClustersPath + IndexServer.CLUSTERS_XML_FILE_NAME))
             {
@@ -401,8 +399,7 @@ namespace RuralCafe
                 // Level 1
                 try
                 {
-                    xmlAnswer = IndexServer.Level1Index(Proxy.ProxyCacheManager.ClustersPath + IndexServer.CLUSTERS_XML_FILE_NAME, 
-                        numCategories, numItems);
+                    xmlAnswer = IndexServer.Level1Index(Proxy.ProxyCacheManager.ClustersPath + IndexServer.CLUSTERS_XML_FILE_NAME);
                 }
                 catch (ArgumentException e)
                 {
@@ -415,7 +412,7 @@ namespace RuralCafe
                 try
                 {
                     xmlAnswer = IndexServer.Level2Index(Proxy.ProxyCacheManager.ClustersPath + IndexServer.CLUSTERS_XML_FILE_NAME,
-                        searchString, numCategories, numItems, Proxy);
+                        searchString, Proxy);
                 }
                 catch (ArgumentException e)
                 {
@@ -438,7 +435,7 @@ namespace RuralCafe
                 try
                 {
                     xmlAnswer = IndexServer.Level3Index(Proxy.ProxyCacheManager.ClustersPath + IndexServer.CLUSTERS_XML_FILE_NAME,
-                        catId, subCatId, numItems, Proxy);
+                        catId, subCatId, Proxy);
                 }
                 catch (ArgumentException e)
                 {
