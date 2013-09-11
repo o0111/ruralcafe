@@ -92,7 +92,7 @@ namespace RuralCafe.Clusters
         {
             lock (clustersXMLDoc)
             {
-                if (clustersXMLDoc.DocumentElement == null)
+                if (clustersXMLDoc.DocumentElement == null && File.Exists(clusterXMLFile))
                 {
                     clustersXMLDoc.Load(new XmlTextReader(clusterXMLFile));
                 }

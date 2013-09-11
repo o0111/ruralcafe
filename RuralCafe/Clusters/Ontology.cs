@@ -34,6 +34,7 @@ namespace RuralCafe.Clusters
                 if (rootXml == null)
                 {
                     proxy.Logger.Warn("Ontology: No proper clusters.xml with ontology. Aborting weighting.");
+                    return;
                 }
 
                 proxy.Logger.Debug("Ontology: Step 1/3: Getting number of cached items.");
