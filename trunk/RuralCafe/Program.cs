@@ -50,8 +50,8 @@ namespace RuralCafe
 
         // Path Settings
         private static readonly string PACKAGE_PATH = "Packages" + Path.DirectorySeparatorChar;
-        private static readonly string LOCAL_PROXY_PATH = "LocalProxy" + Path.DirectorySeparatorChar;
-        private static readonly string REMOTE_PROXY_PATH = "RemoteProxy" + Path.DirectorySeparatorChar;
+        public static readonly string LOCAL_PROXY_PATH = "LocalProxy" + Path.DirectorySeparatorChar;
+        public static readonly string REMOTE_PROXY_PATH = "RemoteProxy" + Path.DirectorySeparatorChar;
 
         // FIXME this should not be public, but we have an ugly workaround
         /// <summary>The path to the index for the local proxy.</summary>
@@ -306,9 +306,6 @@ namespace RuralCafe
             localProxy.NetworkStatus = Properties.Network.Default.NETWORK_STATUS;
             localProxy.DetectNetworkStatusAuto = Properties.Network.Default.DETECT_NETWORK_AUTO;
 
-            // load the blacklisted domains
-            localProxy.LoadBlacklist("blacklist.txt");
-
             // start local listener thread
             Thread localListenerThread = new Thread(new ThreadStart(localProxy.StartListener));
             localListenerThread.Name = "localListenerThread";
@@ -361,9 +358,6 @@ namespace RuralCafe
 
             // set the maximum downlink speed to the local proxy
             remoteProxy.MAXIMUM_DOWNLINK_BANDWIDTH = Properties.Network.Default.MAXIMUM_DOWNLOAD_SPEED;
-
-            // load the blacklisted domains
-            remoteProxy.LoadBlacklist("blacklist.txt");
 
             // set the default low watermark for each request
             RemoteRequestHandler.DEFAULT_LOW_WATERMARK = Properties.Settings.Default.DEFAULT_QUOTA / LOW_WATERMARK_DIVIDOR_QUOTA;

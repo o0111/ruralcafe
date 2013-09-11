@@ -301,6 +301,9 @@ namespace RuralCafe
                 _logger.Warn("Error initializing the " + name + " packages cache.");
             }
 
+            // Load the blacklist
+            LoadBlacklist();
+
             // initialize the network usage detector
             _networkUsageDetector = new NetworkUsageDetector(this);
             // Start the timer that logs the network speed and so on.
@@ -408,10 +411,31 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// Loads the blacklist or the default blacklist, if there is none yet.
+        /// </summary>
+        private void LoadBlacklist()
+        {
+            // Copy the default file to the proxy folder, if there is no blacklist
+            string blacklistFileName = _proxyPath + "blacklist.txt";
+            if (!File.Exists(blacklistFileName))
+            {
+                try
+                {
+                    File.Copy("blacklist.txt", blacklistFileName);
+                }
+                catch (Exception)
+                {
+                    // do nothing
+                }
+            }
+            LoadBlacklist(blacklistFileName);
+        }
+
+        /// <summary>
         /// Loads the blacklist from a file.
         /// </summary>
         /// <param name="fileName">The name of the blacklist file.</param>
-        public void LoadBlacklist(string fileName)
+        private void LoadBlacklist(string fileName)
         {
             try
             {
