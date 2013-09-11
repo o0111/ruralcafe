@@ -172,15 +172,11 @@ namespace RuralCafe
 
             // Tell the network usage detector we're downloading now
             _proxy.NetworkUsageDetector.DownloadStarted();
-            // add to active set of connections
-            _proxy.AddActiveRequest(RequestId);
-
+            
             // download the package and return it to local proxy
             Logger.Debug("dispatching to content servers: " + RequestUri);
             bool success = RecursivelyDownloadPage(RCRequest, richness, 0);
 
-            // remove from active set of connections
-            _proxy.RemoveActiveRequest(RequestId);
             // Tell the network usage detector we're done downloading
             _proxy.NetworkUsageDetector.DownloadStopped();
 
@@ -342,21 +338,6 @@ namespace RuralCafe
                 return false;
             }
 
-            /*
-            // Check for admission control
-            // XXX: its not clear whether this should be done at the remote proxy at all.
-            // XXX: we're architecturally basically assuming that we're limited by threads and the remote proxy
-            // XXX: if we do decide to do this, we'll have to decide do it either per incoming active request or actually count all spawned asset/recurisve requests
-            while (_proxy.NumInflightRequests >= _proxy.MaxInflightRequests)
-            {
-                Thread.Sleep(100);
-            }
-            // add
-            _proxy.AddActiveRequest(this);
-             // remove
-            _proxy.RemoveActiveRequest(this);
-            */
-
             // reduce the timer
             DateTime currTime = DateTime.Now;
             DateTime endTime = StartTime.AddMilliseconds(RequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT);
@@ -375,6 +356,8 @@ namespace RuralCafe
                 // Download!
                 try
                 {
+                    // add to active set of connections
+                    _proxy.AddActiveRequest(rcRequest.RequestId);
                     rcRequest.DownloadToCache();
                 }
                 catch (Exception e)
@@ -395,6 +378,11 @@ namespace RuralCafe
                         }
                     }
                     return false;
+                }
+                finally
+                {
+                    // remove from active set of connections
+                    _proxy.RemoveActiveRequest(rcRequest.RequestId);
                 }
             }
             else
@@ -586,9 +574,16 @@ namespace RuralCafe
                         // Download!
                         try
                         {
+                            // add to active set of connections
+                            _proxy.AddActiveRequest(request.RequestId);
                             request.DownloadToCache();
                         }
                         catch { } // Ignore
+                        finally
+                        {
+                            // remove from active set of connections
+                            _proxy.RemoveActiveRequest(request.RequestId);
+                        }
                     }
                 }
                 else

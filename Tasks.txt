@@ -28,7 +28,6 @@ Tasks
   - blacklist?
 - NetworkSpeedDetection / InflightRequests Control
   - At first hardcoded percentage of _maxInflightRequests that have to be non-streamed ones. Better fairness policy later.
-  - RP: Admission control when streaming?
 
 Bugs
 - Estimated network speed is sometimes negative!?

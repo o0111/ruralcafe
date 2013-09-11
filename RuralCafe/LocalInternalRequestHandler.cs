@@ -233,6 +233,13 @@ namespace RuralCafe
                         continue;
                     }
 
+                    // If we're in slow mode, we don't want cached results within the live results
+                    if (_proxy.NetworkStatus == RCProxy.NetworkStatusCode.Slow &&
+                        _proxy.ProxyCacheManager.IsCached(CacheManager.GetRelativeCacheFileName(currUri, "GET")))
+                    {
+                        continue;
+                    }
+
                     // get the content snippet (in next split)
                     currLine = lines[i + 1];
                     // find start
