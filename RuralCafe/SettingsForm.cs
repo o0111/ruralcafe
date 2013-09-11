@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -159,5 +160,65 @@ namespace RuralCafe
             // Enable or disable the network status combo box.
             this.comboBox1.Enabled = !this.checkBox1.Checked;
         }
+
+        /// <summary>
+        /// Opens the LP blacklist in the default editor.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void button3_Click(object sender, EventArgs e)
+        {
+            // Edit the LP  blacklist
+            string blacklistFileName = this.textBox2.Text + Path.DirectorySeparatorChar // textBox2: the base dir
+                + Program.LOCAL_PROXY_PATH + "blacklist.txt";
+            OpenBlacklistFile(blacklistFileName);
+        }
+
+        /// <summary>
+        /// Opens the RP blacklist in the default editor.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void button4_Click(object sender, EventArgs e)
+        {
+            // Edit the RP blacklist
+            string blacklistFileName = this.textBox2.Text + Path.DirectorySeparatorChar // textBox2: the base dir
+                + Program.REMOTE_PROXY_PATH + "blacklist.txt";
+            OpenBlacklistFile(blacklistFileName);
+        }
+
+        /// <summary>
+        /// Opens a blacklist file. Copies the default blacklist to that place, if there is none.
+        /// </summary>
+        /// <param name="blacklistFileName">The full path to the blacklist.</param>
+        private void OpenBlacklistFile(string blacklistFileName)
+        {
+            // Copy the default file to the proxy folder, if there is no blacklist
+            if (!File.Exists(blacklistFileName))
+            {
+                try
+                {
+                    File.Copy("blacklist.txt", blacklistFileName);
+                }
+                catch (Exception exp)
+                {
+                    MessageBox.Show(this, "Could not copy the default blacklist to the proxy folder: " + exp.Message,
+                        "Blacklist error", MessageBoxButtons.OK);
+                    return;
+                }
+            }
+            // View the blacklist in the default editor.
+            try
+            {
+                Process.Start(blacklistFileName);
+            }
+            catch (Exception exp)
+            {
+                MessageBox.Show(this, "Could not open the blacklist file: " + exp.Message,
+                        "Blacklist error", MessageBoxButtons.OK);
+            }
+        }
+
+        
     }
 }
