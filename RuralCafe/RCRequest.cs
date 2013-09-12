@@ -77,7 +77,8 @@ namespace RuralCafe
         [JsonProperty]
         private long _fileSize;
 
-        private RequestHandler _requestHandler;
+        private RCProxy _proxy;
+        private RCRequest _rootRequest;
 
         private DateTime _startTime;
         private DateTime _finishTime;
@@ -178,11 +179,6 @@ namespace RuralCafe
             set { _fileSize = value; }
             get { return _fileSize; }
         }
-        /// <summary>The root requesthandler of this request.</summary>
-        public RequestHandler RootRequest
-        {
-            get { return _requestHandler; }
-        }
         /// <summary>The array of events used to indicate whether the children requests in their own threads are completed.</summary>
         public ManualResetEvent[] ResetEvents
         {
@@ -207,16 +203,22 @@ namespace RuralCafe
             set { _finishTime = value; }
             get { return _finishTime; }
         }
+        /// <summary>The root request.</summary>
+        public RCRequest RootRequest
+        {
+            get { return _rootRequest; }
+            set { _rootRequest = value; }
+        }
 
         # endregion
 
         /// <summary>
         /// Constructor for a RuralCafe Request.
         /// </summary>
-        /// <param name="requestHandler">The handler for the request.</param>
+        /// <param name="proxy">The proxy for the request.</param>
         /// <param name="request">The request.</param>
-        public RCRequest(RequestHandler requestHandler, HttpWebRequest request)
-            :this(requestHandler, request, "", "", null)
+        public RCRequest(RCProxy proxy, HttpWebRequest request)
+            :this(proxy, request, "", "", null)
         {
             // do nothing
         }
@@ -224,12 +226,12 @@ namespace RuralCafe
         /// <summary>
         /// Constructor for a RuralCafe Request.
         /// </summary>
-        /// <param name="requestHandler">The handler for the request.</param>
+        /// <param name="proxy">The proxy for the request.</param>
         /// <param name="request">The request.</param>
         /// <param name="anchorText">Text of the anchor tag.</param>
         /// <param name="referrerUri">URI of the referer.</param>
         /// <param name="body">The body for POSTs, ...</param>
-        public RCRequest(RequestHandler requestHandler, HttpWebRequest request, string anchorText,
+        public RCRequest(RCProxy proxy, HttpWebRequest request, string anchorText,
             string referrerUri, byte[] body)
         {
             _anchorText = anchorText;
@@ -247,12 +249,14 @@ namespace RuralCafe
             // Cache file name like ./GET/2876/627/...
             _relCacheFileName = request.Method + Path.DirectorySeparatorChar + hashPath + fileName;
             _requestId = _relCacheFileName.Replace(Path.DirectorySeparatorChar.ToString(), "");
-            _cacheFileName = requestHandler.GenericProxy.CachePath + _relCacheFileName;
+            _cacheFileName = proxy.CachePath + _relCacheFileName;
 
-            _packageFileName = requestHandler.GenericProxy.PackagesPath + hashPath + fileName + ".gzip";
+            _packageFileName = proxy.PackagesPath + hashPath + fileName + ".gzip";
             _fileSize = 0;
 
-            _requestHandler = requestHandler;
+            _proxy = proxy;
+            // Root request is this, unless overridden.
+            _rootRequest = this;
 
             _startTime = DateTime.Now;
             _finishTime = _startTime;
@@ -303,21 +307,21 @@ namespace RuralCafe
         /// <returns>The requested webpage or <code>null</code> if it failed.</returns>
         public string DownloadAsString()
         {
-            _requestHandler.Logger.Debug("downloading as string: " + _webRequest.RequestUri);
+            _proxy.Logger.Debug("downloading as string: " + _webRequest.RequestUri);
             // Stream parameters, if we have non GET/HEAD
             HttpUtils.SendBody(_webRequest, _body);
             try
             {
                 // get the web response for the web request
                 _webResponse = (HttpWebResponse)_webRequest.GetResponse();
-                _requestHandler.Logger.Debug("downloading done: " + _webRequest.RequestUri);
+                _proxy.Logger.Debug("downloading done: " + _webRequest.RequestUri);
                 // Get response stream
                 Stream responseStream = GenericWebResponse.GetResponseStream();
                 return Utils.ReadStreamToEnd(responseStream);
             }
             catch (Exception e)
             {
-                _requestHandler.Logger.Debug("failed: " + Uri, e);
+                _proxy.Logger.Debug("failed: " + Uri, e);
                 return null;
             }
         }
@@ -328,7 +332,7 @@ namespace RuralCafe
         /// <returns></returns>
         public bool DownloadPackage()
         {
-            _requestHandler.Logger.Debug("downloading from remote proxy: " + _webRequest.RequestUri);
+            _proxy.Logger.Debug("downloading from remote proxy: " + _webRequest.RequestUri);
             // Stream parameters, if we have non GET/HEAD
             HttpUtils.SendBody(_webRequest, _body);
 
@@ -343,7 +347,7 @@ namespace RuralCafe
                 _errorMessage = new StreamReader(e.Response.GetResponseStream()).ReadToEnd();
                 return false;
             }
-            _requestHandler.Logger.Debug("Received header: " + _webRequest.RequestUri);
+            _proxy.Logger.Debug("Received header: " + _webRequest.RequestUri);
             _statusCode = _webResponse.StatusCode;
 
             FileStream writeFile = Utils.CreateFile(PackageFileName);
@@ -351,7 +355,7 @@ namespace RuralCafe
             {
                 _statusCode = HttpStatusCode.InternalServerError;
                 _errorMessage = "Could not create package file";
-                _requestHandler.Logger.Warn(_errorMessage + ": " + PackageFileName);
+                _proxy.Logger.Warn(_errorMessage + ": " + PackageFileName);
                 return false;
             }
 
@@ -371,7 +375,7 @@ namespace RuralCafe
                     bytesRead = contentStream.Read(readBuffer, 0, readBuffer.Length);
                 }
             }
-            _requestHandler.Logger.Debug("received: " + _webResponse.ResponseUri + " "
+            _proxy.Logger.Debug("received: " + _webResponse.ResponseUri + " "
                     + bytesDownloaded + " bytes.");
             // Generelly we should receive more than 0 bytes, if there was no exception.
             // We keep this anyway, in case we overlooked something.
@@ -386,20 +390,21 @@ namespace RuralCafe
         /// 
         /// Cleans up, but rethrows any exceptions. Also throws own exceptions, if something goes wrong.
         /// </summary>
-        public void DownloadToCache()
+        /// <param name="addToIndex">Whether to add this item to the index.</param>
+        public void DownloadToCache(bool addToIndex)
         {
-            CacheManager cacheManager = _requestHandler.GenericProxy.ProxyCacheManager;
+            CacheManager cacheManager = _proxy.ProxyCacheManager;
 
             try
             {
-                _requestHandler.Logger.Debug("downloading: " + _webRequest.RequestUri);
+                _proxy.Logger.Debug("downloading: " + _webRequest.RequestUri);
 
                 // Stream parameters, if we have non GET/HEAD
                 HttpUtils.SendBody(_webRequest, _body);
 
                 // get the web response for the web request
                 _webResponse = (HttpWebResponse)_webRequest.GetResponse();
-                _requestHandler.Logger.Debug("Received header: " + _webRequest.RequestUri);
+                _proxy.Logger.Debug("Received header: " + _webRequest.RequestUri);
 
                 if (!_webResponse.ResponseUri.Equals(_webRequest.RequestUri))
                 {
@@ -428,22 +433,22 @@ namespace RuralCafe
                     // have to save to the new cache file location
                     string uri = _webResponse.ResponseUri.ToString();
                     _relCacheFileName = CacheManager.GetRelativeCacheFileName(uri, _webResponse.Method);
-                    _cacheFileName = _requestHandler.GenericProxy.CachePath + _relCacheFileName;
+                    _cacheFileName = _proxy.CachePath + _relCacheFileName;
 
                     if (cacheManager.IsCached(_relCacheFileName))
                     {
-                        _requestHandler.Logger.Debug("Already exists: " +
+                        _proxy.Logger.Debug("Already exists: " +
                             _webResponse.Method + " " + uri);
                         return;
                     }
                 }
 
                 // Add stream content to the cache. 
-                if (!cacheManager.AddCacheItem(GenericWebResponse, _relCacheFileName))
+                if (!cacheManager.AddCacheItem(GenericWebResponse, _relCacheFileName, addToIndex))
                 {
                     // clean up the (partial) download
                     cacheManager.RemoveCacheItemFromDisk(_cacheFileName);
-                    _requestHandler.Logger.Debug("failed, could not add item to the database or cache: " + Uri);
+                    _proxy.Logger.Debug("failed, could not add item to the database or cache: " + Uri);
                     throw new Exception("Could not add item to the database or cache.");
                 }
             }
@@ -452,10 +457,10 @@ namespace RuralCafe
                 // timed out or some other error
                 // clean up the (partial) download
                 cacheManager.RemoveCacheItemFromDisk(_cacheFileName);
-                _requestHandler.Logger.Debug("failed: " + Uri, e);
+                _proxy.Logger.Debug("failed: " + Uri, e);
 
                 // if this is a webexception, let's throw our own exception include the Remote Proxy's message (on the local side only!):
-                if (_requestHandler.GenericProxy is RCLocalProxy && e is WebException)
+                if (_proxy is RCLocalProxy && e is WebException)
                 {
                     WebException exp = e as WebException;
                     if (exp.Response != null)
@@ -467,6 +472,21 @@ namespace RuralCafe
 
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Checks whether the request is timed out.
+        /// </summary>
+        /// <param name="requestTimeout">The request timeout.</param>
+        /// <returns>True or false for timed out or not.</returns>
+        public bool IsTimedOut(int requestTimeout)
+        {
+            if (requestTimeout == Timeout.Infinite)
+            {
+                return false;
+            }
+
+            return DateTime.Now.Subtract(_startTime).TotalMilliseconds >= requestTimeout;
         }
     }
 }

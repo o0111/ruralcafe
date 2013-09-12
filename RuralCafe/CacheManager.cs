@@ -794,13 +794,12 @@ namespace RuralCafe
         /// </summary>
         /// <param name="webResponse">The web response.</param>
         /// <param name="fileName">The relative filename.</param>
+        /// <param name="addToIndex">Whether to add this item to the index.</param>
         /// <returns>True for success and false for failure.</returns>
-        public bool AddCacheItem(HttpWebResponse webResponse, string fileName)
+        public bool AddCacheItem(HttpWebResponse webResponse, string fileName, bool addToIndex)
         {
-            // This is called on the remote side and when streaming. We want to index all text files
-            // when streaming.
             GlobalCacheItemToAdd newItem = new GlobalCacheItemToAdd(
-                fileName, webResponse.Headers, (short)webResponse.StatusCode, true);
+                fileName, webResponse.Headers, (short)webResponse.StatusCode, addToIndex);
 
             // Add file to the disk
             if (!AddCacheItemToDisk(webResponse))

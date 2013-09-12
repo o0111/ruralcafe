@@ -61,6 +61,7 @@ namespace RuralCafe
             this.label8 = new System.Windows.Forms.Label();
             this.label9 = new System.Windows.Forms.Label();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.button4 = new System.Windows.Forms.Button();
             this.numericUpDown10 = new System.Windows.Forms.NumericUpDown();
             this.numericUpDown5 = new System.Windows.Forms.NumericUpDown();
             this.label25 = new System.Windows.Forms.Label();
@@ -72,6 +73,7 @@ namespace RuralCafe
             this.textBox5 = new System.Windows.Forms.TextBox();
             this.label4 = new System.Windows.Forms.Label();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.button3 = new System.Windows.Forms.Button();
             this.checkBox3 = new System.Windows.Forms.CheckBox();
             this.label27 = new System.Windows.Forms.Label();
             this.checkBox2 = new System.Windows.Forms.CheckBox();
@@ -91,8 +93,7 @@ namespace RuralCafe
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.button3 = new System.Windows.Forms.Button();
-            this.button4 = new System.Windows.Forms.Button();
+            this.button5 = new System.Windows.Forms.Button();
             this.panel1.SuspendLayout();
             this.groupBox5.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown8)).BeginInit();
@@ -112,6 +113,7 @@ namespace RuralCafe
             // 
             // panel1
             // 
+            this.panel1.Controls.Add(this.button5);
             this.panel1.Controls.Add(this.groupBox5);
             this.panel1.Controls.Add(this.button2);
             this.panel1.Controls.Add(this.button1);
@@ -170,7 +172,7 @@ namespace RuralCafe
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(514, 535);
+            this.button1.Location = new System.Drawing.Point(378, 535);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 4;
@@ -447,6 +449,16 @@ namespace RuralCafe
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Remote Proxy";
             // 
+            // button4
+            // 
+            this.button4.Location = new System.Drawing.Point(568, 65);
+            this.button4.Name = "button4";
+            this.button4.Size = new System.Drawing.Size(75, 23);
+            this.button4.TabIndex = 35;
+            this.button4.Text = "Edit blacklist";
+            this.button4.UseVisualStyleBackColor = true;
+            this.button4.Click += new System.EventHandler(this.button4_Click);
+            // 
             // numericUpDown10
             // 
             this.numericUpDown10.Location = new System.Drawing.Point(138, 67);
@@ -575,6 +587,16 @@ namespace RuralCafe
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Local Proxy";
+            // 
+            // button3
+            // 
+            this.button3.Location = new System.Drawing.Point(568, 119);
+            this.button3.Name = "button3";
+            this.button3.Size = new System.Drawing.Size(75, 23);
+            this.button3.TabIndex = 34;
+            this.button3.Text = "Edit blacklist";
+            this.button3.UseVisualStyleBackColor = true;
+            this.button3.Click += new System.EventHandler(this.button3_Click);
             // 
             // checkBox3
             // 
@@ -746,25 +768,15 @@ namespace RuralCafe
             this.label1.TabIndex = 1;
             this.label1.Text = "IP address";
             // 
-            // button3
+            // button5
             // 
-            this.button3.Location = new System.Drawing.Point(568, 119);
-            this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(75, 23);
-            this.button3.TabIndex = 34;
-            this.button3.Text = "Edit blacklist";
-            this.button3.UseVisualStyleBackColor = true;
-            this.button3.Click += new System.EventHandler(this.button3_Click);
-            // 
-            // button4
-            // 
-            this.button4.Location = new System.Drawing.Point(568, 65);
-            this.button4.Name = "button4";
-            this.button4.Size = new System.Drawing.Size(75, 23);
-            this.button4.TabIndex = 35;
-            this.button4.Text = "Edit blacklist";
-            this.button4.UseVisualStyleBackColor = true;
-            this.button4.Click += new System.EventHandler(this.button4_Click);
+            this.button5.Location = new System.Drawing.Point(459, 535);
+            this.button5.Name = "button5";
+            this.button5.Size = new System.Drawing.Size(130, 23);
+            this.button5.TabIndex = 7;
+            this.button5.Text = "Save and start crawler";
+            this.button5.UseVisualStyleBackColor = true;
+            this.button5.Click += new System.EventHandler(this.button5_Click);
             // 
             // SettingsForm
             // 
@@ -866,5 +878,6 @@ namespace RuralCafe
         private System.Windows.Forms.Label label26;
         private System.Windows.Forms.Button button4;
         private System.Windows.Forms.Button button3;
+        private System.Windows.Forms.Button button5;
     }
 }

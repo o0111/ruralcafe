@@ -34,6 +34,7 @@ using Microsoft.Win32;
 using System.Security.Principal;
 using System.Diagnostics;
 using System.Reflection;
+using RuralCafe.Crawler;
 
 namespace RuralCafe
 {
@@ -175,14 +176,13 @@ namespace RuralCafe
         /// </summary>
         private static void StartRuralCafe()
         {
-            // XXX check if positive for mega small screens
             Console.WindowWidth = Console.LargestWindowWidth - 4;
             Console.WindowHeight = Console.LargestWindowHeight - 10;
             Console.SetWindowPosition(0, 0);
 
             // Setting form at startup.
             SettingsForm sf = new SettingsForm();
-            sf.ShowDialog();
+            DialogResult dialogResults = sf.ShowDialog();
             SaveConfigs();
 
             // Config Logger
@@ -200,7 +200,9 @@ namespace RuralCafe
                 && !Properties.Connection.Default.LOCAL_PROXY_IP_ADDRESS.Equals(""))
             {
                 localProxyStarted = true;
-                StartLocalProxy();
+                // If the dialogResults are yes ("Save and start crawler" button")
+                // we start the crawler
+                StartLocalProxy(dialogResults == DialogResult.Yes);
             }
 
             // start the remote proxy only if we're not starting the local proxy
@@ -271,7 +273,8 @@ namespace RuralCafe
         /// <summary>
         /// Starts the local proxy.
         /// </summary>
-        public static RCLocalProxy StartLocalProxy()
+        /// <param name="startCrawler">Whether the crawler should be started.</param>
+        public static RCLocalProxy StartLocalProxy(bool startCrawler)
         {
             // create the proxy
             RCLocalProxy localProxy = new RCLocalProxy(
@@ -284,6 +287,12 @@ namespace RuralCafe
                 LOCAL_CACHE_PATH,
                 WIKI_DUMP_FILE,
                 PACKAGE_PATH);
+
+            if (startCrawler)
+            {
+                CrawlerWrapper cw = new CrawlerWrapper(localProxy);
+                cw.StartCrawler();
+            }
 
             // set the remote proxy
             localProxy.SetRemoteProxy(IPAddress.Parse(Properties.Connection.Default.REMOTE_PROXY_IP_ADDRESS),

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RuralCafe.Crawler;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -8,7 +9,9 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
+using WindowsFormsApplication1;
 
 namespace RuralCafe
 {
@@ -68,7 +71,7 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// The OK button.
+        /// The Save button.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -137,6 +140,8 @@ namespace RuralCafe
             Properties.Connection.Default.Save();
             Properties.Files.Default.Save();
             Properties.Network.Default.Save();
+
+            DialogResult = DialogResult.OK;
             this.Close();
         }
 
@@ -147,6 +152,7 @@ namespace RuralCafe
         /// <param name="e"></param>
         private void button2_Click(object sender, EventArgs e)
         {
+            DialogResult = DialogResult.Cancel;
             this.Close();
         }
 
@@ -219,6 +225,17 @@ namespace RuralCafe
             }
         }
 
-        
+        /// <summary>
+        /// The Save and start crawler button.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void button5_Click(object sender, EventArgs e)
+        {
+            // Save
+            this.button1_Click(null, null);
+            // Override the DialogResult with Yes, which is used for "Yes, start the damn crawler."
+            DialogResult = DialogResult.Yes;
+        }
     }
 }

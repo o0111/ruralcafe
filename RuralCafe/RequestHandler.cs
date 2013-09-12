@@ -302,7 +302,6 @@ namespace RuralCafe
             set { _rcRequest.FinishTime = value; }
             get { return _rcRequest.FinishTime; }
         }
-
         /// <summary>The time of creation.</summary>
         public long CreationTime
         {
@@ -417,7 +416,7 @@ namespace RuralCafe
         {
             // create the request object
             string refererUri = _originalRequest.UrlReferrer != null ? _originalRequest.UrlReferrer.ToString() : "";
-            _rcRequest = new RCRequest(this, HttpUtils.CreateWebRequest(request), "", refererUri, HttpUtils.ReceiveBody(request));
+            _rcRequest = new RCRequest(_proxy, HttpUtils.CreateWebRequest(request), "", refererUri, HttpUtils.ReceiveBody(request));
         }
 
         /// <summary>Abstract method for proxies to handle requests.</summary>
@@ -614,7 +613,8 @@ namespace RuralCafe
             try
             {
                 // Download, which potentially also replaces
-                _rcRequest.DownloadToCache();
+                // When streaming, we index all html pages!
+                _rcRequest.DownloadToCache(true);
                 FileInfo f = new FileInfo(_rcRequest.CacheFileName);
                 if (f.Exists)
                 {
@@ -789,12 +789,7 @@ namespace RuralCafe
         /// <returns>True or false for timed out or not.</returns>
         public bool IsTimedOut()
         {
-            if (_requestTimeout == Timeout.Infinite)
-            {
-                return false;
-            }
-
-            return DateTime.Now.Subtract(_rcRequest.StartTime).TotalMilliseconds >= _requestTimeout;
+            return _rcRequest.IsTimedOut(_requestTimeout);
         }
 
         #endregion
