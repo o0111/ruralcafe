@@ -45,7 +45,7 @@ namespace RuralCafe.Json
             // automatically later
             jObject.Remove("_webRequest");
 
-            return new RCRequest(_lrh, webRequest, "", refererUri, body);
+            return new RCRequest(_lrh.Proxy, webRequest, "", refererUri, body);
         }
 
         /// <summary>

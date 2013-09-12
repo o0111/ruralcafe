@@ -125,6 +125,7 @@
     <Compile Include="Clusters\Doc2Mat.cs" />
     <Compile Include="Clusters\IndexServer.cs" />
     <Compile Include="Clusters\Ontology.cs" />
+    <Compile Include="Crawler\CrawlerWrapper.cs" />
     <Compile Include="Database\GlobalCacheItem.cs">
       <DependentUpon>RCDatabase.tt</DependentUpon>
     </Compile>
@@ -286,6 +287,10 @@
       <Project>{0E7413FF-EB9E-4714-ACF2-BE3A6A7B2FFD}</Project>
       <Name>ICSharpCode.SharpZLib</Name>
     </ProjectReference>
+    <ProjectReference Include="..\windowsformsapplication1\acrawlerapp.csproj">
+      <Project>{17959cd5-5f96-443a-a70e-5e6b865be03b}</Project>
+      <Name>acrawlerapp</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.0">
@@ -315,6 +320,9 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="1gram_gt_500k.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="blacklist.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -637,6 +645,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="LocalProxy\RuralCafePages\trotro.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="negativeSeedLinks.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="stopwords.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

@@ -511,6 +511,19 @@ namespace RuralCafe.Util
             return nic;
         }
 
+        /// <summary>
+        /// Thread synchronization wait method.
+        /// </summary>
+        /// <remarks>Call this from parent thread after spawning children.</remarks>
+        /// <param name="waitHandles">Thread handles.</param>
+        public static void WaitAll(WaitHandle[] waitHandles)
+        {
+            foreach (WaitHandle myWaitHandle in waitHandles)
+            {
+                WaitHandle.WaitAny(new WaitHandle[] { myWaitHandle });
+            }
+        }
+
         #endregion
     }
 }

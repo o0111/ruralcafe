@@ -358,7 +358,8 @@ namespace RuralCafe
                 {
                     // add to active set of connections
                     _proxy.AddActiveRequest(rcRequest.RequestId);
-                    rcRequest.DownloadToCache();
+                    // There is no index on the remote side anyway
+                    rcRequest.DownloadToCache(false);
                 }
                 catch (Exception e)
                 {
@@ -402,7 +403,7 @@ namespace RuralCafe
             if (rcRequest.UriBeforeRedirect != null)
             {
                 Logger.Debug("Redirected: Also packing old URI with a 301 file.");
-                RCRequest rc301 = new RCRequest(this, (HttpWebRequest)WebRequest.Create(rcRequest.UriBeforeRedirect));
+                RCRequest rc301 = new RCRequest(_proxy, (HttpWebRequest)WebRequest.Create(rcRequest.UriBeforeRedirect));
                 _package.Pack(this, rc301, ref _quota);
             }
 
@@ -424,10 +425,10 @@ namespace RuralCafe
             }
 
             // recurse
-            LinkedList<Uri> resultLinkUris = ExtractLinks(baseUri, htmlContent);
+            LinkedList<Uri> resultLinkUris = HtmlUtils.ExtractLinks(baseUri, htmlContent);
             foreach (Uri currUri in resultLinkUris)
             {
-                RCRequest currRequest = new RCRequest(this, (HttpWebRequest)WebRequest.Create(currUri));
+                RCRequest currRequest = new RCRequest(_proxy, (HttpWebRequest)WebRequest.Create(currUri));
 
                 RecursivelyDownloadPage(currRequest, richness, depth + 1);
             }
@@ -451,7 +452,7 @@ namespace RuralCafe
                 return new LinkedList<RCRequest>();
             }
             
-            LinkedList<Uri> embeddedObjects = ExtractEmbeddedObjects(baseUri, htmlContent);
+            LinkedList<Uri> embeddedObjects = HtmlUtils.ExtractEmbeddedObjects(baseUri, htmlContent);
 
             // XXX: refactor into filter class/method.
             // filter out based on richness
@@ -497,8 +498,10 @@ namespace RuralCafe
                 for (int i = 0; i < childObjects.Count; i++)
                 {
                     // create the RCRequest for the object
-                    RCRequest currChildObject = new RCRequest(this, (HttpWebRequest)WebRequest.Create(childObjects.ElementAt(i)));
+                    RCRequest currChildObject = new RCRequest(_proxy, (HttpWebRequest)WebRequest.Create(childObjects.ElementAt(i)));
                     currChildObject.ChildNumber = i;
+                    // Set the root request.
+                    currChildObject.RootRequest = parentRequest;
                     addedObjects.AddLast(currChildObject);
 
                     // set the resetEvent
@@ -519,7 +522,7 @@ namespace RuralCafe
                 }
 
                 // wait for timeout
-                WaitAll(parentRequest.ResetEvents);
+                Utils.WaitAll(parentRequest.ResetEvents);
 
                 addedObjects = _package.Pack(this, addedObjects, ref _quota);
             }
@@ -529,19 +532,6 @@ namespace RuralCafe
             }
 
             return addedObjects;
-        }
-
-        /// <summary>
-        /// Thread synchronization wait method.
-        /// </summary>
-        /// <remarks>Call this from parent thread after spawning children.</remarks>
-        /// <param name="waitHandles">Thread handles.</param>
-        private void WaitAll(WaitHandle[] waitHandles)
-        {
-            foreach (WaitHandle myWaitHandle in waitHandles)
-            {
-                WaitHandle.WaitAny(new WaitHandle[] { myWaitHandle });
-            }
         }
 
         /// <summary>
@@ -559,11 +549,11 @@ namespace RuralCafe
             }
 
             // make sure this root request is not timed out
-            if (!request.RootRequest.IsTimedOut())
+            if (!IsTimedOut())
             {                
                 // reduce the timer
                 DateTime currTime = DateTime.Now;
-                DateTime endTime = request.RootRequest.StartTime.AddMilliseconds(RequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT);
+                DateTime endTime = StartTime.AddMilliseconds(_requestTimeout);
                 if (endTime.CompareTo(currTime) > 0)
                 {
                     request.GenericWebRequest.Timeout = (int)(endTime.Subtract(currTime)).TotalMilliseconds;
@@ -576,7 +566,8 @@ namespace RuralCafe
                         {
                             // add to active set of connections
                             _proxy.AddActiveRequest(request.RequestId);
-                            request.DownloadToCache();
+                            // There is no index on the remote side anyway
+                            request.DownloadToCache(false);
                         }
                         catch { } // Ignore
                         finally
@@ -675,89 +666,7 @@ namespace RuralCafe
             return false;
         }
 
-        /// <summary>
-        /// Extracts the embedded objects on a page.
-        /// Wrapper for ExtractReferences()
-        /// XXX: not completely implemented, need non HTML/"src=" references.
-        /// </summary>
-        /// <param name="baseUri">The Uri of the website where to extract embedded objects.</param>
-        /// <param name="htmlContent">The HTML content of the webiste.</param>
-        LinkedList<Uri> ExtractEmbeddedObjects(Uri baseUri, string htmlContent)
-        {
-            return ExtractReferences(baseUri, htmlContent, HtmlUtils.EmbeddedObjectTagAttributes);
-        }
-
-        /// <summary>
-        /// Extracts the links on a page.
-        /// Wrapper for ExtractReferences()
-        /// XXX: not completely implemented, need non HTML/"a href=" references.
-        /// </summary>
-        /// <param name="baseUri">The Uri of the website where to extract links.</param>
-        /// <param name="htmlContent">The HTML content of the webiste.</param>
-        LinkedList<Uri> ExtractLinks(Uri baseUri, string htmlContent)
-        {
-            return ExtractReferences(baseUri, htmlContent, HtmlUtils.LinkTagAttributes);
-        }
-
-        /// <summary>
-        /// Extracts the html references using a separator token and returns them.
-        /// </summary>
-        /// <param name="baseUri">The Uri of the website where to extract references.</param>
-        /// <param name="htmlContent">The HTML content of the webiste.</param>
-        /// <param name="tagAttributes">Seperator tokens.</param>
-        /// <returns>List of references.</returns>
-        LinkedList<Uri> ExtractReferences(Uri baseUri, string htmlContent, string[,] tagAttributes)
-        {
-            LinkedList<Uri> extractedReferences = new LinkedList<Uri>();
-            HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(htmlContent);
-
-            for (int i = 0; i < tagAttributes.GetLength(0); i++)
-            {
-                string tag = tagAttributes[i, 0];
-                string attribute = tagAttributes[i, 1];
-
-                HtmlNodeCollection results = doc.DocumentNode.SelectNodes("//" + tag + "[@" + attribute + "]");
-                if (results == null)
-                {
-                    continue;
-                }
-                foreach(HtmlNode link in results)
-                {
-                    HtmlAttribute att = link.Attributes[attribute];
-                    // Get the absolute URI
-                    string currUriStr;
-                    try
-                    {
-                        currUriStr = new Uri(baseUri, att.Value).AbsoluteUri;
-                    }
-                    catch(UriFormatException)
-                    {
-                        continue;
-                    }
-
-                    if (!HttpUtils.IsValidUri(currUriStr))
-                    {
-                        continue;
-                    }
-
-                    try
-                    {
-                        Uri currUri = new Uri(currUriStr.Trim());
-
-                        if (!extractedReferences.Contains(currUri))
-                        {
-                            extractedReferences.AddLast(currUri);
-                        }
-                    }
-                    catch (Exception)
-                    {
-                        // pass
-                    }
-                }
-            }
-            return extractedReferences;
-        }
+        
         #endregion
     }
 }

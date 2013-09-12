@@ -230,5 +230,89 @@ namespace RuralCafe.Util
             }
             return String.Join(" ", chunks);
         }
+
+        /// <summary>
+        /// Extracts the embedded objects on a page.
+        /// Wrapper for ExtractReferences()
+        /// XXX: not completely implemented, need non HTML/"src=" references.
+        /// </summary>
+        /// <param name="baseUri">The Uri of the website where to extract embedded objects.</param>
+        /// <param name="htmlContent">The HTML content of the webiste.</param>
+        public static LinkedList<Uri> ExtractEmbeddedObjects(Uri baseUri, string htmlContent)
+        {
+            return ExtractReferences(baseUri, htmlContent, HtmlUtils.EmbeddedObjectTagAttributes);
+        }
+
+        /// <summary>
+        /// Extracts the links on a page.
+        /// Wrapper for ExtractReferences()
+        /// XXX: not completely implemented, need non HTML/"a href=" references.
+        /// </summary>
+        /// <param name="baseUri">The Uri of the website where to extract links.</param>
+        /// <param name="htmlContent">The HTML content of the webiste.</param>
+        public static LinkedList<Uri> ExtractLinks(Uri baseUri, string htmlContent)
+        {
+            return ExtractReferences(baseUri, htmlContent, HtmlUtils.LinkTagAttributes);
+        }
+
+        /// <summary>
+        /// Extracts the html references using a separator token and returns them.
+        /// </summary>
+        /// <param name="baseUri">The Uri of the website where to extract references.</param>
+        /// <param name="htmlContent">The HTML content of the webiste.</param>
+        /// <param name="tagAttributes">Seperator tokens.</param>
+        /// <returns>List of references.</returns>
+        public static LinkedList<Uri> ExtractReferences(Uri baseUri, string htmlContent, string[,] tagAttributes)
+        {
+            LinkedList<Uri> extractedReferences = new LinkedList<Uri>();
+            HtmlDocument doc = new HtmlDocument();
+            doc.LoadHtml(htmlContent);
+
+            for (int i = 0; i < tagAttributes.GetLength(0); i++)
+            {
+                string tag = tagAttributes[i, 0];
+                string attribute = tagAttributes[i, 1];
+
+                HtmlNodeCollection results = doc.DocumentNode.SelectNodes("//" + tag + "[@" + attribute + "]");
+                if (results == null)
+                {
+                    continue;
+                }
+                foreach (HtmlNode link in results)
+                {
+                    HtmlAttribute att = link.Attributes[attribute];
+                    // Get the absolute URI
+                    string currUriStr;
+                    try
+                    {
+                        currUriStr = new Uri(baseUri, att.Value).AbsoluteUri;
+                    }
+                    catch (UriFormatException)
+                    {
+                        continue;
+                    }
+
+                    if (!HttpUtils.IsValidUri(currUriStr))
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        Uri currUri = new Uri(currUriStr.Trim());
+
+                        if (!extractedReferences.Contains(currUri))
+                        {
+                            extractedReferences.AddLast(currUri);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // pass
+                    }
+                }
+            }
+            return extractedReferences;
+        }
     }
 }

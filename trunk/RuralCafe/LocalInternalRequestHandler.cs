@@ -258,7 +258,7 @@ namespace RuralCafe
                     }
 
                     // Create request and save anchorText and snippet
-                    RCRequest currRCRequest = new RCRequest(this, (HttpWebRequest)WebRequest.Create(currUri));
+                    RCRequest currRCRequest = new RCRequest(_proxy, (HttpWebRequest)WebRequest.Create(currUri));
                     currRCRequest.AnchorText = currTitle;
                     currRCRequest.ContentSnippet = currSnippet;
 
@@ -685,7 +685,7 @@ namespace RuralCafe
             }
             // Google search
             string googleSearchString = ConstructGoogleSearch(queryString, pageNumber);
-            _rcRequest = new RCRequest(this, (HttpWebRequest)WebRequest.Create(googleSearchString));
+            _rcRequest = new RCRequest(_proxy, (HttpWebRequest)WebRequest.Create(googleSearchString));
             // Download result page
             string resultPage = _rcRequest.DownloadAsString();
 
