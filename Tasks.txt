@@ -42,12 +42,6 @@ Bugs
   - Embed opened pages instead of new tabs. Page inside main frame. At the moment, if you do that, you end up having Trotro inside Trotro .... (not sure we can fix this one.)
   - Click search results makes links open in the TroTro tab, this is inconsistent with opening in a new tab. (fixed for cached results, the problem with new results is that it gets redirected to the queue. this should be changed so the RCproxy filters out live results that are actually cached)
 
-Code piece integration
-- Crawler
-	- Run crawler button in UI, to build a download a cache based on predefined topics ?
-	- Integrate the database creation into the crawler.
-	- Integrate new URL<->Filepath conversion into the crawler.
-
 Metrics logging (done)
 - Save IP per userId (done)
 - login/logout request (just let the server know) (done)
