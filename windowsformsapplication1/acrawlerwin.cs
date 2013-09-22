@@ -23,13 +23,15 @@ using ProcessTopicTopLinks;
 using PorterStemmerAlgorithm;
 using System.Web.Script.Serialization;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace WindowsFormsApplication1
 {
-
-
     public partial class ACrawlerWin : Form
     {
+        /// <summary>Regex for html tags.</summary>
+        public static readonly Regex HTML_TAG_REGEX = new Regex(@"<[^<]+?>", RegexOptions.IgnoreCase);
+
         private Thread[] thread = new Thread[200];
         private ACrawlerClass[] crawlerObject = new ACrawlerClass[200];
         private ProcessTopicTopLinksClass[] pttlObject = new ProcessTopicTopLinksClass[200];
@@ -39,6 +41,15 @@ namespace WindowsFormsApplication1
         public string mainFolder;
         public int globalTotalTopics;
         public int countDead;
+        // Count of topics that are completed
+        private int topicsCompleted;
+        // The delegate threads processing the URLs
+        private List<Thread> delegateThreads = new List<Thread>();
+
+        public int PagesToDownloadPerTopic
+        {
+            get { return (int) this.pagesPerTopicNUD.Value; }
+        }
 
         /// <summary>
         /// Process an URI in any way.
@@ -170,11 +181,13 @@ namespace WindowsFormsApplication1
             }
             else
             {
-
                 threadProgressText.Text += "Topic " + topic + " finished downloading seed documents\n";
                 countDead++;
                 if (countDead == globalTotalTopics)
+                {
                     MessageBox.Show("Downloading seed documents completed");
+                    SetControlEnabled(this.downloadSeedButton, true);
+                }
             }
         }
         public void SetUrlChecking(string text)
@@ -189,21 +202,86 @@ namespace WindowsFormsApplication1
             }
         }
 
+        /// <summary>
+        /// One topic has been completed. Shows a message box if all have been completed and waits for unfinished
+        /// download threads.
+        /// </summary>
+        public void CrawlerTopicCompleted()
+        {
+            int topicsCompleted = Interlocked.Increment(ref this.topicsCompleted);
+            if (topicsCompleted == globalTotalTopics)
+            {
+                if (delegateThreads.Count == 0)
+                {
+                    MessageBox.Show("Crawling completed successfully.");
+                }
+                else
+                {
+                    MessageBox.Show("Crawling completed successfully. Press OK to wait for RC download threads to finish...");
+                    // Join all RC threads.
+                    foreach (Thread t in delegateThreads)
+                    {
+                        t.Join();
+                    }
+                    MessageBox.Show("RC finished downloading.");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Lets the delegate process an URI in an own thread, if the delegate exists.
+        /// </summary>
+        /// <param name="uri">The URI.</param>
+        public void LetDelegateProcess(string uri)
+        {
+            if (processUriDelegate != null)
+            {
+                Thread t = new Thread(() =>
+                {
+                    processUriDelegate(uri);
+                });
+                t.Start();
+                lock (delegateThreads)
+                {
+                    delegateThreads.Add(t);
+                }
+            }
+        }
+
         private void LoadButton_Click(object sender, System.EventArgs e)
         {
-            /*
-            WebClient webClient = new WebClient();
+            this.startButton.Enabled = false;
+            this.topicsCompleted = 0;
+            // Satia: Determine number of topics by content of topics.txt, if it is 0
+            string topicsFileName = this.mainFolder + "topics.txt";
+            if (globalTotalTopics == 0 && File.Exists(topicsFileName))
+            {
+                globalTotalTopics = File.ReadAllLines(topicsFileName).Length;
+            }
 
-            string apiKey = "";
-            string cx = "";
-            string query = "shariq bashir";
-
-            string Json = webClient.DownloadString(String.Format("https://www.googleapis.com/customsearch/v1?key={0}&cx={1}&q={2}&alt=json", apiKey, cx, query));
-            JavaScriptSerializer serializer = new JavaScriptSerializer();
-            GoogleSearchItem results = serializer.Deserialize<GoogleSearchItem>(Json);
-            MessageBox.Show("complete  " + serializer.Serialize(results));*/
-
-            startButton.Enabled = false;
+            // Check if all necessary files exist
+            for (int i = 1; i <= globalTotalTopics; i++)
+            {
+                if (!Directory.Exists(this.mainFolder + i) || !Directory.Exists(this.mainFolder + i + Path.DirectorySeparatorChar + "webdocs"))
+                {
+                    MessageBox.Show(this, "Please download the seed documents first.",
+                        "Error", MessageBoxButtons.OK);
+                    this.startButton.Enabled = true;
+                    return;
+                }
+                // 0.txt to 29.txt have to exist
+                for (int j = 0; j < 30; j++)
+                {
+                    if (!File.Exists(this.mainFolder + i + Path.DirectorySeparatorChar + j + ".txt"))
+                    {
+                        MessageBox.Show(this, "Please download the seed documents first.",
+                            "Error", MessageBoxButtons.OK);
+                        startButton.Enabled = true;
+                        return;
+                    }
+                }
+            }
+            
             int cc = 0;
             totalThread = 20;
 
@@ -327,7 +405,7 @@ namespace WindowsFormsApplication1
                 int threadN = -1;
                 for (int i = 0; i < trackTopics; i++)
                 {
-                    if (crawlerObject[i].count < 500)
+                    if (crawlerObject[i].count < PagesToDownloadPerTopic)
                     {
                         if (crawlerObject[i].count < minCount && i != finishThread)
                         {
@@ -396,6 +474,18 @@ namespace WindowsFormsApplication1
                 globalTotalTopics = File.ReadAllLines(topicsFileName).Length;
             }
 
+            // Check if all topicN.txt files exist
+            for (int i = 1; i <= globalTotalTopics; i++)
+            {
+                if (!File.Exists(this.mainFolder + "topic" + i + ".txt"))
+                {
+                    MessageBox.Show(this, "Please generate the training sets first.",
+                        "Error", MessageBoxButtons.OK);
+                    downloadSeedButton.Enabled = true;
+                    return;
+                }
+            }
+
             totalThread = globalTotalTopics;
 
             for (int cc = 0; cc < totalThread; cc++)
@@ -410,34 +500,38 @@ namespace WindowsFormsApplication1
                 pttlObject[cc].downloadC = 0;
                 thread[cc] = new Thread(new ThreadStart(pttlObject[cc].downloadSeedDocs));
                 thread[cc].Start();
-                /*        while(true)
-                        {
-                            if (pttlObject[cc].downloadC == 1)
-                                break;
-
-                        //    MessageBox.Show("hello");
-
-                        //    Thread.Sleep(500);
-                        }*/
             }
-
-
-
-
-
         }
 
         private void editTopicsButton_Click(object sender, EventArgs e)
         {
+            DialogResult result = MessageBox.Show(this, "This will delete training sets, seed documents and progress for the current topics.\n" +
+                        "Everything RC downloaded will not be deleted. Continue?",
+                        "Continue?", MessageBoxButtons.OKCancel);
+            if (result == DialogResult.Cancel)
+            {
+                return;
+            }
+
             string topicsFileName = this.mainFolder + "topics.txt";
             // Create an empty topics.txt file if there is none
             if (!File.Exists(topicsFileName))
             {
                 using (File.Create(topicsFileName)) { }
             }
-            // Open in standard editor.
             try
             {
+                // Delete all files in this folder expect topics.txt
+                foreach (string file in Directory.GetFiles(mainFolder).Where((file) => !new FileInfo(file).Name.Equals("topics.txt")))
+                {
+                    File.Delete(file);
+                }
+                // Delete all directories
+                foreach (string dir in Directory.GetDirectories(mainFolder))
+                {
+                    Directory.Delete(dir, true);
+                }
+                // Open in standard editor.
                 Process.Start(topicsFileName);
             }
             catch (Exception exp)
@@ -449,6 +543,15 @@ namespace WindowsFormsApplication1
 
         private void generateTrainingSetButton_Click(object sender, EventArgs e)
         {
+            generateTrainingSetButton.Enabled = false;
+            new Thread(GenerateTrainingSets).Start();
+        }
+
+        /// <summary>
+        /// Generates the training sets.
+        /// </summary>
+        private void GenerateTrainingSets()
+        {
             string topicsFileName = this.mainFolder + "topics.txt";
             // Create an empty topics.txt file if there is none
             if (!File.Exists(topicsFileName))
@@ -459,8 +562,9 @@ namespace WindowsFormsApplication1
             string[] topics = File.ReadAllLines(topicsFileName);
             if (topics.Length == 0)
             {
-                MessageBox.Show(this, "Please define some topics first.",
+                MessageBox.Show("Please define some topics first.",
                         "Error", MessageBoxButtons.OK);
+                SetControlEnabled(this.generateTrainingSetButton, true);
                 return;
             }
 
@@ -472,13 +576,128 @@ namespace WindowsFormsApplication1
             {
                 // Create the file, possibly overwriting
                 string topicFileName = this.mainFolder + "topic" + (i + 1) + ".txt";
+                SetRichText("Generating training set for " + topics[i] + "\n");
                 using (StreamWriter topicFileWriter = new StreamWriter(File.Create(topicFileName)))
                 {
-                    // Write the negative seed links inti the file
+                    // Write the negative seed links into the file
                     topicFileWriter.WriteLine(negativeSeedLinks);
-                    // TODO Google the topic for 30 positive links
+                    // Google 30 positive links for the topic
+                    List<string> positiveSeedLinks = GetGoogleResults(topics[i], 30);
+                    foreach (string positiveSeedLink in positiveSeedLinks)
+                    {
+                        topicFileWriter.WriteLine(positiveSeedLink);
+                    }
                 }
             }
+
+            MessageBox.Show("Generated the training sets for " + topics.Length + " topics.",
+                        "Success", MessageBoxButtons.OK);
+            SetControlEnabled(this.generateTrainingSetButton, true);
         }
+
+        /// <summary>
+        /// Enables or disables a control in athread safe way.
+        /// </summary>
+        /// <param name="control">The control to enable or disable.</param>
+        /// <param name="enabled">Enabled or disabled.</param>
+        private void SetControlEnabled(Control control, bool enabled)
+        {
+            if (control.InvokeRequired)
+            {
+                this.Invoke(new MethodInvoker(delegate() { SetControlEnabled(control, enabled); }));
+            }
+            else
+            {
+                control.Enabled = enabled;
+            }
+        }
+
+        #region Google search
+
+        /// <summary>
+        /// Gets up to maxAmount URLs from Google searching the searchString.
+        /// </summary>
+        /// <param name="searchString">The string to search for.</param>
+        /// <param name="maxAmount">The maximum number of results.</param>
+        /// <returns>The URLs.</returns>
+        private List<string> GetGoogleResults(string searchString, int maxAmount)
+        {
+            WebClient client = new WebClient();
+            int pageNum = 1;
+            List<string> result = new List<string>();
+
+            while (result.Count < maxAmount)
+            {
+                string query = ConstructGoogleSearch(searchString, pageNum);
+                string page = client.DownloadString(query);
+                List<string> results = ExtractGoogleResults(page);
+                if (results.Count == 0)
+                {
+                    break;
+                }
+                result.AddRange(results);
+                pageNum++;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Constructs a Google search URL.
+        /// </summary>
+        /// <param name="searchString">The search string</param>
+        /// <param name="pagenumber">The page number</param>
+        /// <returns>Google search query.</returns>
+        private string ConstructGoogleSearch(string searchString, int pagenumber)
+        {
+            string result = "http://www.google.com/search?hl=en&q=" +
+                                        searchString.Replace(' ', '+') +
+                                        "&btnG=Google+Search&aq=f&oq=";
+            if (pagenumber > 1)
+            {
+                result += "&start=" + ((pagenumber - 1) * 10);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Extracts the result links from a google results page.
+        /// </summary>
+        /// <param name="googleResultPage">The Google results page.</param>
+        /// <returns>List of links.</returns>
+        private List<string> ExtractGoogleResults(string googleResultPage)
+        {
+            string[] stringSeparator = new string[] { "</cite>" };
+            List<string> results = new List<string>();
+            string[] lines = googleResultPage.Split(stringSeparator, StringSplitOptions.RemoveEmptyEntries);
+
+            // get links
+            int pos;
+            // Omitting last split, since there is no link any more.
+            for (int i = 0; i < lines.Count() - 1; i++)
+            {
+                string currLine = lines[i];
+                // get the uri
+                if ((pos = currLine.LastIndexOf("<a href=\"/url?q=")) >= 0)
+                {
+                    // start right after
+                    string currUri = currLine.Substring(pos + "<a href=\"/url?q=".Length);
+                    if ((pos = currUri.IndexOf("&amp")) >= 0)
+                    {
+                        // cut end
+                        currUri = currUri.Substring(0, pos);
+                        // strip HTML tags
+                        currUri = HTML_TAG_REGEX.Replace(currUri, "");
+                        currUri = currUri.Trim();
+                    }
+
+                    results.Add(currUri);
+                }
+            }
+
+            return results;
+        }
+
+        #endregion
     }
 }

@@ -36,7 +36,6 @@ namespace RuralCafe.Crawler
         /// </summary>
         public void StartCrawler()
         {
-            // TODO custom topics
             ACrawlerWin crawler = new ACrawlerWin(Properties.Files.Default.BASE_DIR + Path.DirectorySeparatorChar +
                 CRAWLER_DIR_NAME + Path.DirectorySeparatorChar, DownloadPage);
             crawler.ShowDialog();
