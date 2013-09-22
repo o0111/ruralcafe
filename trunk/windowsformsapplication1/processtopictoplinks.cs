@@ -123,8 +123,6 @@ namespace ProcessTopicTopLinks
 
             }
 
-
-
             try
             {
                 System.IO.StreamReader file3 = new System.IO.StreamReader("1gram_gt_500K.txt"); //stop words
@@ -150,7 +148,6 @@ namespace ProcessTopicTopLinks
             {
                 MessageBox.Show("Either 1gram_gt_500K.txt file is missing or it has incorrect format");
             }
-
 
             collectionTerms.Clear();
 
@@ -414,7 +411,7 @@ namespace ProcessTopicTopLinks
 
              }*/
 
-            MainWindow.SetRichText(".................... Training Fouced Cralwer completed succesfully for topic " + directory + "\n");
+            MainWindow.SetRichText(".................... Training Focused Cralwer completed succesfully for topic " + directory + "\n");
 
 
             System.String[] svm_parameters = new System.String[7];
@@ -920,15 +917,7 @@ namespace ProcessTopicTopLinks
                         }
 
                     }
-
                 }
-
-
-
-
-
-
-
                 //  if (j >= 19)
                 //    break;
             }
@@ -936,12 +925,7 @@ namespace ProcessTopicTopLinks
 
             MainWindow.showSeedDocsFinish(directory);
             downloadC = 1;
-
-
-
         }
-
-
 
         private static bool TrySetSuppressScriptErrors(WebBrowser webBrowser, bool value)
         {

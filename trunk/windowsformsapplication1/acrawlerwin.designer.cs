@@ -37,6 +37,9 @@
             this.threadProgressText = new System.Windows.Forms.RichTextBox();
             this.editTopicsButton = new System.Windows.Forms.Button();
             this.generateTrainingSetButton = new System.Windows.Forms.Button();
+            this.label2 = new System.Windows.Forms.Label();
+            this.pagesPerTopicNUD = new System.Windows.Forms.NumericUpDown();
+            ((System.ComponentModel.ISupportInitialize)(this.pagesPerTopicNUD)).BeginInit();
             this.SuspendLayout();
             // 
             // startButton
@@ -124,11 +127,39 @@
             this.generateTrainingSetButton.UseVisualStyleBackColor = true;
             this.generateTrainingSetButton.Click += new System.EventHandler(this.generateTrainingSetButton_Click);
             // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(654, 488);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(196, 13);
+            this.label2.TabIndex = 11;
+            this.label2.Text = "Number of pages to download per topic:";
+            // 
+            // pagesPerTopicNUD
+            // 
+            this.pagesPerTopicNUD.Location = new System.Drawing.Point(857, 485);
+            this.pagesPerTopicNUD.Maximum = new decimal(new int[] {
+            10000,
+            0,
+            0,
+            0});
+            this.pagesPerTopicNUD.Name = "pagesPerTopicNUD";
+            this.pagesPerTopicNUD.Size = new System.Drawing.Size(120, 20);
+            this.pagesPerTopicNUD.TabIndex = 12;
+            this.pagesPerTopicNUD.Value = new decimal(new int[] {
+            500,
+            0,
+            0,
+            0});
+            // 
             // ACrawlerWin
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1101, 515);
+            this.Controls.Add(this.pagesPerTopicNUD);
+            this.Controls.Add(this.label2);
             this.Controls.Add(this.generateTrainingSetButton);
             this.Controls.Add(this.editTopicsButton);
             this.Controls.Add(this.threadProgressText);
@@ -141,6 +172,7 @@
             this.Name = "ACrawlerWin";
             this.Text = "ACrawler";
             this.Load += new System.EventHandler(this.Form1_Load);
+            ((System.ComponentModel.ISupportInitialize)(this.pagesPerTopicNUD)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -157,6 +189,8 @@
         private System.Windows.Forms.RichTextBox threadProgressText;
         private System.Windows.Forms.Button editTopicsButton;
         private System.Windows.Forms.Button generateTrainingSetButton;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.NumericUpDown pagesPerTopicNUD;
     }
 }
 

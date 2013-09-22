@@ -118,9 +118,6 @@ namespace ACrawler
                     parentUrl = toCrawlList[0];
                     toCrawlList.RemoveAt(0);
 
-                    if (count % 4 == 0)
-                        MainWindow.SetUrlText(pttlObject.directory);
-
                     logFile.Close();
                     logFile = new System.IO.StreamWriter(pttlObject.topicDirectory + pttlObject.directory + "//webdocs//" + "systemLog.txt");
 
@@ -158,11 +155,8 @@ namespace ACrawler
                         logFile.Write("-> Downloading relevant document in archieve " + parentUrl + "\n");
                         logFile.Flush();
                         client.DownloadFile(parentUrl, pttlObject.topicDirectory + pttlObject.directory + "//webdocs//" + count + ".html");
-                        // Satia: run the delegate if it is not null.
-                        if (MainWindow.processUriDelegate != null)
-                        {
-                            MainWindow.processUriDelegate(parentUrl);
-                        }
+                        // Satia: Let the delegate process the URI
+                        MainWindow.LetDelegateProcess(parentUrl);
 
                         logFile.Write("<- Downloading relevant document in archieve " + parentUrl + "\n");
                         logFile.Flush();
@@ -261,7 +255,7 @@ namespace ACrawler
                         logFile.Flush();
 
                     }
-                    // File.Delete("c:/crawler/temp/tempPage" + threadN + ".htm");
+                    MainWindow.SetUrlText(pttlObject.directory);
                 }
                 catch (SystemException ex)
                 {
@@ -272,7 +266,7 @@ namespace ACrawler
                 if (toCrawlList.Count == 0)
                 {
                     //    MessageBox.Show("Crawling completed successfully " + seedBankPointer + "  " + count + " " + seedBank.Count);
-                    if (count < 500 && seedBankPointer < seedBank.Count)
+                    if (count < MainWindow.PagesToDownloadPerTopic && seedBankPointer < seedBank.Count)
                     {
                         logFile.Write("-> getting more seed documents" + "\n");
                         logFile.Flush();
@@ -337,12 +331,11 @@ namespace ACrawler
                 }
 
 
-                if (count == 500)
+                if (count >= MainWindow.PagesToDownloadPerTopic)
                 {
-                    //  MessageBox.Show("Crawling counter completed successfully");
+                    MainWindow.CrawlerTopicCompleted();
                     break;
                 }
-                //  MessageBox.Show("Hello");
             }
 
             logFile.Write("-> thread finish but running another thread" + "\n");
