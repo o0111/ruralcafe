@@ -76,6 +76,8 @@ namespace WindowsFormsApplication1
         {
             this.mainFolder = topicsPath;
             this.processUriDelegate = processUriDelegate;
+            // Make sure the main folder exists
+            Directory.CreateDirectory(this.mainFolder);
         }
 
         private void Form1_Load(object sender, EventArgs e)
