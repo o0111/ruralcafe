@@ -195,20 +195,25 @@ namespace ACrawler
 
                         logFile.Write("-> hyperlinks extraction (tempPage)" + "\n");
                         logFile.Flush();
-                        foreach (HtmlNode link in doc.DocumentNode.SelectNodes("//a[@href]"))
-                        {
 
-                            int found = 0;
-                            try
+                        HtmlNodeCollection links = doc.DocumentNode.SelectNodes("//a[@href]");
+                        if (links != null)
+                        {
+                            foreach (HtmlNode link in links)
                             {
-                                linksTree.Add(link.Attributes["href"].Value.ToString());
+
+                                int found = 0;
+                                try
+                                {
+                                    linksTree.Add(link.Attributes["href"].Value.ToString());
+                                }
+                                catch (System.ArgumentException)
+                                {
+                                    found = 1;
+                                }
+                                if (found == 0)
+                                    linksList.Add(link.Attributes["href"].Value.ToString());
                             }
-                            catch (System.ArgumentException)
-                            {
-                                found = 1;
-                            }
-                            if (found == 0)
-                                linksList.Add(link.Attributes["href"].Value.ToString());
                         }
                         logFile.Write("<- hyperlinks extraction (tempPage)" + "\n");
                         logFile.Flush();

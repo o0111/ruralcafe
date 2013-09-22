@@ -61,9 +61,13 @@ namespace WindowsFormsApplication1
         /// </summary>
         public ProcessURI processUriDelegate;
 
+        /// <summary>
+        /// Pause button is disabled by default.
+        /// </summary>
         public ACrawlerWin()
         {
             InitializeComponent();
+            this.pauseButton.Enabled = false;
         }
 
         /// <summary>
@@ -170,7 +174,7 @@ namespace WindowsFormsApplication1
                 threadProgressText.Text = "";
                 for (int i = 0; i < trackTopics; i++)
                 {
-                    threadProgressText.Text += "Topic#" + i + ": Relevant Links:" + crawlerObject[i].count + "/Total Crawled:" + crawlerObject[i].totalDownload + "/Seed Links: " + crawlerObject[i].toCrawlList.Count + "\n";
+                    threadProgressText.Text += "Topic#" + i + ": Relevant Links:" + crawlerObject[i].count + "/Total Crawled:" + crawlerObject[i].totalDownload + "/Frontier Links: " + crawlerObject[i].toCrawlList.Count + "\n";
                 }
 
             }
@@ -188,7 +192,7 @@ namespace WindowsFormsApplication1
                 if (countDead == globalTotalTopics)
                 {
                     MessageBox.Show("Downloading seed documents completed");
-                    SetControlEnabled(this.downloadSeedButton, true);
+                    SetButtonsEnabled(true);
                 }
             }
         }
@@ -252,7 +256,9 @@ namespace WindowsFormsApplication1
 
         private void LoadButton_Click(object sender, System.EventArgs e)
         {
-            this.startButton.Enabled = false;
+            SetButtonsEnabled(false);
+            this.pauseButton.Enabled = true;
+
             this.topicsCompleted = 0;
             // Satia: Determine number of topics by content of topics.txt, if it is 0
             string topicsFileName = this.mainFolder + "topics.txt";
@@ -268,7 +274,8 @@ namespace WindowsFormsApplication1
                 {
                     MessageBox.Show(this, "Please download the seed documents first.",
                         "Error", MessageBoxButtons.OK);
-                    this.startButton.Enabled = true;
+                    SetButtonsEnabled(true);
+                    this.pauseButton.Enabled = false;
                     return;
                 }
                 // 0.txt to 29.txt have to exist
@@ -278,7 +285,8 @@ namespace WindowsFormsApplication1
                     {
                         MessageBox.Show(this, "Please download the seed documents first.",
                             "Error", MessageBoxButtons.OK);
-                        startButton.Enabled = true;
+                        SetButtonsEnabled(true);
+                        this.pauseButton.Enabled = false;
                         return;
                     }
                 }
@@ -467,7 +475,7 @@ namespace WindowsFormsApplication1
 
         private void button1_Click_1(object sender, System.EventArgs e)
         {
-            downloadSeedButton.Enabled = false;
+            SetButtonsEnabled(false);
 
             // Satia: Determine number of topics by content of topics.txt, if it is 0
             string topicsFileName = this.mainFolder + "topics.txt";
@@ -483,7 +491,7 @@ namespace WindowsFormsApplication1
                 {
                     MessageBox.Show(this, "Please generate the training sets first.",
                         "Error", MessageBoxButtons.OK);
-                    downloadSeedButton.Enabled = true;
+                    SetButtonsEnabled(true);
                     return;
                 }
             }
@@ -545,7 +553,7 @@ namespace WindowsFormsApplication1
 
         private void generateTrainingSetButton_Click(object sender, EventArgs e)
         {
-            generateTrainingSetButton.Enabled = false;
+            SetButtonsEnabled(false);
             new Thread(GenerateTrainingSets).Start();
         }
 
@@ -566,7 +574,7 @@ namespace WindowsFormsApplication1
             {
                 MessageBox.Show("Please define some topics first.",
                         "Error", MessageBoxButtons.OK);
-                SetControlEnabled(this.generateTrainingSetButton, true);
+                SetButtonsEnabled(true);
                 return;
             }
 
@@ -594,7 +602,7 @@ namespace WindowsFormsApplication1
 
             MessageBox.Show("Generated the training sets for " + topics.Length + " topics.",
                         "Success", MessageBoxButtons.OK);
-            SetControlEnabled(this.generateTrainingSetButton, true);
+            SetButtonsEnabled(true);
         }
 
         /// <summary>
@@ -611,6 +619,25 @@ namespace WindowsFormsApplication1
             else
             {
                 control.Enabled = enabled;
+            }
+        }
+
+        /// <summary>
+        /// Enables or disables all buttons except the Pause/Resume button.
+        /// </summary>
+        /// <param name="enabled">Enabled or disabled.</param>
+        private void SetButtonsEnabled(bool enabled)
+        {
+            if (startButton.InvokeRequired)
+            {
+                this.Invoke(new MethodInvoker(delegate() { SetButtonsEnabled(enabled); }));
+            }
+            else
+            {
+                startButton.Enabled = enabled;
+                downloadSeedButton.Enabled = enabled;
+                editTopicsButton.Enabled = enabled;
+                generateTrainingSetButton.Enabled = enabled;
             }
         }
 

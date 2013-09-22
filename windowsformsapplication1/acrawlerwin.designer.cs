@@ -39,14 +39,15 @@
             this.generateTrainingSetButton = new System.Windows.Forms.Button();
             this.label2 = new System.Windows.Forms.Label();
             this.pagesPerTopicNUD = new System.Windows.Forms.NumericUpDown();
+            this.editBlacklistButton = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pagesPerTopicNUD)).BeginInit();
             this.SuspendLayout();
             // 
             // startButton
             // 
-            this.startButton.Location = new System.Drawing.Point(426, 483);
+            this.startButton.Location = new System.Drawing.Point(12, 151);
             this.startButton.Name = "startButton";
-            this.startButton.Size = new System.Drawing.Size(108, 23);
+            this.startButton.Size = new System.Drawing.Size(158, 23);
             this.startButton.TabIndex = 1;
             this.startButton.Text = "Start Crawling";
             this.startButton.UseVisualStyleBackColor = true;
@@ -54,17 +55,17 @@
             // 
             // textWindow
             // 
-            this.textWindow.Location = new System.Drawing.Point(12, 35);
+            this.textWindow.Location = new System.Drawing.Point(187, 35);
             this.textWindow.Name = "textWindow";
-            this.textWindow.Size = new System.Drawing.Size(681, 442);
+            this.textWindow.Size = new System.Drawing.Size(506, 442);
             this.textWindow.TabIndex = 2;
             this.textWindow.Text = "";
             // 
             // pauseButton
             // 
-            this.pauseButton.Location = new System.Drawing.Point(540, 483);
+            this.pauseButton.Location = new System.Drawing.Point(12, 180);
             this.pauseButton.Name = "pauseButton";
-            this.pauseButton.Size = new System.Drawing.Size(108, 23);
+            this.pauseButton.Size = new System.Drawing.Size(158, 23);
             this.pauseButton.TabIndex = 3;
             this.pauseButton.Text = "Pause";
             this.pauseButton.UseVisualStyleBackColor = true;
@@ -83,7 +84,7 @@
             // UrlChecking
             // 
             this.UrlChecking.AutoSize = true;
-            this.UrlChecking.Location = new System.Drawing.Point(13, 13);
+            this.UrlChecking.Location = new System.Drawing.Point(184, 13);
             this.UrlChecking.Name = "UrlChecking";
             this.UrlChecking.Size = new System.Drawing.Size(20, 13);
             this.UrlChecking.TabIndex = 6;
@@ -91,7 +92,7 @@
             // 
             // downloadSeedButton
             // 
-            this.downloadSeedButton.Location = new System.Drawing.Point(262, 483);
+            this.downloadSeedButton.Location = new System.Drawing.Point(12, 122);
             this.downloadSeedButton.Name = "downloadSeedButton";
             this.downloadSeedButton.Size = new System.Drawing.Size(158, 23);
             this.downloadSeedButton.TabIndex = 7;
@@ -101,17 +102,17 @@
             // 
             // threadProgressText
             // 
-            this.threadProgressText.Location = new System.Drawing.Point(699, 35);
+            this.threadProgressText.Location = new System.Drawing.Point(699, 64);
             this.threadProgressText.Name = "threadProgressText";
-            this.threadProgressText.Size = new System.Drawing.Size(393, 442);
+            this.threadProgressText.Size = new System.Drawing.Size(393, 413);
             this.threadProgressText.TabIndex = 8;
             this.threadProgressText.Text = "";
             // 
             // editTopicsButton
             // 
-            this.editTopicsButton.Location = new System.Drawing.Point(16, 483);
+            this.editTopicsButton.Location = new System.Drawing.Point(12, 35);
             this.editTopicsButton.Name = "editTopicsButton";
-            this.editTopicsButton.Size = new System.Drawing.Size(76, 23);
+            this.editTopicsButton.Size = new System.Drawing.Size(158, 23);
             this.editTopicsButton.TabIndex = 9;
             this.editTopicsButton.Text = "Edit topics";
             this.editTopicsButton.UseVisualStyleBackColor = true;
@@ -119,7 +120,7 @@
             // 
             // generateTrainingSetButton
             // 
-            this.generateTrainingSetButton.Location = new System.Drawing.Point(98, 483);
+            this.generateTrainingSetButton.Location = new System.Drawing.Point(12, 93);
             this.generateTrainingSetButton.Name = "generateTrainingSetButton";
             this.generateTrainingSetButton.Size = new System.Drawing.Size(158, 23);
             this.generateTrainingSetButton.TabIndex = 10;
@@ -130,7 +131,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(654, 488);
+            this.label2.Location = new System.Drawing.Point(705, 40);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(196, 13);
             this.label2.TabIndex = 11;
@@ -138,7 +139,7 @@
             // 
             // pagesPerTopicNUD
             // 
-            this.pagesPerTopicNUD.Location = new System.Drawing.Point(857, 485);
+            this.pagesPerTopicNUD.Location = new System.Drawing.Point(907, 36);
             this.pagesPerTopicNUD.Maximum = new decimal(new int[] {
             10000,
             0,
@@ -153,11 +154,21 @@
             0,
             0});
             // 
+            // editBlacklistButton
+            // 
+            this.editBlacklistButton.Location = new System.Drawing.Point(12, 64);
+            this.editBlacklistButton.Name = "editBlacklistButton";
+            this.editBlacklistButton.Size = new System.Drawing.Size(158, 23);
+            this.editBlacklistButton.TabIndex = 13;
+            this.editBlacklistButton.Text = "Edit blacklist";
+            this.editBlacklistButton.UseVisualStyleBackColor = true;
+            // 
             // ACrawlerWin
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1101, 515);
+            this.ClientSize = new System.Drawing.Size(1101, 485);
+            this.Controls.Add(this.editBlacklistButton);
             this.Controls.Add(this.pagesPerTopicNUD);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.generateTrainingSetButton);
@@ -191,6 +202,7 @@
         private System.Windows.Forms.Button generateTrainingSetButton;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.NumericUpDown pagesPerTopicNUD;
+        private System.Windows.Forms.Button editBlacklistButton;
     }
 }
 
