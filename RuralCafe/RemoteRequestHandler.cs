@@ -157,9 +157,6 @@ namespace RuralCafe
             {
                 _rcRequest.SetProxyAndTimeout(Proxy.GatewayProxy, _requestTimeout);
             }
-
-            // wait for admission control
-            _proxy.WaitForAdmissionControl();
             
             // check user richness setting
             RequestHandler.Richness richness = Proxy.GetProperties(Context.Request.RemoteEndPoint,
@@ -170,6 +167,8 @@ namespace RuralCafe
                 richness = Properties.Settings.Default.DEFAULT_RICHNESS;
             }
 
+            // wait for admission control
+            _proxy.WaitForAdmissionControlAndAddActiveRequest(_handlerId);
             // Tell the network usage detector we're downloading now
             _proxy.NetworkUsageDetector.DownloadStarted();
             
@@ -177,6 +176,8 @@ namespace RuralCafe
             Logger.Debug("dispatching to content servers: " + RequestUri);
             bool success = RecursivelyDownloadPage(RCRequest, richness, 0);
 
+            // remove from active set of connections
+            _proxy.RemoveActiveRequest();
             // Tell the network usage detector we're done downloading
             _proxy.NetworkUsageDetector.DownloadStopped();
 
@@ -356,8 +357,6 @@ namespace RuralCafe
                 // Download!
                 try
                 {
-                    // add to active set of connections
-                    _proxy.AddActiveRequest(rcRequest.RequestId);
                     // There is no index on the remote side anyway
                     rcRequest.DownloadToCache(false);
                 }
@@ -379,11 +378,6 @@ namespace RuralCafe
                         }
                     }
                     return false;
-                }
-                finally
-                {
-                    // remove from active set of connections
-                    _proxy.RemoveActiveRequest(rcRequest.RequestId);
                 }
             }
             else
@@ -573,7 +567,7 @@ namespace RuralCafe
                         finally
                         {
                             // remove from active set of connections
-                            _proxy.RemoveActiveRequest(request.RequestId);
+                            _proxy.RemoveActiveRequest();
                         }
                     }
                 }

@@ -252,20 +252,17 @@ namespace RuralCafe
                 _rcRequest.SetProxyAndTimeout(Proxy.GatewayProxy, _requestTimeout);
             }
 
-            // wait for admission control
-            _proxy.WaitForAdmissionControl();
-
+            // wait for admission control and add to active set of connections
+            _proxy.WaitForAdmissionControlAndAddActiveRequest(_handlerId);
             // Tell the network usage detector we're downloading now
             _proxy.NetworkUsageDetector.DownloadStarted();
-            // add to active set of connections
-            _proxy.AddActiveRequest(RequestId);
 
             // download the request file as a package
             RequestStatus = RequestHandler.Status.Downloading;
             bool downloadSuccessful = RCRequest.DownloadPackage();
             
             // remove from active set of connections
-            _proxy.RemoveActiveRequest(RequestId);
+            _proxy.RemoveActiveRequest();
             // Tell the network usage detector we're done downloading
             _proxy.NetworkUsageDetector.DownloadStopped();
 

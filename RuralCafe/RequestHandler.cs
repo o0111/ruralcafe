@@ -446,10 +446,11 @@ namespace RuralCafe
                 return result;
             }
 
-            // Tell the network usage detector we're downloading now
-            _proxy.NetworkUsageDetector.DownloadStarted();
+            
             // add to active set of connections
             _proxy.AddActiveRequest(RequestId);
+            // Tell the network usage detector we're downloading now
+            _proxy.NetworkUsageDetector.DownloadStarted();
 
             if (IsCacheable())
             {
@@ -464,7 +465,7 @@ namespace RuralCafe
             }
 
             //remove from active set of connections
-            _proxy.RemoveActiveRequest(RequestId);
+            _proxy.RemoveActiveRequest();
             // Tell the network usage detector we're done downloading
             _proxy.NetworkUsageDetector.DownloadStopped();
 

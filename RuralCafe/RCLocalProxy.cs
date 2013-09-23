@@ -196,7 +196,10 @@ namespace RuralCafe
             _random = new Random();
             _averageTimePerRequest = new TimeSpan(0);
 
-            _maxInflightRequests = Properties.Network.Default.LOCAL_MAX_INFLIGHT_REQUESTS;
+            if (_maxInflightRequests == 0)
+            {
+                _maxInflightRequests = Properties.Network.Default.LOCAL_MAX_INFLIGHT_REQUESTS;
+            }
 
             _sessionManager = new SessionManager(this);
 

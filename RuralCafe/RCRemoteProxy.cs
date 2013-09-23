@@ -54,7 +54,10 @@ namespace RuralCafe
             maxCacheSize, cachePath, packagesPath)
         {
             _Properties = new Dictionary<IPEndPoint, Dictionary<int, RCProperties>>();
-            _maxInflightRequests = Properties.Network.Default.REMOTE_MAX_INFLIGHT_REQUESTS;
+            if (_maxInflightRequests == 0)
+            {
+                _maxInflightRequests = Properties.Network.Default.REMOTE_MAX_INFLIGHT_REQUESTS;
+            }
         }
 
         /// <summary>
