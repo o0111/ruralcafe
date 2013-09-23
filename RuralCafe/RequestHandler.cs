@@ -448,7 +448,7 @@ namespace RuralCafe
 
             
             // add to active set of connections
-            _proxy.AddActiveRequest(RequestId);
+            _proxy.AddActiveRequest();
             // Tell the network usage detector we're downloading now
             _proxy.NetworkUsageDetector.DownloadStarted();
 

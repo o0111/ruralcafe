@@ -19,7 +19,10 @@ namespace RuralCafe.Crawler
         private const string CRAWLER_DIR_NAME = "crawler";
         private const int CRAWLER_PAGE_TIMEOUT = RequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT; // Maybe we wanna change this.
 
+        // The local proxy.
         private RCLocalProxy _proxy;
+        // An event to wait for places in the thread pool.
+        private ManualResetEvent _threadPoolEvent = new ManualResetEvent(false);
 
         /// <summary>
         /// Instantiate a new CrawlerWrapper.
@@ -38,8 +41,38 @@ namespace RuralCafe.Crawler
         {
             ThreadPool.SetMaxThreads(RCProxy.MAX_THREADS, RCProxy.MAX_THREADS);
             ACrawlerWin crawler = new ACrawlerWin(Properties.Files.Default.BASE_DIR + Path.DirectorySeparatorChar +
-                CRAWLER_DIR_NAME + Path.DirectorySeparatorChar, DownloadPage);
+                CRAWLER_DIR_NAME + Path.DirectorySeparatorChar, WaitAndDownloadPage);
             crawler.ShowDialog();
+        }
+
+        /// <summary>
+        /// Waits until there are threads available in the thread pool, thean start a new thread
+        /// actually downloading the page and returns it.
+        /// </summary>
+        /// <param name="uri"></param>
+        /// <returns></returns>
+        public Thread WaitAndDownloadPage(string uri)
+        {
+            int workersAvailable, portersAvailable;
+            while (true)
+            {
+                lock (_threadPoolEvent)
+                {
+                    ThreadPool.GetAvailableThreads(out workersAvailable, out portersAvailable);
+                    if (workersAvailable > 0)
+                    {
+                        // Run Download Page in a new thread.
+                        Thread t = new Thread(() => DownloadPage(uri));
+                        t.Start();
+                        return t;
+                    }
+                    else
+                    {
+                        _threadPoolEvent.Reset();
+                    }
+                }
+                _threadPoolEvent.WaitOne();
+            }
         }
 
         /// <summary>
@@ -48,7 +81,7 @@ namespace RuralCafe.Crawler
         /// indexes main pages.
         /// </summary>
         /// <param name="uri">The URI to download.</param>
-        public void DownloadPage(string uri)
+        private void DownloadPage(string uri)
         {
             // create the main RCRequest
             RCRequest rcRequest = new RCRequest(_proxy, (HttpWebRequest)WebRequest.Create(uri));
@@ -59,6 +92,7 @@ namespace RuralCafe.Crawler
                 // Download!
                 try
                 {
+                    _proxy.WaitForAdmissionControlAndAddActiveRequest(rcRequest.RequestId);
                     // Index main pages
                     rcRequest.DownloadToCache(true);
                 }
@@ -66,6 +100,10 @@ namespace RuralCafe.Crawler
                 {
                     // Ignore
                     return;
+                }
+                finally
+                {
+                    _proxy.RemoveActiveRequest();
                 }
             }
 
@@ -79,6 +117,12 @@ namespace RuralCafe.Crawler
 
             // get the embedded content of the search result page
             DownloadEmbeddedObjects(rcRequest, baseUri, htmlContent);
+
+            // Notify that new threads are available in the pool
+            lock (_threadPoolEvent)
+            {
+                _threadPoolEvent.Set();
+            }
         }
 
         /// <summary>
@@ -161,10 +205,15 @@ namespace RuralCafe.Crawler
                         // Download!
                         try
                         {
+                            _proxy.AddActiveRequest();
                             // Do not index embedded objects
                             request.DownloadToCache(false);
                         }
                         catch { } // Ignore
+                        finally
+                        {
+                            _proxy.RemoveActiveRequest();
+                        }
                     }
                 }
                 else

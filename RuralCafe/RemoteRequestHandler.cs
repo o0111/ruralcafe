@@ -168,7 +168,7 @@ namespace RuralCafe
             }
 
             // wait for admission control
-            _proxy.WaitForAdmissionControlAndAddActiveRequest(_handlerId);
+            _proxy.WaitForAdmissionControlAndAddActiveRequest(RequestId);
             // Tell the network usage detector we're downloading now
             _proxy.NetworkUsageDetector.DownloadStarted();
             
@@ -559,7 +559,7 @@ namespace RuralCafe
                         try
                         {
                             // add to active set of connections
-                            _proxy.AddActiveRequest(request.RequestId);
+                            _proxy.AddActiveRequest();
                             // There is no index on the remote side anyway
                             request.DownloadToCache(false);
                         }
