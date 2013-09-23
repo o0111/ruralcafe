@@ -170,9 +170,9 @@ namespace RuralCafe
         /// </summary>
         private ManualResetEvent _admissionEvent = new ManualResetEvent(false);
         /// <summary>
-        /// All the waiting threads queue themselves up in here. The key is the RequestHandler ID.
+        /// All the waiting threads queue themselves up in here. The key is the Request ID.
         /// </summary>
-        private List<long> _admissionQueue = new List<long>();
+        private List<string> _admissionQueue = new List<string>();
 
         /// <summary>
         /// Blacklist.
@@ -626,8 +626,7 @@ namespace RuralCafe
         /// <summary>
         /// Add active request.
         /// </summary>
-        /// <param name="requestId">The request id.</param>
-        public void AddActiveRequest(string requestId)
+        public void AddActiveRequest()
         {
             lock (_admissionEvent)
             {
@@ -653,8 +652,8 @@ namespace RuralCafe
         /// 
         /// After it is admitted, the number of active requests is incremented.
         /// </summary>
-        /// <param name="id">The request handler id.</param>
-        public void WaitForAdmissionControlAndAddActiveRequest(long id)
+        /// <param name="id">The request id.</param>
+        public void WaitForAdmissionControlAndAddActiveRequest(string id)
         {
             // Queue yourself
             lock (_admissionEvent)
@@ -670,7 +669,7 @@ namespace RuralCafe
                     // We can go, if there is space and we're in the first diff positions of the queue
                     if (diff > 0 && _admissionQueue.Take(diff).Contains(id))
                     {
-                        // Dequeue youself
+                        // Dequeue yourself
                         _admissionQueue.Remove(id);
 
                         _activeRequests++;

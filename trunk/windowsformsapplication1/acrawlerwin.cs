@@ -57,7 +57,8 @@ namespace WindowsFormsApplication1
         /// Process an URI in any way.
         /// </summary>
         /// <param name="uri">The URI.</param>
-        public delegate void ProcessURI(string uri);
+        /// <returns>An already started thread that will do the work.</returns>
+        public delegate Thread ProcessURI(string uri);
         /// <summary>
         /// The actual delegate.
         /// </summary>
@@ -238,11 +239,7 @@ namespace WindowsFormsApplication1
         {
             if (processUriDelegate != null)
             {
-                Thread t = new Thread(() =>
-                {
-                    processUriDelegate(uri);
-                });
-                t.Start();
+                Thread t = processUriDelegate(uri);
                 lock (delegateThreads)
                 {
                     delegateThreads.Add(t);
