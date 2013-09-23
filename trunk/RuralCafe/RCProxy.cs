@@ -163,11 +163,16 @@ namespace RuralCafe
         /// <summary>
         /// maximum inflight requests
         /// </summary>
+        [JsonProperty]
         protected int _maxInflightRequests;
         /// <summary>
         /// An event to wake up threads waiting for admission control.
         /// </summary>
         private ManualResetEvent _admissionEvent = new ManualResetEvent(false);
+        /// <summary>
+        /// All the waiting threads queue themselves up in here. The key is the RequestHandler ID.
+        /// </summary>
+        private List<long> _admissionQueue = new List<long>();
 
         /// <summary>
         /// Blacklist.
@@ -233,7 +238,6 @@ namespace RuralCafe
         public int MaxInflightRequests
         {
             get { return _maxInflightRequests; }
-            set { _maxInflightRequests = value; }
         }
         /// <summary>The current number of inflight requests.</summary>
         public int NumInflightRequests
@@ -634,8 +638,7 @@ namespace RuralCafe
         /// <summary>
         /// Remove active request.
         /// </summary>
-        /// <param name="requestId">The request id.</param>
-        public void RemoveActiveRequest(string requestId)
+        public void RemoveActiveRequest()
         {
             lock (_admissionEvent)
             {
@@ -646,21 +649,37 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Checks if the thread is admitted. Blocks in a loop, until it is.
+        /// Checks if the thread is admitted. Blocks with a ManualResetEvent.
+        /// 
+        /// After it is admitted, the number of active requests is incremented.
         /// </summary>
-        public void WaitForAdmissionControl()
+        /// <param name="id">The request handler id.</param>
+        public void WaitForAdmissionControlAndAddActiveRequest(long id)
         {
+            // Queue yourself
+            lock (_admissionEvent)
+            {
+                _admissionQueue.Add(id);
+            }
+
             while (true)
             {
                 lock (_admissionEvent)
                 {
-                    if (NumInflightRequests >= MaxInflightRequests)
+                    int diff = MaxInflightRequests - NumInflightRequests;
+                    // We can go, if there is space and we're in the first diff positions of the queue
+                    if (diff > 0 && _admissionQueue.Take(diff).Contains(id))
                     {
-                        _admissionEvent.Reset();
+                        // Dequeue youself
+                        _admissionQueue.Remove(id);
+
+                        _activeRequests++;
+                        break;
                     }
                     else
                     {
-                        break;
+                        // We'll have to wait (again)
+                        _admissionEvent.Reset();
                     }
                 }
                 _admissionEvent.WaitOne();
