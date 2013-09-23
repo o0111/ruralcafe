@@ -36,6 +36,7 @@ namespace RuralCafe.Crawler
         /// </summary>
         public void StartCrawler()
         {
+            ThreadPool.SetMaxThreads(RCProxy.MAX_THREADS, RCProxy.MAX_THREADS);
             ACrawlerWin crawler = new ACrawlerWin(Properties.Files.Default.BASE_DIR + Path.DirectorySeparatorChar +
                 CRAWLER_DIR_NAME + Path.DirectorySeparatorChar, DownloadPage);
             crawler.ShowDialog();

@@ -92,6 +92,8 @@ namespace RuralCafe
         // when the bytes downloaded are dieffernt
         private const double NETWORK_SPEED_TIME_WEIGHT = 0.5;
         private static readonly TimeSpan NETWORK_DETECTION_INTERVAL = new TimeSpan(0, 5, 0);
+        /// <summary>The maximum number of threads being used.</summary>
+        public const int MAX_THREADS = 1000; 
 
         /// <summary>
         /// notifies that a new request has arrived or a request has completed
@@ -120,12 +122,6 @@ namespace RuralCafe
         protected string _name;
         /// <summary>The cache manager.</summary>
         protected CacheManager _cacheManager;
-        // XXX: probably don't want to hard-code this as the number of port threads should be proportional to line speed.
-        // Satia: it should not be proportional to line speed - we have _maxInflightRequests for that.
-        // XXX: We also should not use ThreadPool static, as then we cannot have different setting for Local and Remote
-        // and they share the same ThreadPool...
-        /// <summary>The maximum number of threads being used.</summary>
-        protected int _maxThreads = 1000; 
 
         // network speed stuff
         /// <summary>
@@ -232,12 +228,6 @@ namespace RuralCafe
         {
             get { return _networkUsageDetector; }
             set { _networkUsageDetector = value; }
-        }
-        /// <summary>The maximum number of threads in the threadpool.</summary>
-        public int MaxThreads
-        {
-            get { return _maxThreads; }
-            set { _maxThreads = value; }
         }
         /// <summary>The maximum number of inflight requests.</summary>
         public int MaxInflightRequests
@@ -470,13 +460,15 @@ namespace RuralCafe
                 return true;
             }
 
-            // trim the "http://"
-            requestUri = HttpUtils.RemoveHttpPrefix(requestUri);
+            // trim the "http://" and "www."
+            requestUri = HttpUtils.RemoveWWWPrefix(HttpUtils.RemoveHttpPrefix(requestUri));
 
             // check against all domains in the blacklist
-            foreach (string domain in _blacklistedDomains)
+            foreach (string domainH in _blacklistedDomains)
             {
-                if (requestUri.StartsWith(domain) || HttpUtils.AddOrRemoveWWW(requestUri).StartsWith(domain))
+                // trim the "http://" and "www."
+                string domain = HttpUtils.RemoveWWWPrefix(HttpUtils.RemoveHttpPrefix(domainH));
+                if (requestUri.StartsWith(domain))
                 {
                     return true;
                 }
@@ -588,7 +580,7 @@ namespace RuralCafe
         /// </summary>
         public void StartDispatcher()
         {
-            ThreadPool.SetMaxThreads(MaxThreads, MaxThreads);
+            ThreadPool.SetMaxThreads(MAX_THREADS, MAX_THREADS);
 
             _logger.Info("Started Dispatcher");
 

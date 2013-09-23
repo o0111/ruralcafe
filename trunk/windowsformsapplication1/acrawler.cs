@@ -121,156 +121,160 @@ namespace ACrawler
                     logFile.Close();
                     logFile = new System.IO.StreamWriter(pttlObject.topicDirectory + pttlObject.directory + "//webdocs//" + "systemLog.txt");
 
-                    MainWindow.SetUrlChecking(parentUrl);
-
-                    logFile.Write("-> Download and saving file in tempPage = " + parentUrl + "\n");
-                    logFile.Flush();
-                    totalDownload++;
-                    client.DownloadFile(parentUrl, pttlObject.topicDirectory + pttlObject.directory + "/tempPage" + threadN + ".htm");
-                    logFile.Write("<- Download and saving file in tempPage = " + parentUrl + "\n");
-                    logFile.Flush();
-
-                    MainWindow.SetRichText("checking relevance of [url=" + parentUrl + "]\n");
-
-
-                    logFile.Write("-> checking web page relevance = " + parentUrl + "\n");
-                    logFile.Flush();
-                    int relResult = pttlObject.isWebLinkRelevant(parentUrl, threadN, logFile);
-                    logFile.Write("<- checking web page relevance = " + parentUrl + "\n");
-                    logFile.Flush();
-
-                    if (relResult == -1)
+                    // Check if parentUrl (Full URL with "http://" and probably "www.") is blacklisted
+                    if (!MainWindow.IsBlacklisted(parentUrl))
                     {
-                        logFalseClassification.Write(parentUrl + "\n");
-                        MainWindow.SetRichText("done...[" + "not relevant" + "]" + "\n");
-                    }
-                    else
-                    {
-                        logTrueClassification.Write(parentUrl + "\n");
+                        MainWindow.SetUrlChecking(parentUrl);
 
-                        count++;
-
-                        relevantDownload.Add(parentUrl);
-
-                        logFile.Write("-> Downloading relevant document in archieve " + parentUrl + "\n");
+                        logFile.Write("-> Download and saving file in tempPage = " + parentUrl + "\n");
                         logFile.Flush();
-                        client.DownloadFile(parentUrl, pttlObject.topicDirectory + pttlObject.directory + "//webdocs//" + count + ".html");
-                        // Satia: Let the delegate process the URI
-                        MainWindow.LetDelegateProcess(parentUrl);
-
-                        logFile.Write("<- Downloading relevant document in archieve " + parentUrl + "\n");
+                        totalDownload++;
+                        client.DownloadFile(parentUrl, pttlObject.topicDirectory + pttlObject.directory + "/tempPage" + threadN + ".htm");
+                        logFile.Write("<- Download and saving file in tempPage = " + parentUrl + "\n");
                         logFile.Flush();
 
-                        MainWindow.SetRichText("done...[" + "relevant" + "]" + "\n");
+                        MainWindow.SetRichText("checking relevance of [url=" + parentUrl + "]\n");
 
-                        string mainDomain = "";
-                        int cc = -1;
 
-                        logFile.Write("-> domain name extraction" + "\n");
+                        logFile.Write("-> checking web page relevance = " + parentUrl + "\n");
                         logFile.Flush();
-                        if (parentUrl.Length > 2)
+                        int relResult = pttlObject.isWebLinkRelevant(parentUrl, threadN, logFile);
+                        logFile.Write("<- checking web page relevance = " + parentUrl + "\n");
+                        logFile.Flush();
+
+                        if (relResult == -1)
                         {
-                            for (int k = parentUrl.Length - 1; k >= 0; k--)
+                            logFalseClassification.Write(parentUrl + "\n");
+                            MainWindow.SetRichText("done...[" + "not relevant" + "]" + "\n");
+                        }
+                        else
+                        {
+                            logTrueClassification.Write(parentUrl + "\n");
+
+                            count++;
+
+                            relevantDownload.Add(parentUrl);
+
+                            logFile.Write("-> Downloading relevant document in archieve " + parentUrl + "\n");
+                            logFile.Flush();
+                            client.DownloadFile(parentUrl, pttlObject.topicDirectory + pttlObject.directory + "//webdocs//" + count + ".html");
+                            // Satia: Let the delegate process the URI
+                            MainWindow.LetDelegateProcess(parentUrl);
+
+                            logFile.Write("<- Downloading relevant document in archieve " + parentUrl + "\n");
+                            logFile.Flush();
+
+                            MainWindow.SetRichText("done...[" + "relevant" + "]" + "\n");
+
+                            string mainDomain = "";
+                            int cc = -1;
+
+                            logFile.Write("-> domain name extraction" + "\n");
+                            logFile.Flush();
+                            if (parentUrl.Length > 2)
                             {
-                                if (parentUrl[k] == '/')
+                                for (int k = parentUrl.Length - 1; k >= 0; k--)
                                 {
-                                    cc = k;
-                                    break;
+                                    if (parentUrl[k] == '/')
+                                    {
+                                        cc = k;
+                                        break;
+                                    }
+                                    // mainDomain += "" + parentUrl[k];
                                 }
-                                // mainDomain += "" + parentUrl[k];
+
+                                if (cc != -1)
+                                    mainDomain = "" + parentUrl.Substring(0, cc);
                             }
 
-                            if (cc != -1)
-                                mainDomain = "" + parentUrl.Substring(0, cc);
-                        }
+                            logFile.Write("<- domain name extraction" + "\n");
+                            logFile.Flush();
 
-                        logFile.Write("<- domain name extraction" + "\n");
-                        logFile.Flush();
+                            logFile.Write("-> downloading document for hyperliks extraction (tempPage)" + "\n");
+                            logFile.Flush();
+                            doc.Load(pttlObject.topicDirectory + pttlObject.directory + "/tempPage" + threadN + ".htm");
+                            logFile.Write("<- downloading document for hyperliks extraction (tempPage)" + "\n");
+                            logFile.Flush();
 
-                        logFile.Write("-> downloading document for hyperliks extraction (tempPage)" + "\n");
-                        logFile.Flush();
-                        doc.Load(pttlObject.topicDirectory + pttlObject.directory + "/tempPage" + threadN + ".htm");
-                        logFile.Write("<- downloading document for hyperliks extraction (tempPage)" + "\n");
-                        logFile.Flush();
+                            logFile.Write("-> hyperlinks extraction (tempPage)" + "\n");
+                            logFile.Flush();
 
-                        logFile.Write("-> hyperlinks extraction (tempPage)" + "\n");
-                        logFile.Flush();
-
-                        HtmlNodeCollection links = doc.DocumentNode.SelectNodes("//a[@href]");
-                        if (links != null)
-                        {
-                            foreach (HtmlNode link in links)
+                            HtmlNodeCollection links = doc.DocumentNode.SelectNodes("//a[@href]");
+                            if (links != null)
                             {
+                                foreach (HtmlNode link in links)
+                                {
 
-                                int found = 0;
-                                try
-                                {
-                                    linksTree.Add(link.Attributes["href"].Value.ToString());
+                                    int found = 0;
+                                    try
+                                    {
+                                        linksTree.Add(link.Attributes["href"].Value.ToString());
+                                    }
+                                    catch (System.ArgumentException)
+                                    {
+                                        found = 1;
+                                    }
+                                    if (found == 0)
+                                        linksList.Add(link.Attributes["href"].Value.ToString());
                                 }
-                                catch (System.ArgumentException)
-                                {
-                                    found = 1;
-                                }
-                                if (found == 0)
-                                    linksList.Add(link.Attributes["href"].Value.ToString());
                             }
-                        }
-                        logFile.Write("<- hyperlinks extraction (tempPage)" + "\n");
-                        logFile.Flush();
+                            logFile.Write("<- hyperlinks extraction (tempPage)" + "\n");
+                            logFile.Flush();
 
-                        logFile.Write("-> hyperlinks saving in data structures" + "\n");
-                        logFile.Flush();
-                        for (int i = 0; i < linksList.Count; i++)
-                        {
-
-                            string checkD = "";
-                            if (linksList[i].Contains("://") == false)
-                                checkD = mainDomain + '/' + linksList[i];
-                            else
-                                checkD = linksList[i];
-
-                            //   mutex.WaitOne();
-                            if (inCrawList.ContainsKey(checkD) || (checkD.Contains("youtube") == true) || (checkD.Contains("facebook") == true) || (checkD.Contains("twitter") == true) || (checkD.Contains(".pdf") == true) || (checkD.Contains(".jpg") == true) || (checkD.Contains(".gif") == true) || (checkD.Contains(".jpeg") == true))
+                            logFile.Write("-> hyperlinks saving in data structures" + "\n");
+                            logFile.Flush();
+                            for (int i = 0; i < linksList.Count; i++)
                             {
-                                if (inCrawList.ContainsKey(checkD))
+
+                                string checkD = "";
+                                if (!linksList[i].Contains("://"))
+                                    checkD = mainDomain + '/' + linksList[i];
+                                else
+                                    checkD = linksList[i];
+
+                                //   mutex.WaitOne();
+                                if (inCrawList.ContainsKey(checkD) || (checkD.Contains("youtube")) || (checkD.Contains("facebook")) ||
+                                    (checkD.Contains("twitter")) || (checkD.Contains(".pdf")) || (checkD.Contains(".jpg")) ||
+                                    (checkD.Contains(".gif")) || (checkD.Contains(".jpeg")))
                                 {
-                                    List<string> backLinks = inCrawList[checkD];
-                                    inCrawList.Remove(checkD);
+                                    if (inCrawList.ContainsKey(checkD))
+                                    {
+                                        List<string> backLinks = inCrawList[checkD];
+                                        inCrawList.Remove(checkD);
+                                        backLinks.Add(parentUrl);
+                                        inCrawList.Add(checkD, backLinks);
+                                    }
+                                }
+                                else
+                                {
+                                    toCrawlList.Add(checkD);
+                                    List<string> backLinks = new List<string>();
                                     backLinks.Add(parentUrl);
                                     inCrawList.Add(checkD, backLinks);
+
+                                    //  if ( toCrawlList.Count%30 == 0 )
+                                    //    MainWindow.SetUrlText();
                                 }
+                                //    mutex.ReleaseMutex();
                             }
-                            else
-                            {
-                                toCrawlList.Add(checkD);
-                                List<string> backLinks = new List<string>();
-                                backLinks.Add(parentUrl);
-                                inCrawList.Add(checkD, backLinks);
 
-                                //  if ( toCrawlList.Count%30 == 0 )
-                                //    MainWindow.SetUrlText();
-                            }
-                            //    mutex.ReleaseMutex();
+
+                            linksList.Clear();
+                            linksTree.Clear();
+                            logFile.Write("<- hyperlinks saving in data structures" + "\n");
+                            logFile.Flush();
+
                         }
-
-
-                        linksList.Clear();
-                        linksTree.Clear();
-                        logFile.Write("<- hyperlinks saving in data structures" + "\n");
-                        logFile.Flush();
-
+                        MainWindow.SetUrlText(pttlObject.directory);
                     }
-                    MainWindow.SetUrlText(pttlObject.directory);
                 }
                 catch (SystemException ex)
                 {
-
                     // MessageBox.Show(parentUrl + "   " + ex.ToString() + "  " + threadN);
                 }
 
                 if (toCrawlList.Count == 0)
                 {
-                    //    MessageBox.Show("Crawling completed successfully " + seedBankPointer + "  " + count + " " + seedBank.Count);
                     if (count < MainWindow.PagesToDownloadPerTopic && seedBankPointer < seedBank.Count)
                     {
                         logFile.Write("-> getting more seed documents" + "\n");
@@ -279,24 +283,17 @@ namespace ACrawler
                         while (true)
                         {
                             line = seedBank[seedBankPointer];
-                            if (inCrawList.ContainsKey(line))
+                            if (!inCrawList.ContainsKey(line) && !((line.Contains("facebook")) || (line.Contains("youtube")) || (line.Contains(".pdf")) ||
+                                (line.Contains(".jpg")) || (line.Contains(".gif")) || (line.Contains(".jpeg"))))
                             {
-                            }
-                            else
-                            {
-                                if ((line.Contains("facebook") == true) || (line.Contains("youtube") == true) || (line.Contains(".pdf") == true) || (line.Contains(".jpg") == true) || (line.Contains(".gif") == true) || (line.Contains(".jpeg") == true))
-                                {
-                                }
-                                else
-                                {
-                                    toCrawlList.Add(line);
+                                toCrawlList.Add(line);
 
-                                    List<string> backLinks = new List<string>();
-                                    backLinks.Add("#seedDoc");
-                                    inCrawList.Add(line, backLinks);
-                                    //  break;
-                                }
+                                List<string> backLinks = new List<string>();
+                                backLinks.Add("#seedDoc");
+                                inCrawList.Add(line, backLinks);
+                                //  break;
                             }
+
                             iii++;
                             if (iii > 20)
                                 break;
@@ -309,7 +306,11 @@ namespace ACrawler
                         logFile.Flush();
                     }
                     else
+                    {
+                        // Either we downloaded enough or we ran out of frontier (seed) links
+                        MainWindow.CrawlerTopicCompleted();
                         break;
+                    }
                 }
 
                 if (totalDownload > 100)
@@ -335,9 +336,9 @@ namespace ACrawler
                     logFile.Flush();
                 }
 
-
                 if (count >= MainWindow.PagesToDownloadPerTopic)
                 {
+                    // Topic is completed
                     MainWindow.CrawlerTopicCompleted();
                     break;
                 }
