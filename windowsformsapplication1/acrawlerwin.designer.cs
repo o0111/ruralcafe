@@ -162,6 +162,7 @@
             this.editBlacklistButton.TabIndex = 13;
             this.editBlacklistButton.Text = "Edit blacklist";
             this.editBlacklistButton.UseVisualStyleBackColor = true;
+            this.editBlacklistButton.Click += new System.EventHandler(this.editBlacklistButton_Click);
             // 
             // ACrawlerWin
             // 

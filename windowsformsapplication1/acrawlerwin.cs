@@ -45,6 +45,8 @@ namespace WindowsFormsApplication1
         private int topicsCompleted;
         // The delegate threads processing the URLs
         private List<Thread> delegateThreads = new List<Thread>();
+        // Blacklist
+        private string[] blacklist;
 
         public int PagesToDownloadPerTopic
         {
@@ -129,23 +131,6 @@ namespace WindowsFormsApplication1
             }*/
         }
 
-        public void WorkThreadFunction()
-        {
-            try
-            {
-                // do any background work
-                //  ACrawlerClass crawlerObject = new ACrawlerClass();
-                //  crawlerObject.listBox = listBox;
-                //  crawlerObject.startCrawling("http://ming.org.pk/shariq.htm");
-                MessageBox.Show("hdddello");
-            }
-            catch (Exception)
-            {
-
-                // log errors
-            }
-        }
-
         public void SetRichText(string text)
         {
             if (textWindow.InvokeRequired)
@@ -191,7 +176,7 @@ namespace WindowsFormsApplication1
                 countDead++;
                 if (countDead == globalTotalTopics)
                 {
-                    MessageBox.Show("Downloading seed documents completed");
+                    ShowMessageBox("Downloading seed documents completed");
                     SetButtonsEnabled(true);
                 }
             }
@@ -207,6 +192,17 @@ namespace WindowsFormsApplication1
                 UrlChecking.Text = text;
             }
         }
+        public void ShowMessageBox(string text)
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new MethodInvoker(delegate() { ShowMessageBox(text); }));
+            }
+            else
+            {
+                MessageBox.Show(this, text);
+            }
+        }
 
         /// <summary>
         /// One topic has been completed. Shows a message box if all have been completed and waits for unfinished
@@ -219,17 +215,17 @@ namespace WindowsFormsApplication1
             {
                 if (delegateThreads.Count == 0)
                 {
-                    MessageBox.Show("Crawling completed successfully.");
+                    ShowMessageBox("Crawling completed successfully.");
                 }
                 else
                 {
-                    MessageBox.Show("Crawling completed successfully. Press OK to wait for RC download threads to finish...");
+                    ShowMessageBox("Crawling completed successfully. Press OK to wait for RC download threads to finish...");
                     // Join all RC threads.
                     foreach (Thread t in delegateThreads)
                     {
                         t.Join();
                     }
-                    MessageBox.Show("RC finished downloading.");
+                    ShowMessageBox("RC finished downloading.");
                 }
             }
         }
@@ -267,13 +263,21 @@ namespace WindowsFormsApplication1
                 globalTotalTopics = File.ReadAllLines(topicsFileName).Length;
             }
 
+            string blacklistFileName = this.mainFolder + "blacklist.txt";
+            // Create an empty blacklist.txt file if there is none
+            if (!File.Exists(blacklistFileName))
+            {
+                using (File.Create(blacklistFileName)) { }
+            }
+            // Load blacklist
+            this.blacklist = File.ReadAllLines(blacklistFileName);
+
             // Check if all necessary files exist
             for (int i = 1; i <= globalTotalTopics; i++)
             {
                 if (!Directory.Exists(this.mainFolder + i) || !Directory.Exists(this.mainFolder + i + Path.DirectorySeparatorChar + "webdocs"))
                 {
-                    MessageBox.Show(this, "Please download the seed documents first.",
-                        "Error", MessageBoxButtons.OK);
+                    ShowMessageBox("Please download the seed documents first.");
                     SetButtonsEnabled(true);
                     this.pauseButton.Enabled = false;
                     return;
@@ -283,8 +287,7 @@ namespace WindowsFormsApplication1
                 {
                     if (!File.Exists(this.mainFolder + i + Path.DirectorySeparatorChar + j + ".txt"))
                     {
-                        MessageBox.Show(this, "Please download the seed documents first.",
-                            "Error", MessageBoxButtons.OK);
+                        ShowMessageBox("Please download the seed documents first.");
                         SetButtonsEnabled(true);
                         this.pauseButton.Enabled = false;
                         return;
@@ -441,10 +444,6 @@ namespace WindowsFormsApplication1
                     mutex.ReleaseMutex();
 
             }
-
-
-
-            //MessageBox.Show("ss" + finishThread);
         }
 
 
@@ -489,8 +488,7 @@ namespace WindowsFormsApplication1
             {
                 if (!File.Exists(this.mainFolder + "topic" + i + ".txt"))
                 {
-                    MessageBox.Show(this, "Please generate the training sets first.",
-                        "Error", MessageBoxButtons.OK);
+                    ShowMessageBox("Please generate the training sets first.");
                     SetButtonsEnabled(true);
                     return;
                 }
@@ -531,8 +529,9 @@ namespace WindowsFormsApplication1
             }
             try
             {
-                // Delete all files in this folder expect topics.txt
-                foreach (string file in Directory.GetFiles(mainFolder).Where((file) => !new FileInfo(file).Name.Equals("topics.txt")))
+                // Delete all files in this folder except topics.txt and blacklist.txt
+                foreach (string file in Directory.GetFiles(mainFolder).Where((file) =>
+                    !new FileInfo(file).Name.Equals("topics.txt") && !new FileInfo(file).Name.Equals("blacklist.txt")))
                 {
                     File.Delete(file);
                 }
@@ -546,8 +545,26 @@ namespace WindowsFormsApplication1
             }
             catch (Exception exp)
             {
-                MessageBox.Show(this, "Could not open the topics file: " + exp.Message,
-                        "Error", MessageBoxButtons.OK);
+                ShowMessageBox("Could not open the topics file: " + exp.Message);
+            }
+        }
+
+        private void editBlacklistButton_Click(object sender, EventArgs e)
+        {
+            string blacklistFileName = this.mainFolder + "blacklist.txt";
+            // Create an empty blacklist.txt file if there is none
+            if (!File.Exists(blacklistFileName))
+            {
+                using (File.Create(blacklistFileName)) { }
+            }
+            try
+            {
+                // Open in standard editor.
+                Process.Start(blacklistFileName);
+            }
+            catch (Exception exp)
+            {
+                ShowMessageBox("Could not open the blacklist file: " + exp.Message);
             }
         }
 
@@ -572,8 +589,7 @@ namespace WindowsFormsApplication1
             string[] topics = File.ReadAllLines(topicsFileName);
             if (topics.Length == 0)
             {
-                MessageBox.Show("Please define some topics first.",
-                        "Error", MessageBoxButtons.OK);
+                ShowMessageBox("Please define some topics first.");
                 SetButtonsEnabled(true);
                 return;
             }
@@ -600,8 +616,7 @@ namespace WindowsFormsApplication1
                 }
             }
 
-            MessageBox.Show("Generated the training sets for " + topics.Length + " topics.",
-                        "Success", MessageBoxButtons.OK);
+            ShowMessageBox("Generated the training sets for " + topics.Length + " topics.");
             SetButtonsEnabled(true);
         }
 
@@ -637,8 +652,62 @@ namespace WindowsFormsApplication1
                 startButton.Enabled = enabled;
                 downloadSeedButton.Enabled = enabled;
                 editTopicsButton.Enabled = enabled;
+                editBlacklistButton.Enabled = enabled;
                 generateTrainingSetButton.Enabled = enabled;
             }
+        }
+
+        /// <summary>
+        /// Checks whether a URI is blacklisted.
+        /// </summary>
+        /// <param name="requestUri">URI to check.</param>
+        /// <returns>True or false for blacklisted or not.</returns>
+        public bool IsBlacklisted(string requestUri)
+        {
+            // trim the "http://" and "www."
+            requestUri = RemoveWWWPrefix(RemoveHttpPrefix(requestUri));
+
+            // check against all domains in the blacklist
+            foreach (string domainH in blacklist)
+            {
+                // trim the "http://" and "www."
+                string domain = RemoveWWWPrefix(RemoveHttpPrefix(domainH));
+                if (requestUri.StartsWith(domain))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Removes "http://" from the given URI, if it does start with it.
+        /// </summary>
+        /// <param name="uri">The current URI.</param>
+        /// <returns>The new URI.</returns>
+        public static string RemoveHttpPrefix(string uri)
+        {
+            string http = "http://";
+            if (uri.StartsWith(http))
+            {
+                return uri.Substring(http.Length);
+            }
+            return uri;
+        }
+
+        /// <summary>
+        /// Removes "www." from the given URI, if it does start with it.
+        /// </summary>
+        /// <param name="uri">The current URI.</param>
+        /// <returns>The new URI.</returns>
+        public static string RemoveWWWPrefix(string uri)
+        {
+            string www = "www.";
+            if (uri.StartsWith(www))
+            {
+                return uri.Substring(www.Length);
+            }
+            return uri;
         }
 
         #region Google search

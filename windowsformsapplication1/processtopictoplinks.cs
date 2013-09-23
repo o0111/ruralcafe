@@ -119,8 +119,7 @@ namespace ProcessTopicTopLinks
             }
             catch (System.Exception e)
             {
-                MessageBox.Show("Either stopwords.txt file is missing or it has incorrect format");
-
+                MainWindow.ShowMessageBox("Either stopwords.txt file is missing or it has incorrect format: " + e.Message);
             }
 
             try
@@ -146,7 +145,7 @@ namespace ProcessTopicTopLinks
             }
             catch (System.Exception e)
             {
-                MessageBox.Show("Either 1gram_gt_500K.txt file is missing or it has incorrect format");
+                MainWindow.ShowMessageBox("Either 1gram_gt_500K.txt file is missing or it has incorrect format: " + e.Message);
             }
 
             collectionTerms.Clear();

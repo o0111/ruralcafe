@@ -21,6 +21,7 @@ namespace RuralCafe.Util
     {
         //Constants
         private const string HTTP = "http://";
+        private const string WWW = "www.";
 
         /// <summary>
         /// The local IP address.
@@ -322,22 +323,17 @@ namespace RuralCafe.Util
         }
 
         /// <summary>
-        /// Returns the uri with "www." at the beginning, if it was not there before.
-        /// Returns the uri without "www." at the beginning, if it was there before.
+        /// Removes "www." from the given URI, if it does start with it.
         /// </summary>
-        /// <param name="uri">The uri.</param>
-        /// <returns>The modified uri.</returns>
-        public static string AddOrRemoveWWW(string uri)
+        /// <param name="uri">The current URI.</param>
+        /// <returns>The new URI.</returns>
+        public static string RemoveWWWPrefix(string uri)
         {
-            string www = "www.";
-            if (uri.StartsWith(www))
+            if (uri.StartsWith(WWW))
             {
-                return uri.Substring(www.Length);
+                return uri.Substring(WWW.Length);
             }
-            else
-            {
-                return www + uri;
-            }
+            return uri;
         }
     }
 }
