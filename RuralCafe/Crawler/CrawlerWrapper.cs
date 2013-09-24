@@ -46,11 +46,11 @@ namespace RuralCafe.Crawler
         }
 
         /// <summary>
-        /// Waits until there are threads available in the thread pool, thean start a new thread
+        /// Waits until there are threads available in the thread pool, then start a new thread
         /// actually downloading the page and returns it.
         /// </summary>
-        /// <param name="uri"></param>
-        /// <returns></returns>
+        /// <param name="uri">The URI to download.</param>
+        /// <returns>The already started thread.</returns>
         public Thread WaitAndDownloadPage(string uri)
         {
             int workersAvailable, portersAvailable;
@@ -105,18 +105,18 @@ namespace RuralCafe.Crawler
                 {
                     _proxy.RemoveActiveRequest();
                 }
-            }
 
-            if (!_proxy.ProxyCacheManager.IsHTMLFile(rcRequest.RelCacheFileName))
-            {
-                return;
-            }
-            // Getting embedded objects only makes sense for html pages.
-            Uri baseUri = new Uri(rcRequest.Uri);
-            string htmlContent = Utils.ReadFileAsString(rcRequest.CacheFileName).ToLower();
+                if (!_proxy.ProxyCacheManager.IsHTMLFile(rcRequest.RelCacheFileName))
+                {
+                    return;
+                }
+                // Getting embedded objects only makes sense for html pages.
+                Uri baseUri = new Uri(rcRequest.Uri);
+                string htmlContent = Utils.ReadFileAsString(rcRequest.CacheFileName).ToLower();
 
-            // get the embedded content of the search result page
-            DownloadEmbeddedObjects(rcRequest, baseUri, htmlContent);
+                // get the embedded content of the search result page
+                DownloadEmbeddedObjects(rcRequest, baseUri, htmlContent);
+            }
 
             // Notify that new threads are available in the pool
             lock (_threadPoolEvent)

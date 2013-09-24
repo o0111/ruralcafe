@@ -30,7 +30,6 @@
         {
             this.startButton = new System.Windows.Forms.Button();
             this.textWindow = new System.Windows.Forms.RichTextBox();
-            this.pauseButton = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.UrlChecking = new System.Windows.Forms.Label();
             this.downloadSeedButton = new System.Windows.Forms.Button();
@@ -49,7 +48,7 @@
             this.startButton.Name = "startButton";
             this.startButton.Size = new System.Drawing.Size(158, 23);
             this.startButton.TabIndex = 1;
-            this.startButton.Text = "Start Crawling";
+            this.startButton.Text = "Start/Resume Crawling";
             this.startButton.UseVisualStyleBackColor = true;
             this.startButton.Click += new System.EventHandler(this.LoadButton_Click);
             // 
@@ -60,16 +59,6 @@
             this.textWindow.Size = new System.Drawing.Size(506, 442);
             this.textWindow.TabIndex = 2;
             this.textWindow.Text = "";
-            // 
-            // pauseButton
-            // 
-            this.pauseButton.Location = new System.Drawing.Point(12, 180);
-            this.pauseButton.Name = "pauseButton";
-            this.pauseButton.Size = new System.Drawing.Size(158, 23);
-            this.pauseButton.TabIndex = 3;
-            this.pauseButton.Text = "Pause";
-            this.pauseButton.UseVisualStyleBackColor = true;
-            this.pauseButton.Click += new System.EventHandler(this.button1_Click);
             // 
             // label1
             // 
@@ -178,7 +167,6 @@
             this.Controls.Add(this.downloadSeedButton);
             this.Controls.Add(this.UrlChecking);
             this.Controls.Add(this.label1);
-            this.Controls.Add(this.pauseButton);
             this.Controls.Add(this.textWindow);
             this.Controls.Add(this.startButton);
             this.Name = "ACrawlerWin";
@@ -194,7 +182,6 @@
 
         private System.Windows.Forms.Button startButton;
         private System.Windows.Forms.RichTextBox textWindow;
-        private System.Windows.Forms.Button pauseButton;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label UrlChecking;
         private System.Windows.Forms.Button downloadSeedButton;
