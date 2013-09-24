@@ -1,5 +1,5 @@
+#summary 1. Introduction and system requirements
 #labels Featured,Phase-Implementation,Phase-Deploy
-#summary Introduction and system requirements
 !RuralCafe is a platform for web search and browsing over extremely slow or intermittent networks.
 
 !RuralCafe improves web search and browsing this by providing an expanded search query interface which allows a user to specify additional query terms to maximize the utility of the results returned by a search query. Given knowledge of the limited available network resources, !RuralCafe performs optimizations to prefetch pages to best satisfy a search query based on a user's search preferences. In addition, !RuralCafe does not require modifications to the web browser, and can provide single round search results tailored to various types of networks and economic constraints.
