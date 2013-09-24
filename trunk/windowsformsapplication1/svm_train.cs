@@ -294,29 +294,7 @@ namespace SVMTrainClass
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    class svm_predict
+    public class svm_predict
     {
         public int returnValue;
         public svm_model model;

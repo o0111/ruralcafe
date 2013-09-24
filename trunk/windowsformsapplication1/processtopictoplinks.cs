@@ -18,9 +18,7 @@ using System.Threading;
 
 namespace ProcessTopicTopLinks
 {
-
-
-    class ProcessTopicTopLinksClass
+    public class ProcessTopicTopLinksClass
     {
         public RichTextBox textWindow;
         public Int64 CollectionTermCount;
@@ -366,21 +364,7 @@ namespace ProcessTopicTopLinks
                             newDocVector.termID.Add(pair.Key.ToString());
                             newDocVector.termWeight.Add(setWeight);
                         }
-
-                        /*   if (df > 0) //for svm
-                           {
-                               if ((setWeight > 4 && df < 100000000) || (setWeight > 0.2 && df < 1000))
-                               {
-                                       fileW.Write(tempCollectionTerm.termID + ":" + setWeight + " ");
-    
-                                       testfileW.Write(tempCollectionTerm.termID + ":" + setWeight + " ");
-                               }
-                           }*/
-
-
                     }
-
-
                 }
                 if (i < numberTrainDocs)
                     relevantDocVectors.Add(newDocVector);
@@ -388,27 +372,10 @@ namespace ProcessTopicTopLinks
                 fileW.WriteLine("");
                 testfileW.WriteLine("");
 
-
-
-
-                // if (i > 48)
-                //   break;
-
             }
 
             fileW.Close();
             testfileW.Close();
-
-            /* foreach (var pair in collectionTerms)
-             {
-                 tempCollectionTerm = collectionTerms[pair.Key.ToString()];
-                 textWindow.Text += tempCollectionTerm.termName + " " + tempCollectionTerm.termDF;
-                 textWindow.Text += "\n";
-                 cc++;
-                 if (cc > 500)
-                     break;
-
-             }*/
 
             MainWindow.SetRichText(".................... Training Focused Cralwer completed succesfully for topic " + directory + "\n");
 
@@ -426,25 +393,6 @@ namespace ProcessTopicTopLinks
 
             svm_train svmObject = new svm_train();
             svmObject.runSVM(svm_parameters, topicDirectory + directory + "/");
-
-
-
-            //      MainWindow.SetRichText(".................... SVM model trained successfully .........................\n");
-
-
-
-            /*       svm_predict svmPredict = new svm_predict();
-                   System.String[] svm_Pparameters = new System.String[3];
-                   svm_Pparameters[0] = topicDirectory + directory + "/" + "testSet.txt";
-                   svm_Pparameters[1] = topicDirectory + directory + "/" + "trainSet.txt.model";
-                   svm_Pparameters[2] = "RESULT";
-                   int predictedValue = svmPredict.run_svm(svm_Pparameters);
-                   MessageBox.Show("" + predictedValue);*/
-
-
-
-
-
         }
 
         public int isWebLinkRelevant(string url2, int threadN, System.IO.StreamWriter logFile)
@@ -505,21 +453,10 @@ namespace ProcessTopicTopLinks
 
             if (binaryFile == 0)
             {
-
-
-
                 try
                 {
 
                     HtmlAgilityPack.HtmlDocument document = new HtmlAgilityPack.HtmlDocument();
-
-                    /* WebRequest request = WebRequest.Create(url);
-                     request.Method = "GET";
-                     WebResponse response = request.GetResponse();
-                     Stream stream = response.GetResponseStream();
-                     StreamReader reader = new StreamReader(stream);
-                     string content = reader.ReadToEnd();
-                     // MessageBox.Show(content);*/
 
                     logFile.Write("-> extracting viewable text using html agility pack = " + "\n");
                     logFile.Flush();
@@ -548,13 +485,6 @@ namespace ProcessTopicTopLinks
                     logFile.Flush();
 
                 }
-
-
-
-
-                //        mutex.WaitOne();
-
-
 
                 logFile.Write("-> extractng tokens of focus file for similarity checking = " + "\n");
                 logFile.Flush();
@@ -609,7 +539,6 @@ namespace ProcessTopicTopLinks
                     }
                 }
 
-
                 testfileW.Write("+1 ");
 
                 docVector newDocVector = new docVector();
@@ -641,51 +570,15 @@ namespace ProcessTopicTopLinks
                             newDocVector.termID.Add(pair.Key.ToString());
                             newDocVector.termWeight.Add(setWeight);
                         }
-
-                        /*
-                            if (df > 0) //for svm
-                            {
-                                if ((setWeight > 4 && df < 100000000) || (setWeight > 0.2 && df < 1000))
-                                {
-                                    testfileW.Write(tempCollectionTerm.termID + ":" + setWeight + " ");
-                                }
-                            }*/
-
-
-
                     }
-
-
                 }
 
                 testfileW.WriteLine("");
-
-
-
-
 
                 testfileW.Close();
                 file.Close();
                 logFile.Write("<- extractng tokens of focus file for similarity checking = " + "\n");
                 logFile.Flush();
-
-
-
-
-
-
-
-                /*
-                System.String[] svm_Pparameters = new System.String[3];
-                svm_Pparameters[0] = topicDirectory + directory + "/" + "testSet.txt";
-                svm_Pparameters[1] = topicDirectory + directory + "/" + "trainSet.txt.model";
-                svm_Pparameters[2] = topicDirectory + directory + "/" + "RESULT";
-                int predictedValue = svmPredict.run_svm(svm_Pparameters, svmModelAlreadyLoad);
-                if (svmModelAlreadyLoad != 1781)
-                    svmModelAlreadyLoad = 1781;
-                relevant = predictedValue;
-
-                */
 
                 logFile.Write("-> checking similarity of webdocument = " + "\n");
                 logFile.Flush();
@@ -752,33 +645,16 @@ namespace ProcessTopicTopLinks
                     relevant = 1;
                 else
                     relevant = -1;
-
-
-
-
             }
 
 
             if (binaryFile == 1)
                 relevant = -1;
 
-
-
             return relevant;
         }
 
-
-
-
-
         private Regex _removeRepeatedWhitespaceRegex = new Regex(@"(\s|\n|\r){2,}", RegexOptions.Singleline | RegexOptions.IgnoreCase);
-
-        /*   public void Extract_all_text_from_webpage()
-           {
-               HtmlAgilityPack.HtmlDocument document = new HtmlAgilityPack.HtmlDocument();
-               document.Load(new MemoryStream(File.ReadAllBytes(@"c:\slask\bob.html")));
-               Console.WriteLine(ExtractViewableTextCleaned(document.DocumentNode));
-           }*/
 
         public string ExtractViewableTextCleaned(HtmlNode node)
         {
@@ -797,14 +673,6 @@ namespace ProcessTopicTopLinks
         {
             if (node.Name != "script" && node.Name != "style")
             {
-                //MessageBox.Show(HtmlNodeType.Element.GetType() + "");
-
-
-
-
-
-
-
                 if (node.NodeType == HtmlNodeType.Text)
                 {
                     AppendNodeText(sb, node);
@@ -844,9 +712,6 @@ namespace ProcessTopicTopLinks
             {
             }
         }
-
-
-
 
         public void downloadSeedDocs()
         {
@@ -943,93 +808,3 @@ namespace ProcessTopicTopLinks
         }
     }
 }
-
-
-
-/*   HtmlAgilityPack.HtmlDocument doc = new HtmlAgilityPack.HtmlDocument();
-   doc.Load(topicDirectory + directory + "/tempPage" + j + ".html");
-
-
-   foreach (var script in doc.DocumentNode.Descendants("script").ToArray())
-       script.Remove();
-   foreach (var style in doc.DocumentNode.Descendants("style").ToArray())
-       style.Remove();
-                            
-   var text = doc.DocumentNode.SelectNodes("//body//text()").Select(node => node.InnerText);
-   StringBuilder output = new StringBuilder();
-   foreach (string lineH in text)
-   {
-       output.AppendLine(lineH);
-   }
-   string textOnly = HttpUtility.HtmlDecode(output.ToString());
-  // MessageBox.Show(textOnly);
-   using (System.IO.StreamWriter fileW = new System.IO.StreamWriter(topicDirectory + directory + "//" + j + ".txt"))
-   {
-       fileW.WriteLine(textOnly);
-   }*/
-
-
-
-/*
-    var root = doc.DocumentNode;
-    string s = "";
-   // MessageBox.Show(topicDirectory + directory + "//tempPage0.html");
-    foreach (var script in doc.DocumentNode.Descendants("script").ToArray())
-        script.Remove();
-    foreach (var style in doc.DocumentNode.Descendants("style").ToArray())
-        style.Remove();
-
-
-    foreach (HtmlNode node in doc.DocumentNode.SelectNodes("//text()"))
-    {
-        //Console.WriteLine("text=" + node.InnerText);
-        s += node.InnerText;
-    }
-    using (System.IO.StreamWriter fileW = new System.IO.StreamWriter(topicDirectory + directory + "//" + j + ".txt"))
-    {
-        fileW.WriteLine(s);
-    }
-   // MessageBox.Show(s);*/
-
-
-
-
-
-
-/*   
- * 
- * 
- * 
- * 
- *       WebBrowser webBrowser = new WebBrowser();
-                    TrySetSuppressScriptErrors(webBrowser, false);
-                    webBrowser.ScriptErrorsSuppressed = true;
- * 
- * 
- * webBrowser.Url = new Uri("file:///" + topicDirectory + directory + "/tempPage" + j + ".html"); //can be remote or local                    
-
-    webBrowser.DocumentCompleted += delegate
-    {
-        HtmlElementCollection collection = webBrowser.Document.All;
-        List<string> contents = new List<string>();
-
-
-        for (int i = 0; i < collection.Count; i++)
-        {
-            if (!string.IsNullOrEmpty(collection[i].InnerText))
-            {
-                contents.Add(collection[i].InnerText);
-                // collection[i].i
-            }
-        }
-
-
-        string contentString = string.Join("|", contents.ToArray());
-
-        using (System.IO.StreamWriter fileW = new System.IO.StreamWriter(topicDirectory + directory + "//" + j + ".txt"))
-        {
-            fileW.WriteLine(contentString);
-        }
-
-
-    };*/

@@ -64,13 +64,9 @@ namespace WindowsFormsApplication1
         /// </summary>
         public ProcessURI processUriDelegate;
 
-        /// <summary>
-        /// Pause button is disabled by default.
-        /// </summary>
         public ACrawlerWin()
         {
             InitializeComponent();
-            this.pauseButton.Enabled = false;
         }
 
         /// <summary>
@@ -204,6 +200,24 @@ namespace WindowsFormsApplication1
                 MessageBox.Show(this, text);
             }
         }
+        public void SwitchStartButtonText()
+        {
+            if (startButton.InvokeRequired)
+            {
+                this.Invoke(new MethodInvoker(delegate() { SwitchStartButtonText(); }));
+            }
+            else
+            {
+                if (this.startButton.Text.Equals("Pause"))
+                {
+                    this.startButton.Text = "Start/Resume Crawling";
+                }
+                else
+                {
+                    this.startButton.Text = "Pause";
+                }
+            }
+        }
 
         /// <summary>
         /// One topic has been completed. Shows a message box if all have been completed and waits for unfinished
@@ -216,11 +230,11 @@ namespace WindowsFormsApplication1
             {
                 if (delegateThreads.Count == 0)
                 {
-                    ShowMessageBox("Crawling completed successfully.");
+                    ShowMessageBox("Crawling completed/paused.");
                 }
                 else
                 {
-                    ShowMessageBox("Crawling completed successfully. Press OK to wait for RC download threads to finish...");
+                    ShowMessageBox("Crawling completed/paused. Press OK to wait for RC download threads to finish...");
                     // Join all RC threads.
                     foreach (Thread t in delegateThreads)
                     {
@@ -228,6 +242,9 @@ namespace WindowsFormsApplication1
                     }
                     ShowMessageBox("RC finished downloading.");
                 }
+
+                SwitchStartButtonText();
+                SetButtonsEnabled(true);
             }
         }
 
@@ -247,10 +264,67 @@ namespace WindowsFormsApplication1
             }
         }
 
-        private void LoadButton_Click(object sender, System.EventArgs e)
+        /// <summary>
+        /// Starts a crawler thread, the nth.
+        /// </summary>
+        /// <param name="n"></param>
+        private void StartCrawlerThread(int n)
+        {
+            pttlObject[n] = new ProcessTopicTopLinksClass();
+            pttlObject[n].textWindow = textWindow;
+            pttlObject[n].MainWindow = this;
+            pttlObject[n].topicDirectory = mainFolder;
+            pttlObject[n].topicFileName = "topic" + (n + 1) + ".txt";
+            pttlObject[n].directory = "" + (n + 1);
+
+
+            crawlerObject[n] = new ACrawlerClass();
+            crawlerObject[n].textWindow = textWindow;
+
+            crawlerObject[n].MainWindow = this;
+            crawlerObject[n].pttlObject = pttlObject[n];
+            crawlerObject[n].addSeedDocs();
+
+            pttlObject[n].makeTrainTest();
+            crawlerObject[n].threadActive = 1;
+
+
+            // for (int i = 0; i < 100; i++)
+            {
+                thread[n] = new Thread(new ParameterizedThreadStart(crawlerObject[n].startCrawling));
+            }
+            // for (int i = 0; i < 100; i++)
+            thread[n].Start(n);
+
+            trackTopics++;
+        }
+
+        /// <summary>
+        /// Pause all crawler threads.
+        /// </summary>
+        private void Pause()
+        {
+            this.startButton.Enabled = false;
+            // Pause all threads
+            foreach (ACrawlerClass crawler in crawlerObject)
+            {
+                if(crawler != null)
+                {
+                    crawler.interrupted = true;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Starts a crawler for each topic. They potentially resume where they stopped.
+        /// </summary>
+        private void Start()
         {
             SetButtonsEnabled(false);
-            this.pauseButton.Enabled = true;
+            // Change text of this button and reenable it
+            SwitchStartButtonText();
+
+            this.startButton.Enabled = true;
 
             this.topicsCompleted = 0;
             // Satia: Determine number of topics by content of topics.txt, if it is 0
@@ -276,7 +350,6 @@ namespace WindowsFormsApplication1
                 {
                     ShowMessageBox("Please download the seed documents first.");
                     SetButtonsEnabled(true);
-                    this.pauseButton.Enabled = false;
                     return;
                 }
                 // 0.txt to 29.txt have to exist
@@ -286,91 +359,45 @@ namespace WindowsFormsApplication1
                     {
                         ShowMessageBox("Please download the seed documents first.");
                         SetButtonsEnabled(true);
-                        this.pauseButton.Enabled = false;
                         return;
                     }
                 }
             }
-            
+
             int cc = 0;
             totalThread = 20;
-
             trackTopics = 0;
 
             for (cc = 0; cc < totalThread; cc++)
             {
-
-                pttlObject[cc] = new ProcessTopicTopLinksClass();
-                pttlObject[cc].textWindow = textWindow;
-                pttlObject[cc].MainWindow = this;
-                pttlObject[cc].topicDirectory = mainFolder;
-                pttlObject[cc].topicFileName = "topic" + (cc + 1) + ".txt";
-                pttlObject[cc].directory = "" + (cc + 1);
-
-
-                crawlerObject[cc] = new ACrawlerClass();
-                crawlerObject[cc].textWindow = textWindow;
-
-                crawlerObject[cc].MainWindow = this;
-                crawlerObject[cc].pttlObject = pttlObject[cc];
-                crawlerObject[cc].addSeedDocs();
-
-                pttlObject[cc].makeTrainTest();
-                crawlerObject[cc].threadActive = 1;
-
-
-                // for (int i = 0; i < 100; i++)
-                {
-                    thread[cc] = new Thread(new ParameterizedThreadStart(crawlerObject[cc].startCrawling));
-                }
-                // for (int i = 0; i < 100; i++)
-                thread[cc].Start(cc);
-
-                trackTopics++;
-
+                StartCrawlerThread(cc);
                 if (trackTopics >= globalTotalTopics)
                     break;
-
             }
         }
+
+        private void LoadButton_Click(object sender, System.EventArgs e)
+        {
+            if (this.startButton.Text.Equals("Pause"))
+            {
+                Pause();
+            }
+            else
+            {
+                Start();
+            }
+        }
+
         public void runAnotherThread(int finishThread)
         {
             if (trackTopics < globalTotalTopics)
             {
-
-                pttlObject[trackTopics] = new ProcessTopicTopLinksClass();
-                pttlObject[trackTopics].textWindow = textWindow;
-                pttlObject[trackTopics].MainWindow = this;
-                pttlObject[trackTopics].topicDirectory = mainFolder;
-                pttlObject[trackTopics].topicFileName = "topic" + (trackTopics + 1) + ".txt";
-                pttlObject[trackTopics].directory = "" + (trackTopics + 1);
-
-
-                crawlerObject[trackTopics] = new ACrawlerClass();
-                crawlerObject[trackTopics].textWindow = textWindow;
-
-                crawlerObject[trackTopics].MainWindow = this;
-                crawlerObject[trackTopics].pttlObject = pttlObject[trackTopics];
-                crawlerObject[trackTopics].addSeedDocs();
-
-                pttlObject[trackTopics].makeTrainTest();
-                crawlerObject[trackTopics].threadActive = 1;
-
-
-                // for (int i = 0; i < 100; i++)
-                {
-                    thread[trackTopics] = new Thread(new ParameterizedThreadStart(crawlerObject[trackTopics].startCrawling));
-                }
-                // for (int i = 0; i < 100; i++)
-                thread[trackTopics].Start(trackTopics);
-
-                trackTopics++;
+                StartCrawlerThread(trackTopics);
             }
 
             thread[finishThread].Abort();
-
-
         }
+        // FIXME this method does not look good!
         public void suspendRunAnotherThread(int finishThread)
         {
 
@@ -378,34 +405,7 @@ namespace WindowsFormsApplication1
 
             if (trackTopics < globalTotalTopics)
             {
-
-                pttlObject[trackTopics] = new ProcessTopicTopLinksClass();
-                pttlObject[trackTopics].textWindow = textWindow;
-                pttlObject[trackTopics].MainWindow = this;
-                pttlObject[trackTopics].topicDirectory = mainFolder;
-                pttlObject[trackTopics].topicFileName = "topic" + (trackTopics + 1) + ".txt";
-                pttlObject[trackTopics].directory = "" + (trackTopics + 1);
-
-
-                crawlerObject[trackTopics] = new ACrawlerClass();
-                crawlerObject[trackTopics].textWindow = textWindow;
-
-                crawlerObject[trackTopics].MainWindow = this;
-                crawlerObject[trackTopics].pttlObject = pttlObject[trackTopics];
-                crawlerObject[trackTopics].addSeedDocs();
-
-                pttlObject[trackTopics].makeTrainTest();
-                crawlerObject[trackTopics].threadActive = 1;
-
-
-                // for (int i = 0; i < 100; i++)
-                {
-                    thread[trackTopics] = new Thread(new ParameterizedThreadStart(crawlerObject[trackTopics].startCrawling));
-                }
-                // for (int i = 0; i < 100; i++)
-                thread[trackTopics].Start(trackTopics);
-
-                trackTopics++;
+                StartCrawlerThread(trackTopics);
                 mutex.ReleaseMutex();
                 thread[finishThread].Suspend();
             }
@@ -441,27 +441,6 @@ namespace WindowsFormsApplication1
                     mutex.ReleaseMutex();
 
             }
-        }
-
-
-        private void button1_Click(object sender, System.EventArgs e)
-        {
-
-            if (pauseButton.Text == "Pause")
-            {
-                for (int i = 0; i < trackTopics; i++)
-                    thread[i].Suspend();
-
-                pauseButton.Text = "Resume";
-            }
-            else
-            {
-                for (int i = 0; i < trackTopics; i++)
-                    thread[i].Resume();
-
-                pauseButton.Text = "Pause";
-            }
-
         }
 
         private void label1_Click(object sender, System.EventArgs e)
