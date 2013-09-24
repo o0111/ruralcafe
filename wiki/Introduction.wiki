@@ -1,4 +1,4 @@
-#summary 1. Introduction and system requirements
+#summary Introduction and system requirements
 #labels Featured,Phase-Implementation,Phase-Deploy
 !RuralCafe is a platform for web search and browsing over extremely slow or intermittent networks.
 
