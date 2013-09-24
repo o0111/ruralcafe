@@ -1,20 +1,6 @@
-Wishlist
-- Inter-Proxy-Protocol
-	- Async requests ??
-		- We need a listener for responses from the RP at the LP side
-		- RP requests management (IDs, save from which LP request came, ...)
-	- Detect network outage
-		- Restart interrupted downloads
-- Cache
-	- caching larger granularity (lower priority)
-		- intelligent eviction, timeout, etc. (also for subcomponents)
-	- Directory hashes - better solution ideas?
-
 Tasks
 - Implement offline detection + back online detection.
 - Long file name support. See http://blogs.msdn.com/b/bclteam/archive/2007/02/13/long-paths-in-net-part-1-of-3-kim-hamilton.aspx and http://zetalongpaths.codeplex.com/
-- Queue also streaming requests at the RP ??
-	- Duplicate IsStreaming()-Check at the moment.
 - Handle 304 correctly (done for StreamTransparently, missing for DownloadToCache, but it doesn't seem to happen there)
 - "Search later when I'm online" functionality.
 - Request pages in higher quality.
@@ -26,6 +12,12 @@ Tasks
   - blacklist?
 - NetworkSpeedDetection / InflightRequests Control
   - At first hardcoded percentage of _maxInflightRequests that have to be non-streamed ones. Better fairness policy later.
+- Crawler
+  - Dynamic negative seed links
+  - Return to the settings form when the crawler is closed
+- Deployment
+  - Use another FTP server
+  - Ask the user for updates regularly, not only when he is starting the program. See http://msdn.microsoft.com/en-us/library/vstudio/system.deployment.application.applicationdeployment.aspx
 
 Bugs
 - Estimated network speed is sometimes negative!?
@@ -41,14 +33,3 @@ Bugs
   - When clicking next on either local or google results, the other results should not be loaded again.
   - Embed opened pages instead of new tabs. Page inside main frame. At the moment, if you do that, you end up having Trotro inside Trotro .... (not sure we can fix this one.)
   - Click search results makes links open in the TroTro tab, this is inconsistent with opening in a new tab. (fixed for cached results, the problem with new results is that it gets redirected to the queue. this should be changed so the RCproxy filters out live results that are actually cached)
-
-Metrics logging (done)
-- Save IP per userId (done)
-- login/logout request (just let the server know) (done)
-  - sync cookie timeout and server "session" timeout (done)
-- log all requests (done)
-  - per user (done)
-- self reported user satisfaction (done)
-- total number of cached objects (done)
-- number of registered users (done)
-- network speed + status (done)
