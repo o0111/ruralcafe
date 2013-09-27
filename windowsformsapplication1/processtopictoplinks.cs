@@ -31,7 +31,6 @@ namespace ProcessTopicTopLinks
         public Dictionary<string, ulong> LDC = new Dictionary<string, ulong>();
         public ulong TotalN;
         public int downloadC;
-        public svm_predict svmPredict = new svm_predict();
 
         public List<docVector> relevantDocVectors = new List<docVector>();
 
@@ -68,12 +67,7 @@ namespace ProcessTopicTopLinks
                     returnS += "" + token[i];
             }
             returnS = returnS.ToLower();
-
-
-
-
             return returnS;
-
         }
 
 
@@ -122,7 +116,7 @@ namespace ProcessTopicTopLinks
 
             try
             {
-                System.IO.StreamReader file3 = new System.IO.StreamReader("1gram_gt_500K.txt"); //stop words
+                System.IO.StreamReader file3 = new System.IO.StreamReader("1gram_gt_500K.txt");
                 line = "";
                 TotalN = 0;
                 while ((line = file3.ReadLine()) != null)
@@ -176,12 +170,6 @@ namespace ProcessTopicTopLinks
                     topLinksList.Add(tempList[i]);
                 }
             }
-
-
-            // MessageBox.Show("" + topLinksList.Count);
-
-
-
 
             for (int i = 0; i < topLinksList.Count; i++)
             {
@@ -263,10 +251,7 @@ namespace ProcessTopicTopLinks
                     }
 
                 }
-
-
             }
-
 
             MainWindow.SetRichText(".................... Training Focused Crawler for Topic " + directory + "\n");
 
@@ -314,7 +299,6 @@ namespace ProcessTopicTopLinks
                                 docLength++;
                             }
                         }
-
                     }
                 }
 
@@ -486,7 +470,7 @@ namespace ProcessTopicTopLinks
 
                 }
 
-                logFile.Write("-> extractng tokens of focus file for similarity checking = " + "\n");
+                logFile.Write("-> extracting tokens of focus file for similarity checking = " + "\n");
                 logFile.Flush();
                 System.IO.StreamReader file;
                 System.IO.StreamWriter testfileW;
@@ -577,7 +561,7 @@ namespace ProcessTopicTopLinks
 
                 testfileW.Close();
                 file.Close();
-                logFile.Write("<- extractng tokens of focus file for similarity checking = " + "\n");
+                logFile.Write("<- extracting tokens of focus file for similarity checking = " + "\n");
                 logFile.Flush();
 
                 logFile.Write("-> checking similarity of webdocument = " + "\n");

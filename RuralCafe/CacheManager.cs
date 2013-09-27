@@ -294,7 +294,7 @@ namespace RuralCafe
                 }
             }
 
-            //replace escaped chars with their original. XXX xommented out.
+            //replace escaped chars with their original. XXX commented out.
             // uri = RegExs.ESCAPED_CHARS_REGEX.Replace(uri, DecodeUriChars);
 
             // replace possible backslahes with shlashes
