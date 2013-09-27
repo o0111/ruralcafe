@@ -30,6 +30,7 @@ using Lucene.Net.Search;
 using System.Collections.Specialized;
 using BzReader;
 using System.Xml;
+using Util;
 using RuralCafe.Util;
 using Newtonsoft.Json;
 using RuralCafe.LinkSuggestion;

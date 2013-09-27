@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
-using RuralCafe.Util;
+using Util;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;

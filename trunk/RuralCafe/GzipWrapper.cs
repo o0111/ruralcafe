@@ -22,7 +22,7 @@ using System.Text;
 using System.IO;
 using System.IO.Compression;
 using log4net;
-using RuralCafe.Util;
+using Util;
 
 namespace RuralCafe
 {

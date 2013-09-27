@@ -23,7 +23,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Net;
 using RuralCafe.Lucenenet;
-using RuralCafe.Util;
+using Util;
 using System.Collections.Specialized;
 using Newtonsoft.Json;
 using RuralCafe.Json;

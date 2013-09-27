@@ -28,7 +28,7 @@ using Lucene.Net.Search;
 using Lucene.Net.QueryParsers;
 using System.Net;
 using Lucene.Net.Highlight;
-using RuralCafe.Util;
+using Util;
 using System.Collections.Specialized;
 
 namespace RuralCafe.Lucenenet

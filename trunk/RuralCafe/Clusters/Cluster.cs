@@ -1,4 +1,5 @@
 ﻿using RuralCafe.Lucenenet;
+using Util;
 using RuralCafe.Util;
 using System;
 using System.Collections.Generic;

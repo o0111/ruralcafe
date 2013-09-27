@@ -1,5 +1,6 @@
 ﻿using RuralCafe.Clusters;
 using RuralCafe.Database;
+using Util;
 using RuralCafe.Util;
 using System;
 using System.Collections.Generic;
@@ -86,6 +87,8 @@ namespace RuralCafe
         // Constants
         /// <summary>The char to use for URI escaping.</summary>
         public const char URI_ESCAPE_CHAR = '§';
+        /// <summary>A paragraph sign followed by 4 hex chars.</summary>
+        public static readonly Regex ESCAPED_CHARS_REGEX = new Regex(URI_ESCAPE_CHAR + @"[a-fA-F0-9]{4}");
 
         private const string DATABASE_FILE_NAME = "RCDatabase.sdf";
         private const string DATABASE_CREATION_TEXTFILE = "RCDatabase_creation.txt";
@@ -295,7 +298,7 @@ namespace RuralCafe
             }
 
             //replace escaped chars with their original. XXX commented out.
-            // uri = RegExs.ESCAPED_CHARS_REGEX.Replace(uri, DecodeUriChars);
+            // uri = ESCAPED_CHARS_REGEX.Replace(uri, DecodeUriChars);
 
             // replace possible backslahes with shlashes
             uri = uri.Replace(Path.DirectorySeparatorChar, '/');

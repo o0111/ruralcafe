@@ -10,7 +10,6 @@ using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Web;
-using GehtSoft.Collections;
 using PorterStemmerAlgorithm;
 using SVMTrainClass;
 using WindowsFormsApplication1;
@@ -149,8 +148,6 @@ namespace ProcessTopicTopLinks
                 line = "" + rr;
                 if ((rr >= 30 && rr < 60))
                     tempListPos.Add(line);
-                //else
-
 
                 tempList.Add(line);
 

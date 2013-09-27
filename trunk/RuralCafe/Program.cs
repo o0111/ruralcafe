@@ -28,7 +28,7 @@ using System.Threading;
 using System.Configuration;
 using log4net;
 using System.Collections.Specialized;
-using RuralCafe.Util;
+using Util;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 using System.Security.Principal;

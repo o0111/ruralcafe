@@ -24,7 +24,7 @@ using System.Net.Sockets;
 using System.IO;
 using System.Threading;
 using System.Collections;
-using RuralCafe.Util;
+using Util;
 
 namespace RuralCafe
 {

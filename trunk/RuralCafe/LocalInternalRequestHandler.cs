@@ -3,6 +3,7 @@ using HtmlAgilityPack;
 using RuralCafe.Clusters;
 using RuralCafe.Database;
 using RuralCafe.Lucenenet;
+using Util;
 using RuralCafe.Util;
 using System;
 using System.Collections.Generic;

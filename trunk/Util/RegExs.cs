@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace RuralCafe.Util
+namespace Util
 {
     /// <summary>
     /// Provides some useful RegEx's
@@ -28,7 +28,5 @@ namespace RuralCafe.Util
         /// <summary>Matches "localhost" or "127.0.0.1" followed by anything but a dot.
         /// Provides mathcing groups add1 and add2</summary>
         public static readonly Regex LOCAL_ADDRESS_REGEX = new Regex(@"(?<add1>(localhost|127\.0\.0\.1))(?<add2>[^\.])");
-        /// <summary>A paragraph sign followed by 4 hex chars.</summary>
-        public static readonly Regex ESCAPED_CHARS_REGEX = new Regex(CacheManager.URI_ESCAPE_CHAR + @"[a-fA-F0-9]{4}");
     }
 }

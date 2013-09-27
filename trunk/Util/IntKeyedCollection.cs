@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 
-namespace RuralCafe.Util
+namespace Util
 {
     /// <summary>
     /// A Collection, keyed by ints, that provides both dictionary and list behaviour.

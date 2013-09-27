@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
-using RuralCafe.Util;
+using Util;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;

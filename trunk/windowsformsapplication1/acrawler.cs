@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using HtmlAgilityPack;
 using System.Net;
 using System.IO;
-using GehtSoft.Collections;
 using System.Windows.Forms;
 using WindowsFormsApplication1;
 using ProcessTopicTopLinks;
@@ -20,19 +19,25 @@ namespace ACrawler
     [JsonObject(MemberSerialization.OptIn)]
     public class ACrawlerClass
     {
-        public RichTextBox textWindow;
-        public ACrawlerWin MainWindow;
+        // Constants
+        public static readonly string[] BAD_URL_PARTS = new string[] {
+            "youtube", "facebook", "twitter", ".pdf", ".jpg", ".jpeg", ".gif", ".ppt" };
+        public const int NUMBER_OF_LINKS_HALF = 30;
+
+        // Backreference to the MainWindow.
+        private ACrawlerWin MainWindow;
+        // TODO this is to be removed
         public ProcessTopicTopLinksClass pttlObject;
+
         [JsonProperty]
         public List<string> toCrawlList = new List<string>();
         [JsonProperty]
+        public List<string> inCrawlList = new List<string>();
+        [JsonProperty]
         public List<string> seedBank = new List<string>();
         [JsonProperty]
-        public int seedBankPointer;
-        [JsonProperty]
         public List<string> relevantDownload = new List<string>();
-        [JsonProperty]
-        public Dictionary<string, List<string>> inCrawList = new Dictionary<string, List<string>>();
+        
         [JsonProperty]
         public int count;
         [JsonProperty]
@@ -40,71 +45,56 @@ namespace ACrawler
         [JsonProperty]
         public int threadActive;
 
+        // The new classifier
+        public Classifier classifier;
+
         // The thread number
         private int threadN;
+        // The topic number
+        private int topicN; // TODO redundant -> remove
         // The interrupted flag
         public volatile bool interrupted = false;
 
-        public void addSeedDocs()
+
+        public ACrawlerClass(int threadN, ACrawlerWin mainWindow)
+        {
+            this.threadN = threadN;
+            this.topicN = threadN + 1;
+            this.MainWindow = mainWindow;
+            classifier = new Classifier(topicN, mainWindow.mainFolder);
+        }
+
+        /// <summary>
+        /// Adds the the positive links (all except the first 30) from topicN.txt to the seedBank.
+        /// </summary>
+        public void AddSeedDocs()
         {
             seedBank.Clear();
-            string line;
 
-            using (StreamReader file = new StreamReader(pttlObject.topicDirectory + pttlObject.topicFileName))
+            string[] lines = File.ReadAllLines(pttlObject.topicDirectory + pttlObject.topicFileName);
+            for (int i = NUMBER_OF_LINKS_HALF; i < lines.Length; i++)
             {
-                int ccc = 0;
-
-                while ((line = file.ReadLine()) != null)
+                if (IsUsefulURL(lines[i]))
                 {
-                    if (ccc >= 30 && !((line.Contains("facebook")) || (line.Contains("youtube")) || (line.Contains(".pdf")) || (line.Contains(".jpg")) ||
-                            (line.Contains(".gif")) || (line.Contains(".jpeg")) || (line.Contains(".PDF")) || (line.Contains(".pdf")) ||
-                            (line.Contains(".ppt")) || (line.Contains(".PPT"))))
-                    {
-                        seedBank.Add(line);
-                    }
-                    ccc++;
-                }
-            }
-
-            seedBankPointer = 0;
-            for (int i = 0; i < seedBank.Count; i++)
-            {
-                line = seedBank[i];
-                if (!inCrawList.ContainsKey(line) && !((line.Contains("facebook")) || (line.Contains("youtube")) || (line.Contains(".pdf"))
-                    || (line.Contains(".jpg")) || (line.Contains(".gif")) || (line.Contains(".jpeg"))))
-                {
-                    toCrawlList.Add(line);
-
-                    List<string> backLinks = new List<string>();
-                    backLinks.Add("#seedDoc");
-                    inCrawList.Add(line, backLinks);
-                    //  break;
-                }
-                
-                seedBankPointer++;
-                if (seedBankPointer >= 20)
-                {
-                    break;
+                    seedBank.Add(lines[i]);
+                    toCrawlList.Add(lines[i]);
+                    inCrawlList.Add(lines[i]);
                 }
             }
         }
 
-        public void startCrawling(object ob)
+        public void StartCrawling()
         {
-            this.threadN = (int)ob;
             totalDownload = 0;
             count = 0;
 
             // Load the state from a previous run.
             LoadState();
 
-            RBTree<string> linksTree = new RBTree<string>();
             List<string> linksList = new List<string>();
             string parentUrl = "";
-            string line;
 
             WebClient client = new WebClient();
-
             HtmlAgilityPack.HtmlDocument doc = new HtmlAgilityPack.HtmlDocument();
 
             using (StreamWriter logFile = new StreamWriter(pttlObject.topicDirectory + pttlObject.directory + "//webdocs//" + "systemLog.txt"))
@@ -115,9 +105,7 @@ namespace ACrawler
                 {
                     try
                     {
-                        parentUrl = toCrawlList[0];
-                        toCrawlList.RemoveAt(0);
-
+                        parentUrl = GetNextCrawlURL();
                         // Check if parentUrl (Full URL with "http://" and probably "www.") is blacklisted
                         if (!MainWindow.IsBlacklisted(parentUrl))
                         {
@@ -201,18 +189,10 @@ namespace ACrawler
                                 {
                                     foreach (HtmlNode link in links)
                                     {
-
-                                        int found = 0;
-                                        try
+                                        if (!linksList.Contains(link.Attributes["href"].Value))
                                         {
-                                            linksTree.Add(link.Attributes["href"].Value.ToString());
-                                        }
-                                        catch (System.ArgumentException)
-                                        {
-                                            found = 1;
-                                        }
-                                        if (found == 0)
                                             linksList.Add(link.Attributes["href"].Value.ToString());
+                                        }
                                     }
                                 }
                                 logFile.Write("<- hyperlinks extraction (tempPage)" + "\n");
@@ -229,35 +209,15 @@ namespace ACrawler
                                     else
                                         checkD = linksList[i];
 
-                                    //   mutex.WaitOne();
-                                    if (inCrawList.ContainsKey(checkD) || (checkD.Contains("youtube")) || (checkD.Contains("facebook")) ||
-                                        (checkD.Contains("twitter")) || (checkD.Contains(".pdf")) || (checkD.Contains(".jpg")) ||
-                                        (checkD.Contains(".gif")) || (checkD.Contains(".jpeg")))
-                                    {
-                                        if (inCrawList.ContainsKey(checkD))
-                                        {
-                                            List<string> backLinks = inCrawList[checkD];
-                                            inCrawList.Remove(checkD);
-                                            backLinks.Add(parentUrl);
-                                            inCrawList.Add(checkD, backLinks);
-                                        }
-                                    }
-                                    else
+                                    if (!inCrawlList.Contains(checkD) && IsUsefulURL(checkD))
                                     {
                                         toCrawlList.Add(checkD);
-                                        List<string> backLinks = new List<string>();
-                                        backLinks.Add(parentUrl);
-                                        inCrawList.Add(checkD, backLinks);
-
-                                        //  if ( toCrawlList.Count%30 == 0 )
-                                        //    MainWindow.SetUrlText();
+                                        inCrawlList.Add(checkD);
                                     }
-                                    //    mutex.ReleaseMutex();
                                 }
 
 
                                 linksList.Clear();
-                                linksTree.Clear();
                                 logFile.Write("<- hyperlinks saving in data structures" + "\n");
                                 logFile.Flush();
 
@@ -265,70 +225,21 @@ namespace ACrawler
                             MainWindow.SetUrlText(pttlObject.directory);
                         }
                     }
-                    catch (SystemException ex)
+                    catch (SystemException)
                     {
-                        // MessageBox.Show(parentUrl + "   " + ex.ToString() + "  " + threadN);
                     }
 
                     if (toCrawlList.Count == 0)
                     {
-                        if (count < MainWindow.PagesToDownloadPerTopic && seedBankPointer < seedBank.Count)
-                        {
-                            logFile.Write("-> getting more seed documents" + "\n");
-                            logFile.Flush();
-                            int iii = 0;
-                            while (true)
-                            {
-                                line = seedBank[seedBankPointer];
-                                if (!inCrawList.ContainsKey(line) && !((line.Contains("facebook")) || (line.Contains("youtube")) || (line.Contains(".pdf")) ||
-                                    (line.Contains(".jpg")) || (line.Contains(".gif")) || (line.Contains(".jpeg"))))
-                                {
-                                    toCrawlList.Add(line);
-
-                                    List<string> backLinks = new List<string>();
-                                    backLinks.Add("#seedDoc");
-                                    inCrawList.Add(line, backLinks);
-                                    //  break;
-                                }
-
-                                iii++;
-                                if (iii > 20)
-                                    break;
-
-                                seedBankPointer++;
-                                if (seedBankPointer >= seedBank.Count)
-                                    break;
-                            }
-                            logFile.Write("<- getting more seed documents" + "\n");
-                            logFile.Flush();
-                        }
-                        else
-                        {
-                            // Either we downloaded enough or we ran out of frontier (seed) links
-                            break;
-                        }
+                        // We ran out of frontier links
+                        break;
                     }
 
                     if (totalDownload > 100)
                     {
                         logFile.Write("-> switching threads" + "\n");
                         logFile.Flush();
-
-                        using (StreamWriter fileW = new StreamWriter(pttlObject.topicDirectory + pttlObject.directory + "//webdocs//" + "DocsUrlNames.txt"))
-                        {
-                            for (int i = 0; i < relevantDownload.Count; i++)
-                            {
-                                string strUrl = relevantDownload[i];
-                                List<string> backLinks = inCrawList[strUrl];
-                                fileW.Write(strUrl + "\n");
-                                for (int j = 0; j < backLinks.Count; j++)
-                                {
-                                    string strBack = backLinks[j];
-                                    fileW.Write(strBack + "\n");
-                                }
-                                fileW.Write("-17\n");
-                            }
-                        }
+                        // FIXME this is probably poorly implemented
                         MainWindow.suspendRunAnotherThread(threadN);
                         logFile.Write("<- switching threads" + "\n");
                         logFile.Flush();
@@ -345,22 +256,6 @@ namespace ACrawler
                 {
                     logFile.Write("-> thread finish but running another thread" + "\n");
                     logFile.Flush();
-
-                    using (StreamWriter fileW = new StreamWriter(pttlObject.topicDirectory + pttlObject.directory + "//webdocs//" + "DocsUrlNames.txt"))
-                    {
-                        for (int i = 0; i < relevantDownload.Count; i++)
-                        {
-                            string strUrl = relevantDownload[i];
-                            List<string> backLinks = inCrawList[strUrl];
-                            fileW.Write(strUrl + "\n");
-                            for (int j = 0; j < backLinks.Count; j++)
-                            {
-                                string strBack = backLinks[j];
-                                fileW.Write(strBack + "\n");
-                            }
-                            fileW.Write("-17\n");
-                        }
-                    }
                     MainWindow.runAnotherThread(threadN);
                     logFile.Write("<- thread finish but running another thread" + "\n");
                     logFile.Flush();
@@ -372,6 +267,34 @@ namespace ACrawler
             SaveState();
         }
 
+        /// <summary>
+        /// Gets the next URL to crawl. TODO adapt implementation.
+        /// </summary>
+        /// <returns>The next URL to crawl.</returns>
+        public string GetNextCrawlURL()
+        {
+            string result = toCrawlList[0];
+            toCrawlList.RemoveAt(0);
+            return result;
+        }
+
+        /// <summary>
+        /// Checks if a URL is useful for crawling.
+        /// </summary>
+        /// <param name="url">The URL.</param>
+        /// <returns>True, if it is useful.</returns>
+        private bool IsUsefulURL(string url)
+        {
+            foreach (string badURLPart in BAD_URL_PARTS)
+            {
+                if (url.Contains(badURLPart) || url.Contains(badURLPart.ToUpper()))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         #region State (de)serialization
 
         /// <summary>
@@ -380,10 +303,6 @@ namespace ACrawler
         public void SaveState()
         {
             string filename = MainWindow.mainFolder + "crawler" + this.threadN + ".txt";
-            if (!File.Exists(filename))
-            {
-                //using (File.Create(filename)) { }
-            }
 
             JsonSerializer serializer = new JsonSerializer();
             using (StreamWriter sw = new StreamWriter(filename))
