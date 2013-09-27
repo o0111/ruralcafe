@@ -56,14 +56,13 @@ namespace ACrawler
 
                 while ((line = file.ReadLine()) != null)
                 {
-                    ccc++;
                     if (ccc >= 30 && !((line.Contains("facebook")) || (line.Contains("youtube")) || (line.Contains(".pdf")) || (line.Contains(".jpg")) ||
                             (line.Contains(".gif")) || (line.Contains(".jpeg")) || (line.Contains(".PDF")) || (line.Contains(".pdf")) ||
                             (line.Contains(".ppt")) || (line.Contains(".PPT"))))
                     {
                         seedBank.Add(line);
                     }
-
+                    ccc++;
                 }
             }
 
