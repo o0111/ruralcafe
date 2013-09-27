@@ -1,5 +1,4 @@
-﻿using log4net;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
@@ -12,7 +11,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 
-namespace RuralCafe.Util
+namespace Util
 {
     /// <summary>
     /// Util methods for anything connected to HTTP: creating requests, checking URIs, Reading or Sending Request Bodies...
@@ -106,10 +105,8 @@ namespace RuralCafe.Util
                     {
                         webRequest.Headers.Add(key, value);
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
-                        // This should ideally not happen!
-                        LogManager.GetLogger(typeof(HttpUtils)).Error(e);
                     }
                 }
             }
@@ -171,10 +168,8 @@ namespace RuralCafe.Util
                     {
                         response.Headers.Add(key, value);
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
-                        // This should ideally not happen!
-                        LogManager.GetLogger(typeof(HttpUtils)).Error(e);
                     }
                 }
             }

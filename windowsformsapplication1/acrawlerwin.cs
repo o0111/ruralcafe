@@ -13,7 +13,6 @@ using System.Runtime.InteropServices;
 using Google.API.Search;
 using Google.Apis.Customsearch.v1;
 using HtmlAgilityPack;
-using GehtSoft.Collections;
 using System.Threading;
 
 using System.Net;
@@ -24,14 +23,12 @@ using PorterStemmerAlgorithm;
 using System.Web.Script.Serialization;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using Util;
 
 namespace WindowsFormsApplication1
 {
     public partial class ACrawlerWin : Form
     {
-        /// <summary>Regex for html tags.</summary>
-        public static readonly Regex HTML_TAG_REGEX = new Regex(@"<[^<]+?>", RegexOptions.IgnoreCase);
-
         private Thread[] thread = new Thread[200];
         private ACrawlerClass[] crawlerObject = new ACrawlerClass[200];
         private ProcessTopicTopLinksClass[] pttlObject = new ProcessTopicTopLinksClass[200];
@@ -41,6 +38,7 @@ namespace WindowsFormsApplication1
         public string mainFolder;
         public int globalTotalTopics;
         public int countDead;
+
         // Count of topics that are completed
         private int topicsCompleted;
         // The delegate threads processing the URLs
@@ -278,23 +276,16 @@ namespace WindowsFormsApplication1
             pttlObject[n].directory = "" + (n + 1);
 
 
-            crawlerObject[n] = new ACrawlerClass();
-            crawlerObject[n].textWindow = textWindow;
-
-            crawlerObject[n].MainWindow = this;
+            crawlerObject[n] = new ACrawlerClass(n, this);
             crawlerObject[n].pttlObject = pttlObject[n];
-            crawlerObject[n].addSeedDocs();
+
+            crawlerObject[n].AddSeedDocs();
 
             pttlObject[n].makeTrainTest();
             crawlerObject[n].threadActive = 1;
 
-
-            // for (int i = 0; i < 100; i++)
-            {
-                thread[n] = new Thread(new ParameterizedThreadStart(crawlerObject[n].startCrawling));
-            }
-            // for (int i = 0; i < 100; i++)
-            thread[n].Start(n);
+            thread[n] = new Thread(crawlerObject[n].StartCrawling);
+            thread[n].Start();
 
             trackTopics++;
         }
@@ -761,7 +752,7 @@ namespace WindowsFormsApplication1
                         // cut end
                         currUri = currUri.Substring(0, pos);
                         // strip HTML tags
-                        currUri = HTML_TAG_REGEX.Replace(currUri, "");
+                        currUri = RegExs.HTML_TAG_REGEX.Replace(currUri, "");
                         currUri = currUri.Trim();
                     }
 

@@ -25,7 +25,7 @@ using System.Threading;
 using System.Web;
 using System.Collections.Specialized;
 using System.Text.RegularExpressions;
-using RuralCafe.Util;
+using Util;
 using Newtonsoft.Json;
 using System.Diagnostics;
 

@@ -2,16 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using HtmlAgilityPack;
+using System.Text.RegularExpressions;
 
-namespace RuralCafe.Util
+namespace Util
 {
-    using HtmlAgilityPack;
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Text.RegularExpressions;
-
     /// <summary>
     /// Util fields and methods for HTML handling.
     /// </summary>

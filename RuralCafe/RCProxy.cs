@@ -24,6 +24,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using log4net;
+using Util;
 using RuralCafe.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;

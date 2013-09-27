@@ -3,7 +3,7 @@ using Lucene.Net.Analysis;
 using Lucene.Net.Documents;
 using Lucene.Net.Highlight;
 using RuralCafe.Lucenenet;
-using RuralCafe.Util;
+using Util;
 using System;
 using System.Collections.Generic;
 using System.IO;

@@ -28,7 +28,7 @@ using System.Text.RegularExpressions;
 using System.Collections.Specialized;
 using System.Reflection;
 using log4net;
-using RuralCafe.Util;
+using Util;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using RuralCafe.Database;

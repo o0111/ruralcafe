@@ -29,6 +29,7 @@ using System.Web;
 using System.Collections.ObjectModel;
 using RuralCafe.Lucenenet;
 using Newtonsoft.Json;
+using Util;
 using RuralCafe.Util;
 using Microsoft.Win32;
 using RuralCafe.Json;

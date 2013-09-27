@@ -25,14 +25,13 @@ using System.Net;
 using System.Collections.Specialized;
 using System.Text.RegularExpressions;
 using System.Net.Sockets;
-using log4net;
 using HtmlAgilityPack;
 using System.Net.NetworkInformation;
 using System.Threading;
 using System.Diagnostics;
 using Microsoft.Win32;
 
-namespace RuralCafe.Util
+namespace Util
 {
     /// <summary>
     /// A set of utility functions for manipulating files and directories, 
