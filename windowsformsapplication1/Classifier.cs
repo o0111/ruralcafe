@@ -7,11 +7,27 @@ using NClassifier;
 using NClassifier.Bayesian;
 using System.IO;
 using ACrawler;
+using Util;
 
 namespace WindowsFormsApplication1
 {
+    /// <summary>
+    /// Wrapper for an actual Classifier.
+    /// </summary>
     public class Classifier
     {
+        // The stop words
+        public static readonly string[] STOP_WORDS;
+
+        /// <summary>
+        /// Static Constructor
+        /// </summary>
+        static Classifier()
+        {
+            STOP_WORDS = File.ReadAllLines("stopwords.txt");
+        }
+
+
         // One bigger than threadN
         private int topicN;
         // The main dir (from MainWindow)
@@ -49,9 +65,10 @@ namespace WindowsFormsApplication1
                     break;
                 }
                 string fileContent = File.ReadAllText(fileName);
+                // TODO as soon as DownloadSeed is not in PTTL any more and seedDocs are HTML, adapt ExtractUseableText.
                 string useableText = ExtractUseableText(fileContent);
 
-                if (i < ACrawlerClass.NUMBER_OF_LINKS_HALF)
+                if (i < Crawler.NUMBER_OF_LINKS_HALF)
                 {
                     // it's a negative link
                     classifier.TeachNonMatch(useableText);
@@ -65,28 +82,43 @@ namespace WindowsFormsApplication1
         }
 
         /// <summary>
-        /// Extracts useable text by getting only text HTML content, eleminating stopwords,
+        /// Extracts useable text by  eleminating stopwords,
         /// and words occuring too often or too rare.
         /// </summary>
         /// <param name="text">The input text.</param>
         /// <returns>The useable text.</returns>
-        public string ExtractUseableText(string text)
+        private string ExtractUseableText(string text)
         {
+            // Extract text from HTML
+            //string usefulText = HtmlUtils.ExtractText(text);
+            string usefulText = text.ToLower();
+            // Remove stopwords
+            foreach (string stopWord in STOP_WORDS)
+            {
+                usefulText = usefulText.Replace(" " + stopWord + " ", " ");
+            }
             // TODO
-            return text;
+            return usefulText;
         }
 
-        public void Bla()
+        /// <summary>
+        /// Checks, if the given webpage is a match.
+        /// </summary>
+        /// <param name="text">The webpage's text contents. (Not HTML)</param>
+        /// <returns>True, if the website is a match.</returns>
+        public bool IsMatch(string text)
         {
-            IWordsDataSource wds = new SimpleWordsDataSource();
-            BayesianClassifier classifier = new BayesianClassifier(wds);
-
-            classifier.TeachMatch("This is a text about computer science");
-            classifier.TeachNonMatch("This is an arbitrary useless text without meaning.");
-
-            bool isMatch = classifier.IsMatch("Computer science has evolved a lot in the past.");
-            double value = classifier.Classify("Computer science has evolved a lot in the past.");
+            return classifier.IsMatch(ExtractUseableText(text));
         }
 
+        /// <summary>
+        /// Classifies the website with a value between 0 and 1.
+        /// </summary>
+        /// <param name="text">The webpage's text contents. (Not HTML)</param>
+        /// <returns>A value between 0 and 1 indicating how much of a match the webiste is.</returns>
+        public double Classify(string text)
+        {
+            return classifier.Classify(ExtractUseableText(text));
+        }
     }
 }

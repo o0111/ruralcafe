@@ -30,7 +30,7 @@ namespace WindowsFormsApplication1
     public partial class ACrawlerWin : Form
     {
         private Thread[] thread = new Thread[200];
-        private ACrawlerClass[] crawlerObject = new ACrawlerClass[200];
+        private Crawler[] crawlerObject = new Crawler[200];
         private ProcessTopicTopLinksClass[] pttlObject = new ProcessTopicTopLinksClass[200];
         private int totalThread = 0;
         private int trackTopics = 0;
@@ -276,7 +276,7 @@ namespace WindowsFormsApplication1
             pttlObject[n].directory = "" + (n + 1);
 
 
-            crawlerObject[n] = new ACrawlerClass(n, this);
+            crawlerObject[n] = new Crawler(n, this);
             crawlerObject[n].pttlObject = pttlObject[n];
 
             crawlerObject[n].AddSeedDocs();
@@ -297,7 +297,7 @@ namespace WindowsFormsApplication1
         {
             this.startButton.Enabled = false;
             // Pause all threads
-            foreach (ACrawlerClass crawler in crawlerObject)
+            foreach (Crawler crawler in crawlerObject)
             {
                 if(crawler != null)
                 {
@@ -385,8 +385,6 @@ namespace WindowsFormsApplication1
             {
                 StartCrawlerThread(trackTopics);
             }
-
-            thread[finishThread].Abort();
         }
         // FIXME this method does not look good!
         public void suspendRunAnotherThread(int finishThread)
@@ -575,7 +573,7 @@ namespace WindowsFormsApplication1
                     // Write the negative seed links into the file
                     topicFileWriter.WriteLine(negativeSeedLinks);
                     // Google 30 positive links for the topic
-                    List<string> positiveSeedLinks = GetGoogleResults(topics[i], 30);
+                    List<string> positiveSeedLinks = GetGoogleResults(topics[i], Crawler.NUMBER_OF_LINKS_HALF);
                     foreach (string positiveSeedLink in positiveSeedLinks)
                     {
                         topicFileWriter.WriteLine(positiveSeedLink);
@@ -632,49 +630,19 @@ namespace WindowsFormsApplication1
         public bool IsBlacklisted(string requestUri)
         {
             // trim the "http://" and "www."
-            requestUri = RemoveWWWPrefix(RemoveHttpPrefix(requestUri));
+            requestUri = HttpUtils.RemoveWWWPrefix(HttpUtils.RemoveHttpPrefix(requestUri));
 
             // check against all domains in the blacklist
             foreach (string domainH in blacklist)
             {
                 // trim the "http://" and "www."
-                string domain = RemoveWWWPrefix(RemoveHttpPrefix(domainH));
+                string domain = HttpUtils.RemoveWWWPrefix(HttpUtils.RemoveHttpPrefix(domainH));
                 if (requestUri.StartsWith(domain))
                 {
                     return true;
                 }
             }
             return false;
-        }
-
-        /// <summary>
-        /// Removes "http://" from the given URI, if it does start with it.
-        /// </summary>
-        /// <param name="uri">The current URI.</param>
-        /// <returns>The new URI.</returns>
-        public static string RemoveHttpPrefix(string uri)
-        {
-            string http = "http://";
-            if (uri.StartsWith(http))
-            {
-                return uri.Substring(http.Length);
-            }
-            return uri;
-        }
-
-        /// <summary>
-        /// Removes "www." from the given URI, if it does start with it.
-        /// </summary>
-        /// <param name="uri">The current URI.</param>
-        /// <returns>The new URI.</returns>
-        public static string RemoveWWWPrefix(string uri)
-        {
-            string www = "www.";
-            if (uri.StartsWith(www))
-            {
-                return uri.Substring(www.Length);
-            }
-            return uri;
         }
 
         #region Google search

@@ -12,6 +12,9 @@ namespace Util
     /// </summary>
     public static class HtmlUtils
     {
+        // Consts
+        public const int NUMBER_OF_SURROUNDING_WORDS_FOR_SNIPPET = 5;
+
         /// <summary>
         /// Tags that usually do not contain content text.
         /// </summary>
@@ -277,37 +280,89 @@ namespace Util
                 {
                     HtmlAttribute att = link.Attributes[attribute];
                     // Get the absolute URI
-                    string currUriStr;
+                    Uri currUri;
                     try
                     {
-                        currUriStr = new Uri(baseUri, att.Value).AbsoluteUri;
+                        currUri = new Uri(baseUri, att.Value);
                     }
                     catch (UriFormatException)
                     {
                         continue;
                     }
 
-                    if (!HttpUtils.IsValidUri(currUriStr))
+                    if (!HttpUtils.IsValidUri(currUri.AbsoluteUri))
                     {
                         continue;
                     }
-
-                    try
+                    if (!extractedReferences.Contains(currUri))
                     {
-                        Uri currUri = new Uri(currUriStr.Trim());
-
-                        if (!extractedReferences.Contains(currUri))
-                        {
-                            extractedReferences.AddLast(currUri);
-                        }
-                    }
-                    catch (Exception)
-                    {
-                        // pass
+                        extractedReferences.AddLast(currUri);
                     }
                 }
             }
             return extractedReferences;
+        }
+
+        /// <summary>
+        /// Gets the text that surrounds a HTML node.
+        /// This implementation is exactly as the JS one in linkSuggestion.js
+        /// </summary>
+        /// <param name="node">The HTML node</param>
+        /// <param name="stopWords">A list of stopwords</param>
+        /// <returns>The surrounding text.</returns>
+        public static string GetSurroundingText(HtmlNode node, string[] stopWords)
+        {
+            HtmlNode baseNode = node;
+            // If the linkCode is embedded in some markup (e.g. bold tags),
+            // we might have to go up to its parent.
+            // We do only do this once.
+            if (baseNode.NextSibling == null && baseNode.PreviousSibling == null && baseNode.ParentNode != null) 
+            {
+                baseNode = baseNode.ParentNode;
+            }
+        
+            // Get the following words ...
+            List<string> followingWords = new List<string>();
+            HtmlNode currentSibling = baseNode.NextSibling;
+            while (currentSibling != null && followingWords.Count < NUMBER_OF_SURROUNDING_WORDS_FOR_SNIPPET) 
+            {
+                string[] currentSiblingWords = RegExs.SPACES_REGEX.Split(currentSibling.InnerText);
+                for (int i = 0; i < currentSiblingWords.Length
+                        && followingWords.Count < NUMBER_OF_SURROUNDING_WORDS_FOR_SNIPPET; i++)
+                {
+                    // XXX This will eleminate all non latin languages and also
+                    // chars with accents and the such.
+                    string word = RegExs.NON_WORDS_CHARS_REGEX.Replace(currentSiblingWords[i], "");
+                    if (!String.IsNullOrEmpty(word) && !stopWords.Contains(word))
+                    {
+                        followingWords.Add(word);
+                    }
+                }
+                currentSibling = currentSibling.NextSibling;
+            }
+            // ... and preciding words.
+            List<string> precedingWords = new List<string>();
+            currentSibling = baseNode.PreviousSibling;
+            while (currentSibling != null && precedingWords.Count < NUMBER_OF_SURROUNDING_WORDS_FOR_SNIPPET) 
+            {
+                string[] currentSiblingWords = RegExs.SPACES_REGEX.Split(currentSibling.InnerText);
+                for (int i = currentSiblingWords.Length - 1; i >= 0
+                        && precedingWords.Count < NUMBER_OF_SURROUNDING_WORDS_FOR_SNIPPET; i--) 
+                 {
+                    // XXX This will eleminate all non latin languages and also
+                    // chars with accents and the such.
+                    string word = RegExs.NON_WORDS_CHARS_REGEX.Replace(currentSiblingWords[i], "");
+                    if (!String.IsNullOrEmpty(word) && !stopWords.Contains(word))
+                    {
+                        precedingWords.Add(word);
+                    }
+                }
+                currentSibling = currentSibling.PreviousSibling;
+            }
+            // Reverse order
+            precedingWords.Reverse();
+            // Join everything together and return
+            return String.Join(" ", precedingWords) + " " + node.InnerText + " " + String.Join(" ", followingWords);
         }
     }
 }

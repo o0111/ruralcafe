@@ -17,6 +17,10 @@ namespace Util
         public static readonly Regex UNSAFE_CHARS1_REGEX = new Regex("[" + Regex.Escape("/:*?\"<>| ") + "]");// @"[^a-z0-9\\\-\.]");
         /// <summary>Chars unsafe for URI replacements 2.</summary>
         public static readonly Regex UNSAFE_CHARS2_REGEX = new Regex("[" + Regex.Escape("\\:*?\"<>| ") + "]"); // @"[^a-z0-9/\-\.]");
+        /// <summary>Regex that matches one or more non-word characters.</summary>
+        public static Regex NON_WORDS_CHARS_REGEX = new Regex(@"\W+");
+        /// <summary>Regex that matches one or more spaces.</summary>
+        public static Regex SPACES_REGEX = new Regex(@"\s+");
         /// <summary>Regex that matches two or more spaces. Useful for trimming them to one space.</summary>
         public static Regex MULTIPLE_SPACES_REGEX = new Regex(@"\s\s+");
         /// <summary>Regex that matches the number of search results in a google results page.</summary>
