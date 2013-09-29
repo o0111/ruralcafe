@@ -62,6 +62,7 @@ namespace ACrawler
         public static readonly string[] BAD_URL_PARTS = new string[] {
             "youtube", "facebook", "twitter", ".pdf", ".jpg", ".jpeg", ".gif", ".ppt" };
         public const int NUMBER_OF_LINKS_HALF = 30;
+        public const int SWITCH_THREADS_DOWNLOAD_THRESHOLD = 20;
 
         // Backreference to the MainWindow.
         private ACrawlerWin MainWindow;
@@ -93,30 +94,37 @@ namespace ACrawler
         [JsonProperty]
         public List<string> relevantDownload = new List<string>();
         
+        /// <summary>
+        /// The number of relevant pages downloaded.
+        /// </summary>
         [JsonProperty]
         public int count;
+        /// <summary>
+        /// The number of documents downloaded in total (useful and not useful).
+        /// </summary>
         [JsonProperty]
         public int totalDownload;
-        [JsonProperty]
-        public int threadActive;
 
         // The new classifier
         public Classifier classifier;
 
         // The thread number
         private int threadN;
-        // The topic number
-        private int topicN; // TODO redundant -> remove
+
+        // TODO make accessors and methods and make'em private!
         // The interrupted flag
         public volatile bool interrupted = false;
+        // The finished flag
+        public volatile bool finished = false;
+        // The running flag
+        public volatile bool running = false;
 
 
         public Crawler(int threadN, ACrawlerWin mainWindow)
         {
             this.threadN = threadN;
-            this.topicN = threadN + 1;
             this.MainWindow = mainWindow;
-            classifier = new Classifier(topicN, mainWindow.mainFolder);
+            classifier = new Classifier(threadN + 1, mainWindow.mainFolder);
         }
 
         /// <summary>
@@ -148,6 +156,9 @@ namespace ACrawler
         /// </summary>
         public void StartCrawling()
         {
+            running = true;
+            finished = false;
+
             totalDownload = 0;
             count = 0;
 
@@ -168,6 +179,13 @@ namespace ACrawler
                 {
                     try
                     {
+                        if (toCrawlList.Count == 0 || count >= MainWindow.PagesToDownloadPerTopic)
+                        {
+                            // We ran out of frontier links or topic is completed
+                            finished = true;
+                            break;
+                        }
+
                         parentUrl = GetNextCrawlURL();
                         // Check if parentUrl (Full URL with "http://" and probably "www.") is blacklisted
                         if (!MainWindow.IsBlacklisted(parentUrl))
@@ -217,7 +235,7 @@ namespace ACrawler
                                 logFile.Write("-> Downloading relevant document in archieve " + parentUrl + "\n");
                                 logFile.Flush();
                                 client.DownloadFile(parentUrl, pttlObject.topicDirectory + pttlObject.directory + "//webdocs//" + count + ".html");
-                                // Satia: Let the delegate process the URI
+                                // Let the delegate process the URI
                                 MainWindow.LetDelegateProcess(parentUrl);
 
                                 logFile.Write("<- Downloading relevant document in archieve " + parentUrl + "\n");
@@ -244,42 +262,32 @@ namespace ACrawler
                     {
                     }
 
-                    if (toCrawlList.Count == 0)
-                    {
-                        // We ran out of frontier links
-                        break;
-                    }
-
-                    if (totalDownload > 100)
+                    if (totalDownload % SWITCH_THREADS_DOWNLOAD_THRESHOLD == 0)
                     {
                         logFile.Write("-> switching threads" + "\n");
                         logFile.Flush();
-                        // FIXME this is probably poorly implemented
-                        MainWindow.suspendRunAnotherThread(threadN);
+                        // This will possibly trigger the MainWindow to interrupt us.
+                        MainWindow.SuspendRunAnotherThread(threadN);
                         logFile.Write("<- switching threads" + "\n");
                         logFile.Flush();
                     }
-
-                    if (count >= MainWindow.PagesToDownloadPerTopic)
-                    {
-                        // Topic is completed
-                        break;
-                    }
                 }
 
+                // Start another topic's crawler, unless we have been interrupted.
                 if (!interrupted)
                 {
                     logFile.Write("-> thread finish but running another thread" + "\n");
                     logFile.Flush();
-                    MainWindow.runAnotherThread(threadN);
+                    MainWindow.RunAnotherThread();
                     logFile.Write("<- thread finish but running another thread" + "\n");
                     logFile.Flush();
                 }
             }
 
-            // Notify the MainWindow that a topic is completed and save the state
+            // Notify the MainWindow that a topic is completed (or interrupted) and save the state
             MainWindow.CrawlerTopicCompleted();
             SaveState();
+            running = false;
         }
 
         /// <summary>

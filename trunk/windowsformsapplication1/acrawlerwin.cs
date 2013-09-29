@@ -33,8 +33,8 @@ namespace WindowsFormsApplication1
         private Crawler[] crawlerObject = new Crawler[200];
         private ProcessTopicTopLinksClass[] pttlObject = new ProcessTopicTopLinksClass[200];
         private int totalThread = 0;
-        private int trackTopics = 0;
-        public Mutex mutex = new Mutex();
+        private volatile int trackTopics = 0;
+
         public string mainFolder;
         public int globalTotalTopics;
         public int countDead;
@@ -282,12 +282,9 @@ namespace WindowsFormsApplication1
             crawlerObject[n].AddSeedDocs();
 
             pttlObject[n].makeTrainTest();
-            crawlerObject[n].threadActive = 1;
 
             thread[n] = new Thread(crawlerObject[n].StartCrawling);
             thread[n].Start();
-
-            trackTopics++;
         }
 
         /// <summary>
@@ -356,14 +353,16 @@ namespace WindowsFormsApplication1
             }
 
             int cc = 0;
-            totalThread = 20;
-            trackTopics = 0;
+            totalThread = 20; // FIXME const.
+            trackTopics = Math.Min(totalThread, globalTotalTopics);
 
             for (cc = 0; cc < totalThread; cc++)
             {
                 StartCrawlerThread(cc);
-                if (trackTopics >= globalTotalTopics)
+                if (cc == globalTotalTopics - 1)
+                {
                     break;
+                }
             }
         }
 
@@ -379,62 +378,62 @@ namespace WindowsFormsApplication1
             }
         }
 
-        public void runAnotherThread(int finishThread)
+        /// <summary>
+        /// Looks if there is a topic for which a crawler has not been started yet
+        /// and if so starts a crawler for that topic.
+        /// </summary>
+        public void RunAnotherThread()
         {
             if (trackTopics < globalTotalTopics)
             {
                 StartCrawlerThread(trackTopics);
+                trackTopics++;
             }
         }
-        // FIXME this method does not look good!
-        public void suspendRunAnotherThread(int finishThread)
+
+        /// <summary>
+        /// Looks if there is a topic for which sa crawler has not been started yet or if there is a crawler interrupted.
+        /// In these cases, the given crawler is interrupted and the other crawler is started/restarted.
+        /// 
+        /// TODO actually test if toStart != null...
+        /// </summary>
+        /// <param name="finishThread">The number of the thread to interrupt.</param>
+        public void SuspendRunAnotherThread(int finishThread)
         {
-
-            mutex.WaitOne();
-
             if (trackTopics < globalTotalTopics)
             {
+                // Interrupt the current crawler
+                crawlerObject[finishThread].interrupted = true;
+                // Start a crawler for a new topic
                 StartCrawlerThread(trackTopics);
-                mutex.ReleaseMutex();
-                thread[finishThread].Suspend();
+                trackTopics++;
             }
             else
             {
-                int minCount = 1000;
-                int threadN = -1;
-                for (int i = 0; i < trackTopics; i++)
+                Crawler toStart = null;
+                int i = finishThread;
+                i = (i == globalTotalTopics - 1 ? 0 : i + 1);
+                while(i != finishThread)
                 {
-                    if (crawlerObject[i].count < PagesToDownloadPerTopic)
+                    if (!crawlerObject[i].running && !crawlerObject[i].finished)
                     {
-                        if (crawlerObject[i].count < minCount && i != finishThread)
-                        {
-                            if (thread[i].ThreadState == System.Threading.ThreadState.Suspended)
-                            {
-                                minCount = crawlerObject[i].count;
-                                threadN = i;
-                            }
-                        }
+                        toStart = crawlerObject[i];
+                        break;
                     }
+                    i = (i == globalTotalTopics - 1 ? 0 : i + 1);
                 }
-                if (threadN != -1)
+
+                // Only interrupt the current, if we found another to start
+                if (toStart != null)
                 {
-                    crawlerObject[threadN].totalDownload = 0;
-                    if (thread[threadN].ThreadState == System.Threading.ThreadState.Suspended)
-                        thread[threadN].Resume();
-
-                    mutex.ReleaseMutex();
-
-                    thread[finishThread].Suspend();
+                    // Interrupt the current crawler
+                    crawlerObject[finishThread].interrupted = true;
+                    // We have to decrement the number of topics completed, when we restart a Crawler
+                    Interlocked.Decrement(ref this.topicsCompleted);
+                    // Restart the other crawler
+                    toStart.StartCrawling();
                 }
-                else
-                    mutex.ReleaseMutex();
-
             }
-        }
-
-        private void label1_Click(object sender, System.EventArgs e)
-        {
-
         }
 
         private void button1_Click_1(object sender, System.EventArgs e)
