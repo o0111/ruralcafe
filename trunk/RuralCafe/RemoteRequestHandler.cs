@@ -420,10 +420,9 @@ namespace RuralCafe
 
             // recurse
             LinkedList<Uri> resultLinkUris = HtmlUtils.ExtractLinks(baseUri, htmlContent);
-            foreach (Uri currUri in resultLinkUris)
+            foreach (Uri uri in resultLinkUris)
             {
-                RCRequest currRequest = new RCRequest(_proxy, (HttpWebRequest)WebRequest.Create(currUri));
-
+                RCRequest currRequest = new RCRequest(_proxy, (HttpWebRequest)WebRequest.Create(uri));
                 RecursivelyDownloadPage(currRequest, richness, depth + 1);
             }
             return true;
@@ -445,22 +444,23 @@ namespace RuralCafe
             {
                 return new LinkedList<RCRequest>();
             }
-            
+
             LinkedList<Uri> embeddedObjects = HtmlUtils.ExtractEmbeddedObjects(baseUri, htmlContent);
 
             // XXX: refactor into filter class/method.
             // filter out based on richness
-            foreach (Uri currUri in embeddedObjects)
+            foreach (Uri uri in embeddedObjects)
             {
+                string uriS = uri.ToString();
                 // ignore blacklisted domains
-                if (IsBlacklisted(currUri.ToString()))
+                if (IsBlacklisted(uriS))
                 {
                     continue;
                 }
-                
-                if (richness == Richness.Normal || (richness == Richness.Low && IsATextPage(currUri.ToString())))
+
+                if (richness == Richness.Normal || (richness == Richness.Low && IsATextPage(uriS)))
                 {
-                    filteredEmbeddedObjects.AddLast(currUri);
+                    filteredEmbeddedObjects.AddLast(uri);
                 }
             }
             embeddedObjects = filteredEmbeddedObjects;

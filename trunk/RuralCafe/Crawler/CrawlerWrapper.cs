@@ -134,7 +134,6 @@ namespace RuralCafe.Crawler
         /// <returns>List of RCRequests of embedded objects downloaded</returns>
         private LinkedList<RCRequest> DownloadEmbeddedObjects(RCRequest rcRequest, Uri baseUri, string htmlContent)
         {
-            LinkedList<Uri> filteredEmbeddedObjects = new LinkedList<Uri>();
             LinkedList<Uri> embeddedObjects = HtmlUtils.ExtractEmbeddedObjects(baseUri, htmlContent);
             return DownloadObjectsInParallel(rcRequest, embeddedObjects);
         }

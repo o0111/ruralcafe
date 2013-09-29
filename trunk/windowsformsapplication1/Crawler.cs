@@ -13,11 +13,50 @@ using System.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Reflection;
+using Util;
 
 namespace ACrawler
 {
+    /// <summary>
+    /// An URI, together with its weight.
+    /// </summary>
+    public class WeightedUri
+    {
+        public string Uri
+        {
+            get;
+            private set;
+        }
+        public double Weight
+        {
+            get;
+            private set;
+        }
+        public WeightedUri(string uri, double weight)
+        {
+            this.Uri = uri;
+            this.Weight = weight;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (!(obj is WeightedUri))
+            {
+                return false;
+            }
+            return Uri.Equals((obj as WeightedUri).Uri);
+        }
+        public override int GetHashCode()
+        {
+            return Uri.GetHashCode();
+        }
+    }
+
+    /// <summary>
+    /// A crawler for one topic.
+    /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
-    public class ACrawlerClass
+    public class Crawler
     {
         // Constants
         public static readonly string[] BAD_URL_PARTS = new string[] {
@@ -30,7 +69,23 @@ namespace ACrawler
         public ProcessTopicTopLinksClass pttlObject;
 
         [JsonProperty]
-        public List<string> toCrawlList = new List<string>();
+        public SortedSet<WeightedUri> toCrawlList = new SortedSet<WeightedUri>(
+            FunctionalComparer<WeightedUri>.Create((wu1, wu2) =>
+                {
+                    if(wu1.Uri.Equals(wu2.Uri))
+                    {
+                        return 0;
+                    }
+                    if(wu1.Weight > wu2.Weight)
+                    {
+                        return 1;
+                    }
+                    if(wu1.Weight < wu2.Weight)
+                    {
+                        return -1;
+                    }
+                    return wu1.Uri.CompareTo(wu2.Uri);
+                }));
         [JsonProperty]
         public List<string> inCrawlList = new List<string>();
         [JsonProperty]
@@ -56,7 +111,7 @@ namespace ACrawler
         public volatile bool interrupted = false;
 
 
-        public ACrawlerClass(int threadN, ACrawlerWin mainWindow)
+        public Crawler(int threadN, ACrawlerWin mainWindow)
         {
             this.threadN = threadN;
             this.topicN = threadN + 1;
@@ -77,12 +132,20 @@ namespace ACrawler
                 if (IsUsefulURL(lines[i]))
                 {
                     seedBank.Add(lines[i]);
-                    toCrawlList.Add(lines[i]);
+                    // Seed links get the highest priority: 1
+                    WeightedUri wu = new WeightedUri(lines[i], 1);
+                    toCrawlList.Add(wu);
                     inCrawlList.Add(lines[i]);
                 }
             }
         }
 
+        /// <summary>
+        /// Starts crawling, until finished, interrupted, or running out of frontier links.
+        /// (Also is suspended currently after 100 downloaded links).
+        /// 
+        /// TODO use downloadString and remove dup Download, after PTTL is removed.
+        /// </summary>
         public void StartCrawling()
         {
             totalDownload = 0;
@@ -91,7 +154,7 @@ namespace ACrawler
             // Load the state from a previous run.
             LoadState();
 
-            List<string> linksList = new List<string>();
+            LinkedList<Uri> linksList = new LinkedList<Uri>();
             string parentUrl = "";
 
             WebClient client = new WebClient();
@@ -115,6 +178,12 @@ namespace ACrawler
                             logFile.Flush();
                             totalDownload++;
                             client.DownloadFile(parentUrl, pttlObject.topicDirectory + pttlObject.directory + "/tempPage" + threadN + ".htm");
+                            // XXX No dup text extractions any more.
+                            // XXX Not downloadFile + Read, but DownloadString instead
+                            string pageContent = File.ReadAllText(pttlObject.topicDirectory + pttlObject.directory + "/tempPage" + threadN + ".htm");
+                            string text = HtmlUtils.ExtractText(pageContent);
+                            string[] textSplit = text.Split(' ');
+
                             logFile.Write("<- Download and saving file in tempPage = " + parentUrl + "\n");
                             logFile.Flush();
 
@@ -124,6 +193,11 @@ namespace ACrawler
                             logFile.Write("-> checking web page relevance = " + parentUrl + "\n");
                             logFile.Flush();
                             int relResult = pttlObject.isWebLinkRelevant(parentUrl, threadN, logFile);
+                            double classify = classifier.Classify(text);
+                            bool isMatch = classifier.IsMatch(text);
+                            Console.WriteLine("Old: {0} New: {1} NewIsMatch: {2}", relResult, classify, isMatch);
+
+
                             logFile.Write("<- checking web page relevance = " + parentUrl + "\n");
                             logFile.Flush();
 
@@ -151,30 +225,6 @@ namespace ACrawler
 
                                 MainWindow.SetRichText("done...[" + "relevant" + "]" + "\n");
 
-                                string mainDomain = "";
-                                int cc = -1;
-
-                                logFile.Write("-> domain name extraction" + "\n");
-                                logFile.Flush();
-                                if (parentUrl.Length > 2)
-                                {
-                                    for (int k = parentUrl.Length - 1; k >= 0; k--)
-                                    {
-                                        if (parentUrl[k] == '/')
-                                        {
-                                            cc = k;
-                                            break;
-                                        }
-                                        // mainDomain += "" + parentUrl[k];
-                                    }
-
-                                    if (cc != -1)
-                                        mainDomain = "" + parentUrl.Substring(0, cc);
-                                }
-
-                                logFile.Write("<- domain name extraction" + "\n");
-                                logFile.Flush();
-
                                 logFile.Write("-> downloading document for hyperliks extraction (tempPage)" + "\n");
                                 logFile.Flush();
                                 doc.Load(pttlObject.topicDirectory + pttlObject.directory + "/tempPage" + threadN + ".htm");
@@ -183,44 +233,9 @@ namespace ACrawler
 
                                 logFile.Write("-> hyperlinks extraction (tempPage)" + "\n");
                                 logFile.Flush();
-
-                                HtmlNodeCollection links = doc.DocumentNode.SelectNodes("//a[@href]");
-                                if (links != null)
-                                {
-                                    foreach (HtmlNode link in links)
-                                    {
-                                        if (!linksList.Contains(link.Attributes["href"].Value))
-                                        {
-                                            linksList.Add(link.Attributes["href"].Value.ToString());
-                                        }
-                                    }
-                                }
+                                AddLinksToCrawlLists(new Uri(parentUrl), pageContent);
                                 logFile.Write("<- hyperlinks extraction (tempPage)" + "\n");
                                 logFile.Flush();
-
-                                logFile.Write("-> hyperlinks saving in data structures" + "\n");
-                                logFile.Flush();
-                                for (int i = 0; i < linksList.Count; i++)
-                                {
-
-                                    string checkD = "";
-                                    if (!linksList[i].Contains("://"))
-                                        checkD = mainDomain + '/' + linksList[i];
-                                    else
-                                        checkD = linksList[i];
-
-                                    if (!inCrawlList.Contains(checkD) && IsUsefulURL(checkD))
-                                    {
-                                        toCrawlList.Add(checkD);
-                                        inCrawlList.Add(checkD);
-                                    }
-                                }
-
-
-                                linksList.Clear();
-                                logFile.Write("<- hyperlinks saving in data structures" + "\n");
-                                logFile.Flush();
-
                             }
                             MainWindow.SetUrlText(pttlObject.directory);
                         }
@@ -268,14 +283,65 @@ namespace ACrawler
         }
 
         /// <summary>
-        /// Gets the next URL to crawl. TODO adapt implementation.
+        /// Adds all links of a page in the crawl lists, unless they have already been added at some point.
+        /// </summary>
+        /// <param name="anchor">The anchor.</param>
+        /// <param name="text">The website's text content, split into words.</param>
+        public void AddLinksToCrawlLists(Uri baseUri, string html)
+        {
+            HtmlAgilityPack.HtmlDocument doc = new HtmlAgilityPack.HtmlDocument();
+            doc.LoadHtml(html);
+
+            HtmlNodeCollection results = doc.DocumentNode.SelectNodes("//a[@href]");
+            if (results == null)
+            {
+                return;
+            }
+            foreach (HtmlNode link in results)
+            {
+                HtmlAttribute att = link.Attributes["href"];
+                // Get the absolute URI
+                Uri currUri;
+                try
+                {
+                    currUri = new Uri(baseUri, att.Value);
+                }
+                catch (UriFormatException)
+                {
+                    continue;
+                }
+                string uriS = currUri.AbsoluteUri;
+
+                if (!HttpUtils.IsValidUri(uriS))
+                {
+                    continue;
+                }
+                // Do not add links we have already crawled or that will already be crawled
+                if (inCrawlList.Contains(uriS))
+                {
+                    continue;
+                }
+                // Get the snippet rurrounding the anchor.
+                string snippet = HtmlUtils.GetSurroundingText(link, Classifier.STOP_WORDS);
+                // And concatenate with the URI
+                snippet += " " + uriS;
+                // Get classification value and insert into list
+                double value = classifier.Classify(snippet);
+
+                toCrawlList.Add(new WeightedUri(uriS, value));
+                inCrawlList.Add(uriS);
+            }
+        }
+
+        /// <summary>
+        /// Gets the next URL to crawl.
         /// </summary>
         /// <returns>The next URL to crawl.</returns>
         public string GetNextCrawlURL()
         {
-            string result = toCrawlList[0];
-            toCrawlList.RemoveAt(0);
-            return result;
+            WeightedUri nextWU = toCrawlList.Max;
+            toCrawlList.Remove(nextWU);
+            return nextWU.Uri;
         }
 
         /// <summary>

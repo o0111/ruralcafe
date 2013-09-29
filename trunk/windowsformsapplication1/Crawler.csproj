@@ -89,7 +89,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ACrawler.cs" />
+    <Compile Include="Crawler.cs" />
     <Compile Include="ACrawlerWin.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -97,7 +97,7 @@
       <DependentUpon>ACrawlerWin.cs</DependentUpon>
     </Compile>
     <Compile Include="Classifier.cs" />
-    <Compile Include="PoterStemmer.cs" />
+    <Compile Include="PorterStemmer.cs" />
     <Compile Include="ProcessTopicTopLinks.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
