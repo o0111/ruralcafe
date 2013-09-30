@@ -12,11 +12,14 @@ using System.Text.RegularExpressions;
 using System.Web;
 using PorterStemmerAlgorithm;
 using SVMTrainClass;
-using WindowsFormsApplication1;
+using Crawler;
 using System.Threading;
 
 namespace ProcessTopicTopLinks
 {
+    /// <summary>
+    /// NOT USED ANY MORE.
+    /// </summary>
     public class ProcessTopicTopLinksClass
     {
         public RichTextBox textWindow;
@@ -416,7 +419,7 @@ namespace ProcessTopicTopLinks
                     }
                 }
             }
-            catch (Exception d)
+            catch (Exception)
             {
 
             }
@@ -453,7 +456,7 @@ namespace ProcessTopicTopLinks
 
 
                 }
-                catch (SystemException ex)
+                catch (SystemException)
                 {
                     logFile.Write("-> extracting viewable text using html agility pack (tryCatch) = " + "\n");
                     logFile.Flush();
@@ -698,8 +701,7 @@ namespace ProcessTopicTopLinks
         {
             List<string> topLinksList = new List<string>();
 
-
-            System.IO.StreamReader file = new System.IO.StreamReader(topicDirectory + topicFileName);
+            StreamReader file = new StreamReader(topicDirectory + topicFileName);
             string line;
 
             while ((line = file.ReadLine()) != null)
@@ -708,8 +710,8 @@ namespace ProcessTopicTopLinks
             }
 
             file.Close();
-            System.IO.Directory.CreateDirectory(topicDirectory + directory);
-            System.IO.Directory.CreateDirectory(topicDirectory + directory + "//webdocs");
+            Directory.CreateDirectory(topicDirectory + directory);
+            Directory.CreateDirectory(topicDirectory + directory + "//webdocs");
 
             HtmlAgilityPack.HtmlDocument document = new HtmlAgilityPack.HtmlDocument();
 
@@ -768,7 +770,7 @@ namespace ProcessTopicTopLinks
             }
             MainWindow.SetRichText(".............seed downloading complete successfully for topic " + directory + "\n");
 
-            MainWindow.showSeedDocsFinish(directory);
+            MainWindow.ShowSeedDocsFinish(Int32.Parse(directory));
             downloadC = 1;
         }
 

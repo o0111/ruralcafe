@@ -6,10 +6,9 @@ using System.Text;
 using NClassifier;
 using NClassifier.Bayesian;
 using System.IO;
-using ACrawler;
 using Util;
 
-namespace WindowsFormsApplication1
+namespace Crawler
 {
     /// <summary>
     /// Wrapper for an actual Classifier.
@@ -27,24 +26,32 @@ namespace WindowsFormsApplication1
             STOP_WORDS = File.ReadAllLines("stopwords.txt");
         }
 
-
-        // One bigger than threadN
+        // The topic number
         private int topicN;
         // The main dir (from MainWindow)
         private string mainDirectory;
-        // rel to main dir
-        private string topicFileName;
-        // rel to main dir
-        private string topicDir;
         // The actual classifier
         private BayesianClassifier classifier;
+
+        // rel to main dir
+        public string TopicFileName
+        {
+            get;
+            private set;
+        }
+        // rel to main dir
+        public string TopicDir
+        {
+            get;
+            private set;
+        }
 
         public Classifier(int topicN, string mainDirectory)
         {
             this.topicN = topicN;
             this.mainDirectory = mainDirectory;
-            this.topicFileName = "topic" + topicN + ".txt";
-            this.topicDir = "" + topicN;
+            this.TopicFileName = "topic" + topicN + ".txt";
+            this.TopicDir = "" + topicN;
 
             IWordsDataSource wds = new SimpleWordsDataSource();
             this.classifier = new BayesianClassifier(wds);
@@ -59,13 +66,13 @@ namespace WindowsFormsApplication1
         {
             for (int i = 0; true; i++)
             {
-                string fileName = mainDirectory + topicDir + Path.DirectorySeparatorChar + i + ".txt";
+                string fileName = mainDirectory + TopicDir + Path.DirectorySeparatorChar + i + ".txt";
                 if (!File.Exists(fileName))
                 {
                     break;
                 }
+                // TODO this will possibly contain HTML now...
                 string fileContent = File.ReadAllText(fileName);
-                // TODO as soon as DownloadSeed is not in PTTL any more and seedDocs are HTML, adapt ExtractUseableText.
                 string useableText = ExtractUseableText(fileContent);
 
                 if (i < Crawler.NUMBER_OF_LINKS_HALF)
@@ -89,8 +96,7 @@ namespace WindowsFormsApplication1
         /// <returns>The useable text.</returns>
         private string ExtractUseableText(string text)
         {
-            // Extract text from HTML
-            //string usefulText = HtmlUtils.ExtractText(text);
+            // Lower case
             string usefulText = text.ToLower();
             // Remove stopwords
             foreach (string stopWord in STOP_WORDS)

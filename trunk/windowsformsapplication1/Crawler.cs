@@ -7,7 +7,7 @@ using HtmlAgilityPack;
 using System.Net;
 using System.IO;
 using System.Windows.Forms;
-using WindowsFormsApplication1;
+using Crawler;
 using ProcessTopicTopLinks;
 using System.Threading;
 using Newtonsoft.Json;
@@ -15,12 +15,36 @@ using Newtonsoft.Json.Linq;
 using System.Reflection;
 using Util;
 
-namespace ACrawler
+namespace Crawler
 {
+    /// <summary>
+    /// A class extending the webclient where you can set a timeout.
+    /// </summary>
+    public class MyWebClient : WebClient
+    {
+        public int TimeoutMs
+        {
+            get;
+            set;
+        }
+
+        public MyWebClient(int timeoutMs)
+        {
+            this.TimeoutMs = timeoutMs;
+        }
+
+        protected override WebRequest GetWebRequest(Uri uri)
+        {
+            WebRequest w = base.GetWebRequest(uri);
+            w.Timeout = TimeoutMs;
+            return w;
+        }
+    }
+
     /// <summary>
     /// An URI, together with its weight.
     /// </summary>
-    public class WeightedUri
+    public class WeightedUri : IComparable<WeightedUri>
     {
         public string Uri
         {
@@ -50,6 +74,31 @@ namespace ACrawler
         {
             return Uri.GetHashCode();
         }
+        /// <summary>
+        /// Implementing the CompareTo method.
+        /// 
+        /// We make sure entries with the same URL are "equal" by comparison,
+        /// so that there won't be dups in the SortedSet. All other entries are
+        /// sorted by weight and then by Uri.
+        /// </summary>
+        /// <param name="wu2">The other WeightedUri</param>
+        /// <returns>A comparison value.</returns>
+        public int CompareTo(WeightedUri wu2)
+        {
+            if (Uri.Equals(wu2.Uri))
+            {
+                return 0;
+            }
+            if (Weight > wu2.Weight)
+            {
+                return 1;
+            }
+            if (Weight < wu2.Weight)
+            {
+                return -1;
+            }
+            return Uri.CompareTo(wu2.Uri);
+        }
     }
 
     /// <summary>
@@ -62,84 +111,102 @@ namespace ACrawler
         public static readonly string[] BAD_URL_PARTS = new string[] {
             "youtube", "facebook", "twitter", ".pdf", ".jpg", ".jpeg", ".gif", ".ppt" };
         public const int NUMBER_OF_LINKS_HALF = 30;
-        public const int SWITCH_THREADS_DOWNLOAD_THRESHOLD = 20;
+        public const int SWITCH_THREADS_DOWNLOAD_THRESHOLD = 100;
+        public const int WEB_TIMEOUT = 1000 * 10; // 10 seconds
+
+        // The links still to crawl, in a PriorityQueue
+        [JsonProperty]
+        private SortedSet<WeightedUri> toCrawlList = new SortedSet<WeightedUri>();
+        [JsonProperty]
+        // All links to crawl and ever crawled
+        private List<string> inCrawlList = new List<string>();
+        // The number of relevant pages downloaded.
+        [JsonProperty]
+        private int count;
+        // The number of documents downloaded in total (useful and not useful).
+        [JsonProperty]
+        private int totalDownload;
 
         // Backreference to the MainWindow.
         private ACrawlerWin MainWindow;
-        // TODO this is to be removed
-        public ProcessTopicTopLinksClass pttlObject;
+        // The new classifier
+        private Classifier classifier;
+        // private volatile bools for the properties.
+        private volatile bool interrupted = false;
+        private volatile bool finished = false;
+        private volatile bool running = false;
 
-        [JsonProperty]
-        public SortedSet<WeightedUri> toCrawlList = new SortedSet<WeightedUri>(
-            FunctionalComparer<WeightedUri>.Create((wu1, wu2) =>
-                {
-                    if(wu1.Uri.Equals(wu2.Uri))
-                    {
-                        return 0;
-                    }
-                    if(wu1.Weight > wu2.Weight)
-                    {
-                        return 1;
-                    }
-                    if(wu1.Weight < wu2.Weight)
-                    {
-                        return -1;
-                    }
-                    return wu1.Uri.CompareTo(wu2.Uri);
-                }));
-        [JsonProperty]
-        public List<string> inCrawlList = new List<string>();
-        [JsonProperty]
-        public List<string> seedBank = new List<string>();
-        [JsonProperty]
-        public List<string> relevantDownload = new List<string>();
-        
         /// <summary>
         /// The number of relevant pages downloaded.
         /// </summary>
-        [JsonProperty]
-        public int count;
+        public int Count
+        {
+            get { return count; }
+        }
         /// <summary>
         /// The number of documents downloaded in total (useful and not useful).
         /// </summary>
-        [JsonProperty]
-        public int totalDownload;
-
-        // The new classifier
-        public Classifier classifier;
-
-        // The thread number
-        private int threadN;
-
-        // TODO make accessors and methods and make'em private!
-        // The interrupted flag
-        public volatile bool interrupted = false;
-        // The finished flag
-        public volatile bool finished = false;
-        // The running flag
-        public volatile bool running = false;
-
-
-        public Crawler(int threadN, ACrawlerWin mainWindow)
+        public int TotalDownload
         {
-            this.threadN = threadN;
-            this.MainWindow = mainWindow;
-            classifier = new Classifier(threadN + 1, mainWindow.mainFolder);
+            get { return totalDownload; }
+        }
+        public int NumFrontierLinks
+        {
+            get { return toCrawlList.Count; }
+        }
+        /// <summary>
+        /// The thread number.
+        /// </summary>
+        public int ThreadN
+        {
+            get;
+            private set;
+        }
+        /// <summary>
+        /// Whether the crawler has been interrupted.
+        /// </summary>
+        public bool Interrupted
+        {
+            get { return interrupted; }
+        }
+        /// <summary>
+        /// Whether the crawler is finished download enough documents, or finished because he ran out of frontier links.
+        /// </summary>
+        public bool Finished
+        {
+            get { return finished; }
+        }
+        /// <summary>
+        /// Whether the crawler is currently running.
+        /// </summary>
+        public bool Running
+        {
+            get { return running; }
         }
 
         /// <summary>
-        /// Adds the the positive links (all except the first 30) from topicN.txt to the seedBank.
+        /// Creates a new crawler.
+        /// </summary>
+        /// <param name="threadN">The thread number of this crawler.</param>
+        /// <param name="mainWindow">The MainWindow.</param>
+        public Crawler(int threadN, ACrawlerWin mainWindow)
+        {
+            this.ThreadN = threadN;
+            this.MainWindow = mainWindow;
+            // TODO a new classifier must not be trained in the Constructor!
+            classifier = new Classifier(threadN , mainWindow.MainFolder);
+        }
+
+        /// <summary>
+        /// Adds the the positive links (all except the first 30) from topicN.txt to the crawl lists.
         /// </summary>
         public void AddSeedDocs()
         {
-            seedBank.Clear();
-
-            string[] lines = File.ReadAllLines(pttlObject.topicDirectory + pttlObject.topicFileName);
+            string[] lines = File.ReadAllLines(MainWindow.MainFolder + classifier.TopicFileName);
             for (int i = NUMBER_OF_LINKS_HALF; i < lines.Length; i++)
             {
                 if (IsUsefulURL(lines[i]))
                 {
-                    seedBank.Add(lines[i]);
                     // Seed links get the highest priority: 1
                     WeightedUri wu = new WeightedUri(lines[i], 1);
                     toCrawlList.Add(wu);
@@ -149,14 +216,28 @@ namespace ACrawler
         }
 
         /// <summary>
+        /// Interrupts the Crawler.
+        /// </summary>
+        public void Interrupt()
+        {
+            interrupted = true;
+        }
+        /// <summary>
+        /// Sets running = true. Should ba called before StartCrawling is started in a new thread, to avoid conflicts.
+        /// </summary>
+        public void SetRunning()
+        {
+            running = true;
+        }
+
+        /// <summary>
         /// Starts crawling, until finished, interrupted, or running out of frontier links.
-        /// (Also is suspended currently after 100 downloaded links).
-        /// 
-        /// TODO use downloadString and remove dup Download, after PTTL is removed.
+        /// Also is suspended (temporarily) after 100 downloaded links.
         /// </summary>
         public void StartCrawling()
         {
             running = true;
+            interrupted = false;
             finished = false;
 
             totalDownload = 0;
@@ -165,17 +246,15 @@ namespace ACrawler
             // Load the state from a previous run.
             LoadState();
 
-            LinkedList<Uri> linksList = new LinkedList<Uri>();
             string parentUrl = "";
+            WebClient client = new MyWebClient(WEB_TIMEOUT);
 
-            WebClient client = new WebClient();
-            HtmlAgilityPack.HtmlDocument doc = new HtmlAgilityPack.HtmlDocument();
-
-            using (StreamWriter logFile = new StreamWriter(pttlObject.topicDirectory + pttlObject.directory + "//webdocs//" + "systemLog.txt"))
-            using (StreamWriter logTrueClassification = new StreamWriter(pttlObject.topicDirectory + pttlObject.directory + "//webdocs//" + "classificationTrueLog.txt"))
-            using (StreamWriter logFalseClassification = new StreamWriter(pttlObject.topicDirectory + pttlObject.directory + "//webdocs//" + "classificationFalseLog.txt"))
+            string folder = MainWindow.MainFolder + classifier.TopicDir + Path.DirectorySeparatorChar;
+            using (StreamWriter logFile = new StreamWriter(folder + "webdocs" + Path.DirectorySeparatorChar + "systemLog.txt"))
+            using (StreamWriter logTrueClassification = new StreamWriter(folder + "webdocs" + Path.DirectorySeparatorChar + "classificationTrueLog.txt"))
+            using (StreamWriter logFalseClassification = new StreamWriter(folder + "webdocs" + Path.DirectorySeparatorChar + "classificationFalseLog.txt"))
             {
-                while (!interrupted)
+                while (!Interrupted)
                 {
                     try
                     {
@@ -186,95 +265,85 @@ namespace ACrawler
                             break;
                         }
 
+                        // Get the next URL from the ProrityQueue
                         parentUrl = GetNextCrawlURL();
                         // Check if parentUrl (Full URL with "http://" and probably "www.") is blacklisted
                         if (!MainWindow.IsBlacklisted(parentUrl))
                         {
                             MainWindow.SetUrlChecking(parentUrl);
 
-                            logFile.Write("-> Download and saving file in tempPage = " + parentUrl + "\n");
+                            // Download the page
+                            logFile.Write("-> Download = " + parentUrl + "\n");
                             logFile.Flush();
                             totalDownload++;
-                            client.DownloadFile(parentUrl, pttlObject.topicDirectory + pttlObject.directory + "/tempPage" + threadN + ".htm");
-                            // XXX No dup text extractions any more.
-                            // XXX Not downloadFile + Read, but DownloadString instead
-                            string pageContent = File.ReadAllText(pttlObject.topicDirectory + pttlObject.directory + "/tempPage" + threadN + ".htm");
-                            string text = HtmlUtils.ExtractText(pageContent);
-                            string[] textSplit = text.Split(' ');
 
-                            logFile.Write("<- Download and saving file in tempPage = " + parentUrl + "\n");
+                            string pageContent = client.DownloadString(parentUrl);
+                            string text = HtmlUtils.ExtractText(pageContent);
+                            logFile.Write("<- Download = " + parentUrl + "\n");
                             logFile.Flush();
 
+                            // Check, if it is relevant
                             MainWindow.SetRichText("checking relevance of [url=" + parentUrl + "]\n");
-
-
                             logFile.Write("-> checking web page relevance = " + parentUrl + "\n");
                             logFile.Flush();
-                            int relResult = pttlObject.isWebLinkRelevant(parentUrl, threadN, logFile);
-                            double classify = classifier.Classify(text);
+                            //int relResult = pttlObject.isWebLinkRelevant(parentUrl, threadN, logFile);
                             bool isMatch = classifier.IsMatch(text);
-                            Console.WriteLine("Old: {0} New: {1} NewIsMatch: {2}", relResult, classify, isMatch);
-
-
                             logFile.Write("<- checking web page relevance = " + parentUrl + "\n");
                             logFile.Flush();
 
-                            if (relResult == -1)
+                            if (!isMatch)
                             {
+                                // Not relevant
                                 logFalseClassification.Write(parentUrl + "\n");
                                 MainWindow.SetRichText("done...[" + "not relevant" + "]" + "\n");
                             }
                             else
                             {
+                                // Relevant!
                                 logTrueClassification.Write(parentUrl + "\n");
-
+                                MainWindow.SetRichText("done...[" + "relevant" + "]" + "\n");
                                 count++;
 
-                                relevantDownload.Add(parentUrl);
-
-                                logFile.Write("-> Downloading relevant document in archieve " + parentUrl + "\n");
+                                logFile.Write("-> Saving relevant document in archieve " + parentUrl + "\n");
                                 logFile.Flush();
-                                client.DownloadFile(parentUrl, pttlObject.topicDirectory + pttlObject.directory + "//webdocs//" + count + ".html");
+                                // Save page contents in file.
+                                File.WriteAllText(folder + "webdocs" + Path.DirectorySeparatorChar + count + ".html", pageContent);
                                 // Let the delegate process the URI
                                 MainWindow.LetDelegateProcess(parentUrl);
-
-                                logFile.Write("<- Downloading relevant document in archieve " + parentUrl + "\n");
+                                logFile.Write("<- Saving relevant document in archieve " + parentUrl + "\n");
                                 logFile.Flush();
 
-                                MainWindow.SetRichText("done...[" + "relevant" + "]" + "\n");
-
-                                logFile.Write("-> downloading document for hyperliks extraction (tempPage)" + "\n");
-                                logFile.Flush();
-                                doc.Load(pttlObject.topicDirectory + pttlObject.directory + "/tempPage" + threadN + ".htm");
-                                logFile.Write("<- downloading document for hyperliks extraction (tempPage)" + "\n");
-                                logFile.Flush();
-
-                                logFile.Write("-> hyperlinks extraction (tempPage)" + "\n");
+                                logFile.Write("-> hyperlinks extraction" + "\n");
                                 logFile.Flush();
                                 AddLinksToCrawlLists(new Uri(parentUrl), pageContent);
-                                logFile.Write("<- hyperlinks extraction (tempPage)" + "\n");
+                                logFile.Write("<- hyperlinks extraction" + "\n");
                                 logFile.Flush();
                             }
-                            MainWindow.SetUrlText(pttlObject.directory);
                         }
                     }
                     catch (SystemException)
                     {
                     }
+                    finally
+                    {
+                        MainWindow.SetUrlText();
+                    }
 
+                    // After a certain number of downloads, we want to switch threads,
+                    // so another topic can procede
                     if (totalDownload % SWITCH_THREADS_DOWNLOAD_THRESHOLD == 0)
                     {
                         logFile.Write("-> switching threads" + "\n");
                         logFile.Flush();
                         // This will possibly trigger the MainWindow to interrupt us.
-                        MainWindow.SuspendRunAnotherThread(threadN);
+                        MainWindow.SuspendRunAnotherThread(ThreadN);
                         logFile.Write("<- switching threads" + "\n");
                         logFile.Flush();
                     }
                 }
 
-                // Start another topic's crawler, unless we have been interrupted.
-                if (!interrupted)
+                // We're done. Start another topic's crawler, unless we have been interrupted.
+                if (!Interrupted)
                 {
                     logFile.Write("-> thread finish but running another thread" + "\n");
                     logFile.Flush();
@@ -284,7 +353,7 @@ namespace ACrawler
                 }
             }
 
-            // Notify the MainWindow that a topic is completed (or interrupted) and save the state
+            // Notify the MainWindow that a topic is completed (or interrupted) and save the state.
             MainWindow.CrawlerTopicCompleted();
             SaveState();
             running = false;
@@ -376,7 +445,7 @@ namespace ACrawler
         /// </summary>
         public void SaveState()
         {
-            string filename = MainWindow.mainFolder + "crawler" + this.threadN + ".txt";
+            string filename = MainWindow.MainFolder + "crawler" + this.ThreadN + ".txt";
 
             JsonSerializer serializer = new JsonSerializer();
             using (StreamWriter sw = new StreamWriter(filename))
@@ -392,7 +461,7 @@ namespace ACrawler
         /// </summary>
         public void LoadState()
         {
-            string filename = MainWindow.mainFolder + "crawler" + this.threadN + ".txt";
+            string filename = MainWindow.MainFolder + "crawler" + this.ThreadN + ".txt";
 
             if (!File.Exists(filename))
             {
@@ -409,7 +478,7 @@ namespace ACrawler
                     string varName = (field as JProperty).Name;
 
                     // Find accoridng field.
-                    FieldInfo fi = this.GetType().GetField(varName, BindingFlags.Public | BindingFlags.Instance);
+                    FieldInfo fi = this.GetType().GetField(varName, BindingFlags.NonPublic | BindingFlags.Instance);
                     if (fi != null)
                     {
                         // and set value

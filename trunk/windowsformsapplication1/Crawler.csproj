@@ -7,7 +7,7 @@
     <ProjectGuid>{17959CD5-5F96-443A-A70E-5E6B865BE03B}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>WindowsFormsApplication1</RootNamespace>
+    <RootNamespace>Crawler</RootNamespace>
     <AssemblyName>WindowsFormsApplication1</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -89,7 +89,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Crawler.cs" />
+    <Compile Include="Crawler.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="ACrawlerWin.cs">
       <SubType>Form</SubType>
     </Compile>
