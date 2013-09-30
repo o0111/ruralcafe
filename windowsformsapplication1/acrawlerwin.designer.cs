@@ -1,4 +1,4 @@
-﻿namespace WindowsFormsApplication1
+﻿namespace Crawler
 {
     partial class ACrawlerWin
     {
@@ -56,6 +56,7 @@
             // 
             this.textWindow.Location = new System.Drawing.Point(187, 35);
             this.textWindow.Name = "textWindow";
+            this.textWindow.ReadOnly = true;
             this.textWindow.Size = new System.Drawing.Size(506, 442);
             this.textWindow.TabIndex = 2;
             this.textWindow.Text = "";
@@ -86,12 +87,13 @@
             this.downloadSeedButton.TabIndex = 7;
             this.downloadSeedButton.Text = "Download Seed Documents";
             this.downloadSeedButton.UseVisualStyleBackColor = true;
-            this.downloadSeedButton.Click += new System.EventHandler(this.button1_Click_1);
+            this.downloadSeedButton.Click += new System.EventHandler(this.DownloadSeedButton_Click);
             // 
             // threadProgressText
             // 
             this.threadProgressText.Location = new System.Drawing.Point(699, 64);
             this.threadProgressText.Name = "threadProgressText";
+            this.threadProgressText.ReadOnly = true;
             this.threadProgressText.Size = new System.Drawing.Size(393, 413);
             this.threadProgressText.TabIndex = 8;
             this.threadProgressText.Text = "";
@@ -104,7 +106,7 @@
             this.editTopicsButton.TabIndex = 9;
             this.editTopicsButton.Text = "Edit topics";
             this.editTopicsButton.UseVisualStyleBackColor = true;
-            this.editTopicsButton.Click += new System.EventHandler(this.editTopicsButton_Click);
+            this.editTopicsButton.Click += new System.EventHandler(this.EditTopicsButton_Click);
             // 
             // generateTrainingSetButton
             // 
@@ -114,7 +116,7 @@
             this.generateTrainingSetButton.TabIndex = 10;
             this.generateTrainingSetButton.Text = "Generate training sets";
             this.generateTrainingSetButton.UseVisualStyleBackColor = true;
-            this.generateTrainingSetButton.Click += new System.EventHandler(this.generateTrainingSetButton_Click);
+            this.generateTrainingSetButton.Click += new System.EventHandler(this.GenerateTrainingSetButton_Click);
             // 
             // label2
             // 
@@ -150,7 +152,7 @@
             this.editBlacklistButton.TabIndex = 13;
             this.editBlacklistButton.Text = "Edit blacklist";
             this.editBlacklistButton.UseVisualStyleBackColor = true;
-            this.editBlacklistButton.Click += new System.EventHandler(this.editBlacklistButton_Click);
+            this.editBlacklistButton.Click += new System.EventHandler(this.EditBlacklistButton_Click);
             // 
             // ACrawlerWin
             // 
@@ -170,7 +172,6 @@
             this.Controls.Add(this.startButton);
             this.Name = "ACrawlerWin";
             this.Text = "ACrawler";
-            this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.pagesPerTopicNUD)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();

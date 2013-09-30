@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace WindowsFormsApplication1
+namespace Crawler
 {
+    /// <summary>
+    /// Just an entry-point class.
+    /// </summary>
     public static class Program
     {
         /// <summary>
@@ -16,7 +20,7 @@ namespace WindowsFormsApplication1
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new ACrawlerWin());
+            Application.Run(new ACrawlerWin(Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar, null));
         }
     }
 }

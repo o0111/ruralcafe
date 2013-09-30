@@ -6,7 +6,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
-using WindowsFormsApplication1;
+using Crawler;
 
 namespace RuralCafe.Crawler
 {

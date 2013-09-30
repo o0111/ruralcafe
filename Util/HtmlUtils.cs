@@ -226,7 +226,7 @@ namespace Util
                     }
                 }
             }
-            return String.Join(" ", chunks);
+            return RegExs.MULTIPLE_SPACES_REGEX.Replace(String.Join(" ", chunks), " ");
         }
 
         /// <summary>

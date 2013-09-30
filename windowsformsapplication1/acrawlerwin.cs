@@ -17,7 +17,6 @@ using System.Threading;
 
 using System.Net;
 using System.IO;
-using ACrawler;
 using ProcessTopicTopLinks;
 using PorterStemmerAlgorithm;
 using System.Web.Script.Serialization;
@@ -25,107 +24,192 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Util;
 
-namespace WindowsFormsApplication1
+namespace Crawler
 {
     public partial class ACrawlerWin : Form
     {
-        private Thread[] thread = new Thread[200];
-        private Crawler[] crawlerObject = new Crawler[200];
-        private ProcessTopicTopLinksClass[] pttlObject = new ProcessTopicTopLinksClass[200];
-        private int totalThread = 0;
-        private volatile int trackTopics = 0;
-
-        public string mainFolder;
-        public int globalTotalTopics;
-        public int countDead;
-
-        // Count of topics that are completed
-        private int topicsCompleted;
-        // The delegate threads processing the URLs
-        private List<Thread> delegateThreads = new List<Thread>();
-        // Blacklist
-        private string[] blacklist;
-
-        public int PagesToDownloadPerTopic
-        {
-            get { return (int) this.pagesPerTopicNUD.Value; }
-        }
-
         /// <summary>
         /// Process an URI in any way.
         /// </summary>
         /// <param name="uri">The URI.</param>
         /// <returns>An already started thread that will do the work.</returns>
         public delegate Thread ProcessURI(string uri);
+
+        // Constants
+        public const int TOTAL_THREAD = 20;
+
+        // An array holding all the crawlers.
+        private Crawler[] crawlers;
+        // Number of crawlers started.
+        private volatile int crawlersStarted = 0;
+        // The number of topics is total
+        private int globalTotalTopics;
+        // Count of topics that are completed downloading seed documents
+        private int seedsCompleted;
+        // Count of topics that are completed
+        private int topicsCompleted;
+        // The delegate threads processing the URLs
+        private List<Thread> delegateThreads = new List<Thread>();
+        // Blacklist
+        private string[] blacklist;
         /// <summary>
         /// The actual delegate.
         /// </summary>
-        public ProcessURI processUriDelegate;
+        private ProcessURI processUriDelegate;
 
-        public ACrawlerWin()
+        /// <summary>
+        /// The main folder.
+        /// </summary>
+        public string MainFolder
         {
-            InitializeComponent();
+            get;
+            private set;
+        }
+        /// <summary>
+        /// The number of pages to download per topic, as indicated by the
+        /// NumericUpDown.
+        /// </summary>
+        public int PagesToDownloadPerTopic
+        {
+            get { return (int) this.pagesPerTopicNUD.Value; }
+        }
+        /// <summary>
+        /// The number of crawler threads running, that are not about to finish (interrupted).
+        /// </summary>
+        public int NumThreadsRunning
+        {
+            get { return crawlers.Where(c => c.Running && !c.Interrupted).Count(); }
         }
 
         /// <summary>
-        /// Constructor to set the settings programatically without Settings.txt
+        /// Constructor.
         /// </summary>
         /// <param name="topicsPath">The path to the topics seed documents.</param>
         /// <param name="processUriDelegate">A delegate to process downloaded URIs.</param>
         public ACrawlerWin(string topicsPath, ProcessURI processUriDelegate)
-            : this()
         {
-            this.mainFolder = topicsPath;
+            InitializeComponent();
+            this.MainFolder = topicsPath;
             this.processUriDelegate = processUriDelegate;
             // Make sure the main folder exists
-            Directory.CreateDirectory(this.mainFolder);
+            Directory.CreateDirectory(this.MainFolder);
         }
+        
+        #region Buttons
 
-        private void Form1_Load(object sender, EventArgs e)
+        /// <summary>
+        /// Invoked, when the edit topics button button is being clicked.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void EditTopicsButton_Click(object sender, EventArgs e)
         {
-            if (this.mainFolder != null)
+            DialogResult result = MessageBox.Show(this, "Do you also want to delete training sets, seed documents and progress for the current topics?\n" +
+                        "Everything RC downloaded will not be deleted. This is useful when changing the topics.",
+                        "Continue?", MessageBoxButtons.YesNo);
+
+            string topicsFileName = this.MainFolder + "topics.txt";
+            // Create an empty topics.txt file if there is none
+            if (!File.Exists(topicsFileName))
             {
-                // The settings have been set by Constructor already.
-                return;
+                using (File.Create(topicsFileName)) { }
             }
-
-            string line;
-            int ccc = 0;
-            System.IO.StreamReader file = new System.IO.StreamReader("Setting.txt");
-            while ((line = file.ReadLine()) != null)
+            try
             {
-                ccc++;
-
-
-                if (ccc == 1)
-                    mainFolder = line;
-                if (ccc == 2)
-                    globalTotalTopics = Int32.Parse(line);
-            }
-            file.Close();
-
-            /*
-            // Search 32 results of keyword : "Google APIs for .NET"
-            GwebSearchClient client = new GwebSearchClient("");
-            IList<IWebResult> results = client.Search("data mining", 500);
-
-            using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"c:\\Crawler\\topResults.txt"))
-            {
-
-                //file.WriteLine(line);
-
-
-
-                foreach (IWebResult result in results)
+                if (result == DialogResult.Yes)
                 {
-                  //  Console.WriteLine("[{0}] {1} => {2}", result.Title, result.Content, result.Url);
-                  //  MessageBox.Show(result.Url);
-                    file.WriteLine(result.Url);
+                    // Delete all files in this folder except topics.txt and blacklist.txt
+                    foreach (string file in Directory.GetFiles(MainFolder).Where((file) =>
+                        !new FileInfo(file).Name.Equals("topics.txt") && !new FileInfo(file).Name.Equals("blacklist.txt")))
+                    {
+                        File.Delete(file);
+                    }
+                    // Delete all directories
+                    foreach (string dir in Directory.GetDirectories(MainFolder))
+                    {
+                        Directory.Delete(dir, true);
+                    }
                 }
-
-            }*/
+               
+                // Open in standard editor.
+                Process.Start(topicsFileName);
+            }
+            catch (Exception exp)
+            {
+                ShowMessageBox("Could not open the topics file: " + exp.Message);
+            }
         }
 
+        /// <summary>
+        /// Invoked, when the edit blacklist button button is being clicked.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void EditBlacklistButton_Click(object sender, EventArgs e)
+        {
+            string blacklistFileName = this.MainFolder + "blacklist.txt";
+            // Create an empty blacklist.txt file if there is none
+            if (!File.Exists(blacklistFileName))
+            {
+                using (File.Create(blacklistFileName)) { }
+            }
+            try
+            {
+                // Open in standard editor.
+                Process.Start(blacklistFileName);
+            }
+            catch (Exception exp)
+            {
+                ShowMessageBox("Could not open the blacklist file: " + exp.Message);
+            }
+        }
+
+        /// <summary>
+        /// Invoked, when the generate training set button is being clicked.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void GenerateTrainingSetButton_Click(object sender, EventArgs e)
+        {
+            SetButtonsEnabled(false);
+            new Thread(GenerateTrainingSets).Start();
+        }
+
+        /// <summary>
+        /// Invoked, when the download seed button is being clicked.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void DownloadSeedButton_Click(object sender, System.EventArgs e)
+        {
+            SetButtonsEnabled(false);
+            DownloadSeedDocs();
+        }
+
+        /// <summary>
+        /// Invoked when the Start/Pause button is being clicked.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void LoadButton_Click(object sender, System.EventArgs e)
+        {
+            if (this.startButton.Text.Equals("Pause"))
+            {
+                Pause();
+            }
+            else
+            {
+                Start();
+            }
+        }
+
+        #endregion
+        #region Other UI controls
+
+        /// <summary>
+        /// Inserts a text into the big text box. Clears the text box after 6000 characters.
+        /// </summary>
+        /// <param name="text">The text to insert.</param>
         public void SetRichText(string text)
         {
             if (textWindow.InvokeRequired)
@@ -134,48 +218,62 @@ namespace WindowsFormsApplication1
             }
             else
             {
-                //textWindow.Text = "Start Time: " + "";
                 textWindow.Text = textWindow.Text.Insert(0, text);
-                //totalURLs.Text = "" + crawlerObject.toCrawlList.Count;
-                //textWindow.Text += text;
                 if (textWindow.Text.Length > 6000)
+                {
                     textWindow.Text = "";
+                }
             }
         }
-        public void SetUrlText(string topic)
+
+        /// <summary>
+        /// Updates the numbers of relevant links, total pages crawled and frontier links
+        /// for all topics in the box on the right.
+        /// </summary>
+        public void SetUrlText()
         {
             if (textWindow.InvokeRequired)
             {
-                threadProgressText.Invoke(new MethodInvoker(delegate() { SetUrlText(topic); }));
+                threadProgressText.Invoke(new MethodInvoker(delegate() { SetUrlText(); }));
             }
             else
             {
-
                 threadProgressText.Text = "";
-                for (int i = 0; i < trackTopics; i++)
+                for (int i = 0; i < crawlersStarted; i++)
                 {
-                    threadProgressText.Text += "Topic#" + i + ": Relevant Links:" + crawlerObject[i].count + "/Total Crawled:" + crawlerObject[i].totalDownload + "/Frontier Links: " + crawlerObject[i].toCrawlList.Count + "\n";
+                    threadProgressText.Text += "Topic#" + i + ": Relevant Links:" + crawlers[i].Count +
+                        "/Total Crawled:" + crawlers[i].TotalDownload + "/Frontier Links: " + crawlers[i].NumFrontierLinks + "\n";
                 }
 
             }
         }
-        public void showSeedDocsFinish(string topic)
+
+        /// <summary>
+        /// Shows that a topic completed downloading its seed docs in the box on the right.
+        /// </summary>
+        /// <param name="topicNumber">The topic number.</param>
+        public void ShowSeedDocsFinish(int topicNumber)
         {
             if (textWindow.InvokeRequired)
             {
-                threadProgressText.Invoke(new MethodInvoker(delegate() { showSeedDocsFinish(topic); }));
+                threadProgressText.Invoke(new MethodInvoker(delegate() { ShowSeedDocsFinish(topicNumber); }));
             }
             else
             {
-                threadProgressText.Text += "Topic " + topic + " finished downloading seed documents\n";
-                countDead++;
-                if (countDead == globalTotalTopics)
+                threadProgressText.Text += "Topic " + topicNumber + " finished downloading seed documents\n";
+                seedsCompleted++;
+                if (seedsCompleted == globalTotalTopics)
                 {
                     ShowMessageBox("Downloading seed documents completed");
                     SetButtonsEnabled(true);
                 }
             }
         }
+
+        /// <summary>
+        /// Sets the label for the current URL being checked.
+        /// </summary>
+        /// <param name="text">The URL</param>
         public void SetUrlChecking(string text)
         {
             if (textWindow.InvokeRequired)
@@ -187,6 +285,11 @@ namespace WindowsFormsApplication1
                 UrlChecking.Text = text;
             }
         }
+
+        /// <summary>
+        /// Shows a modal message box with the given text.
+        /// </summary>
+        /// <param name="text">The text to show.</param>
         public void ShowMessageBox(string text)
         {
             if (this.InvokeRequired)
@@ -198,6 +301,11 @@ namespace WindowsFormsApplication1
                 MessageBox.Show(this, text);
             }
         }
+
+        /// <summary>
+        /// Switches the text from the start button between
+        /// "Start/Resume Crawling" and "Pause".
+        /// </summary>
         public void SwitchStartButtonText()
         {
             if (startButton.InvokeRequired)
@@ -216,6 +324,46 @@ namespace WindowsFormsApplication1
                 }
             }
         }
+
+        /// <summary>
+        /// Enables or disables a control.
+        /// </summary>
+        /// <param name="control">The control to enable or disable.</param>
+        /// <param name="enabled">Enabled or disabled.</param>
+        private void SetControlEnabled(Control control, bool enabled)
+        {
+            if (control.InvokeRequired)
+            {
+                this.Invoke(new MethodInvoker(delegate() { SetControlEnabled(control, enabled); }));
+            }
+            else
+            {
+                control.Enabled = enabled;
+            }
+        }
+
+        /// <summary>
+        /// Enables or disables all buttons except the Pause/Resume button.
+        /// </summary>
+        /// <param name="enabled">Enabled or disabled.</param>
+        private void SetButtonsEnabled(bool enabled)
+        {
+            if (startButton.InvokeRequired)
+            {
+                this.Invoke(new MethodInvoker(delegate() { SetButtonsEnabled(enabled); }));
+            }
+            else
+            {
+                startButton.Enabled = enabled;
+                downloadSeedButton.Enabled = enabled;
+                editTopicsButton.Enabled = enabled;
+                editBlacklistButton.Enabled = enabled;
+                generateTrainingSetButton.Enabled = enabled;
+            }
+        }
+
+        #endregion
+        #region Control methods
 
         /// <summary>
         /// One topic has been completed. Shows a message box if all have been completed and waits for unfinished
@@ -263,28 +411,25 @@ namespace WindowsFormsApplication1
         }
 
         /// <summary>
-        /// Starts a crawler thread, the nth.
+        /// Creates a crawler, the nth, and starts a thread.
         /// </summary>
-        /// <param name="n"></param>
-        private void StartCrawlerThread(int n)
+        /// <param name="n">The number of the crawler to start.</param>
+        private void CreateCrawlerAndStartThread(int n)
         {
-            pttlObject[n] = new ProcessTopicTopLinksClass();
-            pttlObject[n].textWindow = textWindow;
-            pttlObject[n].MainWindow = this;
-            pttlObject[n].topicDirectory = mainFolder;
-            pttlObject[n].topicFileName = "topic" + (n + 1) + ".txt";
-            pttlObject[n].directory = "" + (n + 1);
+            crawlers[n] = new Crawler(n, this);
+            crawlers[n].AddSeedDocs();
 
+            StartCrawler(n);
+        }
 
-            crawlerObject[n] = new Crawler(n, this);
-            crawlerObject[n].pttlObject = pttlObject[n];
-
-            crawlerObject[n].AddSeedDocs();
-
-            pttlObject[n].makeTrainTest();
-
-            thread[n] = new Thread(crawlerObject[n].StartCrawling);
-            thread[n].Start();
+        /// <summary>
+        /// Starts a crawler thread, the nth. Crawler must have been created before!
+        /// </summary>
+        /// <param name="n">The number of the crawler to start.</param>
+        private void StartCrawler(int n)
+        {
+            crawlers[n].SetRunning();
+            new Thread(crawlers[n].StartCrawling).Start();
         }
 
         /// <summary>
@@ -294,11 +439,11 @@ namespace WindowsFormsApplication1
         {
             this.startButton.Enabled = false;
             // Pause all threads
-            foreach (Crawler crawler in crawlerObject)
+            foreach (Crawler crawler in crawlers)
             {
-                if(crawler != null)
+                if (crawler != null)
                 {
-                    crawler.interrupted = true;
+                    crawler.Interrupt();
                 }
             }
         }
@@ -315,14 +460,14 @@ namespace WindowsFormsApplication1
             this.startButton.Enabled = true;
 
             this.topicsCompleted = 0;
-            // Satia: Determine number of topics by content of topics.txt, if it is 0
-            string topicsFileName = this.mainFolder + "topics.txt";
-            if (globalTotalTopics == 0 && File.Exists(topicsFileName))
+            // Determine number of topics by content of topics.txt
+            string topicsFileName = this.MainFolder + "topics.txt";
+            if (File.Exists(topicsFileName))
             {
                 globalTotalTopics = File.ReadAllLines(topicsFileName).Length;
             }
 
-            string blacklistFileName = this.mainFolder + "blacklist.txt";
+            string blacklistFileName = this.MainFolder + "blacklist.txt";
             // Create an empty blacklist.txt file if there is none
             if (!File.Exists(blacklistFileName))
             {
@@ -332,18 +477,18 @@ namespace WindowsFormsApplication1
             this.blacklist = File.ReadAllLines(blacklistFileName);
 
             // Check if all necessary files exist
-            for (int i = 1; i <= globalTotalTopics; i++)
+            for (int i = 0; i < globalTotalTopics; i++)
             {
-                if (!Directory.Exists(this.mainFolder + i) || !Directory.Exists(this.mainFolder + i + Path.DirectorySeparatorChar + "webdocs"))
+                if (!Directory.Exists(this.MainFolder + i) || !Directory.Exists(this.MainFolder + i + Path.DirectorySeparatorChar + "webdocs"))
                 {
                     ShowMessageBox("Please download the seed documents first.");
                     SetButtonsEnabled(true);
                     return;
                 }
                 // 0.txt to 29.txt have to exist
-                for (int j = 0; j < 30; j++)
+                for (int j = 0; j < Crawler.NUMBER_OF_LINKS_HALF; j++)
                 {
-                    if (!File.Exists(this.mainFolder + i + Path.DirectorySeparatorChar + j + ".txt"))
+                    if (!File.Exists(this.MainFolder + i + Path.DirectorySeparatorChar + j + ".txt"))
                     {
                         ShowMessageBox("Please download the seed documents first.");
                         SetButtonsEnabled(true);
@@ -351,48 +496,53 @@ namespace WindowsFormsApplication1
                     }
                 }
             }
+            // Initialize crawler array.
+            this.crawlers = new Crawler[globalTotalTopics];
 
-            int cc = 0;
-            totalThread = 20; // FIXME const.
-            trackTopics = Math.Min(totalThread, globalTotalTopics);
+            // Get number of crawlers to start.
+            crawlersStarted = Math.Min(TOTAL_THREAD, globalTotalTopics);
 
-            for (cc = 0; cc < totalThread; cc++)
+            for (int i = 0; i < crawlersStarted; i++)
             {
-                StartCrawlerThread(cc);
-                if (cc == globalTotalTopics - 1)
+                CreateCrawlerAndStartThread(i);
+            }
+        }
+
+        /// <summary>
+        /// Looks if there is a topic for which a crawler has not been started yet or if there is a crawler interrupted.
+        /// In these cases, the crawler is started/restarted.
+        /// </summary>
+        public void RunAnotherThread()
+        {
+            lock (crawlers)
+            {
+                if (crawlersStarted < globalTotalTopics)
                 {
-                    break;
+                    CreateCrawlerAndStartThread(crawlersStarted);
+                    crawlersStarted++;
+                }
+                else
+                {
+                    Crawler toStart = null;
+                    for(int i = 0; i < globalTotalTopics; i++)
+                    {
+                        if (!crawlers[i].Running && !crawlers[i].Finished)
+                        {
+                            toStart = crawlers[i];
+                            break;
+                        }
+                    }
+                    if (toStart != null)
+                    {
+                        // Restart the other crawler
+                        StartCrawler(toStart.ThreadN);
+                    }
                 }
             }
         }
 
-        private void LoadButton_Click(object sender, System.EventArgs e)
-        {
-            if (this.startButton.Text.Equals("Pause"))
-            {
-                Pause();
-            }
-            else
-            {
-                Start();
-            }
-        }
-
         /// <summary>
-        /// Looks if there is a topic for which a crawler has not been started yet
-        /// and if so starts a crawler for that topic.
-        /// </summary>
-        public void RunAnotherThread()
-        {
-            if (trackTopics < globalTotalTopics)
-            {
-                StartCrawlerThread(trackTopics);
-                trackTopics++;
-            }
-        }
-
-        /// <summary>
-        /// Looks if there is a topic for which sa crawler has not been started yet or if there is a crawler interrupted.
+        /// Looks if there is a topic for which a crawler has not been started yet or if there is a crawler interrupted.
         /// In these cases, the given crawler is interrupted and the other crawler is started/restarted.
         /// 
         /// TODO actually test if toStart != null...
@@ -400,150 +550,60 @@ namespace WindowsFormsApplication1
         /// <param name="finishThread">The number of the thread to interrupt.</param>
         public void SuspendRunAnotherThread(int finishThread)
         {
-            if (trackTopics < globalTotalTopics)
+            lock (crawlers)
             {
-                // Interrupt the current crawler
-                crawlerObject[finishThread].interrupted = true;
-                // Start a crawler for a new topic
-                StartCrawlerThread(trackTopics);
-                trackTopics++;
-            }
-            else
-            {
-                Crawler toStart = null;
-                int i = finishThread;
-                i = (i == globalTotalTopics - 1 ? 0 : i + 1);
-                while(i != finishThread)
+                if (crawlersStarted < globalTotalTopics)
                 {
-                    if (!crawlerObject[i].running && !crawlerObject[i].finished)
-                    {
-                        toStart = crawlerObject[i];
-                        break;
-                    }
-                    i = (i == globalTotalTopics - 1 ? 0 : i + 1);
-                }
-
-                // Only interrupt the current, if we found another to start
-                if (toStart != null)
-                {
-                    // Interrupt the current crawler
-                    crawlerObject[finishThread].interrupted = true;
-                    // We have to decrement the number of topics completed, when we restart a Crawler
+                    // We have to decrement the number of topics completed, when we interrupt a Crawler
                     Interlocked.Decrement(ref this.topicsCompleted);
-                    // Restart the other crawler
-                    toStart.StartCrawling();
+                    // Interrupt the current crawler
+                    crawlers[finishThread].Interrupt();
+                    // Start a crawler for a new topic
+                    CreateCrawlerAndStartThread(crawlersStarted);
+                    crawlersStarted++;
                 }
-            }
-        }
-
-        private void button1_Click_1(object sender, System.EventArgs e)
-        {
-            SetButtonsEnabled(false);
-
-            // Satia: Determine number of topics by content of topics.txt, if it is 0
-            string topicsFileName = this.mainFolder + "topics.txt";
-            if (globalTotalTopics == 0 && File.Exists(topicsFileName))
-            {
-                globalTotalTopics = File.ReadAllLines(topicsFileName).Length;
-            }
-
-            // Check if all topicN.txt files exist
-            for (int i = 1; i <= globalTotalTopics; i++)
-            {
-                if (!File.Exists(this.mainFolder + "topic" + i + ".txt"))
+                else
                 {
-                    ShowMessageBox("Please generate the training sets first.");
-                    SetButtonsEnabled(true);
-                    return;
+                    Crawler toStart = null;
+                    int i = finishThread;
+                    i = (i == globalTotalTopics - 1 ? 0 : i + 1);
+                    while (i != finishThread)
+                    {
+                        if (!crawlers[i].Running && !crawlers[i].Finished)
+                        {
+                            toStart = crawlers[i];
+                            break;
+                        }
+                        i = (i == globalTotalTopics - 1 ? 0 : i + 1);
+                    }
+
+                    // Only interrupt the current, if we found another to start, or if too many are running.
+                    if (toStart != null || NumThreadsRunning > TOTAL_THREAD)
+                    {
+                        // We have to decrement the number of topics completed, when we interrupt a Crawler
+                        Interlocked.Decrement(ref this.topicsCompleted);
+                        // Interrupt the current crawler
+                        crawlers[finishThread].Interrupt();
+
+                        if (toStart != null)
+                        {
+                            // Restart the other crawler
+                            StartCrawler(toStart.ThreadN);
+                        }
+                    }
                 }
             }
-
-            totalThread = globalTotalTopics;
-
-            for (int cc = 0; cc < totalThread; cc++)
-            {
-                pttlObject[cc] = new ProcessTopicTopLinksClass();
-
-                pttlObject[cc].textWindow = textWindow;
-                pttlObject[cc].MainWindow = this;
-                pttlObject[cc].topicDirectory = mainFolder;
-                pttlObject[cc].topicFileName = "topic" + (cc + 1) + ".txt";
-                pttlObject[cc].directory = "" + (cc + 1);
-                pttlObject[cc].downloadC = 0;
-                thread[cc] = new Thread(new ThreadStart(pttlObject[cc].downloadSeedDocs));
-                thread[cc].Start();
-            }
         }
 
-        private void editTopicsButton_Click(object sender, EventArgs e)
-        {
-            DialogResult result = MessageBox.Show(this, "This will delete training sets, seed documents and progress for the current topics.\n" +
-                        "Everything RC downloaded will not be deleted. Continue?",
-                        "Continue?", MessageBoxButtons.OKCancel);
-            if (result == DialogResult.Cancel)
-            {
-                return;
-            }
-
-            string topicsFileName = this.mainFolder + "topics.txt";
-            // Create an empty topics.txt file if there is none
-            if (!File.Exists(topicsFileName))
-            {
-                using (File.Create(topicsFileName)) { }
-            }
-            try
-            {
-                // Delete all files in this folder except topics.txt and blacklist.txt
-                foreach (string file in Directory.GetFiles(mainFolder).Where((file) =>
-                    !new FileInfo(file).Name.Equals("topics.txt") && !new FileInfo(file).Name.Equals("blacklist.txt")))
-                {
-                    File.Delete(file);
-                }
-                // Delete all directories
-                foreach (string dir in Directory.GetDirectories(mainFolder))
-                {
-                    Directory.Delete(dir, true);
-                }
-                // Open in standard editor.
-                Process.Start(topicsFileName);
-            }
-            catch (Exception exp)
-            {
-                ShowMessageBox("Could not open the topics file: " + exp.Message);
-            }
-        }
-
-        private void editBlacklistButton_Click(object sender, EventArgs e)
-        {
-            string blacklistFileName = this.mainFolder + "blacklist.txt";
-            // Create an empty blacklist.txt file if there is none
-            if (!File.Exists(blacklistFileName))
-            {
-                using (File.Create(blacklistFileName)) { }
-            }
-            try
-            {
-                // Open in standard editor.
-                Process.Start(blacklistFileName);
-            }
-            catch (Exception exp)
-            {
-                ShowMessageBox("Could not open the blacklist file: " + exp.Message);
-            }
-        }
-
-        private void generateTrainingSetButton_Click(object sender, EventArgs e)
-        {
-            SetButtonsEnabled(false);
-            new Thread(GenerateTrainingSets).Start();
-        }
+        #endregion
+        #region Helpers (Generate Training sets, Download Seed, ...)
 
         /// <summary>
         /// Generates the training sets.
         /// </summary>
         private void GenerateTrainingSets()
         {
-            string topicsFileName = this.mainFolder + "topics.txt";
+            string topicsFileName = this.MainFolder + "topics.txt";
             // Create an empty topics.txt file if there is none
             if (!File.Exists(topicsFileName))
             {
@@ -565,7 +625,7 @@ namespace WindowsFormsApplication1
             for (int i = 0; i < topics.Length; i++)
             {
                 // Create the file, possibly overwriting
-                string topicFileName = this.mainFolder + "topic" + (i + 1) + ".txt";
+                string topicFileName = this.MainFolder + "topic" + i + ".txt";
                 SetRichText("Generating training set for " + topics[i] + "\n");
                 using (StreamWriter topicFileWriter = new StreamWriter(File.Create(topicFileName)))
                 {
@@ -585,40 +645,76 @@ namespace WindowsFormsApplication1
         }
 
         /// <summary>
-        /// Enables or disables a control in athread safe way.
+        /// Downloads the seed documents.
         /// </summary>
-        /// <param name="control">The control to enable or disable.</param>
-        /// <param name="enabled">Enabled or disabled.</param>
-        private void SetControlEnabled(Control control, bool enabled)
+        private void DownloadSeedDocs()
         {
-            if (control.InvokeRequired)
+            // Determine number of topics by content of topics.txt
+            string topicsFileName = this.MainFolder + "topics.txt";
+            if (File.Exists(topicsFileName))
             {
-                this.Invoke(new MethodInvoker(delegate() { SetControlEnabled(control, enabled); }));
+                globalTotalTopics = File.ReadAllLines(topicsFileName).Length;
             }
-            else
+
+            // Check if all topicN.txt files exist
+            for (int i = 0; i < globalTotalTopics; i++)
             {
-                control.Enabled = enabled;
+                if (!File.Exists(this.MainFolder + "topic" + i + ".txt"))
+                {
+                    ShowMessageBox("Please generate the training sets first.");
+                    SetButtonsEnabled(true);
+                    return;
+                }
+            }
+
+            seedsCompleted = 0;
+            // Start a thread for each topic.
+            for (int cc = 0; cc < globalTotalTopics; cc++)
+            {
+                int num = cc;
+                // Do NOT use cc directly!
+                new Thread(() => DownloadSeedDocsForTopic(num)).Start();
             }
         }
 
         /// <summary>
-        /// Enables or disables all buttons except the Pause/Resume button.
+        /// Downloads the seed documents for the topic with the given number.
         /// </summary>
-        /// <param name="enabled">Enabled or disabled.</param>
-        private void SetButtonsEnabled(bool enabled)
+        /// <param name="topicNumber"></param>
+        private void DownloadSeedDocsForTopic(int topicNumber)
         {
-            if (startButton.InvokeRequired)
+            SetRichText("..................starting downloading seed documents for topic " + topicNumber + "\n");
+            // Read links to download
+            string[] links = File.ReadAllLines(MainFolder + "topic" + topicNumber + ".txt");
+            // Create directories
+            Directory.CreateDirectory(MainFolder + topicNumber);
+            string topicDir = MainFolder + topicNumber + Path.DirectorySeparatorChar;
+            Directory.CreateDirectory(topicDir + "webdocs");
+
+            WebClient client = new MyWebClient(Crawler.WEB_TIMEOUT);
+            for (int i = 0; i < links.Length; i++)
             {
-                this.Invoke(new MethodInvoker(delegate() { SetButtonsEnabled(enabled); }));
+                string file = topicDir + Path.DirectorySeparatorChar + i + ".txt";
+                try
+                {
+                    SetRichText("Topic" + topicNumber + "= downloading [URL=" + links[i] + "]\n");
+                    // Download page
+                    string pageContent = client.DownloadString(links[i]);
+                    // Extract text
+                    string text = HtmlUtils.ExtractText(pageContent);
+                    // Save to file
+                    File.WriteAllText(file, text);
+                }
+                catch (Exception e)
+                {
+                    // Save empty file
+                    SetRichText("could not download [error = " + e.Message + "]\n");
+                    File.WriteAllText(file, "");
+                }
             }
-            else
-            {
-                startButton.Enabled = enabled;
-                downloadSeedButton.Enabled = enabled;
-                editTopicsButton.Enabled = enabled;
-                editBlacklistButton.Enabled = enabled;
-                generateTrainingSetButton.Enabled = enabled;
-            }
+
+            SetRichText(".............seed downloading complete successfully for topic " + topicNumber + "\n");
+            ShowSeedDocsFinish(topicNumber);
         }
 
         /// <summary>
@@ -644,6 +740,7 @@ namespace WindowsFormsApplication1
             return false;
         }
 
+        #endregion
         #region Google search
 
         /// <summary>
@@ -654,7 +751,7 @@ namespace WindowsFormsApplication1
         /// <returns>The URLs.</returns>
         private List<string> GetGoogleResults(string searchString, int maxAmount)
         {
-            WebClient client = new WebClient();
+            WebClient client = new MyWebClient(Crawler.WEB_TIMEOUT);
             int pageNum = 1;
             List<string> result = new List<string>();
 

@@ -511,7 +511,6 @@ namespace RuralCafe
         /// Gets all files that have Content-Type: text/html or text/plain
         /// The database IS used.
         /// </summary>
-        /// <param name="databaseContext">The database context.</param>
         /// <returns>A list of filenames of all text files in the cache.</returns>
         public List<string> TextFiles()
         {
