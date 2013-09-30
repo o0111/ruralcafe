@@ -11,6 +11,25 @@ using Util;
 namespace Crawler
 {
     /// <summary>
+    /// A  data struct for test results.
+    /// </summary>
+    public struct TestResults
+    {
+        public int numberOfTestForPos;
+        public int numberOfTestsForNeg;
+        public int falsePos;
+        public int falseNeg;
+        public double accuracy;
+
+        public override string ToString()
+        {
+            return String.Format("\tPos Tests: {0}\n\tNeg Tests: {1}\n\tFalse Pos: {2}"
+                + "\n\tFalse Neg: {3}\n\tAccuracy: {4:0.00}", numberOfTestForPos, numberOfTestsForNeg, falsePos,
+                falseNeg, accuracy);
+        }
+    }
+
+    /// <summary>
     /// Wrapper for an actual Classifier.
     /// </summary>
     public class Classifier
@@ -55,14 +74,74 @@ namespace Crawler
 
             IWordsDataSource wds = new SimpleWordsDataSource();
             this.classifier = new BayesianClassifier(wds);
-            
-            Train();
         }
 
         /// <summary>
-        /// Trains the Classifier with the Seed Documents.
+        /// Trains the Classifier with all Seed Documents.
         /// </summary>
-        private void Train()
+        public void Train()
+        {
+            Train(0);
+        }
+
+        public TestResults TrainTest()
+        {
+            Train(Crawler.NUMBER_OF_LINKS_HALF / 2);
+            return Test(Crawler.NUMBER_OF_LINKS_HALF / 2);
+        }
+
+        private TestResults Test(int whereToStart)
+        {
+            TestResults results = new TestResults();
+            for (int i = 0; true; i++)
+            {
+                string fileName = mainDirectory + TopicDir + Path.DirectorySeparatorChar + i + ".txt";
+                if (!File.Exists(fileName))
+                {
+                    break;
+                }
+                // Continue if this document is not to be used for testing.
+                if (i % Crawler.NUMBER_OF_LINKS_HALF < whereToStart)
+                {
+                    continue;
+                }
+                // TODO this will possibly contain HTML now...
+                string fileContent = File.ReadAllText(fileName);
+                string useableText = ExtractUseableText(fileContent);
+
+                bool isMatch = classifier.IsMatch(useableText);
+
+                if (i < Crawler.NUMBER_OF_LINKS_HALF)
+                {
+                    // it's a negative link
+                    results.numberOfTestsForNeg++;
+                    if (isMatch)
+                    {
+                        results.falsePos++;
+                    }
+                }
+                else
+                {
+                    // it's a positive link
+                    results.numberOfTestForPos++;
+                    if (!isMatch)
+                    {
+                        results.falseNeg++;
+                    }
+                }
+            }
+            // Calculate accuracy
+            int testsTotal = results.numberOfTestForPos + results.numberOfTestsForNeg;
+            results.accuracy = ((double)(testsTotal - results.falseNeg - results.falsePos))/testsTotal;
+
+            return results;
+        }
+
+        /// <summary>
+        /// Trains the Classifier with trainCountPositive positive and negative seed documents.
+        /// </summary>
+        /// <param name="trainCountPositive">The number of positive and negative documents to train the Classifier with.</param>
+        private void Train(int trainCountPositive)
         {
             for (int i = 0; true; i++)
             {
@@ -71,7 +150,11 @@ namespace Crawler
                 {
                     break;
                 }
-                // TODO this will possibly contain HTML now...
+                // Continue if this document is not to be used for training.
+                if (trainCountPositive != 0 && i % Crawler.NUMBER_OF_LINKS_HALF >= trainCountPositive)
+                {
+                    continue;
+                }
                 string fileContent = File.ReadAllText(fileName);
                 string useableText = ExtractUseableText(fileContent);
 

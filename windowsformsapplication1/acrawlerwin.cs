@@ -46,8 +46,15 @@ namespace Crawler
         private int globalTotalTopics;
         // Count of topics that are completed downloading seed documents
         private int seedsCompleted;
+        // Count of tests that are completed
+        private int testsCompleted;
         // Count of topics that are completed
         private int topicsCompleted;
+        // Overall test accuracy
+        private double overallTestAccuracy;
+        // Test lock object
+        private object testLockObject = new object();
+
         // The delegate threads processing the URLs
         private List<Thread> delegateThreads = new List<Thread>();
         // Blacklist
@@ -187,6 +194,25 @@ namespace Crawler
         }
 
         /// <summary>
+        /// Invoked, when the train/test button is being clicked.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void TrainTestButton_Click(object sender, EventArgs e)
+        {
+            SetButtonsEnabled(false);
+            // Determine number of topics by content of topics.txt
+            string topicsFileName = this.MainFolder + "topics.txt";
+            if (File.Exists(topicsFileName))
+            {
+                globalTotalTopics = File.ReadAllLines(topicsFileName).Length;
+            }
+            seedsCompleted = 0;
+
+            StartAllCrawlers(true);
+        }
+
+        /// <summary>
         /// Invoked when the Start/Pause button is being clicked.
         /// </summary>
         /// <param name="sender"></param>
@@ -266,6 +292,42 @@ namespace Crawler
                 {
                     ShowMessageBox("Downloading seed documents completed");
                     SetButtonsEnabled(true);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Shows that a topic completed downloading its seed docs in the box on the right.
+        /// </summary>
+        /// <param name="topicNumber">The topic number.</param>
+        public void ShowTestFinish(int topicNumber, TestResults results)
+        {
+            if (textWindow.InvokeRequired)
+            {
+                threadProgressText.Invoke(new MethodInvoker(delegate() { ShowTestFinish(topicNumber, results); }));
+            }
+            else
+            {
+                threadProgressText.Text += "Topic " + topicNumber + " finished testing\n";
+                testsCompleted++;
+                if (testsCompleted == globalTotalTopics)
+                {
+                    lock (testLockObject)
+                    {
+                        overallTestAccuracy += results.accuracy;
+                        overallTestAccuracy /= globalTotalTopics;
+                    }
+                    string overallResult = String.Format("Tests completed. Overall accuracy: {0:0.00}\n", overallTestAccuracy);
+                    SetRichText(overallResult);
+                    ShowMessageBox(overallResult);
+                    SetButtonsEnabled(true);
+                }
+                else
+                {
+                    lock (testLockObject)
+                    {
+                        overallTestAccuracy += results.accuracy;
+                    }
                 }
             }
         }
@@ -354,11 +416,12 @@ namespace Crawler
             }
             else
             {
-                startButton.Enabled = enabled;
-                downloadSeedButton.Enabled = enabled;
                 editTopicsButton.Enabled = enabled;
                 editBlacklistButton.Enabled = enabled;
                 generateTrainingSetButton.Enabled = enabled;
+                downloadSeedButton.Enabled = enabled;
+                trainTestButton.Enabled = enabled;
+                startButton.Enabled = enabled;
             }
         }
 
@@ -414,22 +477,33 @@ namespace Crawler
         /// Creates a crawler, the nth, and starts a thread.
         /// </summary>
         /// <param name="n">The number of the crawler to start.</param>
-        private void CreateCrawlerAndStartThread(int n)
+        /// <param name="trainTest">If true, the crawler will actually only train+test, not crawl.</param>
+        private void CreateCrawlerAndStartThread(int n, bool trainTest)
         {
             crawlers[n] = new Crawler(n, this);
-            crawlers[n].AddSeedDocs();
-
-            StartCrawler(n);
+            StartCrawler(n, trainTest);
         }
 
         /// <summary>
         /// Starts a crawler thread, the nth. Crawler must have been created before!
         /// </summary>
         /// <param name="n">The number of the crawler to start.</param>
-        private void StartCrawler(int n)
+        /// <param name="trainTest">If true, the crawler will actually only train+test, not crawl.</param>
+        private void StartCrawler(int n, bool trainTest)
         {
             crawlers[n].SetRunning();
-            new Thread(crawlers[n].StartCrawling).Start();
+            new Thread(() =>
+                {
+                    if(trainTest)
+                    {
+                        crawlers[n].TrainTest();
+                    }
+                    else
+                    {
+                        crawlers[n].Train();
+                        crawlers[n].StartCrawling();
+                    }
+                }).Start();
         }
 
         /// <summary>
@@ -445,6 +519,44 @@ namespace Crawler
                 {
                     crawler.Interrupt();
                 }
+            }
+        }
+
+        /// <summary>
+        /// Starts all crawlers, if all necessary files exist.
+        /// </summary>
+        /// <param name="trainTest">If true, the crawler will actually only train+test, not crawl.</param>
+        private void StartAllCrawlers(bool trainTest)
+        {
+            // Check if all necessary files exist
+            for (int i = 0; i < globalTotalTopics; i++)
+            {
+                if (!Directory.Exists(this.MainFolder + i) || !Directory.Exists(this.MainFolder + i + Path.DirectorySeparatorChar + "webdocs"))
+                {
+                    ShowMessageBox("Please download the seed documents first.");
+                    SetButtonsEnabled(true);
+                    return;
+                }
+                // 0.txt to 29.txt have to exist
+                for (int j = 0; j < Crawler.NUMBER_OF_LINKS_HALF; j++)
+                {
+                    if (!File.Exists(this.MainFolder + i + Path.DirectorySeparatorChar + j + ".txt"))
+                    {
+                        ShowMessageBox("Please download the seed documents first.");
+                        SetButtonsEnabled(true);
+                        return;
+                    }
+                }
+            }
+            // Initialize crawler array.
+            this.crawlers = new Crawler[globalTotalTopics];
+
+            // Get number of crawlers to start.
+            crawlersStarted = Math.Min(TOTAL_THREAD, globalTotalTopics);
+
+            for (int i = 0; i < crawlersStarted; i++)
+            {
+                CreateCrawlerAndStartThread(i, trainTest);
             }
         }
 
@@ -476,36 +588,7 @@ namespace Crawler
             // Load blacklist
             this.blacklist = File.ReadAllLines(blacklistFileName);
 
-            // Check if all necessary files exist
-            for (int i = 0; i < globalTotalTopics; i++)
-            {
-                if (!Directory.Exists(this.MainFolder + i) || !Directory.Exists(this.MainFolder + i + Path.DirectorySeparatorChar + "webdocs"))
-                {
-                    ShowMessageBox("Please download the seed documents first.");
-                    SetButtonsEnabled(true);
-                    return;
-                }
-                // 0.txt to 29.txt have to exist
-                for (int j = 0; j < Crawler.NUMBER_OF_LINKS_HALF; j++)
-                {
-                    if (!File.Exists(this.MainFolder + i + Path.DirectorySeparatorChar + j + ".txt"))
-                    {
-                        ShowMessageBox("Please download the seed documents first.");
-                        SetButtonsEnabled(true);
-                        return;
-                    }
-                }
-            }
-            // Initialize crawler array.
-            this.crawlers = new Crawler[globalTotalTopics];
-
-            // Get number of crawlers to start.
-            crawlersStarted = Math.Min(TOTAL_THREAD, globalTotalTopics);
-
-            for (int i = 0; i < crawlersStarted; i++)
-            {
-                CreateCrawlerAndStartThread(i);
-            }
+            StartAllCrawlers(false);
         }
 
         /// <summary>
@@ -518,7 +601,7 @@ namespace Crawler
             {
                 if (crawlersStarted < globalTotalTopics)
                 {
-                    CreateCrawlerAndStartThread(crawlersStarted);
+                    CreateCrawlerAndStartThread(crawlersStarted, false);
                     crawlersStarted++;
                 }
                 else
@@ -535,7 +618,7 @@ namespace Crawler
                     if (toStart != null)
                     {
                         // Restart the other crawler
-                        StartCrawler(toStart.ThreadN);
+                        StartCrawler(toStart.ThreadN, false);
                     }
                 }
             }
@@ -544,8 +627,6 @@ namespace Crawler
         /// <summary>
         /// Looks if there is a topic for which a crawler has not been started yet or if there is a crawler interrupted.
         /// In these cases, the given crawler is interrupted and the other crawler is started/restarted.
-        /// 
-        /// TODO actually test if toStart != null...
         /// </summary>
         /// <param name="finishThread">The number of the thread to interrupt.</param>
         public void SuspendRunAnotherThread(int finishThread)
@@ -559,7 +640,7 @@ namespace Crawler
                     // Interrupt the current crawler
                     crawlers[finishThread].Interrupt();
                     // Start a crawler for a new topic
-                    CreateCrawlerAndStartThread(crawlersStarted);
+                    CreateCrawlerAndStartThread(crawlersStarted, false);
                     crawlersStarted++;
                 }
                 else
@@ -588,7 +669,7 @@ namespace Crawler
                         if (toStart != null)
                         {
                             // Restart the other crawler
-                            StartCrawler(toStart.ThreadN);
+                            StartCrawler(toStart.ThreadN, false);
                         }
                     }
                 }
