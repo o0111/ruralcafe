@@ -39,12 +39,13 @@
             this.label2 = new System.Windows.Forms.Label();
             this.pagesPerTopicNUD = new System.Windows.Forms.NumericUpDown();
             this.editBlacklistButton = new System.Windows.Forms.Button();
+            this.trainTestButton = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pagesPerTopicNUD)).BeginInit();
             this.SuspendLayout();
             // 
             // startButton
             // 
-            this.startButton.Location = new System.Drawing.Point(12, 151);
+            this.startButton.Location = new System.Drawing.Point(12, 180);
             this.startButton.Name = "startButton";
             this.startButton.Size = new System.Drawing.Size(158, 23);
             this.startButton.TabIndex = 1;
@@ -154,11 +155,22 @@
             this.editBlacklistButton.UseVisualStyleBackColor = true;
             this.editBlacklistButton.Click += new System.EventHandler(this.EditBlacklistButton_Click);
             // 
+            // trainTestButton
+            // 
+            this.trainTestButton.Location = new System.Drawing.Point(12, 151);
+            this.trainTestButton.Name = "trainTestButton";
+            this.trainTestButton.Size = new System.Drawing.Size(158, 23);
+            this.trainTestButton.TabIndex = 14;
+            this.trainTestButton.Text = "Train + Test (optional)";
+            this.trainTestButton.UseVisualStyleBackColor = true;
+            this.trainTestButton.Click += new System.EventHandler(this.TrainTestButton_Click);
+            // 
             // ACrawlerWin
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1101, 485);
+            this.Controls.Add(this.trainTestButton);
             this.Controls.Add(this.editBlacklistButton);
             this.Controls.Add(this.pagesPerTopicNUD);
             this.Controls.Add(this.label2);
@@ -191,6 +203,7 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.NumericUpDown pagesPerTopicNUD;
         private System.Windows.Forms.Button editBlacklistButton;
+        private System.Windows.Forms.Button trainTestButton;
     }
 }
 

@@ -193,16 +193,15 @@ namespace Crawler
         {
             this.ThreadN = threadN;
             this.MainWindow = mainWindow;
-            // TODO a new classifier must not be trained in the Constructor!
-            classifier = new Classifier(threadN , mainWindow.MainFolder);
+            AddSeedDocs();
         }
 
         /// <summary>
         /// Adds the the positive links (all except the first 30) from topicN.txt to the crawl lists.
         /// </summary>
-        public void AddSeedDocs()
+        private void AddSeedDocs()
         {
-            string[] lines = File.ReadAllLines(MainWindow.MainFolder + classifier.TopicFileName);
+            string[] lines = File.ReadAllLines(MainWindow.MainFolder + "topic" + ThreadN + ".txt");
             for (int i = NUMBER_OF_LINKS_HALF; i < lines.Length; i++)
             {
                 if (IsUsefulURL(lines[i]))
@@ -213,6 +212,26 @@ namespace Crawler
                     inCrawlList.Add(lines[i]);
                 }
             }
+        }
+
+        /// <summary>
+        /// Trains the classifier.
+        /// </summary>
+        public void Train()
+        {
+            classifier = new Classifier(ThreadN, MainWindow.MainFolder);
+            classifier.Train();
+        }
+
+        /// <summary>
+        /// Trains the classifier with half of the documents and tests it with the other half.
+        /// </summary>
+        public void TrainTest()
+        {
+            classifier = new Classifier(ThreadN, MainWindow.MainFolder);
+            TestResults results = classifier.TrainTest(); // TODO print results or so
+            MainWindow.SetRichText("Test results for topic " + ThreadN + ":\n" + results + "\n");
+            MainWindow.ShowTestFinish(ThreadN, results);
         }
 
         /// <summary>
