@@ -861,11 +861,6 @@ namespace Crawler
             }
             catch (WebException e)
             {
-                string response;
-                using (StreamReader sr = new StreamReader(e.Response.GetResponseStream()))
-                {
-                    response = sr.ReadToEnd();
-                }
                 ShowMessageBox("Could not generate training sets for " + searchString + ": " + e.Message + "\n");
             }
 
