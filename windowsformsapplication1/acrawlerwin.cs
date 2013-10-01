@@ -38,6 +38,7 @@ namespace Crawler
         // Constants
         public const int TOTAL_THREAD = 20;
         public const string NEGATIVE_SEED_GOOGLE_TERM = "The";
+        public const int GOOGLE_SLEEP_MS = 5000;
 
         // An array holding all the crawlers.
         private Crawler[] crawlers;
@@ -779,7 +780,7 @@ namespace Crawler
             Directory.CreateDirectory(topicDir + "webdocs");
 
             int iDiff = 0;
-            WebClient client = new MyWebClient(Crawler.WEB_TIMEOUT);
+            //WebClient client = new MyWebClient(Crawler.WEB_TIMEOUT);
             for (int i = 0; i < links.Length; i++)
             {
                 string file = topicDir + Path.DirectorySeparatorChar + (i - iDiff) + ".txt";
@@ -787,7 +788,20 @@ namespace Crawler
                 {
                     SetRichText("Topic" + topicText + "= downloading [URL=" + links[i] + "]\n");
                     // Download page
-                    string pageContent = client.DownloadString(links[i]);
+                    HttpWebRequest request = WebRequest.Create(links[i]) as HttpWebRequest;
+                    WebResponse response = request.GetResponse();
+                    // Skip non HTML links
+                    if(!response.ContentType.StartsWith("text/html"))
+                    {
+                        continue;
+                    }
+
+                    string pageContent; // client.DownloadString(links[i]);
+                    using(StreamReader sr = new StreamReader(response.GetResponseStream()))
+                    {
+                        pageContent = sr.ReadToEnd();
+                    }
+
                     // Extract text
                     string text = HtmlUtils.ExtractText(pageContent);
                     // Save to file
@@ -849,6 +863,10 @@ namespace Crawler
                 while (result.Count < maxAmount)
                 {
                     string query = ConstructGoogleSearch(searchString, pageNum);
+                    // Sleep 5s before each request so that Google does not consider us as a bot.
+                    // Note: This will stop working if you'd create a thread for each topic
+                    Thread.Sleep(GOOGLE_SLEEP_MS);
+
                     string page = client.DownloadString(query);
                     List<string> results = ExtractGoogleResults(page);
                     if (results.Count == 0)
@@ -875,6 +893,8 @@ namespace Crawler
         /// <returns>Google search query.</returns>
         private string ConstructGoogleSearch(string searchString, int pagenumber)
         {
+            // Only search for HTML pages
+            searchString += " filetype:html";
             string result = "http://www.google.com/search?hl=en&q=" +
                                         searchString.Replace(' ', '+') +
                                         "&btnG=Google+Search&aq=f&oq=";

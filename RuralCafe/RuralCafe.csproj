@@ -35,8 +35,8 @@
     <TargetCulture>en</TargetCulture>
     <ProductName>Rural Cafe</ProductName>
     <AutorunEnabled>true</AutorunEnabled>
-    <ApplicationRevision>261</ApplicationRevision>
-    <ApplicationVersion>1.0.0.261</ApplicationVersion>
+    <ApplicationRevision>270</ApplicationRevision>
+    <ApplicationVersion>1.0.0.270</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
     <PublishWizardCompleted>true</PublishWizardCompleted>

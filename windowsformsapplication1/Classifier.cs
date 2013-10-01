@@ -103,7 +103,7 @@ namespace Crawler
 
         public TestResults TrainTest()
         {
-            // Train with a third (20 docs) and test with rest (up to 40 docs)
+            // Train with a third and test with rest
             Train(Crawler.NUMBER_OF_LINKS / 3);
             return Test(Crawler.NUMBER_OF_LINKS / 3);
         }
