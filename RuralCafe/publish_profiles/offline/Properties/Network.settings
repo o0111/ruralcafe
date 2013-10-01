@@ -1,0 +1,33 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="RuralCafe.Properties" GeneratedClassName="Network">
+  <Profiles />
+  <Settings>
+    <Setting Name="MIN_MAX_INFLIGHT_REQUESTS" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">3</Value>
+    </Setting>
+    <Setting Name="MIN_BYTES_PER_SECOND_PER_REQUEST" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5120</Value>
+    </Setting>
+    <Setting Name="BYTES_PER_SECOND_ONLINE_THRESHOLD" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">10240</Value>
+    </Setting>
+    <Setting Name="FLUCTUATE_MAX_REQUESTS" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="LOCAL_MAX_INFLIGHT_REQUESTS" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">10</Value>
+    </Setting>
+    <Setting Name="REMOTE_MAX_INFLIGHT_REQUESTS" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">100</Value>
+    </Setting>
+    <Setting Name="DETECT_NETWORK_AUTO" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="NETWORK_STATUS" Type="RuralCafe.RCLocalProxy.NetworkStatusCode" Scope="User">
+      <Value Profile="(Default)">Slow</Value>
+    </Setting>
+    <Setting Name="MAXIMUM_DOWNLOAD_SPEED" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5000000</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>

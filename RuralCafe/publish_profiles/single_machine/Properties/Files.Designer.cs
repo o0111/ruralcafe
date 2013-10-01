@@ -13,11 +13,11 @@ namespace RuralCafe.Properties {
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "11.0.0.0")]
-    internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
+    internal sealed partial class Files : global::System.Configuration.ApplicationSettingsBase {
         
-        private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
+        private static Files defaultInstance = ((Files)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Files())));
         
-        public static Settings Default {
+        public static Files Default {
             get {
                 return defaultInstance;
             }
@@ -25,97 +25,97 @@ namespace RuralCafe.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("2000000")]
-        public int DEFAULT_QUOTA {
+        [global::System.Configuration.DefaultSettingValueAttribute("C:\\RuralCafe")]
+        public string BASE_DIR {
             get {
-                return ((int)(this["DEFAULT_QUOTA"]));
+                return ((string)(this["BASE_DIR"]));
             }
             set {
-                this["DEFAULT_QUOTA"] = value;
+                this["BASE_DIR"] = value;
             }
         }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("1")]
-        public int DEFAULT_DEPTH {
+        [global::System.Configuration.DefaultSettingValueAttribute("files-computer_studies")]
+        public string LOCAL_CACHE_PATH {
             get {
-                return ((int)(this["DEFAULT_DEPTH"]));
+                return ((string)(this["LOCAL_CACHE_PATH"]));
             }
             set {
-                this["DEFAULT_DEPTH"] = value;
+                this["LOCAL_CACHE_PATH"] = value;
             }
         }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Normal")]
-        public global::RuralCafe.RequestHandler.Richness DEFAULT_RICHNESS {
+        [global::System.Configuration.DefaultSettingValueAttribute("Cache")]
+        public string REMOTE_CACHE_PATH {
             get {
-                return ((global::RuralCafe.RequestHandler.Richness)(this["DEFAULT_RICHNESS"]));
+                return ((string)(this["REMOTE_CACHE_PATH"]));
             }
             set {
-                this["DEFAULT_RICHNESS"] = value;
+                this["REMOTE_CACHE_PATH"] = value;
             }
         }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("INFO")]
-        public global::RuralCafe.LogLevel LOGLEVEL {
+        [global::System.Configuration.DefaultSettingValueAttribute("index-computer_studies")]
+        public string LOCAL_INDEX_PATH {
             get {
-                return ((global::RuralCafe.LogLevel)(this["LOGLEVEL"]));
+                return ((string)(this["LOCAL_INDEX_PATH"]));
             }
             set {
-                this["LOGLEVEL"] = value;
+                this["LOCAL_INDEX_PATH"] = value;
             }
         }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("604800")]
-        public int DNS_CACHE_TTL {
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string LOCAL_WIKI_DUMP_FILE {
             get {
-                return ((int)(this["DNS_CACHE_TTL"]));
+                return ((string)(this["LOCAL_WIKI_DUMP_FILE"]));
             }
             set {
-                this["DNS_CACHE_TTL"] = value;
+                this["LOCAL_WIKI_DUMP_FILE"] = value;
             }
         }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool FORCE_LOGIN {
+        [global::System.Configuration.DefaultSettingValueAttribute("trotro.html")]
+        public string DEFAULT_SEARCH_PAGE {
             get {
-                return ((bool)(this["FORCE_LOGIN"]));
+                return ((string)(this["DEFAULT_SEARCH_PAGE"]));
             }
             set {
-                this["FORCE_LOGIN"] = value;
+                this["DEFAULT_SEARCH_PAGE"] = value;
             }
         }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool SHOW_SURVEY {
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int LOCAL_MAX_CACHE_SIZE_MIB {
             get {
-                return ((bool)(this["SHOW_SURVEY"]));
+                return ((int)(this["LOCAL_MAX_CACHE_SIZE_MIB"]));
             }
             set {
-                this["SHOW_SURVEY"] = value;
+                this["LOCAL_MAX_CACHE_SIZE_MIB"] = value;
             }
         }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("True")]
-        public bool USE_ONTOLOGY {
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int REMOTE_MAX_CACHE_SIZE_MIB {
             get {
-                return ((bool)(this["USE_ONTOLOGY"]));
+                return ((int)(this["REMOTE_MAX_CACHE_SIZE_MIB"]));
             }
             set {
-                this["USE_ONTOLOGY"] = value;
+                this["REMOTE_MAX_CACHE_SIZE_MIB"] = value;
             }
         }
     }

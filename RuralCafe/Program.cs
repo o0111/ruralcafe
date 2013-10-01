@@ -207,7 +207,7 @@ namespace RuralCafe
 
             bool localProxyStarted = false;
             // start the local proxy
-            if (String.IsNullOrEmpty(Properties.Connection.Default.LOCAL_PROXY_IP_ADDRESS))
+            if (!String.IsNullOrEmpty(Properties.Connection.Default.LOCAL_PROXY_IP_ADDRESS))
             {
                 localProxyStarted = true;
                 // If the dialogResults are yes ("Save and start crawler" button")

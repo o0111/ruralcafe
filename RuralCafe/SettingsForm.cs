@@ -67,6 +67,8 @@ namespace RuralCafe
             this.networkStatusComboBox.SelectedItem = Properties.Network.Default.NETWORK_STATUS;
             this.richnessComboBox.SelectedItem = Properties.Settings.Default.DEFAULT_RICHNESS;
             this.logLevelComboBox.SelectedItem = Properties.Settings.Default.LOGLEVEL;
+
+            localProxyIPTextBox_TextChanged(null, null);
         }
 
         private void detectNetworkStatusCheckBox_CheckedChanged(object sender, EventArgs e)
@@ -205,6 +207,12 @@ namespace RuralCafe
                 MessageBox.Show(this, "Could not open the blacklist file: " + exp.Message,
                         "Blacklist error", MessageBoxButtons.OK);
             }
+        }
+
+        private void localProxyIPTextBox_TextChanged(object sender, EventArgs e)
+        {
+            // Enable or disable the "Save and Start Crawler" Button
+            this.saveAndCrawlButton.Enabled = !String.IsNullOrEmpty(this.localProxyIPTextBox.Text);
         }
     }
 }
