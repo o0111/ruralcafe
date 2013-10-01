@@ -110,7 +110,7 @@ namespace Crawler
         // Constants
         public static readonly string[] BAD_URL_PARTS = new string[] {
             "youtube", "facebook", "twitter", ".pdf", ".jpg", ".jpeg", ".gif", ".ppt" };
-        public const int NUMBER_OF_LINKS = 60;
+        public const int NUMBER_OF_LINKS = 10; // XXX maybe increasing this will increase accuracy
         public const int SWITCH_THREADS_DOWNLOAD_THRESHOLD = 100;
         public const int WEB_TIMEOUT = 1000 * 10; // 10 seconds
 
