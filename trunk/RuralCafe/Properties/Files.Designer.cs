@@ -97,7 +97,7 @@ namespace RuralCafe.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("153600")]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
         public int LOCAL_MAX_CACHE_SIZE_MIB {
             get {
                 return ((int)(this["LOCAL_MAX_CACHE_SIZE_MIB"]));
@@ -109,7 +109,7 @@ namespace RuralCafe.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("153600")]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
         public int REMOTE_MAX_CACHE_SIZE_MIB {
             get {
                 return ((int)(this["REMOTE_MAX_CACHE_SIZE_MIB"]));
