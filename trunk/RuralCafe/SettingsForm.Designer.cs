@@ -50,6 +50,9 @@ namespace RuralCafe
             this.logLevelComboBox = new System.Windows.Forms.ComboBox();
             this.localMaxCacheSizeNUD = new System.Windows.Forms.NumericUpDown();
             this.remoteMaxCacheSizeNUD = new System.Windows.Forms.NumericUpDown();
+            this.baseDirectoryTextBox = new System.Windows.Forms.TextBox();
+            this.detectNetworkStatusCheckBox = new System.Windows.Forms.CheckBox();
+            this.networkStatusComboBox = new System.Windows.Forms.ComboBox();
             this.tabControl = new System.Windows.Forms.TabControl();
             this.basicSettingsTabPage = new System.Windows.Forms.TabPage();
             this.basicGreetingLabel = new System.Windows.Forms.Label();
@@ -59,15 +62,18 @@ namespace RuralCafe
             this.localProxyTabPage = new System.Windows.Forms.TabPage();
             this.panel1 = new System.Windows.Forms.Panel();
             this.advancedLocalProxyGroupBox = new System.Windows.Forms.GroupBox();
-            this.localMaxCacheSizeLabel = new System.Windows.Forms.Label();
-            this.localEditBlacklistButton = new System.Windows.Forms.Button();
-            this.showSurveyLabel = new System.Windows.Forms.Label();
             this.forceLoginLabel = new System.Windows.Forms.Label();
+            this.baseDirectoryLabel = new System.Windows.Forms.Label();
+            this.showSurveyLabel = new System.Windows.Forms.Label();
+            this.detectNetworkStatusLabel = new System.Windows.Forms.Label();
+            this.localEditBlacklistButton = new System.Windows.Forms.Button();
+            this.networkStatusLabel = new System.Windows.Forms.Label();
+            this.localMaxCacheSizeLabel = new System.Windows.Forms.Label();
+            this.searchPageLabel = new System.Windows.Forms.Label();
             this.wikiDumpFileLabel = new System.Windows.Forms.Label();
             this.indexPathLabel = new System.Windows.Forms.Label();
             this.localCachePathLabel = new System.Windows.Forms.Label();
             this.localPortLabel = new System.Windows.Forms.Label();
-            this.searchPageLabel = new System.Windows.Forms.Label();
             this.remoteProxyTabPage = new System.Windows.Forms.TabPage();
             this.advancedRemoteProxyGroupBox = new System.Windows.Forms.GroupBox();
             this.remoteMaxCacheSizeLabel = new System.Windows.Forms.Label();
@@ -96,12 +102,6 @@ namespace RuralCafe
             this.saveAndCrawlButton = new System.Windows.Forms.Button();
             this.cancelButton = new System.Windows.Forms.Button();
             this.saveButton = new System.Windows.Forms.Button();
-            this.baseDirectoryTextBox = new System.Windows.Forms.TextBox();
-            this.baseDirectoryLabel = new System.Windows.Forms.Label();
-            this.detectNetworkStatusCheckBox = new System.Windows.Forms.CheckBox();
-            this.detectNetworkStatusLabel = new System.Windows.Forms.Label();
-            this.networkStatusComboBox = new System.Windows.Forms.ComboBox();
-            this.networkStatusLabel = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.localPortNUD)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.maxDownSpeedNUD)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.remotePortNUD)).BeginInit();
@@ -201,6 +201,7 @@ namespace RuralCafe
             this.localProxyIPTextBox.Size = new System.Drawing.Size(183, 20);
             this.localProxyIPTextBox.TabIndex = 6;
             this.toolTip1.SetToolTip(this.localProxyIPTextBox, "The IP address for the local proxy.");
+            this.localProxyIPTextBox.TextChanged += new System.EventHandler(this.localProxyIPTextBox_TextChanged);
             // 
             // remoteProxyIPTextBox
             // 
@@ -331,6 +332,35 @@ namespace RuralCafe
             this.remoteMaxCacheSizeNUD.TabIndex = 37;
             this.toolTip1.SetToolTip(this.remoteMaxCacheSizeNUD, "The maximum allowed size for the cache in MiB.");
             // 
+            // baseDirectoryTextBox
+            // 
+            this.baseDirectoryTextBox.Location = new System.Drawing.Point(507, 95);
+            this.baseDirectoryTextBox.Name = "baseDirectoryTextBox";
+            this.baseDirectoryTextBox.Size = new System.Drawing.Size(183, 20);
+            this.baseDirectoryTextBox.TabIndex = 41;
+            this.toolTip1.SetToolTip(this.baseDirectoryTextBox, "All dynamically changing files are stored here.");
+            // 
+            // detectNetworkStatusCheckBox
+            // 
+            this.detectNetworkStatusCheckBox.AutoSize = true;
+            this.detectNetworkStatusCheckBox.Location = new System.Drawing.Point(139, 98);
+            this.detectNetworkStatusCheckBox.Name = "detectNetworkStatusCheckBox";
+            this.detectNetworkStatusCheckBox.Size = new System.Drawing.Size(15, 14);
+            this.detectNetworkStatusCheckBox.TabIndex = 40;
+            this.toolTip1.SetToolTip(this.detectNetworkStatusCheckBox, "Should the network status be detected automatically based on the download speed?");
+            this.detectNetworkStatusCheckBox.UseVisualStyleBackColor = true;
+            this.detectNetworkStatusCheckBox.CheckedChanged += new System.EventHandler(this.detectNetworkStatusCheckBox_CheckedChanged);
+            // 
+            // networkStatusComboBox
+            // 
+            this.networkStatusComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.networkStatusComboBox.FormattingEnabled = true;
+            this.networkStatusComboBox.Location = new System.Drawing.Point(140, 123);
+            this.networkStatusComboBox.Name = "networkStatusComboBox";
+            this.networkStatusComboBox.Size = new System.Drawing.Size(181, 21);
+            this.networkStatusComboBox.TabIndex = 38;
+            this.toolTip1.SetToolTip(this.networkStatusComboBox, "Set a fixed network status.");
+            // 
             // tabControl
             // 
             this.tabControl.Controls.Add(this.basicSettingsTabPage);
@@ -447,14 +477,41 @@ namespace RuralCafe
             this.advancedLocalProxyGroupBox.TabStop = false;
             this.advancedLocalProxyGroupBox.Text = "Local Proxy";
             // 
-            // localMaxCacheSizeLabel
+            // forceLoginLabel
             // 
-            this.localMaxCacheSizeLabel.AutoSize = true;
-            this.localMaxCacheSizeLabel.Location = new System.Drawing.Point(5, 46);
-            this.localMaxCacheSizeLabel.Name = "localMaxCacheSizeLabel";
-            this.localMaxCacheSizeLabel.Size = new System.Drawing.Size(108, 13);
-            this.localMaxCacheSizeLabel.TabIndex = 35;
-            this.localMaxCacheSizeLabel.Text = "Max cache size (MiB)";
+            this.forceLoginLabel.AutoSize = true;
+            this.forceLoginLabel.Location = new System.Drawing.Point(6, 153);
+            this.forceLoginLabel.Name = "forceLoginLabel";
+            this.forceLoginLabel.Size = new System.Drawing.Size(59, 13);
+            this.forceLoginLabel.TabIndex = 30;
+            this.forceLoginLabel.Text = "Force login";
+            // 
+            // baseDirectoryLabel
+            // 
+            this.baseDirectoryLabel.AutoSize = true;
+            this.baseDirectoryLabel.Location = new System.Drawing.Point(351, 99);
+            this.baseDirectoryLabel.Name = "baseDirectoryLabel";
+            this.baseDirectoryLabel.Size = new System.Drawing.Size(74, 13);
+            this.baseDirectoryLabel.TabIndex = 42;
+            this.baseDirectoryLabel.Text = "Base directory";
+            // 
+            // showSurveyLabel
+            // 
+            this.showSurveyLabel.AutoSize = true;
+            this.showSurveyLabel.Location = new System.Drawing.Point(352, 154);
+            this.showSurveyLabel.Name = "showSurveyLabel";
+            this.showSurveyLabel.Size = new System.Drawing.Size(68, 13);
+            this.showSurveyLabel.TabIndex = 32;
+            this.showSurveyLabel.Text = "Show survey";
+            // 
+            // detectNetworkStatusLabel
+            // 
+            this.detectNetworkStatusLabel.AutoSize = true;
+            this.detectNetworkStatusLabel.Location = new System.Drawing.Point(6, 98);
+            this.detectNetworkStatusLabel.Name = "detectNetworkStatusLabel";
+            this.detectNetworkStatusLabel.Size = new System.Drawing.Size(111, 13);
+            this.detectNetworkStatusLabel.TabIndex = 39;
+            this.detectNetworkStatusLabel.Text = "Detect network status";
             // 
             // localEditBlacklistButton
             // 
@@ -466,23 +523,32 @@ namespace RuralCafe
             this.localEditBlacklistButton.UseVisualStyleBackColor = true;
             this.localEditBlacklistButton.Click += new System.EventHandler(this.localEditBlacklistButton_Click);
             // 
-            // showSurveyLabel
+            // networkStatusLabel
             // 
-            this.showSurveyLabel.AutoSize = true;
-            this.showSurveyLabel.Location = new System.Drawing.Point(352, 154);
-            this.showSurveyLabel.Name = "showSurveyLabel";
-            this.showSurveyLabel.Size = new System.Drawing.Size(68, 13);
-            this.showSurveyLabel.TabIndex = 32;
-            this.showSurveyLabel.Text = "Show survey";
+            this.networkStatusLabel.AutoSize = true;
+            this.networkStatusLabel.Location = new System.Drawing.Point(5, 126);
+            this.networkStatusLabel.Name = "networkStatusLabel";
+            this.networkStatusLabel.Size = new System.Drawing.Size(78, 13);
+            this.networkStatusLabel.TabIndex = 37;
+            this.networkStatusLabel.Text = "Network status";
             // 
-            // forceLoginLabel
+            // localMaxCacheSizeLabel
             // 
-            this.forceLoginLabel.AutoSize = true;
-            this.forceLoginLabel.Location = new System.Drawing.Point(6, 153);
-            this.forceLoginLabel.Name = "forceLoginLabel";
-            this.forceLoginLabel.Size = new System.Drawing.Size(59, 13);
-            this.forceLoginLabel.TabIndex = 30;
-            this.forceLoginLabel.Text = "Force login";
+            this.localMaxCacheSizeLabel.AutoSize = true;
+            this.localMaxCacheSizeLabel.Location = new System.Drawing.Point(5, 46);
+            this.localMaxCacheSizeLabel.Name = "localMaxCacheSizeLabel";
+            this.localMaxCacheSizeLabel.Size = new System.Drawing.Size(108, 13);
+            this.localMaxCacheSizeLabel.TabIndex = 35;
+            this.localMaxCacheSizeLabel.Text = "Max cache size (MiB)";
+            // 
+            // searchPageLabel
+            // 
+            this.searchPageLabel.AutoSize = true;
+            this.searchPageLabel.Location = new System.Drawing.Point(351, 72);
+            this.searchPageLabel.Name = "searchPageLabel";
+            this.searchPageLabel.Size = new System.Drawing.Size(103, 13);
+            this.searchPageLabel.TabIndex = 16;
+            this.searchPageLabel.Text = "Default search page";
             // 
             // wikiDumpFileLabel
             // 
@@ -519,15 +585,6 @@ namespace RuralCafe
             this.localPortLabel.Size = new System.Drawing.Size(26, 13);
             this.localPortLabel.TabIndex = 3;
             this.localPortLabel.Text = "Port";
-            // 
-            // searchPageLabel
-            // 
-            this.searchPageLabel.AutoSize = true;
-            this.searchPageLabel.Location = new System.Drawing.Point(351, 72);
-            this.searchPageLabel.Name = "searchPageLabel";
-            this.searchPageLabel.Size = new System.Drawing.Size(103, 13);
-            this.searchPageLabel.TabIndex = 16;
-            this.searchPageLabel.Text = "Default search page";
             // 
             // remoteProxyTabPage
             // 
@@ -813,62 +870,6 @@ namespace RuralCafe
             this.saveButton.Text = "Save";
             this.saveButton.UseVisualStyleBackColor = true;
             this.saveButton.Click += new System.EventHandler(this.saveButton_Click);
-            // 
-            // baseDirectoryTextBox
-            // 
-            this.baseDirectoryTextBox.Location = new System.Drawing.Point(507, 95);
-            this.baseDirectoryTextBox.Name = "baseDirectoryTextBox";
-            this.baseDirectoryTextBox.Size = new System.Drawing.Size(183, 20);
-            this.baseDirectoryTextBox.TabIndex = 41;
-            this.toolTip1.SetToolTip(this.baseDirectoryTextBox, "All dynamically changing files are stored here.");
-            // 
-            // baseDirectoryLabel
-            // 
-            this.baseDirectoryLabel.AutoSize = true;
-            this.baseDirectoryLabel.Location = new System.Drawing.Point(351, 99);
-            this.baseDirectoryLabel.Name = "baseDirectoryLabel";
-            this.baseDirectoryLabel.Size = new System.Drawing.Size(74, 13);
-            this.baseDirectoryLabel.TabIndex = 42;
-            this.baseDirectoryLabel.Text = "Base directory";
-            // 
-            // detectNetworkStatusCheckBox
-            // 
-            this.detectNetworkStatusCheckBox.AutoSize = true;
-            this.detectNetworkStatusCheckBox.Location = new System.Drawing.Point(139, 98);
-            this.detectNetworkStatusCheckBox.Name = "detectNetworkStatusCheckBox";
-            this.detectNetworkStatusCheckBox.Size = new System.Drawing.Size(15, 14);
-            this.detectNetworkStatusCheckBox.TabIndex = 40;
-            this.toolTip1.SetToolTip(this.detectNetworkStatusCheckBox, "Should the network status be detected automatically based on the download speed?");
-            this.detectNetworkStatusCheckBox.UseVisualStyleBackColor = true;
-            this.detectNetworkStatusCheckBox.CheckedChanged += new System.EventHandler(this.detectNetworkStatusCheckBox_CheckedChanged);
-            // 
-            // detectNetworkStatusLabel
-            // 
-            this.detectNetworkStatusLabel.AutoSize = true;
-            this.detectNetworkStatusLabel.Location = new System.Drawing.Point(6, 98);
-            this.detectNetworkStatusLabel.Name = "detectNetworkStatusLabel";
-            this.detectNetworkStatusLabel.Size = new System.Drawing.Size(111, 13);
-            this.detectNetworkStatusLabel.TabIndex = 39;
-            this.detectNetworkStatusLabel.Text = "Detect network status";
-            // 
-            // networkStatusComboBox
-            // 
-            this.networkStatusComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.networkStatusComboBox.FormattingEnabled = true;
-            this.networkStatusComboBox.Location = new System.Drawing.Point(140, 123);
-            this.networkStatusComboBox.Name = "networkStatusComboBox";
-            this.networkStatusComboBox.Size = new System.Drawing.Size(181, 21);
-            this.networkStatusComboBox.TabIndex = 38;
-            this.toolTip1.SetToolTip(this.networkStatusComboBox, "Set a fixed network status.");
-            // 
-            // networkStatusLabel
-            // 
-            this.networkStatusLabel.AutoSize = true;
-            this.networkStatusLabel.Location = new System.Drawing.Point(5, 126);
-            this.networkStatusLabel.Name = "networkStatusLabel";
-            this.networkStatusLabel.Size = new System.Drawing.Size(78, 13);
-            this.networkStatusLabel.TabIndex = 37;
-            this.networkStatusLabel.Text = "Network status";
             // 
             // SettingsForm
             // 

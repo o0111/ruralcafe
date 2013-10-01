@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PublishUrlHistory>ftp://195.229.110.133/RuralCafe/|publish\</PublishUrlHistory>
+    <InstallUrlHistory>http://195.229.110.133/ftp/RuralCafe/|http://195.229.110.133/ftp/</InstallUrlHistory>
+    <SupportUrlHistory>http://code.google.com/p/ruralcafe/</SupportUrlHistory>
+    <UpdateUrlHistory>http://195.229.110.133/ftp/RuralCafe/|\\FRITZMOBIL\Users\Satia\Documents\Visual Studio 2012\Projects\Rural Cafe\trunk\RuralCafe\publish\</UpdateUrlHistory>
+    <BootstrapperUrlHistory />
+    <ErrorReportUrlHistory />
+    <FallbackCulture>en-US</FallbackCulture>
+    <VerifyUploadedFiles>false</VerifyUploadedFiles>
+    <ProjectView>ProjectFiles</ProjectView>
+  </PropertyGroup>
+  <PropertyGroup>
+    <EnableSecurityDebugging>false</EnableSecurityDebugging>
+  </PropertyGroup>
+</Project>

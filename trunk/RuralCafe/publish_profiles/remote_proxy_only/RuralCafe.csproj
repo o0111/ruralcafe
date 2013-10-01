@@ -19,7 +19,7 @@
     <OldToolsVersion>3.5</OldToolsVersion>
     <IsWebBootstrapper>true</IsWebBootstrapper>
     <TargetFrameworkProfile />
-    <PublishUrl>ftp://195.229.110.133/RuralCafe/</PublishUrl>
+    <PublishUrl>ftp://195.229.110.133/RuralCafe/RemoteProxyOnly/</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Web</InstallFrom>
     <UpdateEnabled>true</UpdateEnabled>
@@ -29,8 +29,8 @@
     <UpdatePeriodically>false</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
-    <InstallUrl>http://195.229.110.133/ftp/RuralCafe/</InstallUrl>
-    <UpdateUrl>http://195.229.110.133/ftp/RuralCafe/</UpdateUrl>
+    <InstallUrl>http://195.229.110.133/ftp/RuralCafe/RemoteProxyOnly/</InstallUrl>
+    <UpdateUrl>http://195.229.110.133/ftp/RuralCafe/RemoteProxyOnly/</UpdateUrl>
     <SupportUrl>http://code.google.com/p/ruralcafe/</SupportUrl>
     <TargetCulture>en</TargetCulture>
     <ProductName>Rural Cafe</ProductName>

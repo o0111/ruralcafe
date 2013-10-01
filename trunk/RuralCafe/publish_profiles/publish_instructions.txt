@@ -1,0 +1,14 @@
+=== Publishing ===
+
+For each of the 4 profiles:
+  - Copy the contents of the profile folder into /trunk/RuralCafe, overriding files.
+  - Right click RuralCafe in the SolutionExplorer, choose Properties, go to the Publish Tab
+  - Adjust version number (at least revision) and click "Publish now".
+  - For offline:
+    - A folder /trunk/RuralCafe/publish has been created. Put that folder into a (self-extracting) archive and upload it somewhere.
+
+
+Remember:
+If you update the publish configuration, add, delete or modify default settings, or do anything that affects the files included in the profile folders,
+you must update the profile folders then by merging the files somehow.
+
