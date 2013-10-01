@@ -770,7 +770,7 @@ namespace ProcessTopicTopLinks
             }
             MainWindow.SetRichText(".............seed downloading complete successfully for topic " + directory + "\n");
 
-            MainWindow.ShowSeedDocsFinish(Int32.Parse(directory));
+            MainWindow.ShowSeedDocsFinish(directory);
             downloadC = 1;
         }
 

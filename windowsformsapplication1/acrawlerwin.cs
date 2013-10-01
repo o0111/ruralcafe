@@ -37,6 +37,7 @@ namespace Crawler
 
         // Constants
         public const int TOTAL_THREAD = 20;
+        public const string NEGATIVE_SEED_GOOGLE_TERM = "The";
 
         // An array holding all the crawlers.
         private Crawler[] crawlers;
@@ -277,8 +278,8 @@ namespace Crawler
         /// <summary>
         /// Shows that a topic completed downloading its seed docs in the box on the right.
         /// </summary>
-        /// <param name="topicNumber">The topic number.</param>
-        public void ShowSeedDocsFinish(int topicNumber)
+        /// <param name="topicNumber">The topic number or "neg".</param>
+        public void ShowSeedDocsFinish(string topicNumber)
         {
             if (textWindow.InvokeRequired)
             {
@@ -288,7 +289,8 @@ namespace Crawler
             {
                 threadProgressText.Text += "Topic " + topicNumber + " finished downloading seed documents\n";
                 seedsCompleted++;
-                if (seedsCompleted == globalTotalTopics)
+                // We have to download seeds for all topics plus the negative seeds
+                if (seedsCompleted == globalTotalTopics + 1)
                 {
                     ShowMessageBox("Downloading seed documents completed");
                     SetButtonsEnabled(true);
@@ -529,6 +531,12 @@ namespace Crawler
         private void StartAllCrawlers(bool trainTest)
         {
             // Check if all necessary files exist
+            if (!Directory.Exists(this.MainFolder + "neg"))
+            {
+                ShowMessageBox("Please download the seed documents first.");
+                SetButtonsEnabled(true);
+                return;
+            }
             for (int i = 0; i < globalTotalTopics; i++)
             {
                 if (!Directory.Exists(this.MainFolder + i) || !Directory.Exists(this.MainFolder + i + Path.DirectorySeparatorChar + "webdocs"))
@@ -537,22 +545,14 @@ namespace Crawler
                     SetButtonsEnabled(true);
                     return;
                 }
-                // 0.txt to 29.txt have to exist
-                for (int j = 0; j < Crawler.NUMBER_OF_LINKS_HALF; j++)
-                {
-                    if (!File.Exists(this.MainFolder + i + Path.DirectorySeparatorChar + j + ".txt"))
-                    {
-                        ShowMessageBox("Please download the seed documents first.");
-                        SetButtonsEnabled(true);
-                        return;
-                    }
-                }
             }
+
             // Initialize crawler array.
             this.crawlers = new Crawler[globalTotalTopics];
 
             // Get number of crawlers to start.
-            crawlersStarted = Math.Min(TOTAL_THREAD, globalTotalTopics);
+            // All for train+test and up to 20 for crawl.
+            crawlersStarted = trainTest ? globalTotalTopics : Math.Min(TOTAL_THREAD, globalTotalTopics);
 
             for (int i = 0; i < crawlersStarted; i++)
             {
@@ -699,8 +699,9 @@ namespace Crawler
                 return;
             }
 
-            // Read the file for the negative seed links, which are equal for all topics at the moment
-            string negativeSeedLinks = File.ReadAllText("negativeSeedLinks.txt");
+            // Get the negative seed links and write them into the file
+            List<string> negativeSeedLinks = GetGoogleResults(NEGATIVE_SEED_GOOGLE_TERM, Crawler.NUMBER_OF_LINKS);
+            File.WriteAllLines(this.MainFolder + "topicneg.txt", negativeSeedLinks);
 
             // Loop through all topics in topics.txt
             for (int i = 0; i < topics.Length; i++)
@@ -710,10 +711,8 @@ namespace Crawler
                 SetRichText("Generating training set for " + topics[i] + "\n");
                 using (StreamWriter topicFileWriter = new StreamWriter(File.Create(topicFileName)))
                 {
-                    // Write the negative seed links into the file
-                    topicFileWriter.WriteLine(negativeSeedLinks);
                     // Google 30 positive links for the topic
-                    List<string> positiveSeedLinks = GetGoogleResults(topics[i], Crawler.NUMBER_OF_LINKS_HALF);
+                    List<string> positiveSeedLinks = GetGoogleResults(topics[i], Crawler.NUMBER_OF_LINKS);
                     foreach (string positiveSeedLink in positiveSeedLinks)
                     {
                         topicFileWriter.WriteLine(positiveSeedLink);
@@ -737,7 +736,13 @@ namespace Crawler
                 globalTotalTopics = File.ReadAllLines(topicsFileName).Length;
             }
 
-            // Check if all topicN.txt files exist
+            // Check if all topicN.txt files and topicneg.txt exist
+            if (!File.Exists(this.MainFolder + "topicneg.txt"))
+            {
+                ShowMessageBox("Please generate the training sets first.");
+                SetButtonsEnabled(true);
+                return;
+            }
             for (int i = 0; i < globalTotalTopics; i++)
             {
                 if (!File.Exists(this.MainFolder + "topic" + i + ".txt"))
@@ -749,36 +754,38 @@ namespace Crawler
             }
 
             seedsCompleted = 0;
-            // Start a thread for each topic.
+            // Start a thread for each topic and one for negs
+            new Thread(() => DownloadSeedDocsForTopic("neg")).Start();
             for (int cc = 0; cc < globalTotalTopics; cc++)
             {
                 int num = cc;
                 // Do NOT use cc directly!
-                new Thread(() => DownloadSeedDocsForTopic(num)).Start();
+                new Thread(() => DownloadSeedDocsForTopic("" + num)).Start();
             }
         }
 
         /// <summary>
-        /// Downloads the seed documents for the topic with the given number.
+        /// Downloads the seed documents for the topic with the given number or the negative seed docs.
         /// </summary>
-        /// <param name="topicNumber"></param>
-        private void DownloadSeedDocsForTopic(int topicNumber)
+        /// <param name="topicText">The number of the topic or "neg"</param>
+        private void DownloadSeedDocsForTopic(string topicText)
         {
-            SetRichText("..................starting downloading seed documents for topic " + topicNumber + "\n");
+            SetRichText("..................starting downloading seed documents for topic " + topicText + "\n");
             // Read links to download
-            string[] links = File.ReadAllLines(MainFolder + "topic" + topicNumber + ".txt");
+            string[] links = File.ReadAllLines(MainFolder + "topic" + topicText + ".txt");
             // Create directories
-            Directory.CreateDirectory(MainFolder + topicNumber);
-            string topicDir = MainFolder + topicNumber + Path.DirectorySeparatorChar;
+            Directory.CreateDirectory(MainFolder + topicText);
+            string topicDir = MainFolder + topicText + Path.DirectorySeparatorChar;
             Directory.CreateDirectory(topicDir + "webdocs");
 
+            int iDiff = 0;
             WebClient client = new MyWebClient(Crawler.WEB_TIMEOUT);
             for (int i = 0; i < links.Length; i++)
             {
-                string file = topicDir + Path.DirectorySeparatorChar + i + ".txt";
+                string file = topicDir + Path.DirectorySeparatorChar + (i - iDiff) + ".txt";
                 try
                 {
-                    SetRichText("Topic" + topicNumber + "= downloading [URL=" + links[i] + "]\n");
+                    SetRichText("Topic" + topicText + "= downloading [URL=" + links[i] + "]\n");
                     // Download page
                     string pageContent = client.DownloadString(links[i]);
                     // Extract text
@@ -788,14 +795,15 @@ namespace Crawler
                 }
                 catch (Exception e)
                 {
-                    // Save empty file
+                    // Jump one back, so we do not have empty files
+                    iDiff++;
                     SetRichText("could not download [error = " + e.Message + "]\n");
-                    File.WriteAllText(file, "");
+                    
                 }
             }
 
-            SetRichText(".............seed downloading complete successfully for topic " + topicNumber + "\n");
-            ShowSeedDocsFinish(topicNumber);
+            SetRichText(".............seed downloading complete successfully for topic " + topicText + "\n");
+            ShowSeedDocsFinish(topicText);
         }
 
         /// <summary>
@@ -836,17 +844,29 @@ namespace Crawler
             int pageNum = 1;
             List<string> result = new List<string>();
 
-            while (result.Count < maxAmount)
+            try
             {
-                string query = ConstructGoogleSearch(searchString, pageNum);
-                string page = client.DownloadString(query);
-                List<string> results = ExtractGoogleResults(page);
-                if (results.Count == 0)
+                while (result.Count < maxAmount)
                 {
-                    break;
+                    string query = ConstructGoogleSearch(searchString, pageNum);
+                    string page = client.DownloadString(query);
+                    List<string> results = ExtractGoogleResults(page);
+                    if (results.Count == 0)
+                    {
+                        break;
+                    }
+                    result.AddRange(results.Take(maxAmount - result.Count));
+                    pageNum++;
                 }
-                result.AddRange(results);
-                pageNum++;
+            }
+            catch (WebException e)
+            {
+                string response;
+                using (StreamReader sr = new StreamReader(e.Response.GetResponseStream()))
+                {
+                    response = sr.ReadToEnd();
+                }
+                ShowMessageBox("Could not generate training sets for " + searchString + ": " + e.Message + "\n");
             }
 
             return result;

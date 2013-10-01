@@ -26,7 +26,8 @@ namespace Crawler
             return String.Format("\tPos Tests: {0}\n\tNeg Tests: {1}\n\tFalse Pos: {2}"
                 + "\n\tFalse Neg: {3}\n\tAccuracy: {4:0.00}", numberOfTestForPos, numberOfTestsForNeg, falsePos,
                 falseNeg, accuracy);
-        }
+        }
+
     }
 
     /// <summary>
@@ -34,8 +35,13 @@ namespace Crawler
     /// </summary>
     public class Classifier
     {
+        // Constants
+        public const int NUMBER_OF_WORDS_PER_DOCUMENT = 600;
         // The stop words
         public static readonly string[] STOP_WORDS;
+
+        // The word frequencies
+        private static Dictionary<string, long> wordFrequencies; 
 
         /// <summary>
         /// Static Constructor
@@ -43,6 +49,17 @@ namespace Crawler
         static Classifier()
         {
             STOP_WORDS = File.ReadAllLines("stopwords.txt");
+            wordFrequencies = new Dictionary<string, long>();
+            try
+            {
+                string[] entries = File.ReadAllLines("1gram_gt_500k.txt");
+                foreach (string entry in entries)
+                {
+                    string[] splitEntry = entry.Split('\t');
+                    wordFrequencies.Add(splitEntry[0], Int64.Parse(splitEntry[1]));
+                }
+            }
+            catch (Exception) { }
         }
 
         // The topic number
@@ -86,50 +103,53 @@ namespace Crawler
 
         public TestResults TrainTest()
         {
-            Train(Crawler.NUMBER_OF_LINKS_HALF / 2);
-            return Test(Crawler.NUMBER_OF_LINKS_HALF / 2);
+            // Train with a third (20 docs) and test with rest (up to 40 docs)
+            Train(Crawler.NUMBER_OF_LINKS / 3);
+            return Test(Crawler.NUMBER_OF_LINKS / 3);
         }
 
         private TestResults Test(int whereToStart)
         {
             TestResults results = new TestResults();
-            for (int i = 0; true; i++)
+            // Positive
+            for (int i = whereToStart; true; i++)
             {
                 string fileName = mainDirectory + TopicDir + Path.DirectorySeparatorChar + i + ".txt";
                 if (!File.Exists(fileName))
                 {
                     break;
                 }
-                // Continue if this document is not to be used for testing.
-                if (i % Crawler.NUMBER_OF_LINKS_HALF < whereToStart)
-                {
-                    continue;
-                }
-                // TODO this will possibly contain HTML now...
                 string fileContent = File.ReadAllText(fileName);
                 string useableText = ExtractUseableText(fileContent);
 
                 bool isMatch = classifier.IsMatch(useableText);
-
-                if (i < Crawler.NUMBER_OF_LINKS_HALF)
+                // it's a positive link
+                results.numberOfTestForPos++;
+                if (!isMatch)
                 {
-                    // it's a negative link
-                    results.numberOfTestsForNeg++;
-                    if (isMatch)
-                    {
-                        results.falsePos++;
-                    }
-                }
-                else
-                {
-                    // it's a positive link
-                    results.numberOfTestForPos++;
-                    if (!isMatch)
-                    {
-                        results.falseNeg++;
-                    }
+                    results.falseNeg++;
                 }
             }
+            // Negative
+            for (int i = whereToStart; true; i++)
+            {
+                string fileName = mainDirectory + "neg" + Path.DirectorySeparatorChar + i + ".txt";
+                if (!File.Exists(fileName))
+                {
+                    break;
+                }
+                string fileContent = File.ReadAllText(fileName);
+                string useableText = ExtractUseableText(fileContent);
+
+                bool isMatch = classifier.IsMatch(useableText);
+                // it's a negative link
+                results.numberOfTestsForNeg++;
+                if (isMatch)
+                {
+                    results.falsePos++;
+                }
+            }
+
             // Calculate accuracy
             int testsTotal = results.numberOfTestForPos + results.numberOfTestsForNeg;
             results.accuracy = ((double)(testsTotal - results.falseNeg - results.falsePos))/testsTotal;
@@ -143,51 +163,33 @@ namespace Crawler
         /// <param name="trainCountPositive">The number of positive and negative documents to train the Classifier with.</param>
         private void Train(int trainCountPositive)
         {
+            // Positive
             for (int i = 0; true; i++)
             {
                 string fileName = mainDirectory + TopicDir + Path.DirectorySeparatorChar + i + ".txt";
-                if (!File.Exists(fileName))
+                if (!File.Exists(fileName) || i >= trainCountPositive)
                 {
                     break;
-                }
-                // Continue if this document is not to be used for training.
-                if (trainCountPositive != 0 && i % Crawler.NUMBER_OF_LINKS_HALF >= trainCountPositive)
-                {
-                    continue;
                 }
                 string fileContent = File.ReadAllText(fileName);
                 string useableText = ExtractUseableText(fileContent);
 
-                if (i < Crawler.NUMBER_OF_LINKS_HALF)
-                {
-                    // it's a negative link
-                    classifier.TeachNonMatch(useableText);
-                }
-                else
-                {
-                    // it's a positive link
-                    classifier.TeachMatch(useableText);
-                }
+                classifier.TeachMatch(useableText);
             }
-        }
 
-        /// <summary>
-        /// Extracts useable text by  eleminating stopwords,
-        /// and words occuring too often or too rare.
-        /// </summary>
-        /// <param name="text">The input text.</param>
-        /// <returns>The useable text.</returns>
-        private string ExtractUseableText(string text)
-        {
-            // Lower case
-            string usefulText = text.ToLower();
-            // Remove stopwords
-            foreach (string stopWord in STOP_WORDS)
+            // Negative
+            for (int i = 0; true; i++)
             {
-                usefulText = usefulText.Replace(" " + stopWord + " ", " ");
+                string fileName = mainDirectory + "neg" + Path.DirectorySeparatorChar + i + ".txt";
+                if (!File.Exists(fileName) || i >= trainCountPositive)
+                {
+                    break;
+                }
+                string fileContent = File.ReadAllText(fileName);
+                string useableText = ExtractUseableText(fileContent);
+
+                classifier.TeachNonMatch(useableText);
             }
-            // TODO
-            return usefulText;
         }
 
         /// <summary>
@@ -208,6 +210,63 @@ namespace Crawler
         public double Classify(string text)
         {
             return classifier.Classify(ExtractUseableText(text));
+        }
+
+        /// <summary>
+        /// Extracts useable text by  eleminating stopwords,
+        /// and words occuring too often or too rare.
+        /// </summary>
+        /// <param name="text">The input text.</param>
+        /// <returns>The useable text.</returns>
+        private string ExtractUseableText(string text)
+        {
+            // Lower case
+            string usefulText = text.ToLower();
+            // Remove punctuation chars.
+            //usefulText = RegExs.PUNCTUATION_REGEX.Replace(usefulText, "");
+
+            // Remove stopwords
+            foreach (string stopWord in STOP_WORDS)
+            {
+                usefulText = usefulText.Replace(" " + stopWord + " ", " ");
+            }
+
+            // Use only frequent words
+            usefulText = ExtractOnlyFrequentWords(usefulText);
+            return usefulText;
+        }
+
+        private string ExtractOnlyFrequentWords(string text)
+        {
+            string[] words = RegExs.SPACES_REGEX.Split(text);
+            Dictionary<string, int> frequencies = new Dictionary<string, int>();
+
+            // Count the frequencies of all words.
+            foreach (string word in words)
+            {
+                if (!frequencies.ContainsKey(word))
+                {
+                    frequencies.Add(word, 1);
+                }
+                else
+                {
+                    frequencies[word]++;
+                }
+            }
+
+            // Sort all words by TfIdf.
+            List<string> sortedWords = new List<string>(words);
+            sortedWords.Sort((word1, word2) =>
+                {
+                    double tfIdf1 = wordFrequencies.ContainsKey(word1) ?
+                        ((double)frequencies[word1]) / (words.Count() * wordFrequencies[word1]) : 0;
+                    double tfIdf2 = wordFrequencies.ContainsKey(word2) ?
+                        ((double)frequencies[word2]) / (words.Count() * wordFrequencies[word2]) : 0;
+                    return tfIdf1.CompareTo(tfIdf2);
+                });
+
+            // TODO dups or no dups?
+            return String.Join(" ",sortedWords.Take(NUMBER_OF_WORDS_PER_DOCUMENT));
         }
     }
 }

@@ -110,7 +110,7 @@ namespace Crawler
         // Constants
         public static readonly string[] BAD_URL_PARTS = new string[] {
             "youtube", "facebook", "twitter", ".pdf", ".jpg", ".jpeg", ".gif", ".ppt" };
-        public const int NUMBER_OF_LINKS_HALF = 30;
+        public const int NUMBER_OF_LINKS = 60;
         public const int SWITCH_THREADS_DOWNLOAD_THRESHOLD = 100;
         public const int WEB_TIMEOUT = 1000 * 10; // 10 seconds
 
@@ -202,7 +202,7 @@ namespace Crawler
         private void AddSeedDocs()
         {
             string[] lines = File.ReadAllLines(MainWindow.MainFolder + "topic" + ThreadN + ".txt");
-            for (int i = NUMBER_OF_LINKS_HALF; i < lines.Length; i++)
+            for (int i = NUMBER_OF_LINKS; i < lines.Length; i++)
             {
                 if (IsUsefulURL(lines[i]))
                 {
@@ -229,7 +229,7 @@ namespace Crawler
         public void TrainTest()
         {
             classifier = new Classifier(ThreadN, MainWindow.MainFolder);
-            TestResults results = classifier.TrainTest(); // TODO print results or so
+            TestResults results = classifier.TrainTest();
             MainWindow.SetRichText("Test results for topic " + ThreadN + ":\n" + results + "\n");
             MainWindow.ShowTestFinish(ThreadN, results);
         }

@@ -21,6 +21,8 @@ namespace Util
         public static Regex NON_WORDS_CHARS_REGEX = new Regex(@"\W+");
         /// <summary>Regex that matches one or more spaces.</summary>
         public static Regex SPACES_REGEX = new Regex(@"\s+");
+        /// <summary>Regex that matches one or more punctuation chars.</summary>
+        public static Regex PUNCTUATION_REGEX = new Regex(@"\p{P}+");
         /// <summary>Regex that matches two or more spaces. Useful for trimming them to one space.</summary>
         public static Regex MULTIPLE_SPACES_REGEX = new Regex(@"\s\s+");
         /// <summary>Regex that matches the number of search results in a google results page.</summary>
