@@ -523,6 +523,23 @@ namespace Util
             }
         }
 
+        /// <summary>
+        /// Gets the amount of free space in bytes for a given drive, or -1.
+        /// </summary>
+        /// <param name="driveName">The name of the drive</param>
+        /// <returns>The free space in bytes.</returns>
+        public static long GetTotalFreeSpaceBytes(string driveName)
+        {
+            foreach (DriveInfo drive in DriveInfo.GetDrives())
+            {
+                if (drive.IsReady && drive.Name == driveName)
+                {
+                    return drive.TotalFreeSpace;
+                }
+            }
+            return -1;
+        }
+
         #endregion
     }
 }

@@ -48,6 +48,14 @@ namespace RuralCafe
         /// If this is x, and the quota is q, the DEFAULT_LOW_WATERMARK will be q/x.
         /// </summary>
         private const int LOW_WATERMARK_DIVIDOR_QUOTA = 20;
+        /// <summary>
+        /// The percentage RC can use of the free disk space on C, by default.
+        /// </summary>
+        private const double PERCENTAGE_RC_CAN_USE_OF_FREE_SPACE = 0.3;
+        /// <summary>
+        /// By default, the max. cache size will not be greater than 150 GB.
+        /// </summary>
+        private const long CACHE_SIZE_MIB_MAX_DEFAULT = 150 * 1024;
 
         // Path Settings
         private static readonly string PACKAGE_PATH = "Packages" + Path.DirectorySeparatorChar;
@@ -180,6 +188,9 @@ namespace RuralCafe
             Console.WindowHeight = Console.LargestWindowHeight - 10;
             Console.SetWindowPosition(0, 0);
 
+            // Adjust max cache size settings if necessary
+            AdjustMaxCacheSizeSettings();
+
             // Setting form at startup.
             SettingsForm sf = new SettingsForm();
             DialogResult dialogResults = sf.ShowDialog();
@@ -196,8 +207,7 @@ namespace RuralCafe
 
             bool localProxyStarted = false;
             // start the local proxy
-            if (Properties.Connection.Default.LOCAL_PROXY_IP_ADDRESS != null
-                && !Properties.Connection.Default.LOCAL_PROXY_IP_ADDRESS.Equals(""))
+            if (String.IsNullOrEmpty(Properties.Connection.Default.LOCAL_PROXY_IP_ADDRESS))
             {
                 localProxyStarted = true;
                 // If the dialogResults are yes ("Save and start crawler" button")
@@ -210,11 +220,63 @@ namespace RuralCafe
             if ((!localProxyStarted ||
                 Properties.Connection.Default.LOCAL_PROXY_IP_ADDRESS.Equals(
                 Properties.Connection.Default.REMOTE_PROXY_IP_ADDRESS)) &&
-                Properties.Connection.Default.REMOTE_PROXY_IP_ADDRESS != null
-                && !Properties.Connection.Default.REMOTE_PROXY_IP_ADDRESS.Equals(""))
+                !String.IsNullOrEmpty(Properties.Connection.Default.REMOTE_PROXY_IP_ADDRESS))
             {
                 StartRemoteProxy();
             }
+        }
+
+        /// <summary>
+        /// If the max cache size settings are 0, sets it to the minumu of
+        /// (together) 30 % of the free space on c: and 150 GB.
+        /// </summary>
+        private static void AdjustMaxCacheSizeSettings()
+        {
+            // Get free space in MiB on current drive
+            string driveLetter = Path.GetPathRoot(Environment.CurrentDirectory);
+            long mbFree = Utils.GetTotalFreeSpaceBytes(driveLetter) / (1024 * 1024);
+
+            bool localUsed = false;
+            bool remoteUsed = false;
+            double percentagePerProxy = PERCENTAGE_RC_CAN_USE_OF_FREE_SPACE;
+
+            // See which proxies are used
+            if (!String.IsNullOrEmpty(Properties.Connection.Default.LOCAL_PROXY_IP_ADDRESS))
+            {
+                if (!String.IsNullOrEmpty(Properties.Connection.Default.REMOTE_PROXY_IP_ADDRESS) &&
+                Properties.Connection.Default.LOCAL_PROXY_IP_ADDRESS.Equals(Properties.Connection.Default.REMOTE_PROXY_IP_ADDRESS))
+                {
+                    // Both proxies are running
+                    percentagePerProxy = PERCENTAGE_RC_CAN_USE_OF_FREE_SPACE / 2;
+                    localUsed = remoteUsed = true;
+                }
+                else
+                {
+                    // Only local proxy is running
+                    percentagePerProxy = PERCENTAGE_RC_CAN_USE_OF_FREE_SPACE;
+                    localUsed = true;
+                }
+            }
+            else if (!String.IsNullOrEmpty(Properties.Connection.Default.REMOTE_PROXY_IP_ADDRESS) &&
+                Properties.Connection.Default.LOCAL_PROXY_IP_ADDRESS.Equals(Properties.Connection.Default.REMOTE_PROXY_IP_ADDRESS))
+            {
+                // only remote proxy is running
+                percentagePerProxy = PERCENTAGE_RC_CAN_USE_OF_FREE_SPACE;
+                remoteUsed = true;
+            }
+            
+            // Adjust settings for both proxies
+            if (localUsed && Properties.Files.Default.LOCAL_MAX_CACHE_SIZE_MIB == 0)
+            {
+                Properties.Files.Default.LOCAL_MAX_CACHE_SIZE_MIB = (int)Math.Min(percentagePerProxy * mbFree, CACHE_SIZE_MIB_MAX_DEFAULT);
+            }
+            if (remoteUsed && Properties.Files.Default.REMOTE_MAX_CACHE_SIZE_MIB == 0)
+            {
+                Properties.Files.Default.REMOTE_MAX_CACHE_SIZE_MIB = (int)Math.Min(percentagePerProxy * mbFree, CACHE_SIZE_MIB_MAX_DEFAULT);
+            }
+
+            // Save
+            Properties.Files.Default.Save();
         }
 
         /// <summary>
