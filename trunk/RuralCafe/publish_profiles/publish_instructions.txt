@@ -12,3 +12,6 @@ Remember:
 If you update the publish configuration, add, delete or modify default settings, or do anything that affects the files included in the profile folders,
 you must update the profile folders then by merging the files somehow.
 
+Login on ftp://195.229.110.133 :
+user: sharfert
+pass: 123456

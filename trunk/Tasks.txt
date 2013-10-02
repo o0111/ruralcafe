@@ -1,4 +1,5 @@
 Tasks
+- Use the new URL<->Filepath conversion!
 - Implement offline detection + back online detection.
 - Long file name support. See http://blogs.msdn.com/b/bclteam/archive/2007/02/13/long-paths-in-net-part-1-of-3-kim-hamilton.aspx and http://zetalongpaths.codeplex.com/
 - Handle 304 correctly (done for StreamTransparently, missing for DownloadToCache, but it doesn't seem to happen there)
@@ -13,8 +14,10 @@ Tasks
 - NetworkSpeedDetection / InflightRequests Control
   - At first hardcoded percentage of _maxInflightRequests that have to be non-streamed ones. Better fairness policy later.
 - Crawler
-  - Dynamic negative seed links
   - Return to the settings form when the crawler is closed
+  - Improve classifier accuracy (currently 59 %)
+  - Default blacklist
+  - Possibly merge (Generate Training Set + Download Seed + Crawl), at least the first two.
 - Deployment
   - Use another FTP server
   - Ask the user for updates regularly, not only when he is starting the program. See http://msdn.microsoft.com/en-us/library/vstudio/system.deployment.application.applicationdeployment.aspx

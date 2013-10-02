@@ -18,7 +18,7 @@ using System.Threading;
 namespace ProcessTopicTopLinks
 {
     /// <summary>
-    /// NOT USED ANY MORE.
+    /// NOT USED ANY MORE. This class and PorterStemmer and svm_train can be deleted theoretically.
     /// </summary>
     public class ProcessTopicTopLinksClass
     {
