@@ -75,34 +75,14 @@ namespace RuralCafe.Util
             }
         }
 
-
-        /// <summary>
-        /// Enum for the callback status.
-        /// </summary>
-        private enum CallBackStatus
-        {
-            /// <summary>
-            /// A callback was requested, but the request is not finished yet.
-            /// </summary>
-            INITIAL = 0,
-            /// <summary>
-            /// The request is finished, so the callback can be made.
-            /// </summary>
-            READY = 1,
-            /// <summary>
-            /// The request probably failed, so the callback must be omitted.
-            /// </summary>
-            ABORTED = 2
-        }
-
         // Constants
         /// <summary>
-        /// After this time, a time and bytes are saved to create chunks, from which some
+        /// After this time, time and bytes are saved to create chunks, from which some
         /// are then ignored afterwards.
         /// </summary>
         private static readonly TimeSpan PART_SAVING_INTERVAL = new TimeSpan(0, 0, 1);
         /// <summary>
-        /// Only the best (fastest) n % of the chunks are considered. With 10 % for 10 s this means only 1 chunk.
+        /// Only the best (fastest) n % of the chunks are considered. With 5 % for 1 min this means 3 chunk.
         /// </summary>
         private const double BEST_N_PERCENT = 0.05; // XXX maybe 1 chunk is not so good...
         /// <summary>
@@ -238,7 +218,7 @@ namespace RuralCafe.Util
                     TimeSpan toSleep = MEASUREMENT_DEFAULT_TIME - _stopwatch.Elapsed < PART_SAVING_INTERVAL ?
                         MEASUREMENT_DEFAULT_TIME - _stopwatch.Elapsed : PART_SAVING_INTERVAL;
                     Thread.Sleep(toSleep);
-                    SavePartOfMeasurement(null);
+                    SavePartOfMeasurement();
                 }
                 // Stop
                 _stopwatch.Stop();
@@ -260,8 +240,7 @@ namespace RuralCafe.Util
             /// <summary>
             /// Saves a part of the measurement. The currently elapsed time and bytes received.
             /// </summary>
-            /// <param name="o">Ignored.</param>
-            private void SavePartOfMeasurement(object o)
+            private void SavePartOfMeasurement()
             {
                 double elapsedTime = _stopwatch.Elapsed.TotalSeconds;
                 long bytesDownloaded = _networkInterface.GetIPv4Statistics().BytesReceived - _bytesReceived;

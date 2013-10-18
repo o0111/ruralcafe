@@ -816,8 +816,8 @@ namespace RuralCafe
                 }
                 else
                 {
-                    weightOfNewResults = NETWORK_SPEED_TIME_WEIGHT * (results.ElapsedSeconds / _speedCalculationSecondsUsed)
-                        + (1 - NETWORK_SPEED_TIME_WEIGHT) * (results.BytesDownloaded / _speedCalculationBytesUsed);
+                    weightOfNewResults = NETWORK_SPEED_TIME_WEIGHT * (results.ElapsedSeconds / newSpeedCalcSecondsUsed)
+                        + (1 - NETWORK_SPEED_TIME_WEIGHT) * (results.BytesDownloaded / newSpeedCalcBytesUsed);
                 }
 
                 // Save new speed value
