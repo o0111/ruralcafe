@@ -10,14 +10,11 @@ using System.Windows.Forms;
 
 
 using System.Runtime.InteropServices;
-using Google.API.Search;
-using Google.Apis.Customsearch.v1;
 using HtmlAgilityPack;
 using System.Threading;
 
 using System.Net;
 using System.IO;
-using ProcessTopicTopLinks;
 using PorterStemmerAlgorithm;
 using System.Web.Script.Serialization;
 using System.Diagnostics;
