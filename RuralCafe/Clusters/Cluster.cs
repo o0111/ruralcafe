@@ -830,7 +830,7 @@ namespace RuralCafe.Clusters
             {
                 // We will have to create a new category for the only leaf childs.
                 XmlElement onlyLeafChildsElement = doc.CreateElement(IndexServer.INDEX_CATEGORY_XML_NAME);
-                // It will id=-1 since it is not really a category.
+                // It will have id=-1 since it is not really a category.
                 onlyLeafChildsElement.SetAttribute(IndexServer.INDEX_ID_XML_ATTR, IndexServer.INDEX_ONLY_LEAF_CHILDS_ID);
                 onlyLeafChildsElement.SetAttribute(IndexServer.ITEM_TITLE_XML_NAME, IndexServer.INDEX_ONLY_LEAF_CHILDS_TITLE);
                 // Add all only leaf childs
