@@ -34,6 +34,7 @@ namespace RuralCafe.Clusters
             // TODO re-implement doc2mat in c# ?
 
             // perl doc2mat -nostem <docFile> <matFile>
+            // FIXME y u no stem??
             ProcessStartInfo perlStartInfo = new ProcessStartInfo("perl");
             perlStartInfo.Arguments = "\"" + DOC2MAT_PERL_SCRIPT + "\"" + " -nostem " +
                 "\"" + docFile + "\" \"" + matFile + "\"";

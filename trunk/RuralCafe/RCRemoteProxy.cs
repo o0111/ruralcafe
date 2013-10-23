@@ -178,7 +178,6 @@ namespace RuralCafe
         /// <param name="requestHandler">The request handler to queue.</param>
         public void AddRequest(RemoteRequestHandler requestHandler)
         {
-            // Order is important!
             requestHandler = (RemoteRequestHandler) AddRequestGlobalQueue(requestHandler);
 
             // Notify that a new request has been added. The Dispatcher will wake up if it was waiting.
