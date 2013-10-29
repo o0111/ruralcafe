@@ -1430,7 +1430,7 @@ namespace RuralCafe
                 // Although this is not really a request, we set the lastRequestTime to now
                 rcData.lastRequestTime = DateTime.Now;
                 // One requests so far
-                rcData.numberOfRequests = 0;
+                rcData.numberOfRequests = 1;
                 // Download time is the lastModified time of the file, if it already exists. Otherwise now
                 rcData.downloadTime = File.Exists(_cachePath + filename) ?
                     File.GetLastWriteTime(_cachePath + filename) : DateTime.Now;
@@ -1439,6 +1439,11 @@ namespace RuralCafe
             }
             else
             {
+                // Update RC data
+                // Although this is not really a request, we set the lastRequestTime to now
+                rcData.lastRequestTime = DateTime.Now;
+                // One request more
+                rcData.numberOfRequests++;
                 // Download time is the lastModified time of the file, if it already exists. Otherwise now
                 rcData.downloadTime = File.Exists(_cachePath + filename) ?
                     File.GetLastWriteTime(_cachePath + filename) : DateTime.Now;
