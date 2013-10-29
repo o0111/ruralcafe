@@ -18,8 +18,8 @@ namespace RuralCafe.Clusters
     {
         /// <summary>
         /// Weights all categories and subcategories by the number of search results,
-        /// sort the XML by that and saves search results with content snippets in the subcategories,
-        /// that do actually appear in dex index pages.
+        /// sorts the XML by that and saves search results with content snippets in the subcategories,
+        /// that do actually appear in the index pages.
         /// </summary>
         /// <param name="path">The path to the directory where the XML file is in.</param>
         /// <param name="proxy">The proxy.</param>
