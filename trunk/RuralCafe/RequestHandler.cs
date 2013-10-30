@@ -41,7 +41,7 @@ namespace RuralCafe
     /// Each instance of RequestHandler has at least one RCRequest object associated with it.
     /// </summary>
     [JsonObject(MemberSerialization.OptIn)]
-    public abstract class RequestHandler
+    public abstract class RequestHandler : IComparable<RequestHandler>
     {
         /// <summary>
         /// The status for a request.
@@ -242,6 +242,22 @@ namespace RuralCafe
         public bool IsBlacklisted(string uri)
         {
             return _proxy.IsBlacklisted(uri);
+        }
+
+        /// <summary>
+        /// Used to organize RHs in a Priority Queue. Ordered by number of requests, descending
+        /// and creation time, ascending.
+        /// </summary>
+        /// <param name="other">The oterh RH.</param>
+        /// <returns>The usual.</returns>
+        int IComparable<RequestHandler>.CompareTo(RequestHandler other)
+        {
+            int outstandingRequestsDiff = other._outstandingRequests - this._outstandingRequests;
+            if (outstandingRequestsDiff != 0)
+            {
+                return outstandingRequestsDiff;
+            }
+            return this._creationTime.CompareTo(other._creationTime);
         }
 
         #region Property Accessors

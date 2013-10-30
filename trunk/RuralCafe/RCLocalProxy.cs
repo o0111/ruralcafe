@@ -358,6 +358,8 @@ namespace RuralCafe
                     Logger.Metric(String.Format("Speed is {0}, that is below {1}, switching to slow mode.",
                         _networkSpeedBS, downThreshold));
                     NetworkStatus = NetworkStatusCode.Slow;
+                    // Notify that status is now slow and dispatcher must continue work.
+                    _requestEvent.Set();
                 }
                 else if (NetworkStatus == NetworkStatusCode.Slow
                     && _networkSpeedBS > upThreshold)
@@ -432,7 +434,33 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Adds the request handler to the user's queue.
+        /// Adds the request handler to the global queue, no dups.
+        /// </summary>
+        /// <param name="requestHandler">The request handler to queue.</param>
+        /// <returns>The request handler in the queue.
+        /// Either the parameter or an already exiting equivalent RH in the queue.</returns>
+        protected RequestHandler AddRequestGlobalQueue(RequestHandler requestHandler)
+        {
+            // add the request to the global queue
+            lock (_globalRequests)
+            {
+                if (_globalRequests.Contains(requestHandler))
+                {
+                    // get contained rh and return it
+                    return _globalRequests[_globalRequests.IndexOf(requestHandler)];
+                }
+                else
+                {
+                    // queue new request
+                    _globalRequests.Add(requestHandler);
+
+                    return requestHandler;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Adds the request handler to the user's queue, no dups.
         /// </summary>
         /// <param name="userId">The user's id.</param>
         /// <param name="requestHandler">The request handler to queue.</param>
@@ -455,12 +483,14 @@ namespace RuralCafe
                 }
             }
 
-            // add the request to the client's queue
+            // add the request to the client's queue, if not contained already.
             lock (requestHandlers)
             {
-                // Just add
-                requestHandlers.Add(requestHandler);
-                requestHandler.OutstandingRequests++;
+                if (!requestHandlers.Contains(requestHandler))
+                {
+                    requestHandlers.Add(requestHandler);
+                    requestHandler.OutstandingRequests++;
+                }
             }
         }
 
@@ -544,10 +574,8 @@ namespace RuralCafe
                         }
                     }
                 }
-                // Sort the queue chronologically.
-                _globalRequests.Sort((x, y) => 
-                    x.CreationTime > y.CreationTime ? 1 : 
-                    (x.CreationTime == y.CreationTime ? 0 : -1));
+                // Sort the queue.
+                _globalRequests.Sort();
             }
         }
 

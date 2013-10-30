@@ -501,6 +501,9 @@ namespace RuralCafe
             // lock to make sure nothing is added or removed
             lock (_globalRequests)
             {
+                // Sort by numberOfRequests and CreationTime
+                _globalRequests.Sort();
+
                 if (_globalRequests.Count > 0)
                 {
                     requestHandler = _globalRequests[0];
@@ -615,6 +618,11 @@ namespace RuralCafe
                             ThreadPool.QueueUserWorkItem(new WaitCallback(requestHandler.DispatchRequest), null);
                         }
                     }
+                    else
+                    {
+                        // wait for the network status to change, also indicated by this event.
+                        _requestEvent.WaitOne();
+                    }
                 }
                 else
                 {
@@ -685,24 +693,6 @@ namespace RuralCafe
                 _admissionEvent.WaitOne();
             }
             
-        }
-
-        /// <summary>
-        /// Adds the request handler to the global queue.
-        /// </summary>
-        /// <param name="requestHandler">The request handler to queue.</param>
-        /// <returns>The request handler in the queue.
-        /// Either the parameter or an already exiting equivalent RH in the queue.</returns>
-        protected RequestHandler AddRequestGlobalQueue(RequestHandler requestHandler)
-        {
-            // add the request to the global queue
-            lock (_globalRequests)
-            {
-                // queue new request
-                _globalRequests.Add(requestHandler);
-
-                return requestHandler;
-            }
         }
 
         /// <summary>

@@ -185,6 +185,24 @@ namespace RuralCafe
         }
 
         /// <summary>
+        /// Adds the request handler to the global queue.
+        /// </summary>
+        /// <param name="requestHandler">The request handler to queue.</param>
+        /// <returns>The request handler in the queue.
+        /// Either the parameter or an already exiting equivalent RH in the queue.</returns>
+        protected RequestHandler AddRequestGlobalQueue(RequestHandler requestHandler)
+        {
+            // add the request to the global queue
+            lock (_globalRequests)
+            {
+                // queue new request
+                _globalRequests.Add(requestHandler);
+
+                return requestHandler;
+            }
+        }
+
+        /// <summary>
         /// Removes a single request from the queues.
         /// </summary>
         /// <param name="requestHandlerItemId">The item id of the request handlers to dequeue.</param>
