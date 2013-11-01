@@ -711,35 +711,39 @@ namespace RuralCafe
         /// <summary>
         /// Returns the number of seconds until request is expected to be satisfied.
         /// Calculates the ETA by looking at the average satisfied time, the current running time of
-        /// tfirst request and the position of this request.
+        /// requests and the position of this request.
         /// </summary>
         /// <param name="requestHandler">The request for which we want the ETA.</param>
         /// <returns>ETA in seconds.</returns>
         public int ETA(LocalRequestHandler requestHandler)
         {
-            int requestPosition = _globalRequests.IndexOf(requestHandler);
+            double avg = _averageTimePerRequest.TotalSeconds;
+            int pos = _globalRequests.IndexOf(requestHandler);
 
-            if (requestPosition == -1)
+            if (requestHandler.RequestStatus == RequestHandler.Status.Downloading)
             {
-                // The request might have been finished ms ago. Otherwise sth. is wrong.
+                // Calculate remaining time
+                return (int)(avg - Math.Min(requestHandler.TimeRunning().TotalSeconds, avg));
+            }
+            else if (requestHandler.RequestStatus == RequestHandler.Status.Pending)
+            {
+                // Determine request that is running longest.
+                TimeSpan max = TimeSpan.Zero;
+                for (int i = 0; i < _maxInflightRequests && i < _globalRequests.Count; i++)
+                {
+                    TimeSpan ts;
+                    if ((ts = _globalRequests[i].TimeRunning()) > max)
+                    {
+                        max = ts;
+                    }
+                }
+                // Calculate remaining time
+                return (int)((pos + 1 - _maxInflightRequests) * avg - Math.Min(max.TotalSeconds, avg));
+            }
+            else // finished or error
+            {
                 return 0;
             }
-
-            // Determine the time the first request is already running
-            double secondsFirstRequestRunning = _averageTimePerRequest.TotalSeconds;
-            LocalRequestHandler firstHandler = (LocalRequestHandler) _globalRequests[0];
-            if(firstHandler != null)
-            {
-                secondsFirstRequestRunning = (DateTime.Now - firstHandler.StartTime).TotalSeconds;
-            }
-            if (secondsFirstRequestRunning > _averageTimePerRequest.TotalSeconds)
-            {
-                // This means, by avg. the first request should be ready, but it isn't
-                secondsFirstRequestRunning = _averageTimePerRequest.TotalSeconds;
-            }
-
-            // Calculate remaining time
-            return (int)(((requestPosition + 1) * _averageTimePerRequest.TotalSeconds) - secondsFirstRequestRunning);
         }
 
         # endregion
