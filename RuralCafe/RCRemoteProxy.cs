@@ -208,7 +208,6 @@ namespace RuralCafe
         /// <param name="requestHandlerItemId">The item id of the request handlers to dequeue.</param>
         public void RemoveRequest(string requestHandlerItemId)
         {
-            // Order is important!
             RemoteRequestHandler requestHandler = (RemoteRequestHandler) RemoveRequestGlobalQueue(requestHandlerItemId);
             // abort! XXX: no interrupt handling, but better than nothing for now.
             // XXX: if the request is removed from the queue already, we can't do much to it since we're not storing active requests somewhere right now

@@ -441,6 +441,16 @@ namespace RuralCafe
         /// <summary>Abstract method for handlers to issue requests.</summary>
         public abstract void DispatchRequest(object nullObj);
 
+        /// <summary>
+        /// Gets the time since start of the request. Does only make sence to call
+        /// if status is downloading.
+        /// </summary>
+        /// <returns></returns>
+        public TimeSpan TimeRunning()
+        {
+            return DateTime.Now - StartTime;
+        }
+
 
         #region streaming
 

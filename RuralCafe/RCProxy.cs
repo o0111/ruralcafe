@@ -609,7 +609,7 @@ namespace RuralCafe
                         }
 
                         // Going to process this, remove from incoming request queue
-                        RemoveRequestGlobalQueue(requestHandler.RequestId);
+                        _globalRequests.Remove(requestHandler);
 
                         // skip requests in global queue that are not pending, probably requeued from log
                         if (requestHandler.RequestStatus == RequestHandler.Status.Pending)
@@ -696,7 +696,9 @@ namespace RuralCafe
         }
 
         /// <summary>
-        /// Removes a single request from global queue.
+        /// Removes a single request from global queue, but ONLY, if this was the last user requesting it.
+        /// This method is invoked, when a user remomes a request from his personal queue and ensures the
+        /// request in only removed, when no other users requested the same page.
         /// </summary>
         /// <param name="requestId">The item id of the request handlers to dequeue.</param>
         protected RequestHandler RemoveRequestGlobalQueue(string requestId)
