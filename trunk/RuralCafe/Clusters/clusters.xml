@@ -1,0 +1,726 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<categories>
+	<category id="25" title="Introduction to computers">
+		<subcategory id="0" title="Definition of a computer" />
+		<subcategory id="1" title="Parts of a computer" />
+		<subcategory id="2" title="Development of computers" />
+		<subcategory id="3" title="Classification of computers" />
+		<subcategory id="4" title="Physical Size of computers" />
+		<subcategory id="5" title="Functionality of computers" />
+		<subcategory id="6" title="Purpose of computers" />
+		<subcategory id="7" title="Areas where computers are used" />
+		<subcategory id="8" title="Definition of a computer laboratory" />
+		<subcategory id="9" title="Safety precautions and practices in a computer laboratory" />
+		<subcategory id="10" title="computer laboratory behaviour" />
+		<subcategory id="11" title="Handling of materials and equipment in a computer lab" />
+		<subcategory id="12" title="Fire in a computer lab" />
+		<subcategory id="13" title="Cabling computers" />
+		<subcategory id="14" title="Stable power supply computers" />
+		<subcategory id="15" title="Burglar proofing computers" />
+		<subcategory id="16" title="Ventilation for computers" />
+		<subcategory id="17" title="Computer Lab layout " />
+		<subcategory id="18" title="Computer Dust and damp control " />
+		<subcategory id="19" title="Computer lab Lighting" />
+		<subcategory id="20" title="Standard furniture in a computer lab" />
+		<subcategory id="21" title="Hands-on computer skills" />
+		<subcategory id="22" title="Start-up, restarting and shut-down Booting a computer" />
+		<subcategory id="23" title="Keyboard layout" />
+		<subcategory id="24" title="Practical keyboard and mouse skills" />
+	</category>           
+	<category id="26" title="Computer systems">
+		<subcategory id="27" title="Description of a computer system" />
+		<subcategory id="28" title="Functional organization of the elements of a computer system" />
+		<subcategory id="29" title="Hardware" />
+		<subcategory id="30" title="Software" />
+		<subcategory id="31" title="Live-ware" />
+		<subcategory id="32" title="Computer Input devices" />
+		<subcategory id="33" title="Keying devices" />
+		<subcategory id="34" title="Pointing devices" />
+		<subcategory id="35" title="Scanning devices" />
+		<subcategory id="36" title="Speech recognition devices" />
+		<subcategory id="37" title="Other digital devices" />
+		<subcategory id="38" title="Central Processing Unit CPU" />
+		<subcategory id="39" title="Control Unit" />
+		<subcategory id="40" title="Arithmetic and Logic Unit ALU" />
+		<subcategory id="41" title="Computer Memory" />
+		<subcategory id="42" title="Computer Processors " />
+		<subcategory id="43" title="Processor types" />
+		<subcategory id="44" title="Processor clock speeds" />
+		<subcategory id="45" title="Computer Output Devices" />
+		<subcategory id="46" title="Computer soft copy output devices " />
+		<subcategory id="47" title="Visual display unit " />
+		<subcategory id="48" title="Liquid Crystal Display LCD " />
+		<subcategory id="49" title="flat panel " />
+		<subcategory id="50" title="cathode ray tube CRT" />
+		<subcategory id="51" title="Sound output " />
+		<subcategory id="52" title="Light emitting" />
+		<subcategory id="53" title="Hard copy output devices" />
+		<subcategory id="54" title="printers impact" />
+		<subcategory id="55" title="printers non-impact" />
+		<subcategory id="56" title="plotters" />
+		<subcategory id="57" title="Secondary and Auxiliary Storage Devices and Media" />
+		<subcategory id="58" title="Hard disk" />
+		<subcategory id="59" title="floppy disks" />
+		<subcategory id="60" title="tape" />
+		<subcategory id="61" title="optical disks CD-R, WORM, CD-RW, DVDs" />
+		<subcategory id="62" title="zip disks" />
+		<subcategory id="63" title="Power and Interface Cables" />
+		<subcategory id="64" title="Power cable" />
+		<subcategory id="65" title="Parallel cable" />
+		<subcategory id="66" title="Serial cable" />
+		<subcategory id="67" title="Basic computer Set-up and Cabling" />
+		<subcategory id="68" title="Connecting basic computer components" />
+		<subcategory id="69" title="Connecting other computer peripherals" />
+	</category>           
+	<category id="70" title="Classification of software">
+		<subcategory id="72" title="System software" />
+		<subcategory id="73" title="firmware" />
+		<subcategory id="74" title="networking software " />
+		<subcategory id="75" title="operating system " />
+		<subcategory id="76" title="utilities" />
+		<subcategory id="77" title="Application software" />
+		<subcategory id="78" title="acquisition standard software" />
+		<subcategory id="79" title="acquisition user developed in-house" />
+	</category>           
+	<category id="80" title="Criteria for selecting a computer system specifications">
+		<subcategory id="82" title="Computer Hardware considerations" />
+		<subcategory id="83" title="Computer Processor speed" />
+		<subcategory id="84" title="Computer Memory capacity" />
+		<subcategory id="85" title="Computer Warranty" />
+		<subcategory id="86" title="Computer Upgradability" />
+		<subcategory id="87" title="Computer User needs" />
+		<subcategory id="88" title="Computer Cost" />
+		<subcategory id="89" title="Computer Portability" />
+		<subcategory id="90" title="Other Computer considerations Software considerations" />
+		<subcategory id="91" title="Computer Authenticity" />
+		<subcategory id="92" title="Computer User needs" />
+		<subcategory id="93" title="Computer User friendliness" />
+		<subcategory id="94" title="Computer System requirements" />
+		<subcategory id="95" title="Computer Compatibility" />
+		<subcategory id="96" title="Computer Portability" />
+		<subcategory id="97" title="Computer Documentation" />
+		<subcategory id="98" title="Computer software considerations" />
+	</category>           
+	<category id="99" title="Operating systems">
+		<subcategory id="101" title="Definition of an operating system" />
+		<subcategory id="102" title="Functions of an operating system" />
+		<subcategory id="103" title="Job scheduling" />
+		<subcategory id="104" title="Computer Resource control" />
+		<subcategory id="105" title="Computer Input and output handling" />
+		<subcategory id="106" title="Memory management" />
+		<subcategory id="107" title="Error handling" />
+		<subcategory id="108" title="Interrupt handling" />
+		<subcategory id="109" title="Types of Operating Systems" />
+		<subcategory id="110" title="single user operating systems" />
+		<subcategory id="111" title="multi user operating systems" />
+		<subcategory id="112" title="single tasking operating systems" />
+		<subcategory id="113" title="multi tasking operating systems" />
+		<subcategory id="114" title="command line interface" />
+		<subcategory id="115" title="menu driven interface" />
+		<subcategory id="116" title="Graphical user interface GUI" />
+	</category>          
+	<category id="117" title="Computer Files">
+		<subcategory id="119" title="Computer Directories and folders" />
+		<subcategory id="120" title="Storage media" />
+		<subcategory id="121" title="File management using an operating system" />
+		<subcategory id="122" title="operating system Description of files" />
+		<subcategory id="123" title="Types of files" />
+		<subcategory id="124" title="system files" />
+		<subcategory id="125" title="application files" />
+		<subcategory id="126" title="Functions of files" />
+		<subcategory id="127" title="storage of data" />
+		<subcategory id="128" title="organization of information" />
+		<subcategory id="129" title="Creating files" />
+		<subcategory id="130" title="Manipulating files" />
+		<subcategory id="131" title="viewing files and directories" />
+		<subcategory id="132" title="organization of information" />
+		<subcategory id="133" title="creating files directories" />
+		<subcategory id="134" title="opening files" />
+		<subcategory id="135" title="editing files" />
+		<subcategory id="136" title="renaming files" />
+		<subcategory id="137" title="finding searching files" />
+		<subcategory id="138" title="sorting files" />
+		<subcategory id="139" title="copying files" />
+		<subcategory id="140" title="moving files" />
+		<subcategory id="141" title="deleting  files" />
+	</category>          
+	<category id="142" title="Disk Management using an operating system ">
+		<subcategory id="144" title="Formatting " />
+		<subcategory id="145" title="Partitioning " />
+		<subcategory id="146" title="Defragmentation" />
+		<subcategory id="147" title="Disk diagnostics " />
+		<subcategory id="148" title="Disk compression " />
+		<subcategory id="149" title="Back up" />
+	</category>          
+	<category id="150" title="Devices under operating system control ">
+		<subcategory id="152" title="Processor " />
+		<subcategory id="153" title="Memory RAM" />
+		<subcategory id="154" title="Storage devices " />
+		<subcategory id="155" title="Input and output devices and ports " />
+		<subcategory id="156" title="Communication devices and ports " />
+		<subcategory id="157" title="Installation and configuration of an operating system " />
+		<subcategory id="158" title="operating system install Trouble shooting" />
+	</category>          
+	<category id="159" title="word processors">
+		<subcategory id="161" title="Definition of a word-processor" />
+		<subcategory id="162" title="Purpose of word processing " />
+		<subcategory id="163" title="Letter preparation" />
+		<subcategory id="164" title="Reports" />
+		<subcategory id="165" title="Newsletters" />
+		<subcategory id="166" title="Using a Word processing package" />
+		<subcategory id="167" title="Getting started with word processing" />
+		<subcategory id="168" title="Screen layout" />
+		<subcategory id="169" title="Running the program" />
+		<subcategory id="170" title="Creating a document" />
+		<subcategory id="171" title="Saving in a word processor" />
+		<subcategory id="172" title="Retrieving in a word processor" />
+		<subcategory id="173" title="Closing a word processor" />
+		<subcategory id="174" title="Exiting a word processor" />
+		<subcategory id="175" title="Editing and formatting a document" />
+		<subcategory id="176" title="Editing a document in a word processor" />
+		<subcategory id="177" title="Block options in a word processor" />
+		<subcategory id="178" title="Selecting in a word processor" />
+		<subcategory id="179" title="Moving in a word processor" />
+		<subcategory id="180" title="Copying in a word processor" />
+		<subcategory id="181" title="Deleting in a word processor" />
+		<subcategory id="182" title="Inserting and type over in a word processor" />
+		<subcategory id="183" title="Find and replace in a word processor" />
+		<subcategory id="184" title="Search find in a word processor" />
+		<subcategory id="185" title="Replace in a word processor" />
+		<subcategory id="186" title="Proof-reading in a word processor" />
+		<subcategory id="187" title="Spelling and grammar checking in a word processor" />
+		<subcategory id="188" title="Thesaurus in a word processor" />
+		<subcategory id="189" title="Auto-correct in a word processor" />
+		<subcategory id="190" title="Undo and redo  in a word processor" />
+		<subcategory id="191" title="Formatting a document in a word processor" />
+		<subcategory id="192" title="Text formatting in a word processor" />
+		<subcategory id="193" title="Bolding in a word processor" />
+		<subcategory id="194" title="Italizing in a word processor" />
+		<subcategory id="195" title="Underlining in a word processor" />
+		<subcategory id="196" title="Fonts in a word processor" />
+		<subcategory id="197" title="Drop caps in a word processor" />
+		<subcategory id="198" title="Change case in a word processor" />
+		<subcategory id="199" title="Superscript subscript  in a word processor" />
+		<subcategory id="200" title="Paragraph formatting in a word processor" />
+		<subcategory id="201" title="alignment in a word processor" />
+		<subcategory id="202" title="indenting in a word processor" />
+		<subcategory id="203" title="spacing in a word processor" />
+		<subcategory id="204" title="section breaks in a word processor" />
+		<subcategory id="205" title="bullets and numbering in a word processor" />
+		<subcategory id="206" title="Page formatting in a word processor" />
+		<subcategory id="207" title="Layout in a word processor" />
+		<subcategory id="208" title="columns in a word processor" />
+		<subcategory id="209" title="headers footers in a word processor" />
+		<subcategory id="210" title="Setup in a word processor" />
+		<subcategory id="211" title="Margins in a word processor" />
+		<subcategory id="212" title="Orientations in a word processor" />
+		<subcategory id="213" title="Paper size in a word processor" />
+		<subcategory id="214" title="Tabs in a word processor" />
+		<subcategory id="215" title="Creating and Editing a table in a word processor" />
+		<subcategory id="216" title="Create a table in a word processor" />
+		<subcategory id="217" title="Rows in a word processor" />
+		<subcategory id="218" title="Columns in a word processor" />
+		<subcategory id="219" title="Enter data in a word processor" />
+		<subcategory id="220" title="Editing tables in a word processor" />
+		<subcategory id="221" title="Resizing rows columns in a word processor" />
+		<subcategory id="222" title="Inserting rows columns in a word processor" />
+		<subcategory id="223" title="Deleting rows columns in a word processor" />
+		<subcategory id="224" title="Merging rows columns in a word processor" />
+		<subcategory id="225" title="Splitting rows columns in a word processor" />
+		<subcategory id="226" title="Formatting tables in a word processor" />
+		<subcategory id="227" title="Borders in a word processor table" />
+		<subcategory id="228" title="shading in a word processor table" />
+		<subcategory id="229" title="Table conversions in a word processor " />
+		<subcategory id="230" title="Converting text to table in a word processor" />
+		<subcategory id="231" title="Converting table to text  in a word processor" />
+		<subcategory id="232" title="Importing a table in a word processor" />
+		<subcategory id="233" title="Arithmetic calculations in a table in a word processor" />
+		<subcategory id="234" title="Perform calculation in a word processor" />
+		<subcategory id="235" title="Insert formulae in a table word processor" />
+		<subcategory id="236" title="Sorting in a word processor" />
+	</category>          
+	<category id="237" title="Sorting creating and updating a mail merge document">
+		<subcategory id="239" title="Creating main document" />
+		<subcategory id="240" title="Form letters " />
+		<subcategory id="241" title="Labels " />
+		<subcategory id="242" title="envelopes " />
+		<subcategory id="243" title="create import data source " />
+		<subcategory id="244" title="editing " />
+		<subcategory id="245" title="saving" />
+		<subcategory id="246" title="Merging Fields" />
+		<subcategory id="247" title="Main and data source to" />
+		<subcategory id="248" title="Printer or" />
+		<subcategory id="249" title="New window or " />
+		<subcategory id="250" title="Fax or " />
+		<subcategory id="251" title="E-mail" />
+		<subcategory id="252" title="Updating merged document" />
+		<subcategory id="253" title="Printing a document" />
+		<subcategory id="254" title="Printer setup " />
+		<subcategory id="255" title="Print preview " />
+		<subcategory id="256" title="Print option" />
+		<subcategory id="257" title="printer selection" />
+		<subcategory id="258" title="orientation" />
+		<subcategory id="259" title="page and copies " />
+		<subcategory id="260" title="Printing" />
+		<subcategory id="261" title="Inserting Graphics" />
+		<subcategory id="262" title="Types of graphics" />
+		<subcategory id="263" title="Drawing graphics" />
+		<subcategory id="264" title="Pictures graphics" />
+		<subcategory id="265" title="Charts Inserting" />
+		<subcategory id="266" title="importing" />
+		<subcategory id="267" title="drawing" />
+		<subcategory id="268" title="Editing graphical obj" />
+		<subcategory id="269" title="Updating" />
+		<subcategory id="270" title="Resizing" />
+		<subcategory id="271" title="Enhance" />
+	</category>          
+	<category id="272" title="SPREADSHEET">
+		<subcategory id="274" title="Definition of a Spreadsheet" />
+		<subcategory id="275" title="Components of a spreadsheet " />
+		<subcategory id="276" title="Worksheet" />
+		<subcategory id="277" title="Database " />
+		<subcategory id="278" title="Graphs" />
+		<subcategory id="279" title="Application areas of a spreadsheet" />
+		<subcategory id="280" title="Statistical analysis" />
+		<subcategory id="281" title="Accounting" />
+		<subcategory id="282" title="Data management" />
+		<subcategory id="283" title="Forecasting what if analysis" />
+		<subcategory id="284" title="Scientific application" />
+		<subcategory id="285" title="Creating a worksheet workbook" />
+		<subcategory id="286" title="Getting started with a worksheet " />
+		<subcategory id="287" title="Worksheet layout" />
+		<subcategory id="288" title="Running the program" />
+		<subcategory id="289" title="reating a worksheet" />
+		<subcategory id="290" title="editing a cell entity" />
+		<subcategory id="291" title="saving" />
+		<subcategory id="292" title="retrieving" />
+		<subcategory id="293" title="closing a worksheet" />
+		<subcategory id="294" title="exiting from spreadsheet" />
+		<subcategory id="295" title="Cell Data Types" />
+		<subcategory id="296" title="Labels" />
+		<subcategory id="297" title="Values" />
+		<subcategory id="298" title="Formulae" />
+		<subcategory id="299" title="Functions" />
+		<subcategory id="300" title="Cell referencing" />
+		<subcategory id="301" title="Cell addressing" />
+		<subcategory id="302" title="Absolute referencing" />
+		<subcategory id="303" title="Relative referencing" />
+		<subcategory id="304" title="Basic functions and formulae" />
+		<subcategory id="305" title="Functions" />
+		<subcategory id="306" title="statistical average, count, max, min" />
+		<subcategory id="307" title="logical if, count-if sum-if" />
+		<subcategory id="308" title="mathematical sum, product, div" />
+		<subcategory id="309" title="Arithmetic formulae using operators +,-,/,*, brackets" />
+		<subcategory id="310" title="Worksheet formatting" />
+		<subcategory id="311" title="worksheet Text" />
+		<subcategory id="312" title="worksheet Numbers" />
+		<subcategory id="313" title="worksheet Rows and columns" />
+		<subcategory id="314" title="worksheet Global" />
+		<subcategory id="315" title="worksheet Data management" />
+		<subcategory id="316" title="worksheet Sorting" />
+		<subcategory id="317" title="worksheet Filtering" />
+		<subcategory id="318" title="worksheet Total subtotals function" />
+		<subcategory id="319" title="worksheet Forms" />
+		<subcategory id="320" title="Charts graphs" />
+		<subcategory id="321" title="Types" />
+		<subcategory id="322" title="Data ranges" />
+		<subcategory id="323" title="Labels" />
+		<subcategory id="324" title="Headings and titles" />
+		<subcategory id="325" title="Legends" />
+		<subcategory id="326" title="Printing" />
+		<subcategory id="327" title="page set-up" />
+		<subcategory id="328" title="print preview" />
+		<subcategory id="329" title="print options" />
+		<subcategory id="330" title="select printer" />
+		<subcategory id="331" title="printer selection" />
+		<subcategory id="332" title="worksheet workbook printing" />
+		<subcategory id="333" title="printing orientation" />
+		<subcategory id="334" title="pages and copies " />
+		<subcategory id="335" title="printing" />
+	</category>          
+	<category id="336" title="Databases">
+		<subcategory id="338" title="Definition of Database" />
+		<subcategory id="339" title="Database concepts" />
+		<subcategory id="340" title="Traditional filing methods manual flat files" />
+		<subcategory id="341" title="Functions of databases" />
+		<subcategory id="342" title="Types of database models" />
+		<subcategory id="343" title="Database software" />
+		<subcategory id="344" title="Features of a database e.g. data structures, report generating, querry language, modules" />
+		<subcategory id="345" title="Data Organization" />
+		<subcategory id="346" title="Character types" />
+		<subcategory id="347" title="Database Fields" />
+		<subcategory id="348" title="Database Records" />
+		<subcategory id="349" title="Database Files" />
+		<subcategory id="350" title="Database" />
+		<subcategory id="351" title="Creating a database" />
+		<subcategory id="352" title="Design a database structure" />
+		<subcategory id="353" title="Field properties and data types" />
+		<subcategory id="354" title="Key-fields and index" />
+		<subcategory id="355" title="Data entry" />
+		<subcategory id="356" title="Editing a database" />
+		<subcategory id="357" title="Modify structure" />
+		<subcategory id="358" title="Updating database" />
+		<subcategory id="359" title="Form design" />
+		<subcategory id="360" title="Form layout" />
+		<subcategory id="361" title="Data manipulation" />
+		<subcategory id="362" title="Formatting Database fields" />
+		<subcategory id="363" title="Database Queries" />
+		<subcategory id="364" title="Database Creating" />
+		<subcategory id="365" title="Database Updating" />
+		<subcategory id="366" title="Database Viewing" />
+		<subcategory id="367" title="Database Printing" />
+		<subcategory id="368" title="Reports layout" />
+		<subcategory id="369" title="Creating using relational and logical operator, local operators - AND OR, NOT" />
+		<subcategory id="370" title="Modifying reports layout" />
+		<subcategory id="371" title="Sorting and grouping" />
+		<subcategory id="372" title="Labeling report" />
+		<subcategory id="373" title="Printing reports" />
+	</category>          
+	<category id="374" title="Desktop publishing">
+		<subcategory id="376" title="Definition of Desktop publishing" />
+		<subcategory id="377" title="Purposes of desktop publishing" />
+		<subcategory id="378" title="Graphic design" />
+		<subcategory id="379" title="Page layout design" />
+		<subcategory id="380" title="Printing" />
+		<subcategory id="381" title="Types of desktop publishing software" />
+		<subcategory id="382" title="Graphical based" />
+		<subcategory id="383" title="Layout based" />
+		<subcategory id="384" title="Designing a publication" />
+		<subcategory id="385" title="Types of publications e.g. newsletters, cards, brochures, posters etc" />
+		<subcategory id="386" title="Running the program" />
+		<subcategory id="387" title="Screen layout" />
+		<subcategory id="388" title="Setting up a publication" />
+		<subcategory id="389" title="Manipulating text and graphics" />
+		<subcategory id="390" title="Editing a publication" />
+		<subcategory id="391" title="Editing tools" />
+		<subcategory id="392" title="Formatting a Publication" />
+		<subcategory id="393" title="formatting publication Text" />
+		<subcategory id="394" title="formatting publication Graphics" />
+		<subcategory id="395" title="Printing a publication" />
+		<subcategory id="396" title="publication Page set up" />
+		<subcategory id="397" title="publication Print options" />
+	</category>          
+	<category id="398" title="Internet and email">
+		<subcategory id="400" title="Definition of internet" />
+		<subcategory id="401" title="Development of internet" />
+		<subcategory id="402" title="Importance of internet" />
+		<subcategory id="403" title="Internet connectivity" />
+		<subcategory id="404" title="Telecommunication facilities" />
+		<subcategory id="405" title="Modems" />
+		<subcategory id="406" title="Internet services providers ISP " />
+		<subcategory id="407" title="Internet software" />
+		<subcategory id="408" title="Internet services" />
+		<subcategory id="409" title="World Wide Web www" />
+		<subcategory id="410" title="Electronic mail e-mail" />
+		<subcategory id="411" title="Electronic Commerce e-commerce" />
+		<subcategory id="412" title="Electronic Learning e-learning" />
+		<subcategory id="413" title="Accessing Internet" />
+		<subcategory id="414" title="Log-in sign-in" />
+		<subcategory id="415" title="Surf browse" />
+		<subcategory id="416" title="Search engines and hyperlinks" />
+		<subcategory id="417" title="Downloading saving printing" />
+		<subcategory id="418" title="Electronic Mail e-mail" />
+		<subcategory id="419" title="Definition" />
+		<subcategory id="420" title="E-mail software" />
+		<subcategory id="421" title="E-mail facilities" />
+		<subcategory id="422" title="Mails checking, composing, forwarding, sending, saving and printing" />
+		<subcategory id="423" title="Fax" />
+		<subcategory id="424" title="File attachment" />
+		<subcategory id="425" title="On-line meetings" />
+		<subcategory id="426" title="Telephone messages" />
+		<subcategory id="427" title="Contact management Emphasis is on the procedure and not necessarily on on-line connectivity" />
+		<subcategory id="428" title="Use the internet to access informaiion on emerging issues" />
+	</category>          
+	<category id="429" title="Data security and controls">
+		<subcategory id="431" title="Definition of data security and privacy" />
+		<subcategory id="432" title="Security threats and control measures" />
+		<subcategory id="433" title="vims" />
+		<subcategory id="434" title="unauthored access" />
+		<subcategory id="435" title="computer errors and accidents" />
+		<subcategory id="436" title="Computer theft" />
+		<subcategory id="437" title="computer security Control measures " />
+		<subcategory id="438" title="anti-virus software" />
+		<subcategory id="439" title="Computer password" />
+		<subcategory id="440" title="user access levels" />
+		<subcategory id="441" title="Computer backups " />
+		<subcategory id="442" title="Computer crimes" />
+		<subcategory id="443" title="Computer trespass" />
+		<subcategory id="444" title="Computer hacking" />
+		<subcategory id="445" title="Computer tapping" />
+		<subcategory id="446" title="Computer cracking" />
+		<subcategory id="447" title="Computer piracy" />
+		<subcategory id="448" title="Computer fraud" />
+		<subcategory id="449" title="Computer sabotage" />
+		<subcategory id="450" title="Computer alteration" />
+		<subcategory id="451" title="Detection and Protection of computers" />
+		<subcategory id="452" title="audit trail" />
+		<subcategory id="453" title="data encryption" />
+		<subcategory id="454" title="log files" />
+		<subcategory id="455" title="firewalls" />
+		<subcategory id="456" title="Laws governing protection of information systems " />
+	</category>          
+	<category id="457" title="Data representation in a computer">
+		<subcategory id="459" title="Concepts and Reasons of data representation" />
+		<subcategory id="460" title="Definition of terms: bit, byte, nibble and word" />
+		<subcategory id="461" title="Types of data representation" />
+		<subcategory id="462" title="Number Systems and their representation of integral values" />
+		<subcategory id="463" title="decimal" />
+		<subcategory id="464" title="binary" />
+		<subcategory id="465" title="octal" />
+		<subcategory id="466" title="hexadecimal" />
+		<subcategory id="467" title="Symbolic representation" />
+		<subcategory id="468" title="Binary Coded Decimal Code BCD" />
+		<subcategory id="469" title="Extended Binary Coded Decimal Interchange Code EBCDIC" />
+		<subcategory id="470" title="American Standard Code for Information Interchange Code ASCII" />
+		<subcategory id="471" title="Conversion between binary and decimal " />
+		<subcategory id="472" title="Binary arithmetic operations" />
+		<subcategory id="473" title="Binary addition" />
+		<subcategory id="474" title="Binary subtraction " />
+		<subcategory id="475" title="ones complement " />
+		<subcategory id="476" title="twos complement" />
+	</category>          
+	<category id="477" title="Data processing">
+		<subcategory id="479" title="data processing content" />
+		<subcategory id="480" title="Definition of the terms data " />
+		<subcategory id="481" title="Information and data processing" />
+		<subcategory id="482" title="Data processing cycle" />
+		<subcategory id="483" title="Data collection" />
+		<subcategory id="484" title="Stages of data collection " />
+		<subcategory id="485" title="Methods of data collection" />
+		<subcategory id="486" title="Data input" />
+		<subcategory id="487" title="Processing" />
+		<subcategory id="488" title="Output" />
+		<subcategory id="489" title="Description of errors in data processing" />
+		<subcategory id="490" title="Transcription errors" />
+		<subcategory id="491" title="Transposition" />
+		<subcategory id="492" title="Data processing methods" />
+		<subcategory id="493" title="Manual conventional data processing methods" />
+		<subcategory id="494" title="Mechanical" />
+		<subcategory id="495" title="Electronic" />
+		<subcategory id="496" title="Data Integrity" />
+		<subcategory id="497" title="Accuracy" />
+		<subcategory id="498" title="Timeless" />
+		<subcategory id="499" title="Relevance" />
+	</category>          
+	<category id="500" title="Computer files">
+		<subcategory id="502" title="Elements of computer file" />
+		<subcategory id="503" title="Logical and physical files" />
+		<subcategory id="504" title="Types of computer processing files" />
+		<subcategory id="505" title="Master" />
+		<subcategory id="506" title="Transaction" />
+		<subcategory id="507" title="Report" />
+		<subcategory id="508" title="Sort" />
+		<subcategory id="509" title="Backup" />
+		<subcategory id="510" title="Reference " />
+		<subcategory id="511" title="File organization methods" />
+		<subcategory id="512" title="Sequential file organization" />
+		<subcategory id="513" title="Random direct file organization" />
+		<subcategory id="514" title="Serial Indexed sequential " />
+	</category>          
+	<category id="515" title="Electronic Data processing modes">
+		<subcategory id="517" title="On-line" />
+		<subcategory id="518" title="Distributed" />
+		<subcategory id="519" title="Time-sharing" />
+		<subcategory id="520" title="Batch processing" />
+		<subcategory id="521" title="Multi-processing" />
+		<subcategory id="522" title="Multi programming multi-tasking" />
+		<subcategory id="523" title="Interactive processing" />
+		<subcategory id="524" title="Real-time" />
+	</category>          
+	<category id="525" title="Elementary programming principles">
+		<subcategory id="527" title="Definition of Programming" />
+		<subcategory id="528" title="Levels of programming languages" />
+		<subcategory id="529" title="Low level language" />
+		<subcategory id="530" title="machine language" />
+		<subcategory id="531" title="assembly language" />
+		<subcategory id="532" title="High Level languages" />
+		<subcategory id="533" title="third Generation Languages " />
+		<subcategory id="534" title="four Generation Languages  " />
+		<subcategory id="535" title="Object Oriented Programming" />
+		<subcategory id="536" title="Internet scripting Programming Languages" />
+		<subcategory id="537" title="Advantages and disadvantages of low and high level languages" />
+		<subcategory id="538" title="assembler " />
+		<subcategory id="539" title="compiler " />
+		<subcategory id="540" title="interpreter" />
+		<subcategory id="541" title="source program " />
+		<subcategory id="542" title="object program" />
+		<subcategory id="543" title="program development" />
+		<subcategory id="544" title="problem recognition" />
+		<subcategory id="545" title="problem definition" />
+		<subcategory id="546" title="program design" />
+		<subcategory id="547" title="program coding" />
+		<subcategory id="548" title="program testing" />
+		<subcategory id="549" title="implementation" />
+		<subcategory id="550" title="Program Control Structure" />
+		<subcategory id="551" title="Sequence" />
+		<subcategory id="552" title="Selection" />
+		<subcategory id="553" title="Iteration looping" />
+		<subcategory id="554" title="Definition and development of Algorithm" />
+		<subcategory id="555" title="Pseudo-code" />
+		<subcategory id="556" title="Flow chart" />
+	</category>          
+	<category id="557" title="Computer system development">
+		<subcategory id="559" title="Description of a system" />
+		<subcategory id="560" title="Definition of an Information System" />
+		<subcategory id="561" title="Purpose of an Information System" />
+		<subcategory id="562" title="Stages of system development" />
+		<subcategory id="563" title="Problem recognition and definition" />
+		<subcategory id="564" title="Information gathering " />
+		<subcategory id="565" title="investigation" />
+		<subcategory id="566" title="observation " />
+		<subcategory id="567" title="interviews " />
+		<subcategory id="568" title="questionnaires" />
+		<subcategory id="569" title="Requirement specification for the new system" />
+		<subcategory id="570" title="System design" />
+		<subcategory id="571" title="System construction" />
+		<subcategory id="572" title="System implementation" />
+		<subcategory id="573" title="System review and maintenance" />
+		<subcategory id="574" title="System Documentation" />
+		<subcategory id="575" title="Reports on fact finding information gathering" />
+		<subcategory id="576" title="System flowchart" />
+		<subcategory id="577" title="Table file structure descriptions" />
+		<subcategory id="578" title="Sample data" />
+		<subcategory id="579" title="Output reports" />
+		<subcategory id="580" title="User manual" />
+	</category>          
+	<category id="581" title="Introduction to networking and data communication">
+		<subcategory id="583" title="Definition of networking terms" />
+		<subcategory id="584" title="computer networks " />
+		<subcategory id="585" title="data communication" />
+		<subcategory id="586" title="Purpose and Limitations of networking" />
+		<subcategory id="587" title="resource sharing" />
+		<subcategory id="588" title="remote communication" />
+		<subcategory id="589" title="distributed processing facilities" />
+		<subcategory id="590" title="const effectiveness" />
+		<subcategory id="591" title="Networking reliability" />
+		<subcategory id="592" title="Limitations" />
+		<subcategory id="593" title="Elements of Networking" />
+		<subcategory id="594" title="Data communication media" />
+		<subcategory id="595" title="Communication with cables" />
+		<subcategory id="596" title="twisted pair cables " />
+		<subcategory id="597" title="coaxial cables " />
+		<subcategory id="598" title="fibre-optic cables" />
+		<subcategory id="599" title="Communication without cables wireless" />
+		<subcategory id="600" title="Microwave communication" />
+		<subcategory id="601" title="satellite communication" />
+		<subcategory id="602" title="radio transmission" />
+		<subcategory id="603" title="Data Signal" />
+		<subcategory id="604" title="Analog" />
+		<subcategory id="605" title="Digital" />
+		<subcategory id="606" title="Communication Devices" />
+		<subcategory id="607" title="Modems" />
+		<subcategory id="608" title="Network cards" />
+		<subcategory id="609" title="Hubs" />
+		<subcategory id="610" title="Network software" />
+		<subcategory id="611" title="Operating systems" />
+		<subcategory id="612" title="Protocols" />
+		<subcategory id="613" title="Types of Networks" />
+		<subcategory id="614" title="Local Area Network LAN" />
+		<subcategory id="615" title="Metropolitan area Network MAN" />
+		<subcategory id="616" title="Wide Area Network WAN" />
+		<subcategory id="617" title="Types of Network topologies" />
+		<subcategory id="618" title="Ring topology" />
+		<subcategory id="619" title="Star topology" />
+		<subcategory id="620" title="Bus topology" />
+	</category>          
+	<category id="621" title="Application Areas of Information and Communication Technology">
+		<subcategory id="623" title="Financial Systems" />
+		<subcategory id="624" title="accounting" />
+		<subcategory id="625" title="banking" />
+		<subcategory id="626" title="payroll" />
+		<subcategory id="627" title="Retail Systems" />
+		<subcategory id="628" title="point of sale systems " />
+		<subcategory id="629" title="stock control" />
+		<subcategory id="630" title="Reservations Systems" />
+		<subcategory id="631" title="hotels" />
+		<subcategory id="632" title="air-lines" />
+		<subcategory id="633" title="Communication Systems" />
+		<subcategory id="634" title="fax and telex" />
+		<subcategory id="635" title="radio" />
+		<subcategory id="636" title="television" />
+		<subcategory id="637" title="video conferencing" />
+		<subcategory id="638" title="e-mail" />
+		<subcategory id="639" title="telecommuting " />
+		<subcategory id="640" title="internet" />
+		<subcategory id="641" title="Education" />
+		<subcategory id="642" title="Computer Aided Learning CAL" />
+		<subcategory id="643" title="e-learning" />
+		<subcategory id="644" title="computer based simulation" />
+		<subcategory id="645" title="Industrial systems" />
+		<subcategory id="646" title="simulation" />
+		<subcategory id="647" title="process control" />
+		<subcategory id="648" title="CAD Computer Aided Design" />
+		<subcategory id="649" title="CAM Computer Aided Manufacture" />
+		<subcategory id="650" title="Scientific and Research Systems" />
+		<subcategory id="651" title="weather forecasting" />
+		<subcategory id="652" title="medical research" />
+		<subcategory id="653" title="military space exploration" />
+		<subcategory id="654" title="Transportation Systems" />
+		<subcategory id="655" title="air-traffic control" />
+		<subcategory id="656" title="shipping control" />
+		<subcategory id="657" title="automobile traffic control" />
+		<subcategory id="658" title="Entertainment Systems" />
+		<subcategory id="659" title="computers and movies ii) multi-media" />
+		<subcategory id="660" title="Virtual reality" />
+		<subcategory id="661" title="uses of virtual reality ii) visor" />
+		<subcategory id="662" title="Library Systems Library lending system" />
+		<subcategory id="663" title="Home use" />
+		<subcategory id="664" title="Health" />
+		<subcategory id="665" title="Expert systems" />
+		<subcategory id="666" title="Offices Expert systems" />
+		<subcategory id="667" title="Offices Expert systems" />
+		<subcategory id="668" title="Marketing" />
+		<subcategory id="669" title="e-commerce" />
+		<subcategory id="670" title="business" />
+		<subcategory id="671" title="Fieldwork Report" />
+	</category>          
+	<category id="672" title="Issues resulting from use of ICT">
+		<subcategory id="674" title="information and communication technology effects on employment" />
+		<subcategory id="675" title="information and communication technology job creation" />
+		<subcategory id="676" title="information and communication technology job replacement" />
+		<subcategory id="677" title="information and communication technology job displacement" />
+		<subcategory id="678" title="information and communication technology Automated production " />
+		<subcategory id="679" title="information and communication technology pros and cons" />
+		<subcategory id="680" title="information and communication technology Issues of workers health" />
+		<subcategory id="681" title="information and communication technology Breakthroughs" />
+		<subcategory id="682" title="information and communication technology Health care" />
+		<subcategory id="683" title="information and communication technology Education" />
+		<subcategory id="684" title="information and communication technology Communication" />
+		<subcategory id="685" title="information and communication technology Research" />
+		<subcategory id="686" title="information and communication technology Commerce" />
+		<subcategory id="687" title="information and communication technology Arts" />
+		<subcategory id="688" title="information and communication technology Entertainment" />
+		<subcategory id="689" title="information and communication technology Transport" />
+		<subcategory id="690" title="Cultural effects" />
+		<subcategory id="691" title="Computer crimes" />
+		<subcategory id="692" title="Moral effects" />
+	</category>          
+	<category id="693" title="Evolution of computer systems">
+		<subcategory id="695" title="Possible future computer systems trends in capabilities, physical size, price, software" />
+		<subcategory id="696" title="Artificial intelligence " />
+		<subcategory id="697" title="expert systems" />
+		<subcategory id="698" title="natural language processing " />
+		<subcategory id="699" title="artificial neural networks " />
+		<subcategory id="700" title="robotics" />
+	</category>          
+	<category id="701" title="Career opportunities in ICT">
+		<subcategory id="703" title="Description of careers in the field of ICT" />
+		<subcategory id="704" title="Computer Operators" />
+		<subcategory id="705" title="Programmers" />
+		<subcategory id="706" title="Software Engineers " />
+		<subcategory id="707" title="Database Administrators " />
+		<subcategory id="708" title="System Administrators " />
+		<subcategory id="709" title="Computer Technicians" />
+		<subcategory id="710" title="Computer Engineers" />
+		<subcategory id="711" title="Information Systems Managers" />
+		<subcategory id="712" title="Computer Trainers" />
+		<subcategory id="713" title="Web Administrators" />
+		<subcategory id="714" title="Systems Analysts" />
+		<subcategory id="715" title="Identification of further Educational Opportunities" />
+		<subcategory id="716" title="Colleges" />
+		<subcategory id="717" title="Institutions" />
+		<subcategory id="718" title="Polytechnics" />
+		<subcategory id="719" title="Universities" />
+		<subcategory id="720" title="Research Institutions" />
+	</category>
+</categories>
