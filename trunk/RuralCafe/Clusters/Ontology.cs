@@ -40,6 +40,10 @@ namespace RuralCafe.Clusters
 
                 proxy.Logger.Debug("Ontology: Step 1/3: Getting number of cached items.");
                 int limit = proxy.ProxyCacheManager.CachedItems();
+                if (limit == 0)
+                {
+                    limit = 1;
+                }
                 int i = 1;
                 foreach (XmlElement categoryElement in rootXml.ChildNodes)
                 {
