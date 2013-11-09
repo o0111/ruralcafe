@@ -31,6 +31,7 @@ function showXML() {
 		if (ixhttp.status == 200) {
 			var xmldata=ixhttp.responseXML; //retrieve result as an XML object
 			var innerHtml = "";
+			// FIXME In IE this gets the XML declaration instead of the first child!?
 			var categories = xmldata.firstChild;
 			var level = categories.getAttribute("level"); // string!
 			
@@ -95,11 +96,11 @@ function showXMLLevel2(categories) {
 		
 		for (var j=0;j<subcategories[i].children.length;j++) {
 			var item = subcategories[i].children[j];
-			var url = item.getElementsByTagName("url")[0].innerHTML;
+			var url = item.getElementsByTagName("url")[0].textContent;
 			if (url.slice(0, 7) != "http://") {
 				url = "http://" + url;
 			}
-			var title = item.getElementsByTagName("title")[0].innerHTML;
+			var title = item.getElementsByTagName("title")[0].textContent;
 			if( title == "") {
 				title = url;
 			}
@@ -126,11 +127,11 @@ function showXMLLevel3(categories) {
 	innerHtml += '<div class="index_cat_broad">';
 	for (var j=0;j<subCat.children.length;j++) {
 		var item = subCat.children[j];
-		var url = item.getElementsByTagName("url")[0].innerHTML;
+		var url = item.getElementsByTagName("url")[0].textContent;
 		if (url.slice(0, 7) != "http://") {
 			url = "http://" + url;
 		}
-		var title = item.getElementsByTagName("title")[0].innerHTML;
+		var title = item.getElementsByTagName("title")[0].textContent;
 		if( title == "") {
 			title = url;
 		}
