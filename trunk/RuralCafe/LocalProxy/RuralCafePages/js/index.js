@@ -32,7 +32,8 @@ function showXML() {
 			var xmldata=ixhttp.responseXML; //retrieve result as an XML object
 			var innerHtml = "";
 			// FIXME In IE this gets the XML declaration instead of the first child!?
-			var categories = xmldata.firstChild;
+			var categories2 = xmldata.firstChild;
+			var categories = xmldata.documentElement;
 			var level = categories.getAttribute("level"); // string!
 			
 			if (level == '1') {
@@ -54,21 +55,21 @@ function showXML() {
 
 function showXMLLevel1(categories) {
 	var innerHtml = "";
-	for (var i=0;i<categories.children.length;i++) {
+	for (var i=0;i<categories.childNodes.length;i++) {
 		if (i%2==0) {
 			innerHtml+='<div class="index_row">';
 		}
 		innerHtml += '<div class="index_cat">';
 		
-		var catTitle = categories.children[i].getAttribute("title");
-		var catId = categories.children[i].getAttribute("id");
+		var catTitle = categories.childNodes[i].getAttribute("title");
+		var catId = categories.childNodes[i].getAttribute("id");
 		innerHtml += '<h2><a href="" onclick="return showCategoryS(\''+catId+'\')">'
 			+ catTitle + '</a></h2>';
 		
 		
-		for (var j=0;j<categories.children[i].children.length;j++) {
-			var subCatTitle = categories.children[i].children[j].getAttribute("title");
-			var subCatId = categories.children[i].children[j].getAttribute("id");
+		for (var j=0;j<categories.childNodes[i].childNodes.length;j++) {
+			var subCatTitle = categories.childNodes[i].childNodes[j].getAttribute("title");
+			var subCatId = categories.childNodes[i].childNodes[j].getAttribute("id");
 			innerHtml += '<div class="index_subcat"><p><a href="" onclick="return showCategoryS(\''+catId+'.'+subCatId+'\')">'+subCatTitle+'</a></p></div>';
 		}
 		innerHtml += "</div>";
@@ -81,9 +82,9 @@ function showXMLLevel1(categories) {
 
 function showXMLLevel2(categories) {
 	var innerHtml = '';
-	var catTitle = categories.children[0].getAttribute("title");
-	var catId = categories.children[0].getAttribute("id")
-	var subcategories = categories.children[0].children;
+	var catTitle = categories.childNodes[0].getAttribute("title");
+	var catId = categories.childNodes[0].getAttribute("id")
+	var subcategories = categories.childNodes[0].childNodes;
 	
 	innerHtml += '<h1>' + catTitle + '</h1><hr />';
 	
@@ -94,13 +95,13 @@ function showXMLLevel2(categories) {
 		var subCatId = subcategories[i].getAttribute("id");
 		innerHtml += '<h3><a href="" onclick="return showCategoryS(\''+catId+'.'+subCatId+'\')">'+subCatTitle+'</a></h3>';
 		
-		for (var j=0;j<subcategories[i].children.length;j++) {
-			var item = subcategories[i].children[j];
-			var url = item.getElementsByTagName("url")[0].textContent;
+		for (var j=0;j<subcategories[i].childNodes.length;j++) {
+			var item = subcategories[i].childNodes[j];
+			var url = item.getElementsByTagName("url")[0].childNodes[0].nodeValue;
 			if (url.slice(0, 7) != "http://") {
 				url = "http://" + url;
 			}
-			var title = item.getElementsByTagName("title")[0].textContent;
+			var title = item.getElementsByTagName("title")[0].childNodes[0].nodeValue;
 			if( title == "") {
 				title = url;
 			}
@@ -115,23 +116,23 @@ function showXMLLevel2(categories) {
 
 function showXMLLevel3(categories) {
 	var innerHtml = '';
-	var cat = categories.children[0];
+	var cat = categories.childNodes[0];
 	var catTitle = cat.getAttribute("title");
 	var catId = cat.getAttribute("id");
-	var subCat = cat.children[0];
+	var subCat = cat.childNodes[0];
 	var subCatTitle = subCat.getAttribute("title");
 	var subCatId = subCat.getAttribute("id")
 	
 	innerHtml += '<h1><a href="" onclick="return showCategoryS(\''+catId+'\')">'+catTitle+'</a> / '
 		+ subCatTitle + '</h1><hr />';
 	innerHtml += '<div class="index_cat_broad">';
-	for (var j=0;j<subCat.children.length;j++) {
-		var item = subCat.children[j];
-		var url = item.getElementsByTagName("url")[0].textContent;
+	for (var j=0;j<subCat.childNodes.length;j++) {
+		var item = subCat.childNodes[j];
+		var url = item.getElementsByTagName("url")[0].childNodes[0].nodeValue;
 		if (url.slice(0, 7) != "http://") {
 			url = "http://" + url;
 		}
-		var title = item.getElementsByTagName("title")[0].textContent;
+		var title = item.getElementsByTagName("title")[0].childNodes[0].nodeValue;
 		if( title == "") {
 			title = url;
 		}
