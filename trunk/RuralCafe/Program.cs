@@ -205,6 +205,9 @@ namespace RuralCafe
             // Configure Windows
             ConfigureWindows();
 
+            // Reset global HTTP proxy to null, if one is set.
+            WebRequest.DefaultWebProxy = null;
+
             bool localProxyStarted = false;
             // start the local proxy
             if (!String.IsNullOrEmpty(Properties.Connection.Default.LOCAL_PROXY_IP_ADDRESS))
@@ -464,6 +467,7 @@ namespace RuralCafe
                 // We can't do anything here
                 return;
             }
+
 
             string regPath = @"SYSTEM\CurrentControlSet\Services\Dnscache\Parameters";
             int maxCacheTtl = Properties.Settings.Default.DNS_CACHE_TTL;
