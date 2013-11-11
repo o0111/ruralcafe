@@ -195,8 +195,8 @@ namespace Util
                 {
                     using (StreamReader reader = new StreamReader(new FileStream(fileName, FileMode.Open)))
                     {
-                        // We only want to read up to 14 chars (length of "<!DOCTYPE html")
-                        char[] buffer = new char[14];
+                        // We only want to read up to 30 chars
+                        char[] buffer = new char[30];
                         int charsRead = 0;
                         int pos = 0;
                         while ((charsRead = reader.Read(buffer, pos, buffer.Length - pos)) != 0)
@@ -204,12 +204,12 @@ namespace Util
                             pos += charsRead;
                             if (pos == buffer.Length)
                             {
-                                // We have read 14 chars.
+                                // We have read enough chars.
                                 break;
                             }
                         }
 
-                        string fileContents = new string(buffer).ToLower();
+                        string fileContents = new string(buffer).ToLower().Trim();
                         if (fileContents.StartsWith("<html>") ||
                             fileContents.StartsWith("<!doctype html"))
                         {
