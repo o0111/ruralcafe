@@ -175,7 +175,7 @@ namespace RuralCafe.Clusters
                     // Do a Lucene search, if there are no items. No content snippets on level 2
                     SearchResults luceneResults = proxy.IndexWrapper.Query(
                         (categoryElement.ChildNodes[i] as XmlElement).GetAttribute(INDEX_FEATURES_XML_ATTR),
-                        proxy.CachePath, 0, NUMBER_OF_LINKS_PER_SUBCATEGORY, false);
+                        proxy.CachePath, 0, NUMBER_OF_LINKS_PER_SUBCATEGORY, false, -1);
 
                     // Add the results to the XML
                     LocalInternalRequestHandler.AppendSearchResultsXMLElements(luceneResults, indexDoc, subCategory as XmlElement);
@@ -235,7 +235,7 @@ namespace RuralCafe.Clusters
                 // Do a Lucene search, if there are no items.
                 SearchResults luceneResults = proxy.IndexWrapper.Query(
                     subCategoryElement.GetAttribute(INDEX_FEATURES_XML_ATTR),
-                    proxy.CachePath, 0, NUMBER_OF_LINKS, true);
+                    proxy.CachePath, 0, NUMBER_OF_LINKS, true, -1);
 
                 // Add the results to the XML
                 LocalInternalRequestHandler.AppendSearchResultsXMLElements(luceneResults, indexDoc, subCategory as XmlElement);

@@ -1,4 +1,5 @@
 ﻿using HtmlAgilityPack;
+using RuralCafe.Lucenenet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,10 +8,59 @@ using System.Text;
 namespace RuralCafe.LinkSuggestion
 {
     /// <summary>
-    /// Injects tooltips for link suggestions in supplied HTML pages.
+    /// Helper methods for the link suggestions.
     /// </summary>
-    public static class LinkSuggestionHtmlModifier
+    public static class LinkSuggestionHelper
     {
+        public static readonly float[] LINK_SUGGESTION_BOOSTS = new float[] {
+                1, // url
+                0.5f, // refUrl
+                2, // anchorText
+                1 //surroundingText
+            };
+
+        /// <summary>
+        /// Gets the link suggestions for an uncached link.
+        /// </summary>
+        /// <param name="url">The absolute URL.</param>
+        /// <param name="refUrl">The referer URL.</param>
+        /// <param name="anchorText">The anchor text.</param>
+        /// <param name="surroundingText">The surrounding text.</param>
+        /// <param name="amount">The amount of suggestions to get.</param>
+        /// <param name="proxy">The local proxy.</param>
+        /// <returns>The suggestions.</returns>
+        public static SearchResults GetLinkSuggestions(string url, string refUrl, string anchorText,
+            string surroundingText, int amount, RCLocalProxy proxy)
+        {
+            // Remove all http:// or https:// from the query
+            string url0 = url.Replace("http://", "").Replace("https://", "");
+            string refUrl0 = refUrl.Replace("http://", "").Replace("https://", "");
+            string anchorText0 = anchorText.Replace("http://", "").Replace("https://", "");
+            string surroundingText0 = surroundingText.Replace("http://", "").Replace("https://", "");
+
+            // We want one result more, as we're very probably going to find the referrer page
+            SearchResults luceneResults = proxy.IndexWrapper.Query(new string[]
+                { url0, refUrl0, anchorText0, surroundingText0}, LINK_SUGGESTION_BOOSTS,
+                proxy.CachePath, 0, amount + 1, true, -1);
+
+            // remove the referrer page from the results
+            for (int i = 0; i < luceneResults.Results.Count; i++)
+            {
+                if (luceneResults.Results[i].URI.ToLower().Equals(refUrl.ToLower()))
+                {
+                    luceneResults.RemoveDocument(i);
+                    break;
+                }
+            }
+            // In the rare case that the referrer page was not among the results, we have to remove the last result
+            if (luceneResults.Results.Count > amount)
+            {
+                luceneResults.RemoveDocument(luceneResults.Results.Count - 1);
+            }
+
+            return luceneResults;
+        }
+
         /// <summary>
         /// Injects tooltips for every link in the HTML.
         /// </summary>

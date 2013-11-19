@@ -257,24 +257,47 @@ namespace RuralCafe.Lucenenet
         /// <param name="offset">The offset for the first result to return.</param>
         /// <param name="resultAmount">The max number of results to return for the current page.</param>
         /// <param name="includeContentSnippets">Whether the results should contain content snippets.</param>
+        /// <param name="limit">The upper limit for number or results. -1 for LUCENE_MAX_RESULTS.</param>
         /// <returns>A list of search results.</returns>
         public SearchResults Query(string queryString, string cachePath,
-            int offset, int resultAmount, bool includeContentSnippets)
+            int offset, int resultAmount, bool includeContentSnippets, int limit)
         {
-            return Query(queryString, cachePath, offset, resultAmount, includeContentSnippets, LUCENE_MAX_RESULTS);
+            Query query = GetQuery(queryString);
+            return Query(query, cachePath, offset, resultAmount, includeContentSnippets, limit == -1 ?
+                LUCENE_MAX_RESULTS : limit);
         }
 
         /// <summary>
         /// Queries the index for a list of results.
         /// </summary>
-        /// <param name="queryString">String to query the index for.</param>
+        /// <param name="queryStrings">Seperate query strings, which will be ORed.</param>
+        /// <param name="boosts">Boosts for each query string.</param>
         /// <param name="cachePath">The path to the local cache.</param>
         /// <param name="offset">The offset for the first result to return.</param>
         /// <param name="resultAmount">The max number of results to return for the current page.</param>
         /// <param name="includeContentSnippets">Whether the results should contain content snippets.</param>
-        /// <param name="limit">The upper limit for number or results.</param>
+        /// <param name="limit">The upper limit for number or results. -1 for LUCENE_MAX_RESULTS.</param>
         /// <returns>A list of search results.</returns>
-        public SearchResults Query(string queryString, string cachePath,
+        public SearchResults Query(string[] queryStrings, float[] boosts, string cachePath,
+            int offset, int resultAmount, bool includeContentSnippets, int limit)
+        {
+            List<Query> queries = new List<Query>();
+            for (int i = 0; i < queryStrings.Length; i++)
+            {
+                if(String.IsNullOrWhiteSpace(queryStrings[i]))
+                {
+                    continue;
+                }
+                Query q = GetQuery(queryStrings[i]);
+                q.SetBoost(boosts[i]);
+                queries.Add(q);
+            }
+            Query query = queries[0].Combine(queries.ToArray());
+            return Query(query, cachePath, offset, resultAmount, includeContentSnippets, limit == -1 ?
+                LUCENE_MAX_RESULTS : limit);
+        }
+
+        private SearchResults Query(Query query, string cachePath,
             int offset, int resultAmount, bool includeContentSnippets, int limit)
         {
             SearchResults results = new SearchResults();
@@ -282,7 +305,6 @@ namespace RuralCafe.Lucenenet
             IndexReader reader = IndexReader.Open(directory, true);
             IndexSearcher searcher = new IndexSearcher(reader);
 
-            Query query = GetQuery(queryString);
             // Request all results up to the page we actually need (this is quick)
             TopDocs topDocs = searcher.Search(query, limit);
             ScoreDoc[] hits = topDocs.scoreDocs;

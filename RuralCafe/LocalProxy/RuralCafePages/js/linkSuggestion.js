@@ -246,7 +246,9 @@ function showSuggestionsXML(xmlData, linknumber) {
                 rcHtml += '<p class="rclinksuggestion rclinksuggestionURL">' + shortUrl + '</p>';
                 rcHtml += '<p class="rclinksuggestion rclinksuggestionSnippet">' + snippet + '</p>';
             }   
-        }
+        } else {
+			rcHtml += " No similar pages found.";
+		}
         rcHtml += '</div></div>'
     }
     rcOpentips[linknumber].setContent(rcHtml);
