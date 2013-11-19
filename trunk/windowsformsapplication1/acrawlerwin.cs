@@ -783,6 +783,11 @@ namespace Crawler
                 string file = topicDir + Path.DirectorySeparatorChar + (i - iDiff) + ".txt";
                 try
                 {
+                    // Skip ftp and other protocols
+                    if (!links[i].StartsWith("http"))
+                    {
+                        continue;
+                    }
                     SetRichText("Topic" + topicText + "= downloading [URL=" + links[i] + "]\n");
                     // Download page
                     HttpWebRequest request = WebRequest.Create(links[i]) as HttpWebRequest;
