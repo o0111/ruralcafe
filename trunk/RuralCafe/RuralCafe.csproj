@@ -152,7 +152,7 @@
     <Compile Include="Json\LocalRequestHandlerConverter.cs" />
     <Compile Include="Json\NameValueCollectionConverter.cs" />
     <Compile Include="Json\RCRequestConverter.cs" />
-    <Compile Include="LinkSuggestion\LinkSuggestionHtmlModifier.cs" />
+    <Compile Include="LinkSuggestion\LinkSuggestionHelper.cs" />
     <Compile Include="Lucenenet\SearchResults.cs" />
     <Compile Include="RCSpecificHeaders.cs" />
     <Compile Include="RCUserSettings.cs" />

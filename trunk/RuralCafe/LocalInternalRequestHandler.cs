@@ -16,6 +16,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 using System.Xml;
+using RuralCafe.LinkSuggestion;
 
 namespace RuralCafe
 {
@@ -611,7 +612,7 @@ namespace RuralCafe
            
             // Query our RuralCafe index
             SearchResults luceneResults = Proxy.IndexWrapper.Query(queryString, 
-                Proxy.CachePath, offsets[0], resultAmounts[0], true);
+                Proxy.CachePath, offsets[0], resultAmounts[0], true, -1);
             // Query the Wiki index (this can throw timeout Exception)
             SearchResults wikiResults;
             try
@@ -776,34 +777,9 @@ namespace RuralCafe
             else
             {
                 suggestionsXml.SetAttribute("status", Proxy.NetworkStatus.ToString().ToLower());
-
-                // The query is: <targetURL> <referrerURL> <anchorText> <surroundingText>
-                string queryString = url + " " + RefererUri + " " + anchorText + " " + surroundingText;
-                // Remove all http:// or https:// from the query
-                queryString = queryString.Replace("http://", "");
-                queryString = queryString.Replace("https://", "");
-
-                // We want one result more, as we're obviously going to find the referrer page
-                SearchResults luceneResults = Proxy.IndexWrapper.Query(queryString,
-                    Proxy.CachePath, 0, amount + 1, true);
-
-                // remove the referrer page from the reults
-                for (int i = 0; i < luceneResults.Results.Count; i++)
-                {
-                    if (luceneResults.Results[i].URI.ToLower().Equals(RefererUri.ToLower()))
-                    {
-                        luceneResults.RemoveDocument(i);
-                        break;
-                    }
-                }
-                // In the rare case that the referrer page was not among the results, we have to remove the last result
-                if (luceneResults.Results.Count > amount)
-                {
-                    luceneResults.RemoveDocument(luceneResults.Results.Count - 1);
-                }
-
                 // Add the results to the XML
-                AppendSearchResultsXMLElements(luceneResults, xmlDoc, suggestionsXml);
+                AppendSearchResultsXMLElements(LinkSuggestionHelper.GetLinkSuggestions(url, RefererUri, anchorText,
+                    surroundingText, amount, Proxy), xmlDoc, suggestionsXml);
             }
 
             PrepareXMLRequestAnswer();

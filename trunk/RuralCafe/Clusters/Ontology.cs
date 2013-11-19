@@ -142,7 +142,7 @@ namespace RuralCafe.Clusters
             string title = subCategoryElement.GetAttribute(IndexServer.INDEX_FEATURES_XML_ATTR);
             // Do a Lucene search
             SearchResults luceneResults = proxy.IndexWrapper.Query(
-                title, proxy.CachePath, 0, numberOfResults, true);
+                title, proxy.CachePath, 0, numberOfResults, true, -1);
             // Remove current children
             subCategoryElement.RemoveAllChilds();
             // Add the results to the XML
