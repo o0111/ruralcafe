@@ -40,7 +40,7 @@ namespace Crawler
         // An array holding all the crawlers.
         private Crawler[] crawlers;
         // Number of crawlers started.
-        private volatile int crawlersStarted = 0;
+        public volatile int crawlersStarted = 0;
         // The number of topics is total
         private int globalTotalTopics;
         // Count of topics that are completed downloading seed documents
@@ -255,21 +255,32 @@ namespace Crawler
         /// Updates the numbers of relevant links, total pages crawled and frontier links
         /// for all topics in the box on the right.
         /// </summary>
-        public void SetUrlText()
+        /// <param name="crawlerNumber">The number of the invoking crawler.</param>
+        public void SetUrlText(int crawlerNumber)
         {
             if (textWindow.InvokeRequired)
             {
-                threadProgressText.Invoke(new MethodInvoker(delegate() { SetUrlText(); }));
+                threadProgressText.Invoke(new MethodInvoker(delegate() { SetUrlText(crawlerNumber); }));
             }
             else
             {
-                threadProgressText.Text = "";
-                for (int i = 0; i < crawlersStarted; i++)
+                string repText = "Topic#{0}: Relevant Links:{1}/Total Crawled:{2}/Frontier Links:{3}";
+                string[] lines = threadProgressText.Lines;
+                if (lines.Length <= crawlerNumber)
                 {
-                    threadProgressText.Text += "Topic#" + i + ": Relevant Links:" + crawlers[i].Count +
-                        "/Total Crawled:" + crawlers[i].TotalDownload + "/Frontier Links: " + crawlers[i].NumFrontierLinks + "\n";
+                    for (int i = 0; i < crawlerNumber - lines.Length + 1; i++)
+                    {
+                        threadProgressText.Text += "\n";
+                    }
+                    threadProgressText.Text += String.Format(repText, crawlerNumber, crawlers[crawlerNumber].Count,
+                            crawlers[crawlerNumber].TotalDownload, crawlers[crawlerNumber].NumFrontierLinks);
                 }
-
+                else
+                {
+                    lines[crawlerNumber] = String.Format(repText, crawlerNumber, crawlers[crawlerNumber].Count,
+                            crawlers[crawlerNumber].TotalDownload, crawlers[crawlerNumber].NumFrontierLinks);
+                    threadProgressText.Lines = lines;
+                }
             }
         }
 
@@ -368,15 +379,16 @@ namespace Crawler
         /// Switches the text from the start button between
         /// "Start/Resume Crawling" and "Pause".
         /// </summary>
-        public void SwitchStartButtonText()
+        /// <param name="start">If true, the text will be set to "Start/Resume Crawling"</param>
+        public void SwitchStartButtonText(bool start)
         {
             if (startButton.InvokeRequired)
             {
-                this.Invoke(new MethodInvoker(delegate() { SwitchStartButtonText(); }));
+                this.Invoke(new MethodInvoker(delegate() { SwitchStartButtonText(start); }));
             }
             else
             {
-                if (this.startButton.Text.Equals("Pause"))
+                if (start)
                 {
                     this.startButton.Text = "Start/Resume Crawling";
                 }
@@ -405,7 +417,7 @@ namespace Crawler
         }
 
         /// <summary>
-        /// Enables or disables all buttons except the Pause/Resume button.
+        /// Enables or disables all buttons.
         /// </summary>
         /// <param name="enabled">Enabled or disabled.</param>
         private void SetButtonsEnabled(bool enabled)
@@ -437,6 +449,9 @@ namespace Crawler
             int topicsCompleted = Interlocked.Increment(ref this.topicsCompleted);
             if (topicsCompleted == globalTotalTopics)
             {
+                // Disable start button until RC finished, too
+                SetControlEnabled(this.startButton, false);
+
                 if (delegateThreads.Count == 0)
                 {
                     ShowMessageBox("Crawling completed/paused.");
@@ -452,7 +467,7 @@ namespace Crawler
                     ShowMessageBox("RC finished downloading.");
                 }
 
-                SwitchStartButtonText();
+                SwitchStartButtonText(true);
                 SetButtonsEnabled(true);
             }
         }
@@ -532,6 +547,7 @@ namespace Crawler
             if (!Directory.Exists(this.MainFolder + "neg"))
             {
                 ShowMessageBox("Please download the seed documents first.");
+                SwitchStartButtonText(true);
                 SetButtonsEnabled(true);
                 return;
             }
@@ -540,6 +556,7 @@ namespace Crawler
                 if (!Directory.Exists(this.MainFolder + i) || !Directory.Exists(this.MainFolder + i + Path.DirectorySeparatorChar + "webdocs"))
                 {
                     ShowMessageBox("Please download the seed documents first.");
+                    SwitchStartButtonText(true);
                     SetButtonsEnabled(true);
                     return;
                 }
@@ -565,9 +582,9 @@ namespace Crawler
         {
             SetButtonsEnabled(false);
             // Change text of this button and reenable it
-            SwitchStartButtonText();
+            SwitchStartButtonText(false);
 
-            this.startButton.Enabled = true;
+            SetControlEnabled(this.startButton, true);
 
             this.topicsCompleted = 0;
             // Determine number of topics by content of topics.txt

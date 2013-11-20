@@ -98,7 +98,7 @@ namespace Crawler
         /// </summary>
         public void Train()
         {
-            Train(0);
+            Train(Crawler.NUMBER_OF_LINKS);
         }
 
         public TestResults TrainTest()

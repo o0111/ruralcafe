@@ -111,7 +111,7 @@ namespace Crawler
             "youtube", "facebook", "twitter", ".pdf", ".jpg", ".jpeg", ".gif", ".ppt" };
         public const int NUMBER_OF_LINKS = 10; // XXX maybe increasing this will increase accuracy
         public const int SWITCH_THREADS_DOWNLOAD_THRESHOLD = 100;
-        public const int WEB_TIMEOUT = 1000 * 10; // 10 seconds
+        public const int WEB_TIMEOUT = 1000 * 5; // seconds
 
         // The links still to crawl, in a PriorityQueue
         [JsonProperty]
@@ -196,12 +196,12 @@ namespace Crawler
         }
 
         /// <summary>
-        /// Adds the the positive links (all except the first 30) from topicN.txt to the crawl lists.
+        /// Adds the the positive links from topicN.txt to the crawl lists.
         /// </summary>
         private void AddSeedDocs()
         {
             string[] lines = File.ReadAllLines(MainWindow.MainFolder + "topic" + ThreadN + ".txt");
-            for (int i = NUMBER_OF_LINKS; i < lines.Length; i++)
+            for (int i = 0; i < lines.Length; i++)
             {
                 if (IsUsefulURL(lines[i]))
                 {
@@ -344,7 +344,11 @@ namespace Crawler
                     }
                     finally
                     {
-                        MainWindow.SetUrlText();
+                        // Do not do that too often.
+                        if (totalDownload % 10 == 0)
+                        {
+                            MainWindow.SetUrlText(ThreadN);
+                        }
                     }
 
                     // After a certain number of downloads, we want to switch threads,
@@ -360,6 +364,8 @@ namespace Crawler
                     }
                 }
 
+                // Refresh display a last time
+                MainWindow.SetUrlText(ThreadN);
                 // We're done. Start another topic's crawler, unless we have been interrupted.
                 if (!Interrupted)
                 {

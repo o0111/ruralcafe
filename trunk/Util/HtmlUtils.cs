@@ -284,16 +284,16 @@ namespace Util
                     try
                     {
                         currUri = new Uri(baseUri, att.Value);
+                        if (!HttpUtils.IsValidUri(currUri.AbsoluteUri))
+                        {
+                            continue;
+                        }
                     }
                     catch (UriFormatException)
                     {
                         continue;
                     }
-
-                    if (!HttpUtils.IsValidUri(currUri.AbsoluteUri))
-                    {
-                        continue;
-                    }
+                    
                     if (!extractedReferences.Contains(currUri))
                     {
                         extractedReferences.AddLast(currUri);
