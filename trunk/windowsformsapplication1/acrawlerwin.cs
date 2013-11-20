@@ -41,6 +41,8 @@ namespace Crawler
         private Crawler[] crawlers;
         // Number of crawlers started.
         public volatile int crawlersStarted = 0;
+        // If "Pause" has been pressed.
+        private volatile bool interrupted = false;
         // The number of topics is total
         private int globalTotalTopics;
         // Count of topics that are completed downloading seed documents
@@ -99,6 +101,7 @@ namespace Crawler
             this.processUriDelegate = processUriDelegate;
             // Make sure the main folder exists
             Directory.CreateDirectory(this.MainFolder);
+            threadProgressText.Text =  " ";
         }
         
         #region Buttons
@@ -447,7 +450,7 @@ namespace Crawler
         public void CrawlerTopicCompleted()
         {
             int topicsCompleted = Interlocked.Increment(ref this.topicsCompleted);
-            if (topicsCompleted == globalTotalTopics)
+            if (topicsCompleted == globalTotalTopics || interrupted && topicsCompleted == crawlersStarted)
             {
                 // Disable start button until RC finished, too
                 SetControlEnabled(this.startButton, false);
@@ -489,14 +492,19 @@ namespace Crawler
         }
 
         /// <summary>
-        /// Creates a crawler, the nth, and starts a thread.
+        /// Creates a crawler, the nth.
         /// </summary>
         /// <param name="n">The number of the crawler to start.</param>
         /// <param name="trainTest">If true, the crawler will actually only train+test, not crawl.</param>
-        private void CreateCrawlerAndStartThread(int n, bool trainTest)
+        private void CreateCrawler(int n, bool trainTest)
         {
             crawlers[n] = new Crawler(n, this);
-            StartCrawler(n, trainTest);
+            if (!trainTest)
+            {
+                // Train the crawlers here, if we're not testing
+                crawlers[n].Train();
+                SetRichText("Created and trained crawler " + n + "\n");
+            }
         }
 
         /// <summary>
@@ -515,7 +523,6 @@ namespace Crawler
                     }
                     else
                     {
-                        crawlers[n].Train();
                         crawlers[n].StartCrawling();
                     }
                 }).Start();
@@ -527,6 +534,7 @@ namespace Crawler
         private void Pause()
         {
             this.startButton.Enabled = false;
+            this.interrupted = true;
             // Pause all threads
             foreach (Crawler crawler in crawlers)
             {
@@ -569,10 +577,19 @@ namespace Crawler
             // All for train+test and up to 20 for crawl.
             crawlersStarted = trainTest ? globalTotalTopics : Math.Min(TOTAL_THREAD, globalTotalTopics);
 
-            for (int i = 0; i < crawlersStarted; i++)
+            new Thread(() =>
             {
-                CreateCrawlerAndStartThread(i, trainTest);
-            }
+                for (int i = 0; i < crawlersStarted; i++)
+                {
+                    CreateCrawler(i, trainTest);
+                }
+                // Re-enable pause button
+                SetControlEnabled(this.startButton, true);
+                for (int i = 0; i < crawlersStarted; i++)
+                {
+                    StartCrawler(i, trainTest);
+                }
+            }).Start();
         }
 
         /// <summary>
@@ -581,10 +598,9 @@ namespace Crawler
         private void Start()
         {
             SetButtonsEnabled(false);
-            // Change text of this button and reenable it
+            this.interrupted = false;
+            // Change text of this button.
             SwitchStartButtonText(false);
-
-            SetControlEnabled(this.startButton, true);
 
             this.topicsCompleted = 0;
             // Determine number of topics by content of topics.txt
@@ -614,9 +630,14 @@ namespace Crawler
         {
             lock (crawlers)
             {
+                if (interrupted)
+                {
+                    return;
+                }
                 if (crawlersStarted < globalTotalTopics)
                 {
-                    CreateCrawlerAndStartThread(crawlersStarted, false);
+                    CreateCrawler(crawlersStarted, false);
+                    StartCrawler(crawlersStarted, false);
                     crawlersStarted++;
                 }
                 else
@@ -648,6 +669,10 @@ namespace Crawler
         {
             lock (crawlers)
             {
+                if (interrupted)
+                {
+                    return;
+                }
                 if (crawlersStarted < globalTotalTopics)
                 {
                     // We have to decrement the number of topics completed, when we interrupt a Crawler
@@ -655,7 +680,8 @@ namespace Crawler
                     // Interrupt the current crawler
                     crawlers[finishThread].Interrupt();
                     // Start a crawler for a new topic
-                    CreateCrawlerAndStartThread(crawlersStarted, false);
+                    CreateCrawler(crawlersStarted, false);
+                    StartCrawler(crawlersStarted, false);
                     crawlersStarted++;
                 }
                 else

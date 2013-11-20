@@ -255,7 +255,7 @@ namespace Crawler
         public void StartCrawling()
         {
             running = true;
-            interrupted = false;
+            //interrupted = false;
             finished = false;
 
             totalDownload = 0;
