@@ -12,12 +12,26 @@ namespace RuralCafe.LinkSuggestion
     /// </summary>
     public static class LinkSuggestionHelper
     {
+        /// <summary>
+        /// The boosts for the different link suggestion fields.
+        /// </summary>
         public static readonly float[] LINK_SUGGESTION_BOOSTS = new float[] {
                 1, // url
                 0.5f, // refUrl
                 2, // anchorText
                 1 //surroundingText
             };
+
+        /// <summary>
+        /// If this is the anchor text, it will have no link suggestions.
+        /// </summary>
+        public static readonly string[] LINK_ANCHOR_BLACKLIST = new string[] {
+            "home", "here", "there", "see", "see more", "show", "view", "follow", "edit",
+            "login", "register", "signup", "sign up", "check in", "help", "email", "e-mail",
+            "summary", "faq", "search", "index", "rss", "copyright", "conditions", "privacy policy",
+            "options", "forum", "members", "users", "chat", "about", "blog", "contact", "connect",
+            "terms", "privacy", "main", "reset", "reply", "post", "send", "answer"
+        };
 
         /// <summary>
         /// Gets the link suggestions for an uncached link.
@@ -62,7 +76,7 @@ namespace RuralCafe.LinkSuggestion
         }
 
         /// <summary>
-        /// Injects tooltips for every link in the HTML.
+        /// Injects tooltips for every link in the HTML with meaningful text.
         /// </summary>
         /// <param name="html">The original page.</param>
         /// <returns>The modified page.</returns>
@@ -104,13 +118,22 @@ namespace RuralCafe.LinkSuggestion
             trigger.SetAttributeValue("id", "rclink-trigger");
             body.AppendChild(trigger);
 
+            // Gets all links containing text.
             HtmlNodeCollection links = doc.DocumentNode.SelectNodes("//a[not(node()[2])][text()]/@href");
             if (links != null)
             {
                 // Modify all links
                 int i = 0;
+                int ign;
                 foreach (HtmlNode link in links)
                 {
+                    if (LINK_ANCHOR_BLACKLIST.Contains(link.InnerText.ToLower())
+                        || Int32.TryParse(link.InnerText, out ign))
+                    {
+                        // No "Here", ... links or number links
+                        continue;
+                    }
+
                     link.SetAttributeValue("id", "rclink-" + i);
                     link.SetAttributeValue("onmouseover", "showSuggestions(" + i + ")");
                     link.SetAttributeValue("onmouseout", "clearActiveLinkNumber()");
