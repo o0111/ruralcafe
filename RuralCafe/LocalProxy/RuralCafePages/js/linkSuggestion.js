@@ -128,11 +128,12 @@ function showSuggestions0(linknumber) {
         // If the linkCode is embedded in some markup (e.g. bold tags),
         // we might have to go up to its parent.
         // We do only do this once.
-        if (!baseNode.nextSibling && !baseNode.previousSibling && baseNode.parentNode) {
-            baseNode = baseNode.parentNode;
-        }
+		// TODO This works not fine: Like this other table elements get considered. Commented out.
+        //if (!baseNode.nextSibling && !baseNode.previousSibling && baseNode.parentNode) {
+        //    baseNode = baseNode.parentNode;
+        //}
         
-        // Get the following and preciding words.
+        // Get the following and preceding words.
         var followingWords = [];
         var currentSibling = baseNode.nextSibling;
         while (currentSibling && followingWords.length < followingAndPrecedingWordCount) {
