@@ -17,7 +17,8 @@ namespace RuralCafe.Crawler
     {
         // Constants
         private const string CRAWLER_DIR_NAME = "crawler";
-        private const int CRAWLER_PAGE_TIMEOUT = RequestHandler.WEB_REQUEST_DEFAULT_TIMEOUT; // Maybe we wanna change this.
+        // 60s is too high, change timeout to 5s
+        private const int CRAWLER_PAGE_TIMEOUT = 1000 * 5;
 
         // The local proxy.
         private RCLocalProxy _proxy;
