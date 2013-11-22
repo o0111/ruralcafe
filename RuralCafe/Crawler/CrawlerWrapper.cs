@@ -17,8 +17,12 @@ namespace RuralCafe.Crawler
     {
         // Constants
         private const string CRAWLER_DIR_NAME = "crawler";
-        // 60s is too high, change timeout to 5s
+        // 60s is too high, change timeout to 5s.
+        // In constrast to the RemoteProxy's timeout, this is not for the whole page
+        // but for each individual request.
         private const int CRAWLER_PAGE_TIMEOUT = 1000 * 5;
+        // Not so many to prevent memory overflow.
+        private const int THREADS = 10;
 
         // The local proxy.
         private RCLocalProxy _proxy;
@@ -40,10 +44,21 @@ namespace RuralCafe.Crawler
         /// </summary>
         public void StartCrawler()
         {
-            ThreadPool.SetMaxThreads(RCProxy.MAX_THREADS, RCProxy.MAX_THREADS);
+            ThreadPool.SetMaxThreads(THREADS, THREADS);
             ACrawlerWin crawler = new ACrawlerWin(Properties.Files.Default.BASE_DIR + Path.DirectorySeparatorChar +
-                CRAWLER_DIR_NAME + Path.DirectorySeparatorChar, WaitAndDownloadPage);
+                CRAWLER_DIR_NAME + Path.DirectorySeparatorChar, SequentiallyDownloadPage);// WaitAndDownloadPage);
             crawler.ShowDialog();
+        }
+
+        /// <summary>
+        /// Downloads the page in the SAME thread.
+        /// </summary>
+        /// <param name="uri">The URI to download.</param>
+        /// <returns>null</returns>
+        public Thread SequentiallyDownloadPage(string uri)
+        {
+            DownloadPage(uri);
+            return null;
         }
 
         /// <summary>
@@ -189,36 +204,22 @@ namespace RuralCafe.Crawler
             // cast the RCRequest
             RCRequest request = (RCRequest)requestObj;
 
-            // make sure this root request is not timed out
-            if (!request.RootRequest.IsTimedOut(CRAWLER_PAGE_TIMEOUT))
-            {
-                // reduce the timer
-                DateTime currTime = DateTime.Now;
-                DateTime endTime = request.RootRequest.StartTime.AddMilliseconds(CRAWLER_PAGE_TIMEOUT);
-                if (endTime.CompareTo(currTime) > 0)
-                {
-                    request.GenericWebRequest.Timeout = (int)(endTime.Subtract(currTime)).TotalMilliseconds;
+            request.GenericWebRequest.Timeout = CRAWLER_PAGE_TIMEOUT;
 
-                    // download the page, if it does not exist already
-                    if (!_proxy.ProxyCacheManager.IsCached(request.RelCacheFileName))
-                    {
-                        // Download!
-                        try
-                        {
-                            _proxy.AddActiveRequest();
-                            // Do not index embedded objects
-                            request.DownloadToCache(false);
-                        }
-                        catch { } // Ignore
-                        finally
-                        {
-                            _proxy.RemoveActiveRequest();
-                        }
-                    }
-                }
-                else
+            // download the page, if it does not exist already
+            if (!_proxy.ProxyCacheManager.IsCached(request.RelCacheFileName))
+            {
+                // Download!
+                try
                 {
-                    request.GenericWebRequest.Timeout = 0;
+                    _proxy.AddActiveRequest();
+                    // Do not index embedded objects
+                    request.DownloadToCache(false);
+                }
+                catch { } // Ignore
+                finally
+                {
+                    _proxy.RemoveActiveRequest();
                 }
             }
 

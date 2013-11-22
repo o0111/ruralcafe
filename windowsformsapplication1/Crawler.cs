@@ -112,13 +112,14 @@ namespace Crawler
         public const int NUMBER_OF_LINKS = 10; // XXX maybe increasing this will increase accuracy
         public const int SWITCH_THREADS_DOWNLOAD_THRESHOLD = 100;
         public const int WEB_TIMEOUT = 1000 * 5; // seconds
+        public const int TOCRAWL_LIST_MAX_SIZE = 100;
 
         // The links still to crawl, in a PriorityQueue
         [JsonProperty]
         private SortedSet<WeightedUri> toCrawlList = new SortedSet<WeightedUri>();
         [JsonProperty]
-        // All links to crawl and ever crawled
-        private List<string> inCrawlList = new List<string>();
+        // All links crawled so far
+        private List<string> crawledList = new List<string>();
         // The number of relevant pages downloaded.
         [JsonProperty]
         private int count;
@@ -208,7 +209,6 @@ namespace Crawler
                     // Seed links get the highest priority: 1
                     WeightedUri wu = new WeightedUri(lines[i], 1);
                     toCrawlList.Add(wu);
-                    inCrawlList.Add(lines[i]);
                 }
             }
         }
@@ -361,6 +361,8 @@ namespace Crawler
                         MainWindow.SuspendRunAnotherThread(ThreadN);
                         logFile.Write("<- switching threads" + "\n");
                         logFile.Flush();
+                        // FIXME ?
+                        GC.Collect();
                     }
                 }
 
@@ -374,11 +376,13 @@ namespace Crawler
                     MainWindow.RunAnotherThread();
                     logFile.Write("<- thread finish but running another thread" + "\n");
                     logFile.Flush();
+                    // FIXME ?
+                    GC.Collect();
                 }
             }
 
             // Notify the MainWindow that a topic is completed (or interrupted) and save the state.
-            MainWindow.CrawlerTopicCompleted();
+            MainWindow.CrawlerTopicCompleted(ThreadN);
             SaveState();
             running = false;
         }
@@ -393,8 +397,9 @@ namespace Crawler
             HtmlAgilityPack.HtmlDocument doc = new HtmlAgilityPack.HtmlDocument();
             doc.LoadHtml(html);
 
-            HtmlNodeCollection results = doc.DocumentNode.SelectNodes("//a[@href]");
-            if (results == null)
+            IEnumerable<HtmlNode> results = doc.DocumentNode.SelectNodes("//a[@href]").
+                Where(node => node.NodeType == HtmlNodeType.Element);
+            if (results == null || results.Count() == 0)
             {
                 return;
             }
@@ -418,7 +423,7 @@ namespace Crawler
                     continue;
                 }
                 // Do not add links we have already crawled or that will already be crawled
-                if (inCrawlList.Contains(uriS))
+                if (crawledList.Contains(uriS) || toCrawlList.Contains(new WeightedUri(uriS, 0)))
                 {
                     continue;
                 }
@@ -430,8 +435,10 @@ namespace Crawler
                 double value = classifier.Classify(snippet);
 
                 toCrawlList.Add(new WeightedUri(uriS, value));
-                inCrawlList.Add(uriS);
             }
+            // Shrink toCrawlList to 100 entries!
+            IEnumerable<WeightedUri> firstHundred = toCrawlList.Reverse().Take(TOCRAWL_LIST_MAX_SIZE);
+            toCrawlList.RemoveWhere(wu => !firstHundred.Contains(wu));
         }
 
         /// <summary>
@@ -442,6 +449,11 @@ namespace Crawler
         {
             WeightedUri nextWU = toCrawlList.Max;
             toCrawlList.Remove(nextWU);
+            // Also add to crawled list
+            if (!crawledList.Contains(nextWU.Uri))
+            {
+                crawledList.Add(nextWU.Uri);
+            }
             return nextWU.Uri;
         }
 

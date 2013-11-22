@@ -476,7 +476,6 @@ namespace RuralCafe
         /// <returns>List of downloaded requests.</returns>
         private LinkedList<RCRequest> DownloadObjectsInParallel(RCRequest parentRequest, LinkedList<Uri> childObjects)
         {
-            //ThreadPool.SetMaxThreads(4, 4);
             LinkedList<RCRequest> addedObjects = new LinkedList<RCRequest>();
 
             if (_killYourself || childObjects.Count == 0)
