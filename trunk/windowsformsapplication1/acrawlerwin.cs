@@ -10,7 +10,6 @@ using System.Windows.Forms;
 
 
 using System.Runtime.InteropServices;
-using HtmlAgilityPack;
 using System.Threading;
 
 using System.Net;
@@ -59,7 +58,7 @@ namespace Crawler
         // The delegate threads processing the URLs
         private List<Thread> delegateThreads = new List<Thread>();
         // Blacklist
-        private string[] blacklist;
+        private Regex[] blacklist;
         /// <summary>
         /// The actual delegate.
         /// </summary>
@@ -447,9 +446,11 @@ namespace Crawler
         /// One topic has been completed. Shows a message box if all have been completed and waits for unfinished
         /// download threads.
         /// </summary>
-        public void CrawlerTopicCompleted()
+        /// <param name="n">The number of the crawler.</param>
+        public void CrawlerTopicCompleted(int n)
         {
             int topicsCompleted = Interlocked.Increment(ref this.topicsCompleted);
+            SetRichText("Crawler " + n + " finished/paused. In total " + topicsCompleted + " crawlers are done.\n");
             if (topicsCompleted == globalTotalTopics || interrupted && topicsCompleted == crawlersStarted)
             {
                 // Disable start button until RC finished, too
@@ -465,7 +466,10 @@ namespace Crawler
                     // Join all RC threads.
                     foreach (Thread t in delegateThreads)
                     {
-                        t.Join();
+                        if (t != null)
+                        {
+                            t.Join();
+                        }
                     }
                     ShowMessageBox("RC finished downloading.");
                 }
@@ -617,7 +621,13 @@ namespace Crawler
                 using (File.Create(blacklistFileName)) { }
             }
             // Load blacklist
-            this.blacklist = File.ReadAllLines(blacklistFileName);
+            string[] domains = File.ReadAllLines(blacklistFileName);
+            this.blacklist = new Regex[domains.Length];
+            for(int i = 0; i < domains.Length; i++)
+            {
+                string domain = HttpUtils.RemoveWWWPrefix(HttpUtils.RemoveHttpPrefix(domains[i])).Replace(".", @"\.");
+                blacklist[i] = new Regex(@"https?://(\w+?\.)?" + domain);
+            }
 
             StartAllCrawlers(false);
         }
@@ -873,14 +883,13 @@ namespace Crawler
         public bool IsBlacklisted(string requestUri)
         {
             // trim the "http://" and "www."
-            requestUri = HttpUtils.RemoveWWWPrefix(HttpUtils.RemoveHttpPrefix(requestUri));
+            //requestUri = HttpUtils.RemoveWWWPrefix(HttpUtils.RemoveHttpPrefix(requestUri));
 
             // check against all domains in the blacklist
-            foreach (string domainH in blacklist)
+            foreach (Regex domainH in blacklist)
             {
                 // trim the "http://" and "www."
-                string domain = HttpUtils.RemoveWWWPrefix(HttpUtils.RemoveHttpPrefix(domainH));
-                if (requestUri.StartsWith(domain))
+                if (domainH.IsMatch(requestUri))
                 {
                     return true;
                 }

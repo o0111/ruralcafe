@@ -313,13 +313,6 @@ namespace Util
         public static string GetSurroundingText(HtmlNode node, string[] stopWords)
         {
             HtmlNode baseNode = node;
-            // If the linkCode is embedded in some markup (e.g. bold tags),
-            // we might have to go up to its parent.
-            // We do only do this once.
-            if (baseNode.NextSibling == null && baseNode.PreviousSibling == null && baseNode.ParentNode != null) 
-            {
-                baseNode = baseNode.ParentNode;
-            }
         
             // Get the following words ...
             List<string> followingWords = new List<string>();
