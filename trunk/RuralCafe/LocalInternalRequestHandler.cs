@@ -656,7 +656,7 @@ namespace RuralCafe
         /// <param name="results">The search results.</param>
         /// <param name="doc">The XmlDocument.</param>
         /// <param name="elem">The XmlElement to append the childs.</param>
-        public static void AppendSearchResultsXMLElements(SearchResults results, XmlDocument doc, XmlElement elem)
+        public static void AppendSearchResultsXMLElements(IEnumerable<SearchResult> results, XmlDocument doc, XmlElement elem)
         {
             foreach (SearchResult result in results)
             {
@@ -765,14 +765,21 @@ namespace RuralCafe
             Uri targetUri = new Uri(refUri, url);
 
             // Test if url is cached.
-            string relFileName = CacheManager.GetRelativeCacheFileName("GET", targetUri.ToString());
+            string relFileName = CacheManager.GetRelativeCacheFileName(targetUri.ToString(), "GET");
             GlobalCacheItem gci = Proxy.ProxyCacheManager.GetGlobalCacheItem(relFileName);
-            if (gci != null)
+            if (gci != null && !Properties.Network.Default.LS_DEBUG)
             {
+                // non-debug, cached
                 suggestionsXml.InnerText = LINK_SUGGESTIONS_CACHED_TEXT;
                 suggestionsXml.SetAttribute("downloadTime",
                     Proxy.ProxyCacheManager.GetGlobalCacheRCData(relFileName).
                     downloadTime.ToString("dd'/'MM'/'yyyy"));
+            }
+            else if (gci == null && Properties.Network.Default.LS_DEBUG)
+            {
+                // debug, non-cached
+                suggestionsXml.InnerText = LINK_SUGGESTIONS_CACHED_TEXT;
+                suggestionsXml.SetAttribute("downloadTime", "not yet");
             }
             else
             {

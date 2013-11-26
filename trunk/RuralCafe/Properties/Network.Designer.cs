@@ -130,5 +130,17 @@ namespace RuralCafe.Properties {
                 this["MAXIMUM_DOWNLOAD_SPEED"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool LS_DEBUG {
+            get {
+                return ((bool)(this["LS_DEBUG"]));
+            }
+            set {
+                this["LS_DEBUG"] = value;
+            }
+        }
     }
 }
