@@ -43,7 +43,7 @@ namespace RuralCafe.LinkSuggestion
         /// <param name="amount">The amount of suggestions to get.</param>
         /// <param name="proxy">The local proxy.</param>
         /// <returns>The suggestions.</returns>
-        public static SearchResults GetLinkSuggestions(string url, string refUrl, string anchorText,
+        public static IEnumerable<SearchResult> GetLinkSuggestions(string url, string refUrl, string anchorText,
             string surroundingText, int amount, RCLocalProxy proxy)
         {
             // Remove all http:// or https:// from the query
@@ -52,10 +52,13 @@ namespace RuralCafe.LinkSuggestion
             string anchorText0 = anchorText.Replace("http://", "").Replace("https://", "");
             string surroundingText0 = surroundingText.Replace("http://", "").Replace("https://", "");
 
-            // We want one result more, as we're very probably going to find the referrer page
+            // If we're debugging, we want 101 results, otherwise 
+            // we want one result more, as we're very probably going to find the referrer page
+            int amount0 = Properties.Network.Default.LS_DEBUG ? 101 : amount + 1;
+
             SearchResults luceneResults = proxy.IndexWrapper.Query(new string[]
                 { url0, refUrl0, anchorText0, surroundingText0}, LINK_SUGGESTION_BOOSTS,
-                proxy.CachePath, 0, amount + 1, true, -1);
+                proxy.CachePath, 0, amount0, true, -1);
 
             // remove the referrer page from the results
             for (int i = 0; i < luceneResults.Results.Count; i++)
@@ -67,9 +70,29 @@ namespace RuralCafe.LinkSuggestion
                 }
             }
             // In the rare case that the referrer page was not among the results, we have to remove the last result
-            if (luceneResults.Results.Count > amount)
+            if (luceneResults.Results.Count > amount0)
             {
                 luceneResults.RemoveDocument(luceneResults.Results.Count - 1);
+            }
+
+            if (Properties.Network.Default.LS_DEBUG)
+            {
+                bool found = false;
+                // If we're debugging we want to find out the position of the original url.
+                for (int i = 0; i < luceneResults.Results.Count; i++)
+                {
+                    if (luceneResults.Results[i].URI.ToLower().Equals(url.ToLower()))
+                    {
+                        found = true;
+                        proxy.Logger.Debug(String.Format("LS_DEBUG: {0}|{1}|{2}", i, refUrl0, url0));
+                        break;
+                    }
+                }
+                if (!found)
+                {
+                    proxy.Logger.Debug(String.Format("LS_DEBUG: -1|{1}|{2}", refUrl0, url0));
+                }
+                return luceneResults.Take(amount);
             }
 
             return luceneResults;

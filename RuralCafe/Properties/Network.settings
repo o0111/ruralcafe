@@ -29,5 +29,8 @@
     <Setting Name="MAXIMUM_DOWNLOAD_SPEED" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">5000000</Value>
     </Setting>
+    <Setting Name="LS_DEBUG" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
