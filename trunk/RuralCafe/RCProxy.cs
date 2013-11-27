@@ -88,7 +88,7 @@ namespace RuralCafe
         /// Each time a new download is considered, the bytes used for calculation
         /// so far are multiplicated with this factor.
         /// </summary>
-        private const double NETWORK_SPEED_REDUCTION_FACTOR = 0.8;
+        private const double NETWORK_SPEED_REDUCTION_FACTOR = 0.7;
         // The time will actually always be ~10s, so this is just to say how much the should be weighted different
         // when the bytes downloaded are dieffernt
         private const double NETWORK_SPEED_TIME_WEIGHT = 0.5;
@@ -791,34 +791,45 @@ namespace RuralCafe
             {
                 // the bytes and seconds used so far are multiplicated with NETWORK_SPEED_REDUCTION_FACTOR
                 // (exponential decay)
-                _speedCalculationSecondsUsed = _speedCalculationSecondsUsed * NETWORK_SPEED_REDUCTION_FACTOR;
-                _speedCalculationBytesUsed = (int)(_speedCalculationBytesUsed * NETWORK_SPEED_REDUCTION_FACTOR);
+                //_speedCalculationSecondsUsed = _speedCalculationSecondsUsed * NETWORK_SPEED_REDUCTION_FACTOR;
+                //_speedCalculationBytesUsed = (int)(_speedCalculationBytesUsed * NETWORK_SPEED_REDUCTION_FACTOR);
 
-                // New values
-                double newSpeedCalcSecondsUsed = _speedCalculationSecondsUsed + results.ElapsedSeconds;
-                long newSpeedCalcBytesUsed = _speedCalculationBytesUsed + results.BytesDownloaded;
+                //// New values
+                //double newSpeedCalcSecondsUsed = _speedCalculationSecondsUsed + results.ElapsedSeconds;
+                //long newSpeedCalcBytesUsed = _speedCalculationBytesUsed + results.BytesDownloaded;
 
-                // In percent of how much the already existing values are weighted
-                double weightOfOldResults = 1;
-                double weightOfNewResults;
-                if (_speedCalculationBytesUsed == 0 || _speedCalculationSecondsUsed == 0)
+                //// In percent of how much the already existing values are weighted
+                //double weightOfOldResults = 1;
+                //double weightOfNewResults;
+                //if (_speedCalculationBytesUsed == 0 || _speedCalculationSecondsUsed == 0)
+                //{
+                //    weightOfOldResults = 0;
+                //    weightOfNewResults = 1;
+                //}
+                //else
+                //{
+                //    weightOfNewResults = NETWORK_SPEED_TIME_WEIGHT * (results.ElapsedSeconds / newSpeedCalcSecondsUsed)
+                //        + (1 - NETWORK_SPEED_TIME_WEIGHT) * (results.BytesDownloaded / newSpeedCalcBytesUsed);
+                //}
+
+                //// Save new speed value
+                //_networkSpeedBS = (long)((_networkSpeedBS + results.SpeedBs * weightOfNewResults)
+                //    / (weightOfOldResults + weightOfNewResults));
+
+                //// Save new values
+                //_speedCalculationSecondsUsed = newSpeedCalcSecondsUsed;
+                //_speedCalculationBytesUsed = newSpeedCalcBytesUsed;
+
+                // Simple exponential decay
+                if (_networkSpeedBS == 0)
                 {
-                    weightOfOldResults = 0;
-                    weightOfNewResults = 1;
+                    _networkSpeedBS = results.SpeedBs;
                 }
                 else
                 {
-                    weightOfNewResults = NETWORK_SPEED_TIME_WEIGHT * (results.ElapsedSeconds / newSpeedCalcSecondsUsed)
-                        + (1 - NETWORK_SPEED_TIME_WEIGHT) * (results.BytesDownloaded / newSpeedCalcBytesUsed);
+                    _networkSpeedBS = (long)((_networkSpeedBS * NETWORK_SPEED_REDUCTION_FACTOR
+                        + results.SpeedBs * (1 - NETWORK_SPEED_REDUCTION_FACTOR)));
                 }
-
-                // Save new speed value
-                _networkSpeedBS = (long)((_networkSpeedBS + results.SpeedBs * weightOfNewResults)
-                    / (weightOfOldResults + weightOfNewResults));
-
-                // Save new values
-                _speedCalculationSecondsUsed = newSpeedCalcSecondsUsed;
-                _speedCalculationBytesUsed = newSpeedCalcBytesUsed;
 
                 Logger.Debug("Detected current overall speed: " + _networkSpeedBS + " bytes/s.");
             }

@@ -80,11 +80,15 @@ namespace RuralCafe.Util
         /// After this time, time and bytes are saved to create chunks, from which some
         /// are then ignored afterwards.
         /// </summary>
-        private static readonly TimeSpan PART_SAVING_INTERVAL = new TimeSpan(0, 0, 1);
+        private static readonly TimeSpan PART_SAVING_INTERVAL = new TimeSpan(0, 0, 2);
         /// <summary>
         /// Only the best (fastest) n % of the chunks are considered. With 5 % for 1 min this means 3 chunk.
         /// </summary>
-        private const double BEST_N_PERCENT = 0.05; // XXX maybe 1 chunk is not so good...
+        private const double BEST_N_PERCENT = 1; // XXX ignored ATM
+        /// <summary>
+        /// Chunks under than percentage of the peak will be ignored.
+        /// </summary>
+        private const double PEAK_PERCENT_THRESHOLD = 0.2;
         /// <summary>
         /// The default time to measure for calls. 1 min.
         /// </summary>
@@ -276,7 +280,11 @@ namespace RuralCafe.Util
 
                 // Sort the chunks by speed, descending
                 chunks.Sort((a, b) => a.speed > b.speed ? -1 : (a.speed == b.speed ? 0 : 1));
+                
+                // Delete chunks with less than 20 % peak speed
+                chunks.RemoveAll(chunk => chunk.speed < PEAK_PERCENT_THRESHOLD * chunks[0].speed);
 
+                // AVG APPROACH
                 // Get the index to which we must consider.
                 int toIndex = (int)(chunks.Count * BEST_N_PERCENT);
                 // We always want to consider at least 1!
@@ -293,7 +301,11 @@ namespace RuralCafe.Util
                 }
                 double weightedAvg = weightedSum / chunks.Take(toIndex).Sum(x => x.timeInterval);
 
-                return new NetworkUsageResults((long)weightedAvg, bytesDownloaded, elapsedSeconds);
+                // MEDIAN APPROACH
+                double median = chunks[chunks.Count / 2].speed;
+                Console.WriteLine("AVG: {0} MED: {1}", weightedAvg, median);
+
+                return new NetworkUsageResults((long)median, bytesDownloaded, elapsedSeconds);
             }
         }
 
