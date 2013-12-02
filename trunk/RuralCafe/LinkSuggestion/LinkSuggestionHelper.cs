@@ -155,7 +155,7 @@ namespace RuralCafe.LinkSuggestion
                     string target = new Uri(new Uri(url), relTarget).ToString();
 
                     if (LINK_ANCHOR_BLACKLIST.Contains(link.InnerText.ToLower())
-                        || Int32.TryParse(link.InnerText, out ign) || url.Equals(target))
+                        || Int32.TryParse(link.InnerText, out ign) || url.ToLower().Equals(target.ToLower()))
                     {
                         // No "Here", ... links or number links
                         // No links to the same page! (LS_DEBUG)
