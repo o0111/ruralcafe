@@ -52,9 +52,9 @@ namespace RuralCafe.LinkSuggestion
             string anchorText0 = anchorText.Replace("http://", "").Replace("https://", "");
             string surroundingText0 = surroundingText.Replace("http://", "").Replace("https://", "");
 
-            // If we're debugging, we want 101 results, otherwise 
+            // If we're debugging, we want 1001 results, otherwise 
             // we want one result more, as we're very probably going to find the referrer page
-            int amount0 = Properties.Network.Default.LS_DEBUG ? 101 : amount + 1;
+            int amount0 = Properties.Network.Default.LS_DEBUG ? 1001 : amount + 1;
 
             SearchResults luceneResults = proxy.IndexWrapper.Query(new string[]
                 { url0, refUrl0, anchorText0, surroundingText0}, LINK_SUGGESTION_BOOSTS,
@@ -91,7 +91,7 @@ namespace RuralCafe.LinkSuggestion
                 }
                 if (!found)
                 {
-                    proxy.Logger.Warn(String.Format("LS_DEBUG: -1|{1}|{2}", refUrl0, url0));
+                    proxy.Logger.Warn(String.Format("LS_DEBUG: -1|{0}|{1}", refUrl0, url0));
                 }
                 return luceneResults.Take(amount);
             }
