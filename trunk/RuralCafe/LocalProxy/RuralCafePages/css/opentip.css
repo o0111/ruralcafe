@@ -333,3 +333,8 @@ p.rclinksuggestionSnippet {
   margin-bottom: 10px;
   padding-left: 25px;
 }
+
+a.highlightedCachedLink {
+  color: red;
+  background-color : yellow;
+}

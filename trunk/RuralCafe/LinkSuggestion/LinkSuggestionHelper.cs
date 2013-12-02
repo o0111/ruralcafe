@@ -104,7 +104,7 @@ namespace RuralCafe.LinkSuggestion
         /// </summary>
         /// <param name="html">The original page.</param>
         /// <returns>The modified page.</returns>
-        public static string IncludeTooltips(string html)
+        public static string IncludeTooltips(string html, string url, CacheManager cm)
         {
             HtmlDocument doc = new HtmlDocument();
             doc.LoadHtml(html);
@@ -162,6 +162,19 @@ namespace RuralCafe.LinkSuggestion
                     link.SetAttributeValue("onmouseover", "showSuggestions(" + i + ")");
                     link.SetAttributeValue("onmouseout", "clearActiveLinkNumber()");
                     i++;
+
+                    if (Properties.Network.Default.LS_DEBUG)
+                    {
+                        // Highlight links pointing to downloaded docs in LS_DEBUG mode
+                        string relTarget = link.GetAttributeValue("href", "");
+                        string target = new Uri(new Uri(url), relTarget).ToString();
+                        string relFileName = CacheManager.GetRelativeCacheFileName(target, "GET");
+
+                        if (!target.Equals("") && cm.IsCached(relFileName))
+                        {
+                            link.SetAttributeValue("class", "highlightedCachedLink");
+                        }
+                    }
                 }
             }
 
