@@ -84,13 +84,14 @@ namespace RuralCafe.LinkSuggestion
                     if (luceneResults.Results[i].URI.ToLower().Equals(url.ToLower()))
                     {
                         found = true;
-                        proxy.Logger.Debug(String.Format("LS_DEBUG: {0}|{1}|{2}", i, refUrl0, url0));
+                        // Warn level makes it easier to find.
+                        proxy.Logger.Warn(String.Format("LS_DEBUG: {0}|{1}|{2}", i, refUrl0, url0));
                         break;
                     }
                 }
                 if (!found)
                 {
-                    proxy.Logger.Debug(String.Format("LS_DEBUG: -1|{1}|{2}", refUrl0, url0));
+                    proxy.Logger.Warn(String.Format("LS_DEBUG: -1|{1}|{2}", refUrl0, url0));
                 }
                 return luceneResults.Take(amount);
             }
