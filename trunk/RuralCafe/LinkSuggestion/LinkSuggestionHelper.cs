@@ -52,9 +52,9 @@ namespace RuralCafe.LinkSuggestion
             string anchorText0 = anchorText.Replace("http://", "").Replace("https://", "");
             string surroundingText0 = surroundingText.Replace("http://", "").Replace("https://", "");
 
-            // If we're debugging, we want 1001 results, otherwise 
+            // If we're debugging, we want 101 results, otherwise 
             // we want one result more, as we're very probably going to find the referrer page
-            int amount0 = Properties.Network.Default.LS_DEBUG ? 1001 : amount + 1;
+            int amount0 = Properties.Network.Default.LS_DEBUG ? 101 : amount + 1;
 
             SearchResults luceneResults = proxy.IndexWrapper.Query(new string[]
                 { url0, refUrl0, anchorText0, surroundingText0}, LINK_SUGGESTION_BOOSTS,
@@ -151,10 +151,14 @@ namespace RuralCafe.LinkSuggestion
                 int ign;
                 foreach (HtmlNode link in links)
                 {
+                    string relTarget = link.GetAttributeValue("href", "");
+                    string target = new Uri(new Uri(url), relTarget).ToString();
+
                     if (LINK_ANCHOR_BLACKLIST.Contains(link.InnerText.ToLower())
-                        || Int32.TryParse(link.InnerText, out ign))
+                        || Int32.TryParse(link.InnerText, out ign) || url.Equals(target))
                     {
                         // No "Here", ... links or number links
+                        // No links to the same page! (LS_DEBUG)
                         continue;
                     }
 
@@ -166,8 +170,6 @@ namespace RuralCafe.LinkSuggestion
                     if (Properties.Network.Default.LS_DEBUG)
                     {
                         // Highlight links pointing to downloaded docs in LS_DEBUG mode
-                        string relTarget = link.GetAttributeValue("href", "");
-                        string target = new Uri(new Uri(url), relTarget).ToString();
                         string relFileName = CacheManager.GetRelativeCacheFileName(target, "GET");
 
                         if (!target.Equals("") && cm.IsCached(relFileName))
