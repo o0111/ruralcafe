@@ -117,7 +117,7 @@ namespace RuralCafe
                     // Include link suggestions if we're not online. XXX do we want that for wiki?
                     if (Proxy.NetworkStatus != RCLocalProxy.NetworkStatusCode.Online)
                     {
-                        wikiContent = LinkSuggestionHelper.IncludeTooltips(wikiContent);
+                        wikiContent = LinkSuggestionHelper.IncludeTooltips(wikiContent, RequestUri, Proxy.ProxyCacheManager);
                     }
                     SendMessage(wikiContent);
 
@@ -140,7 +140,7 @@ namespace RuralCafe
                         {
                             return;// Status.Failed;
                         }
-                        content = LinkSuggestionHelper.IncludeTooltips(content);
+                        content = LinkSuggestionHelper.IncludeTooltips(content, RequestUri, Proxy.ProxyCacheManager);
 
                         // Modify the webresponse
                         GlobalCacheItem gci = _proxy.ProxyCacheManager.
