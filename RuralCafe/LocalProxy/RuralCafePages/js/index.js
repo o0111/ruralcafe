@@ -101,7 +101,7 @@ function showXMLLevel2(categories) {
 			if (url.slice(0, 7) != "http://") {
 				url = "http://" + url;
 			}
-			var title = item.getElementsByTagName("title")[0].childNodes[0].nodeValue;
+			var title = item.getElementsByTagName("title")[0].firstChild?item.getElementsByTagName("title")[0].firstChild.nodeValue:"";
 			if( title == "") {
 				title = url;
 			}
@@ -132,7 +132,7 @@ function showXMLLevel3(categories) {
 		if (url.slice(0, 7) != "http://") {
 			url = "http://" + url;
 		}
-		var title = item.getElementsByTagName("title")[0].childNodes[0].nodeValue;
+		var title = item.getElementsByTagName("title")[0].firstChild?item.getElementsByTagName("title")[0].firstChild.nodeValue:"";
 		if( title == "") {
 			title = url;
 		}
