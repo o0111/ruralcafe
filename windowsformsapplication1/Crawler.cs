@@ -427,8 +427,8 @@ namespace Crawler
                 {
                     continue;
                 }
-                // Get the snippet rurrounding the anchor.
-                string snippet = HtmlUtils.GetSurroundingText(link, Classifier.STOP_WORDS);
+                // Get the snippet surrounding the anchor.
+                string snippet = HtmlUtils.GetSurroundingText(link, Classifier.STOP_WORDS, true);
                 // And concatenate with the URI
                 snippet += " " + uriS;
                 // Get classification value and insert into list

@@ -2,8 +2,10 @@
 using RuralCafe.Lucenenet;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
+using Util;
 
 namespace RuralCafe.LinkSuggestion
 {
@@ -12,6 +14,11 @@ namespace RuralCafe.LinkSuggestion
     /// </summary>
     public static class LinkSuggestionHelper
     {
+        /// <summary>
+        /// The number of results for LS_DEBUG.
+        /// </summary>
+        private const int LS_DEBUG_NUM_RESULTS = 51;
+
         /// <summary>
         /// The boosts for the different link suggestion fields.
         /// </summary>
@@ -52,12 +59,11 @@ namespace RuralCafe.LinkSuggestion
             string anchorText0 = anchorText.Replace("http://", "").Replace("https://", "");
             string surroundingText0 = surroundingText.Replace("http://", "").Replace("https://", "");
 
-            // If we're debugging, we want 101 results, otherwise 
+            // If we're debugging, we want 51 results, otherwise 
             // we want one result more, as we're very probably going to find the referrer page
-            int amount0 = Properties.Network.Default.LS_DEBUG ? 101 : amount + 1;
+            int amount0 = Properties.Network.Default.LS_DEBUG ? LS_DEBUG_NUM_RESULTS : amount + 1;
 
-            SearchResults luceneResults = proxy.IndexWrapper.Query(new string[]
-                { url0, refUrl0, anchorText0, surroundingText0}, LINK_SUGGESTION_BOOSTS,
+            SearchResults luceneResults = proxy.IndexWrapper.Query(new string[] { url0, refUrl0, anchorText0, surroundingText0 }, LINK_SUGGESTION_BOOSTS,
                 proxy.CachePath, 0, amount0, true, -1);
 
             // remove the referrer page from the results
@@ -77,6 +83,8 @@ namespace RuralCafe.LinkSuggestion
 
             if (Properties.Network.Default.LS_DEBUG)
             {
+                bool sameDomain = new Uri(refUrl).Host.Equals(new Uri(url).Host);
+
                 bool found = false;
                 // If we're debugging we want to find out the position of the original url.
                 for (int i = 0; i < luceneResults.Results.Count; i++)
@@ -85,13 +93,13 @@ namespace RuralCafe.LinkSuggestion
                     {
                         found = true;
                         // Warn level makes it easier to find.
-                        proxy.Logger.Warn(String.Format("LS_DEBUG: {0}|{1}|{2}", i, refUrl0, url0));
+                        proxy.Logger.Warn(String.Format("LS_DEBUG: {0}|{1}|{2}|{3}", i, sameDomain, refUrl0, url0));
                         break;
                     }
                 }
                 if (!found)
                 {
-                    proxy.Logger.Warn(String.Format("LS_DEBUG: -1|{0}|{1}", refUrl0, url0));
+                    proxy.Logger.Warn(String.Format("LS_DEBUG: -1|{0}|{1}|{2}", sameDomain, refUrl0, url0));
                 }
                 return luceneResults.Take(amount);
             }
@@ -152,7 +160,15 @@ namespace RuralCafe.LinkSuggestion
                 foreach (HtmlNode link in links)
                 {
                     string relTarget = link.GetAttributeValue("href", "");
-                    string target = new Uri(new Uri(url), relTarget).ToString();
+                    string target;
+                    try
+                    {
+                        target = new Uri(new Uri(url), relTarget).ToString();
+                    }
+                    catch (UriFormatException)
+                    {
+                        continue;
+                    }
 
                     if (LINK_ANCHOR_BLACKLIST.Contains(link.InnerText.ToLower())
                         || Int32.TryParse(link.InnerText, out ign) || url.ToLower().Equals(target.ToLower()))
@@ -181,6 +197,77 @@ namespace RuralCafe.LinkSuggestion
             }
 
             return doc.DocumentNode.OuterHtml;
+        }
+
+        /// <summary>
+        /// Tests ALL link suggestions in LS_DEBUG mode. Should only be used for small caches.
+        /// </summary>
+        /// <param name="proxy">The local proxy.</param>
+        public static void DebugLinkSuggestion(RCLocalProxy proxy)
+        {
+            CacheManager cm = proxy.ProxyCacheManager;
+            string[] stopwords = File.ReadAllLines("stopwords.txt");
+
+            List<string> sites = cm.TextFiles();
+            int i = 1;
+            foreach (string site in sites)
+            {
+                proxy.Logger.Debug(String.Format("Working site {0} of {1}", i++, sites.Count));
+                string url = cm.AbsoluteFilePathToUri(site);
+
+                string content = Utils.ReadFileAsString(site);
+                HtmlDocument doc = new HtmlDocument();
+                doc.LoadHtml(content);
+
+                HtmlNode head = doc.DocumentNode.SelectSingleNode("/html/head");
+                HtmlNode body = doc.DocumentNode.SelectSingleNode("/html/body");
+                if (head == null || body == null)
+                {
+                    // We haven't sane HTML, just continue
+                    continue;
+                }
+
+                // Gets all links containing text.
+                HtmlNodeCollection links = doc.DocumentNode.SelectNodes("//a[not(node()[2])][text()]/@href");
+                if (links != null)
+                {
+                    int ign;
+                    foreach (HtmlNode link in links)
+                    {
+                        string relTarget = link.GetAttributeValue("href", "");
+                        string target;
+                        try
+                        {
+                            target = new Uri(new Uri(url), relTarget).ToString();
+                        }
+                        catch (UriFormatException)
+                        {
+                            continue;
+                        }
+
+                        if (LINK_ANCHOR_BLACKLIST.Contains(link.InnerText.ToLower())
+                            || Int32.TryParse(link.InnerText, out ign) || url.ToLower().Equals(target.ToLower()))
+                        {
+                            // No "Here", ... links or number links
+                            // No links to the same page! (LS_DEBUG)
+                            continue;
+                        }
+                        string relFileName = CacheManager.GetRelativeCacheFileName(target, "GET");
+
+                        if (!target.Equals("") && cm.IsCached(relFileName))
+                        {
+                            // Get anchor and surrounding text
+                            string anchorText = link.InnerText;
+                            string surroundingText = HtmlUtils.GetSurroundingText(link,
+                                stopwords, false);
+
+                            // Trigger LS
+                            GetLinkSuggestions(target, url, anchorText, surroundingText,
+                                3, proxy);
+                        }
+                    }
+                }
+            }
         }
     }
 }
