@@ -166,7 +166,7 @@ namespace RuralCafe
 
         /// <summary>The original request object.</summary>
         protected HttpListenerRequest _originalRequest;
-        /// <summary>The RC reuest that is potentially being made.</summary>
+        /// <summary>The RC request that is potentially being made.</summary>
         [JsonProperty]
         protected RCRequest _rcRequest;
         /// <summary>Timeout in milliseconds.</summary>

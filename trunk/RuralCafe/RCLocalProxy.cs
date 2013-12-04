@@ -36,6 +36,7 @@ using RuralCafe.Json;
 using RuralCafe.Wiki;
 using System.Xml;
 using RuralCafe.Clusters;
+using RuralCafe.LinkSuggestion;
 
 namespace RuralCafe
 {

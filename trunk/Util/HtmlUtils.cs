@@ -309,8 +309,9 @@ namespace Util
         /// </summary>
         /// <param name="node">The HTML node</param>
         /// <param name="stopWords">A list of stopwords</param>
+        /// <param name="withAnchorText">true, if the anchor text schould be included, false otherwise.</param>
         /// <returns>The surrounding text.</returns>
-        public static string GetSurroundingText(HtmlNode node, string[] stopWords)
+        public static string GetSurroundingText(HtmlNode node, string[] stopWords, bool withAnchorText)
         {
             HtmlNode baseNode = node;
         
@@ -355,7 +356,7 @@ namespace Util
             // Reverse order
             precedingWords.Reverse();
             // Join everything together and return
-            return String.Join(" ", precedingWords) + " " + node.InnerText + " " + String.Join(" ", followingWords);
+            return String.Join(" ", precedingWords) + " " + (withAnchorText?(node.InnerText + " "):"") + String.Join(" ", followingWords);
         }
     }
 }
