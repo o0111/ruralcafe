@@ -1,0 +1,17 @@
+RuralCafe is a platform for web search and browsing over extremely slow or intermittent networks.
+
+RuralCafe improves web search and browsing this by providing an expanded search query interface which allows a user to specify additional query terms to maximize the utility of the results returned by a search query. Given knowledge of the limited available network resources, RuralCafe performs optimizations to prefetch pages to best satisfy a search query based on a user's search preferences. In addition, RuralCafe does not require modifications to the web browser, and can provide single round search results tailored to various types of networks and economic constraints.
+
+RuralCafe consists of two main components: the local proxy and the remote proxy. Each proxy is responsible for a different set of web optimizations. The local proxy is meant to be deployed at the local area network gateway to perform caching, enable local search, and manage client requests. The remote proxy resides on a separate machine on the other end of the slow network link, and is presumably well-connected to the Internet. The remote proxy coordinates with the local proxy by accepting requests, and attempts to prefetch useful pages and filter unwanted content on behalf of the local proxy. It also does caching. Together, the two proxies coordinate across the slow link to maximize its overall effectiveness.
+
+The web optimizations implemented at the proxies may be broadly configured for either low bandwidth, high latency, and/or intermittent connections. I.e. A low bandwidth connection setting would cause the prefetching algorithm to prefetch pages more conservatively or stop prefetching altogether. We are in the process of implementing an automatic detection of the link characteristics to reduce the level of technical knowledge required for configuring RuralCafe.
+
+# System Requirements #
+
+RuralCafe is designed to be deployable in three basic configurations depending on the situation:
+The first is the configuration described above with both a local proxy on the LAN gateway machine and a remote proxy on a well-connected machine. RuralCafe's optimizations are fully available in this configuration and details may be found in the technical paper here.
+Having access to the LAN gateway and a remote machine is not always possible. In the case where no remote machine is available, the remote proxy may be deployed on the same machine as the local proxy at the gateway. In this case, filtering is no longer beneficial, but the benefits of prefetching would still be intact.
+If access to even a LAN gateway is not available (i.e. in the case of a user with a single machine) RuralCafe may be installed completely on one client machine. With this setup RuralCafe is still able to manage requests and perform prefetching and local search, but the quality may be reduced to the the lack of aggregate browsing statistics and a shared cache.
+Each of the machines where the RuralCafe software will be running requires Windows XP or above, and .NET Framework 4.0 installed. Optionally, Visual Studio 2012+ is required for debugging and modifying the source code.
+
+Information about installation and configuration can be found at either **UserIntroduction** or **DeveloperIntroduction**.
